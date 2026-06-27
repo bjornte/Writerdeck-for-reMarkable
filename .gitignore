@@ -57,3 +57,8 @@ Thumbs.db
 # result). Only the large backup tarballs are ignored.
 # ──────────────────────────────────────────────────────────────
 /docs/recon/*.tar.gz
+
+# Public release: ship source-only. The keywriter binary + qt5.tar.gz are
+# CI-built (build-keywriter.yml); they are NOT committed in this public mirror.
+third_party/keywriter/dist/keywriter
+third_party/keywriter/dist/qt5.tar.gz

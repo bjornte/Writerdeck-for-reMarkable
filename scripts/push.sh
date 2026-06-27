@@ -7,7 +7,7 @@
 #   bash scripts/push.sh "your message"  # custom message
 #
 # Tip: make it even shorter with an alias (run once):
-#   echo 'alias rmpush="bash ~/dev/writerdeck-for-remarkable/scripts/push.sh"' >> ~/.zshrc
+#   echo 'alias rmpush="bash ~/dev/Writerdeck-for-reMarkable/scripts/push.sh"' >> ~/.zshrc
 #   then just:  rmpush "message"
 
 set -euo pipefail

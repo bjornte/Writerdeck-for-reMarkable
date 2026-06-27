@@ -438,7 +438,7 @@ lobby_rect = (
     '                    font.family: "Noto Sans"\n'
     '                }\n'
     '                Text {\n'
-    '                    text: "github.com/bjornte/writerdeck-for-remarkable"\n'
+    '                    text: "github.com/bjornte/Writerdeck-for-reMarkable"\n'
     '                    color: "#444444"\n'
     '                    font.pointSize: 9\n'
     '                    font.family: "Noto Mono"\n'

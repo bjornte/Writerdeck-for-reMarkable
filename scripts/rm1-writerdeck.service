@@ -1,6 +1,6 @@
 [Unit]
 Description=rM1-Writerdeck - reMarkable Wi-Fi keyboard daemon
-Documentation=https://github.com/bjornte/writerdeck-for-remarkable
+Documentation=https://github.com/bjornte/Writerdeck-for-reMarkable
 After=network.target
 
 # CRITICAL -- do not remove. The ExecStart binary (/home/root/rmkbd) lives on
