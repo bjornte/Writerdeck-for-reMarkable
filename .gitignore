@@ -1,0 +1,59 @@
+# ──────────────────────────────────────────────────────────────
+# Secrets — NEVER commit real credentials.
+# The real file lives on disk only; the *.example template is committed.
+# ──────────────────────────────────────────────────────────────
+secrets/*
+!secrets/README.md
+!secrets/*.example
+
+# Belt-and-suspenders: ignore these patterns anywhere in the tree
+*.local.env
+*.local
+.env
+.env.*
+!.env.example
+
+# SSH keys must never be committed
+id_rsa*
+id_ed25519*
+*.pem
+*.key
+
+# ──────────────────────────────────────────────────────────────
+# Build artifacts (the Go daemon and friends)
+# ──────────────────────────────────────────────────────────────
+/rmkbd
+/rmkbd.exe
+*.o
+*.exe
+dist/
+
+# Exception: third_party/keywriter/dist/ holds CI-built artifacts
+# (keywriter binary + qt5.tar.gz) that travel to the Mac via the git bridge.
+!third_party/keywriter/dist/
+!third_party/keywriter/dist/**
+# Re-ignore the locally-unpacked qt5/ tree -- only the compressed tarball is
+# committed.  deploy-keywriter.sh unpacks and removes it transiently.
+third_party/keywriter/dist/qt5/
+
+# ──────────────────────────────────────────────────────────────
+# OS / editor cruft
+# ──────────────────────────────────────────────────────────────
+Thumbs.db
+.DS_Store
+*.swp
+
+# ──────────────────────────────────────────────────────────────
+# Fetched third-party binaries (not committed; see third_party/README.md)
+# ──────────────────────────────────────────────────────────────
+
+/third_party/**/*.bin
+# Raw qmake TARGET output from build-keywriter.sh (the committed artifact is dist/keywriter)
+/third_party/keywriter/edit
+
+# ──────────────────────────────────────────────────────────────
+# Recon output. The small recon-*.txt LOGS are committed on purpose so they
+# sync between machines (e.g. the Mac runs recon, the work laptop reads the
+# result). Only the large backup tarballs are ignored.
+# ──────────────────────────────────────────────────────────────
+/docs/recon/*.tar.gz

@@ -1,0 +1,31 @@
+# Auto-detect text files and normalize line endings on commit.
+# Default: LF in the repo. Critical here because most files RUN ON THE
+# DEVICE (Linux) — a CRLF shell script or systemd unit fails on reMarkable.
+* text=auto eol=lf
+
+# Windows-only files keep CRLF.
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.psd1  text eol=crlf
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# Files that execute on the reMarkable (Linux) — force LF explicitly.
+*.sh        text eol=lf
+*.service   text eol=lf
+*.go        text eol=lf
+*.html      text eol=lf
+*.js        text eol=lf
+*.css       text eol=lf
+Makefile    text eol=lf
+
+# Binaries — never normalize.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.gz    binary
+*.bin   binary
+edit    binary
+rmkbd   binary

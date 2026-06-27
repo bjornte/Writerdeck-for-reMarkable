@@ -1,0 +1,41 @@
+[Unit]
+Description=rM1-Writerdeck - reMarkable Wi-Fi keyboard daemon
+Documentation=https://github.com/bjornte/writerdeck-for-remarkable
+After=network.target
+
+# CRITICAL -- do not remove. The ExecStart binary (/home/root/rmkbd) lives on
+# the /home partition, which mounts LATER than rootfs during boot. Without this,
+# systemd reaches the unit before /home is mounted, the exec of /home/root/rmkbd
+# fails with status=203/EXEC, and the tablet boots into the stock GUI instead of
+# the editor. RequiresMountsFor delays us until /home/root is mounted.
+# (Phase 7 accidentally avoided this because ExecStart was /usr/bin/systemd-inhibit
+# on rootfs, which then launched /home/root/rmkbd a beat later -- after the mount.
+# Moving the inhibit wrapper into launch-keywriter.sh in 8c re-exposed the race.)
+RequiresMountsFor=/home/root
+
+[Service]
+Type=simple
+
+# Safety net: if rmkbd is stopped while a session is active (e.g.
+# systemctl stop rm1-writerdeck mid-session), ExecStopPost restores xochitl.
+# In normal operation rmkbd itself starts/stops xochitl per session in Go.
+ExecStopPost=/bin/sh -c 'sleep 1; systemctl start xochitl'
+
+# rmkbd is always-on: serves :8000 (file-manager + PIN + launch) even while
+# the stock xochitl GUI is up, and summons keywriter on demand.
+# --editor: supervisor mode -- rmkbd owns the xochitl<->keywriter toggle.
+# systemd-inhibit now wraps keywriter (inside launch-keywriter.sh) not rmkbd,
+# so sleep is blocked only during an editor session; the tablet sleeps
+# normally in the GUI (accepted: :8000 is unreachable until tap-to-wake).
+ExecStart=/home/root/rmkbd --editor /home/root/launch-keywriter.sh
+
+# Do not auto-restart: if something goes wrong, xochitl is already back up
+# (ExecStopPost), and a restart loop would fight xochitl for the framebuffer.
+# Enable and then re-run manually once the issue is diagnosed.
+Restart=no
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

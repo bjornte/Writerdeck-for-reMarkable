@@ -1,0 +1,105 @@
+name: Build keywriter
+
+on:
+  workflow_dispatch:    # manual trigger
+  push:
+    paths:
+      - 'third_party/keywriter/Dockerfile'
+      - 'third_party/keywriter/build-keywriter.sh'
+      - 'third_party/keywriter/socket-inject.patch'
+      - '.github/workflows/build-keywriter.yml'
+
+# Write access is needed to commit the built artifacts back to the repo
+# so the Mac can pull and deploy them without a local toolchain.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: docker build -t rm1-writerdeck-keywriter-builder third_party/keywriter/
+
+      - name: Run build container
+        run: |
+          mkdir -p third_party/keywriter/dist
+          docker run --rm \
+            -v "$PWD/third_party/keywriter/dist:/out" \
+            rm1-writerdeck-keywriter-builder
+          # The container runs as root, so everything it wrote to the
+          # bind-mounted dist/ is root-owned. Reclaim it for the runner user
+          # so the later rm/tar/git steps don't hit "Permission denied".
+          sudo chown -R "$(id -u):$(id -g)" third_party/keywriter/dist
+
+      - name: Compress Qt5 sysroot for git (lean tarball)
+        run: |
+          cd third_party/keywriter/dist
+          if [ -d qt5 ]; then
+            echo "Compressing qt5/ -> qt5.tar.gz ..."
+            tar -czf qt5.tar.gz qt5/
+            rm -rf qt5/
+            ls -lh qt5.tar.gz
+          else
+            echo "WARNING: qt5/ directory not found in dist/ -- sysroot collection may have failed."
+            echo "Contents of dist/:"
+            ls -la .
+          fi
+
+      - name: Show artifact info
+        run: |
+          echo "=== keywriter binary ==="
+          ls -lh third_party/keywriter/dist/keywriter
+          file third_party/keywriter/dist/keywriter
+
+          echo
+          echo "=== Qt5 sysroot tarball ==="
+          ls -lh third_party/keywriter/dist/qt5.tar.gz 2>/dev/null || echo "  (not present)"
+
+          echo
+          echo "=== dist/ summary ==="
+          find third_party/keywriter/dist -maxdepth 2 | sort
+
+      - name: Upload artifact (for direct download)
+        uses: actions/upload-artifact@v4
+        with:
+          name: keywriter-dist
+          path: third_party/keywriter/dist/
+          retention-days: 90
+
+      - name: Commit artifacts to repo (git-bridge for Mac deploy)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add third_party/keywriter/dist/keywriter \
+                  third_party/keywriter/dist/qt5.tar.gz 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Artifacts unchanged -- nothing to commit."
+            exit 0
+          fi
+          git commit -m "ci: build keywriter $(date +%Y-%m-%d) [skip ci]"
+          # A laptop commit can land on main while this job runs, so a plain
+          # push gets rejected ("fetch first"). Our commit only touches the
+          # binary artifacts under dist/, which laptop script/doc edits never
+          # touch -- so rebasing onto the latest main is always conflict-free.
+          # Rebase + retry a few times to win the race.
+          BRANCH="${GITHUB_REF_NAME}"
+          for attempt in 1 2 3 4 5; do
+            if git push origin "HEAD:${BRANCH}"; then
+              echo "Pushed artifacts on attempt ${attempt}."
+              break
+            fi
+            if [ "${attempt}" = "5" ]; then
+              echo "ERROR: push still rejected after ${attempt} attempts." >&2
+              exit 1
+            fi
+            echo "Push attempt ${attempt} rejected -- rebasing onto origin/${BRANCH} and retrying."
+            git fetch origin "${BRANCH}"
+            git rebase "origin/${BRANCH}"
+            sleep $((RANDOM % 5 + 2))
+          done

@@ -1,0 +1,208 @@
+--- a/main.cpp
++++ b/main.cpp
+@@ -10,4 +10,102 @@
+ #include "edit_utils.h"
+ #include <QtQml>
+ 
++// rM1-Writerdeck: socket input (Phase 2, injected by build-keywriter.sh)
++#include <thread>
++#include <string>
++#include <cstring>
++#include <cstdlib>
++#include <sys/socket.h>
++#include <sys/un.h>
++#include <unistd.h>
++#include <QKeyEvent>
++#include <QMetaObject>
++#include <QCoreApplication>
++#include <QWindow>
++#include <QVariant>
++
++static const char *RMKBD_SOCK = "/run/rmkbd.sock";
++static QObject *g_rootObj = nullptr; // stashed after QML load; used by cmd handler
++
++// Parse one NDJSON line and dispatch a synthetic QKeyEvent on the GUI thread.
++// Supported events:
++//   {"t":"text","cp":<codepoint>}          -- insert one Unicode codepoint
++//   {"t":"key","k":"<named>","m":<mask>}   -- named key + modifier bitmask
++//     named: Escape|Return|Backspace|Tab|Home|End|ArrowUp|ArrowDown|ArrowLeft|ArrowRight
++//     action: A-Z (Ctrl/Cmd+letter shortcut; daemon sends uppercase)
++//     mask: Shift=1, Ctrl=2, Alt=4, Meta=8; Ctrl and Meta both -> Qt::ControlModifier
++static void rmkbdInjectLine(const std::string &line)
++{
++    // Parse optional "m":<int> modifier bitmask.
++    // Ctrl(2) and Meta/Cmd(8) both map to Qt::ControlModifier: Linux Qt uses
++    // Ctrl for copy/paste/shortcuts, so Cmd on a Mac/iPhone acts as Ctrl here.
++    int mask = 0;
++    {
++        auto mp = line.find("\"m\":");
++        if (mp != std::string::npos) mask = static_cast<int>(std::stol(line.substr(mp + 4)));
++    }
++    Qt::KeyboardModifiers mods = Qt::NoModifier;
++    if (mask & 1) mods |= Qt::ShiftModifier;
++    if (mask & 2) mods |= Qt::ControlModifier;
++    if (mask & 4) mods |= Qt::AltModifier;
++    if (mask & 8) mods |= Qt::ControlModifier; // Meta/Cmd -> Ctrl on Linux Qt
++
++    auto dispatch = [](int key, const QString &text, Qt::KeyboardModifiers mods) {
++        // Read focus + build/send the events on the GUI thread (queue via invokeMethod).
++        // Target the focus WINDOW (the QQuickWindow), not the focused item: this
++        // replays the real key path -- window-level focus routing AND the QML
++        // Keys.onPressed/onReleased handlers (keywriter toggles edit mode on the
++        // Esc *release*). Sending straight to the item can bypass that routing.
++        QMetaObject::invokeMethod(qApp, [key, text, mods]() {
++            QWindow *win = QGuiApplication::focusWindow();
++            if (!win) return;
++            QKeyEvent press(QEvent::KeyPress, key, mods, text);
++            QKeyEvent release(QEvent::KeyRelease, key, mods, text);
++            QCoreApplication::sendEvent(win, &press);
++            QCoreApplication::sendEvent(win, &release);
++        }, Qt::QueuedConnection);
++    };
++
++    if (line.find("\"t\":\"text\"") != std::string::npos) {
++        // Text events carry no modifiers: event.key already has Shift/Alt baked in.
++        auto p = line.find("\"cp\":");
++        if (p == std::string::npos) return;
++        p += 5;
++        uint32_t cp = static_cast<uint32_t>(std::stoul(line.substr(p)));
++        dispatch(0, QString::fromUcs4(&cp, 1), Qt::NoModifier);
++    } else if (line.find("\"t\":\"key\"") != std::string::npos) {
++        auto p = line.find("\"k\":\"");
++        if (p == std::string::npos) return;
++        p += 5;
++        auto q = line.find('\"', p);
++        if (q == std::string::npos) return;
++        std::string k = line.substr(p, q - p);
++        // Action letter (A-Z with Ctrl/Cmd): route through Qt shortcut matcher.
++        // No text so Qt fires the shortcut (Ctrl+C = copy, not literal 'C').
++        if (k.length() == 1 && k[0] >= 'A' && k[0] <= 'Z') {
++            dispatch(Qt::Key_A + (k[0] - 'A'), QString(), mods);
++            return;
++        }
++        Qt::Key key = Qt::Key_unknown;
++        if      (k == "Escape")     key = Qt::Key_Escape;
++        else if (k == "Return")     key = Qt::Key_Return;
++        else if (k == "Backspace")  key = Qt::Key_Backspace;
++        else if (k == "Tab")        key = Qt::Key_Tab;
++        else if (k == "Home")       key = Qt::Key_Home;
++        else if (k == "End")        key = Qt::Key_End;
++        else if (k == "ArrowLeft")  key = Qt::Key_Left;
++        else if (k == "ArrowRight") key = Qt::Key_Right;
++        else if (k == "ArrowUp")    key = Qt::Key_Up;
++        else if (k == "ArrowDown")  key = Qt::Key_Down;
++        if (key != Qt::Key_unknown)
++            dispatch(key, QString(), mods);
++    } else if (line.find("\"t\":\"cmd\"") != std::string::npos) {
++        // cmd: {"t":"cmd","c":"<command>"}
++        // Supported: "quit" -> saveAndQuit() on the QML root object.
++        // g_rootObj is set once in main() before this thread starts -- safe.
++        auto p = line.find("\"c\":\"");
++        if (p == std::string::npos) return;
++        p += 5;
++        auto q = line.find('\"', p);
++        if (q == std::string::npos) return;
++        std::string cmd = line.substr(p, q - p);
++        if (cmd == "quit" && g_rootObj)
++            QMetaObject::invokeMethod(g_rootObj, "saveAndQuit", Qt::QueuedConnection);
++        else if (cmd == "open" && g_rootObj) {
++            // {"t":"cmd","c":"open","name":"scratch.md"} -> saveAndLoad(name) in QML.
++            // Saves current note then calls doLoad(name) to switch files.
++            auto np = line.find("\"name\":\"");
++            if (np != std::string::npos) {
++                np += 8;
++                auto nq = line.find('"', np);
++                std::string name = (nq != std::string::npos) ? line.substr(np, nq - np) : "";
++                if (!name.empty())
++                    QMetaObject::invokeMethod(g_rootObj, "saveAndLoad",
++                        Qt::QueuedConnection,
++                        Q_ARG(QVariant, QString::fromStdString(name)));
++            }
++        }
++        else if (cmd == "home" && g_rootObj)
++            QMetaObject::invokeMethod(g_rootObj, "handleHome", Qt::QueuedConnection);
++        else if (cmd == "notedeleted" && g_rootObj)
++            // Go to the Lobby WITHOUT saveFile() -- the file is gone, no resurrection.
++            QMetaObject::invokeMethod(g_rootObj, "noteDeleted", Qt::QueuedConnection);
++        else if (cmd == "showlobby" && g_rootObj)
++            // Bring the Lobby to the foreground without quitting. Saves current note first.
++            QMetaObject::invokeMethod(g_rootObj, "showLobby", Qt::QueuedConnection);
++        else if (cmd == "setfont" && g_rootObj) {
++            // {"t":"cmd","c":"setfont","family":"Inter"} -> setReadFont(name) in QML.
++            // Changes the reading-view font; the allow-list check lives in rmkbd (Go).
++            auto fp = line.find("\"family\":\"");
++            if (fp != std::string::npos) {
++                fp += 10;
++                auto fq = line.find('"', fp);
++                std::string family = (fq != std::string::npos) ? line.substr(fp, fq - fp) : "";
++                if (!family.empty())
++                    QMetaObject::invokeMethod(g_rootObj, "setReadFont",
++                        Qt::QueuedConnection,
++                        Q_ARG(QVariant, QString::fromStdString(family)));
++            }
++        }
++    } else if (line.find("\"t\":\"info\"") != std::string::npos) {
++        // {"t":"info","ip":"...","pin":"..."} -> setLobbyInfo(ip, pin) in QML.
++        // Sent by rmkbd on every socket connect so the Lobby always shows current values.
++        auto ip_p = line.find("\"ip\":\"");
++        auto pin_p = line.find("\"pin\":\"");
++        if (ip_p != std::string::npos && pin_p != std::string::npos && g_rootObj) {
++            ip_p += 6; auto ip_q = line.find('"', ip_p);
++            pin_p += 7; auto pin_q = line.find('"', pin_p);
++            if (ip_q != std::string::npos && pin_q != std::string::npos) {
++                std::string ip  = line.substr(ip_p,  ip_q  - ip_p);
++                std::string pin = line.substr(pin_p, pin_q - pin_p);
++                QMetaObject::invokeMethod(g_rootObj, "setLobbyInfo",
++                    Qt::QueuedConnection,
++                    Q_ARG(QVariant, QString::fromStdString(ip)),
++                    Q_ARG(QVariant, QString::fromStdString(pin)));
++            }
++        }
++    }
++}
++
++// Blocking socket server loop -- runs in a detached std::thread.
++// keywriter is the SERVER so rmkbd (the client) can connect/reconnect freely
++// across restarts of the daemon without touching the editor process.
++static void rmkbdSocketReader()
++{
++    ::unlink(RMKBD_SOCK);
++    int srv = ::socket(AF_UNIX, SOCK_STREAM, 0);
++    if (srv < 0) return;
++    struct sockaddr_un addr;
++    std::memset(&addr, 0, sizeof(addr));
++    addr.sun_family = AF_UNIX;
++    std::strncpy(addr.sun_path, RMKBD_SOCK, sizeof(addr.sun_path) - 1);
++    if (::bind(srv, reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) < 0) {
++        ::close(srv); return;
++    }
++    ::listen(srv, 1);
++    for (;;) {
++        int fd = ::accept(srv, nullptr, nullptr);
++        if (fd < 0) continue;
++        std::string buf;
++        char ch;
++        while (::read(fd, &ch, 1) == 1) {
++            if (ch == '\n') {
++                if (!buf.empty()) rmkbdInjectLine(buf);
++                buf.clear();
++            } else {
++                buf += ch;
++            }
++        }
++        ::close(fd);
++        buf.clear(); // flush any partial line on disconnect
++    }
++}
++// end rM1-Writerdeck socket input
++
+ int main(int argc, char *argv[])
+ {
+@@ -37,5 +135,6 @@
+     if (engine.rootObjects().isEmpty())
+         return -1;
++    g_rootObj = engine.rootObjects().first(); // stash for cmd handler thread
+ 
++    std::thread(rmkbdSocketReader).detach(); // rM1-Writerdeck: start socket listener
+     return app.exec();
+ }
