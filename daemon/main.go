@@ -200,10 +200,9 @@ func dialLoop(ec *editorConn) {
 		// no-PIN text when pin is ""). Always send even in no-PIN mode so the
 		// QML conditional can render the appropriate Lobby line.
 		pushLobbyInfo()
-		// Push persisted font and cursor mode so a freshly-spawned editor reflects the saved choices.
+		// Push persisted font so a freshly-spawned editor reflects the saved choice.
 		settingsMu.Lock()
 		fontFamily := curSettings.ReadFont
-		cursorMode := curSettings.CursorMode
 		settingsMu.Unlock()
 		if fontFamily != "" {
 			fontMsg, _ := json.Marshal(struct {
@@ -212,14 +211,6 @@ func dialLoop(ec *editorConn) {
 				Family string `json:"family"`
 			}{"cmd", "setfont", fontFamily})
 			ec.write(fontMsg)
-		}
-		if cursorMode != "" {
-			cursorMsg, _ := json.Marshal(struct {
-				T    string `json:"t"`
-				C    string `json:"c"`
-				Mode string `json:"mode"`
-			}{"cmd", "setcursor", cursorMode})
-			ec.write(cursorMsg)
 		}
 		// Block until the connection dies (detect via a zero-byte read).
 		// No deadline: keywriter never writes back, so a deadline would
@@ -673,9 +664,8 @@ var settingsFilePath = "/home/root/.rmkbd/settings.json"
 
 // settingsData is the on-disk and in-memory settings schema.
 type settingsData struct {
-	ReadFont   string `json:"readFont"`
-	PinDigits  string `json:"pinDigits"`  // "6", "4", or "none"; default "6"
-	CursorMode string `json:"cursorMode"` // "solid", "subtle", or "hidden"; default "subtle"
+	ReadFont  string `json:"readFont"`
+	PinDigits string `json:"pinDigits"` // "6", "4", or "none"; default "6"
 }
 
 // fontOption is one entry in the reading-view font picker.
@@ -694,16 +684,9 @@ var fontRegistry = []fontOption{
 	{ID: "DejaVu Sans", Label: "DejaVu Sans"},
 }
 
-// cursorRegistry is the allow-list for edit-view cursor display modes.
-var cursorRegistry = []fontOption{
-	{ID: "subtle", Label: "Subtle"},
-	{ID: "solid", Label: "Solid"},
-	{ID: "hidden", Label: "Hidden"},
-}
-
 var (
 	settingsMu  sync.Mutex
-	curSettings = settingsData{ReadFont: "Inter", PinDigits: "6", CursorMode: "subtle"}
+	curSettings = settingsData{ReadFont: "Inter", PinDigits: "6"}
 )
 
 // globalEC is set in main() so settingsHandler can push font changes to the
@@ -727,9 +710,6 @@ func loadSettings() {
 		}
 		if s.PinDigits == "" {
 			s.PinDigits = "6" // upgrade: existing font-only settings.json had no pin field
-		}
-		if s.CursorMode == "" {
-			s.CursorMode = "subtle" // upgrade: older settings.json had no cursor field
 		}
 		curSettings = s
 	}
@@ -765,22 +745,18 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		settingsMu.Lock()
 		resp := struct {
-			ReadFont   string       `json:"readFont"`
-			Fonts      []fontOption `json:"fonts"`
-			PinDigits  string       `json:"pinDigits"`
-			PinOpts    []string     `json:"pinOpts"`
-			CursorMode string       `json:"cursorMode"`
-			CursorOpts []fontOption `json:"cursorOpts"`
-		}{curSettings.ReadFont, fontRegistry, curSettings.PinDigits, []string{"6", "4", "none"},
-			curSettings.CursorMode, cursorRegistry}
+			ReadFont  string       `json:"readFont"`
+			Fonts     []fontOption `json:"fonts"`
+			PinDigits string       `json:"pinDigits"`
+			PinOpts   []string     `json:"pinOpts"`
+		}{curSettings.ReadFont, fontRegistry, curSettings.PinDigits, []string{"6", "4", "none"}}
 		settingsMu.Unlock()
 		json.NewEncoder(w).Encode(resp) //nolint:errcheck
 
 	case http.MethodPost:
 		var req struct {
-			ReadFont   string `json:"readFont"`
-			PinDigits  string `json:"pinDigits"`
-			CursorMode string `json:"cursorMode"`
+			ReadFont  string `json:"readFont"`
+			PinDigits string `json:"pinDigits"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "bad request", http.StatusBadRequest)
@@ -859,34 +835,6 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 				Expires:  exp,
 				MaxAge:   int(time.Until(exp).Seconds()),
 			})
-		}
-		if req.CursorMode != "" {
-			// Validate against registry -- prevents arbitrary value injection.
-			valid := false
-			for _, c := range cursorRegistry {
-				if c.ID == req.CursorMode {
-					valid = true
-					break
-				}
-			}
-			if !valid {
-				http.Error(w, "unknown cursor mode", http.StatusBadRequest)
-				return
-			}
-			settingsMu.Lock()
-			curSettings.CursorMode = req.CursorMode
-			saveSettingsLocked()
-			cm := curSettings.CursorMode
-			settingsMu.Unlock()
-			// Push to editor if a connection is alive.
-			if globalEC != nil {
-				cmd, _ := json.Marshal(struct {
-					T    string `json:"t"`
-					C    string `json:"c"`
-					Mode string `json:"mode"`
-				}{"cmd", "setcursor", cm})
-				globalEC.write(cmd)
-			}
 		}
 		w.WriteHeader(http.StatusOK)
 
