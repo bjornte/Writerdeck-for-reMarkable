@@ -8,6 +8,8 @@ Background: The reMarkable 1 has a large, nice e-ink screen and a distraction-fr
 
 See the [r/writerDeck](https://www.reddit.com/r/writerDeck/) community for more on distraction-free writing.
 
+The project is 99% vibe coded and 1% code reviewed. I (the repo owner, Bjørn) have mostly just herded Claude and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (slightly patched) and an injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
+
 ## How it works
 
 ```
