@@ -47,6 +47,32 @@ The four standing docs are linked just above. The rest of the tree:
 | [docs/](docs/) | Architecture, decisions, setup notes, and recon logs |
 | [secrets/](secrets/) | Local credentials — gitignored; see [secrets/README.md](secrets/README.md) |
 
+## Installation guide for (expert) users
+
+1. Clone this repo. Copy [secrets/remarkable.local.env.example](secrets/remarkable.local.env.example) to `remarkable.local.env` and fill in the device password (tablet: Settings → Help → Copyrights and licenses → General information).
+2. `bash scripts/bootstrap.sh` — installs your SSH key on the tablet.
+3. `bash scripts/deploy-keywriter.sh` — ships the editor (binary + Qt runtime, built by this repo's CI into `third_party/keywriter/dist/`).
+4. `bash scripts/deploy.sh` — cross-builds and ships the `rmkbd` daemon.
+5. `bash scripts/install-service.sh` (on the Mac) installs the systemd unit. Then SSH into the tablet (`ssh root@<ip>`) and run `systemctl start rm1-writerdeck` to test, then `systemctl enable rm1-writerdeck` to boot straight into it. Enable only after the test passes — see the script's boot-loop note.
+
+## How-to for users incl. shortcuts
+
+1. Power on the tablet — it boots into a Lobby showing its address (`http://<ip>:8000`) and a one-time PIN.
+2. Open that address in the phone's browser, and enter the PIN.
+3. Pair a physical keyboard to your phone.
+4. Tap a note to read it, or Edit to type — keystrokes land on the e-ink and save as `.md`. New makes a note; Rename / Delete / Download / Copy live in the read view; ⚙ picks the reading font and PIN length (6 / 4 / off).
+
+Shortcuts — your keyboard's own keys, forwarded as-is (Cmd and Ctrl both work):
+
+- Edit — arrows, Backspace, Enter, Tab.
+- Preview — Esc toggles the rendered read-only view on the tablet (also saves).
+- Select — Shift+Arrow; whole note Ctrl/Cmd+A.
+- Clipboard — Ctrl/Cmd+C / V / X.
+- Word jump — Ctrl/Cmd+Arrow (add Shift to select by word).
+- Switch note — Ctrl-K.
+- Paste long text — "Paste from here" in the typing view drops your clipboard at the cursor.
+- Tablet Home button — save + back to the Lobby; press Home again to exit to the stock tablet.
+
 ## Getting started for devs
 
 Development on the tablet is done over SSH from a machine on the same Wi-Fi. To get started:
