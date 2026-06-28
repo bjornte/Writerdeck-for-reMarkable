@@ -18,7 +18,7 @@ Physical keyboard → phone → Wi-Fi → web server on reMarkable → Writerdec
 
 ## Status
 
-A work in progress, but already a usable appliance. Power on and the tablet boots into a welcome Lobby showing its address and a one-time PIN. Enter that PIN on your phone and you can browse & edit notes. Text entered on the phone's keyboard lands on the e-ink and saves as Markdown. Download or copy notes off the device, and vice versa.
+Work in progress, but already a usable appliance. Power on and the tablet boots into a welcome Lobby showing its address and a one-time PIN. Enter that PIN on your phone and you can browse & edit notes. Text entered on the phone's keyboard lands on the e-ink and saves as Markdown. Download or copy notes off the device, and vice versa.
 
 ## Installation guide for (expert) users
 
