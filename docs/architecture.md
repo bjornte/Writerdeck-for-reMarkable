@@ -81,15 +81,15 @@ The tablet is the web server — the phone/Mac just open Safari, no app to insta
 Cross-compile + deploy `rmkbd` from a host that can reach the tablet over Wi-Fi:
 
 ```bash
-bash scripts/deploy.sh    # GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build + gzip-over-ssh to /home/root/
+bash scripts/deploy-rmkbd.sh    # GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build + gzip-over-ssh to /home/root/
 ```
 
-Requires Go (`brew install go` on macOS). `deploy.sh` cross-builds and deploys; `deploy.ps1` cross-builds only (no device step). keywriter is cross-built in CI (the toltec Qt sysroot), not on a host toolchain.
+Requires Go (`brew install go` on macOS). `deploy-rmkbd.sh` cross-builds and deploys; `build-rmkbd.ps1` cross-builds only (no device step). keywriter is cross-built in CI (the toltec Qt sysroot), not on a host toolchain.
 
 ## Dev-loop shortcuts (aliases via `bash scripts/install-alias.sh`)
 
 - `rmkw` (= `deploy-keywriter.sh -b`) — binary-only keywriter redeploy (~1 s): pushes just the ~205 K binary, skips re-throwing the 14 MB Qt5 sysroot (static; only changes on a Qt rebuild — then pass `RM_FORCE_SYSROOT=1`). Use after any `socket-inject.patch` / `build-keywriter.sh` change once CI has rebuilt.
-- `bash scripts/test-phase4.sh -s` — full browser→e-ink pipeline test, skipping the rmkbd build+scp (~2 s; rmkbd already on device). Drop `-s` to rebuild+redeploy rmkbd first.
+- `bash scripts/test-e2e.sh -s` — full browser→e-ink pipeline test, skipping the rmkbd build+scp (~2 s; rmkbd already on device). Drop `-s` to rebuild+redeploy rmkbd first.
 - `rmpush "msg"` (= `push.sh`/`push.ps1`) — commit+push under the personal identity.
 - `rmkbd -v` — per-key inject logging for keymap debugging; default is terse (connects + a count every 25 keys).
 - SSH preflight pings first, so the scripts tell *tablet asleep* from *missing key*.

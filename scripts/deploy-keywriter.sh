@@ -32,7 +32,7 @@
 #   bash scripts/deploy-keywriter.sh
 #   bash scripts/deploy-keywriter.sh 192.168.1.8   # explicit target
 #   bash scripts/deploy-keywriter.sh -b                 # binary-only fast deploy (~1s); same as RM_BINARY_ONLY=1
-#   RM_BINARY_ONLY=1 bash scripts/deploy-keywriter.sh   # push only the 205K binary + launch script (~1s); skip Qt5 sysroot AND the launch/verdict ceremony (terse); then: test-phase4.sh -s
+#   RM_BINARY_ONLY=1 bash scripts/deploy-keywriter.sh   # push only the 205K binary + launch script (~1s); skip Qt5 sysroot AND the launch/verdict ceremony (terse); then: test-e2e.sh -s
 #   RM_FORCE_SYSROOT=1 bash scripts/deploy-keywriter.sh # force re-push of Qt5 tarball (after Qt rebuild)
 
 set -euo pipefail
@@ -202,11 +202,11 @@ echo
 # Binary-only fast loop: the binary + launch script are deployed. Skip the
 # launch + verdict ceremony below -- it is a transient render-gate smoke test
 # (launch, wait 8 s, kill, restore xochitl) that is redundant with
-# test-phase4.sh, which launches keywriter AND rmkbd and holds them. Exiting
+# test-e2e.sh, which launches keywriter AND rmkbd and holds them. Exiting
 # here keeps the iteration loop ~1 s and the output to a few lines.
 if [ "$RM_BINARY_ONLY" = "1" ]; then
     echo "Binary-only deploy done: /home/root/keywriter + launch-keywriter.sh updated."
-    echo "Next: bash scripts/test-phase4.sh -s"
+    echo "Next: bash scripts/test-e2e.sh -s"
     exit 0
 fi
 

@@ -8,7 +8,7 @@ Local-only credentials for rM1-Writerdeck. Nothing real in here is committed to 
   ```powershell
   Copy-Item secrets\remarkable.local.env.example secrets\remarkable.local.env
   ```
-- The bash device scripts (`bootstrap.sh`, `recon.sh`, `deploy.sh`, `deploy-keywriter.sh`) read `remarkable.local.env` via `_env.sh`.
+- The bash device scripts (`bootstrap.sh`, `recon.sh`, `deploy-rmkbd.sh`, `deploy-keywriter.sh`) read `remarkable.local.env` via `_env.sh`.
 
 ## What's stored
 | Key | Meaning |

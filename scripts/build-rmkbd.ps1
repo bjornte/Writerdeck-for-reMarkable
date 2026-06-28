@@ -1,9 +1,9 @@
-# scripts/deploy.ps1 -- Cross-build rmkbd (ARMv7 static) on Windows.
+# scripts/build-rmkbd.ps1 -- Cross-build rmkbd (ARMv7 static) on Windows.
 # The ThinkPad cannot reach the device (Always-On VPN), so this script only
-# builds the binary. Device deployment requires the Mac -- run deploy.sh there.
+# builds the binary. Device deployment requires the Mac -- run deploy-rmkbd.sh there.
 #
 # Usage (from repo root):
-#   .\scripts\deploy.ps1
+#   .\scripts\build-rmkbd.ps1
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -27,4 +27,4 @@ try {
 Write-Host ""
 Write-Host "ThinkPad cannot reach the device (VPN)."
 Write-Host "To deploy, commit + push, then on the Mac run:"
-Write-Host "  bash scripts/deploy.sh"
+Write-Host "  bash scripts/deploy-rmkbd.sh"
