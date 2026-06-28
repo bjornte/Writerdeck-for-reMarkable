@@ -8,15 +8,15 @@ Background: The reMarkable 1 has a large, nice e-ink screen and a distraction-fr
 
 See the [r/writerDeck](https://www.reddit.com/r/writerDeck/) community for more on distraction-free writing.
 
-The project is 99% vibe coded and 1% code reviewed. I (the repo owner, Bjørn) have mostly just herded Claude and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (slightly patched) and an injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
+The project is 99% vibe coded and 1% code reviewed. I (the repo owner, Bjørn) have mostly just herded Claude and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (slightly patched) and a key-press injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
 
 ## How it works
 
 ```
-A physical keyboard → your phone → Wi-Fi → a web server on the reMarkable → the keywriter editor (patched) → your Markdown files
+Physical keyboard → phone → Wi-Fi → web server on reMarkable → Writerdeck editor
 ```
 
-Three pieces, only the first of which is built here:
+Three pieces — the daemon and client are built here, the editor is third-party (patched):
 
 - rmkbd — a small, static Go daemon running on the tablet. It serves an HTML capture page and a WebSocket, then forwards the keystrokes it receives into a local socket.
 - keywriter — the third-party [keywriter](https://github.com/dps/remarkable-keywriter) editor, patched to read that socket. A full-screen, distraction-free Markdown editor that saves `.md` on the tablet.
@@ -62,16 +62,10 @@ The four standing docs are linked just above. The rest of the tree:
 3. Pair a physical keyboard to your phone.
 4. Tap a note to read it, or Edit to type — keystrokes land on the e-ink and save as `.md`. New makes a note; Rename / Delete / Download / Copy live in the read view; ⚙ picks the reading font and PIN length (6 / 4 / off).
 
-Shortcuts — your keyboard's own keys, forwarded as-is (Cmd and Ctrl both work):
+Shortcuts:
 
-- Edit — arrows, Backspace, Enter, Tab.
-- Preview — Esc toggles the rendered read-only view on the tablet (also saves).
-- Select — Shift+Arrow; whole note Ctrl/Cmd+A.
-- Clipboard — Ctrl/Cmd+C / V / X.
-- Word jump — Ctrl/Cmd+Arrow (add Shift to select by word).
-- Switch note — Ctrl-K.
-- Paste long text — "Paste from here" in the typing view drops your clipboard at the cursor.
-- Tablet Home button — save + back to the Lobby; press Home again to exit to the stock tablet.
+- Esc — toggles edit / preview on the tablet.
+- Ctrl-K — Switch note.
 
 ## Getting started for devs
 
