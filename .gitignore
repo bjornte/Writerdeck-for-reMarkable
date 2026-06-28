@@ -20,6 +20,12 @@ id_ed25519*
 *.key
 
 # ──────────────────────────────────────────────────────────────
+# Personal / local-only docs — kept on disk for the two-machine
+# workflow, but not published. (See the file's own header.)
+# ──────────────────────────────────────────────────────────────
+docs/dev-behind-firewall-howto.md
+
+# ──────────────────────────────────────────────────────────────
 # Build artifacts (the Go daemon and friends)
 # ──────────────────────────────────────────────────────────────
 /rmkbd
