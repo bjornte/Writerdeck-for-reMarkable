@@ -2,6 +2,8 @@
 
 A text editor for the reMarkable 1, with a bridge for a physical keyboard. Pair a keyboard to another device — your phone, say — and type over Wi-Fi onto the tablet's e-ink, saving Markdown.
 
+![Writerdeck for reMarkable 1](docs/Writerdeck-for-reMarkable.jpg)
+
 Background: The reMarkable 1 has a large, nice e-ink screen and a distraction-free OS, but no Bluetooth or keyboard support, and no way to create typed documents. This Writerdeck fills the gap.
 
 See the [r/writerDeck](https://www.reddit.com/r/writerDeck/) community for more on distraction-free writing.
