@@ -14,6 +14,12 @@ if [ ! -f "$_SECRETS" ]; then
   return 1 2>/dev/null || exit 1
 fi
 
+# Red error helper: bold-red on a TTY, plain when piped/tee'd to a recon log.
+# Usage: err "message"   (prints to stderr)
+if [ -t 2 ]; then RM_RED=$'\033[1;31m'; RM_RST=$'\033[0m'; else RM_RED=''; RM_RST=''; fi
+err() { printf '%sERROR:%s %s\n' "$RM_RED" "$RM_RST" "$*" >&2; }
+export RM_RED RM_RST
+
 # Extract a KEY's value: strip inline comments + trailing whitespace.
 _get_env() {
   sed -n -E "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*([^#]*).*/\1/p" "$_SECRETS" \

@@ -12,6 +12,9 @@
 #   bash scripts/fetch-keywriter-dist.sh            # latest successful run
 #   bash scripts/fetch-keywriter-dist.sh <run-id>   # a specific run
 set -euo pipefail
+if [ -t 2 ]; then R=$'\033[1;31m'; Z=$'\033[0m'; else R=''; Z=''; fi
+err() { printf '%sERROR:%s %s\n' "$R" "$Z" "$*" >&2; }
+command -v gh >/dev/null || { err "gh not found -- run: brew install gh && gh auth login"; exit 1; }
 DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$DIR/.." && pwd)"
 DEST="$REPO/third_party/keywriter/dist"
