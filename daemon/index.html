@@ -755,12 +755,10 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
 
   // ---- Auth ----
 
-  // --- Settings panel (font + PIN + cursor picker) ---
+  // --- Settings panel (font + PIN picker) ---
   var currentFont = '';
   var settingsFonts = [];
   var currentPinDigits = '6';
-  var currentCursorMode = 'subtle';
-  var settingsCursorOpts = [];
 
   // Auto-advance poll: while the PIN screen is up, poll GET /api/notes every
   // ~3 s. On 200 (owner switched to no-PIN, or PIN accepted from another
@@ -813,8 +811,6 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
         currentFont = data.readFont;
         settingsFonts = data.fonts;
         currentPinDigits = data.pinDigits || '6';
-        currentCursorMode = data.cursorMode || 'subtle';
-        settingsCursorOpts = data.cursorOpts || [];
         renderSettingsList();
       })
       .catch(function() {});
@@ -876,23 +872,6 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       });
       list.appendChild(row);
     });
-
-    // ---- Cursor section ----
-    var csh = document.createElement('div');
-    csh.className = 'settings-section';
-    csh.textContent = 'Edit cursor';
-    list.appendChild(csh);
-    settingsCursorOpts.forEach(function(opt) {
-      var row = document.createElement('div');
-      row.className = 'font-row' + (opt.id === currentCursorMode ? ' active' : '');
-      var check = opt.id === currentCursorMode ? '<span class="font-check">&#10003;</span>' : '';
-      row.innerHTML = '<span>' + opt.label + '</span>' + check;
-      row.addEventListener('click', function(e) {
-        e.stopPropagation();
-        applyCursor(opt.id);
-      });
-      list.appendChild(row);
-    });
   }
 
   function applyFont(id) {
@@ -903,16 +882,6 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({readFont: id})
     }).catch(function() {}); // Go pushes setfont to the editor automatically
-  }
-
-  function applyCursor(id) {
-    currentCursorMode = id;
-    renderSettingsList(); // immediate UI feedback
-    fetch('/api/settings', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({cursorMode: id})
-    }).catch(function() {}); // Go pushes setcursor to the editor automatically
   }
 
   function showPinScreen() {

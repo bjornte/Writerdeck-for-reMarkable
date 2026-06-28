@@ -27,6 +27,10 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ❌ blocked
 
 ## Log (newest first)
 
+### 2026-06-29
+
+Phase 9 — edit cursor hidden while typing (device-verified, kept). The block cursor now vanishes while you type and returns to a full 9 px black block 500 ms after the last keystroke, or instantly on Up/Down. On e-ink this beat the alternatives (a thin gray cursor, or always-solid): a dim cursor advancing char-by-char ghosts/smears, while hiding it leaves no trail. Implemented in the editor only ([build-keywriter.sh](third_party/keywriter/build-keywriter.sh), step 7c2) — one `cursorStrong` bool, a 500 ms one-shot Timer, and a `query.onTextChanged` hide; no blink. Built A/B/A2 as a settings picker first (solid/subtle/hidden), verified hidden was best, then removed the picker (Go registry, `setcursor` cmd, QML `setCursorMode`, phone UI row) — cursor behavior is hardcoded; settings keeps font + PIN only.
+
 ### 2026-06-28
 
 Phase 9 P+L — PIN-length chooser + Lobby-on-demand (device-verified). Two features, one CI build; the durable *why* for both is in [docs/decisions.md](docs/decisions.md) #17–#18.

@@ -141,20 +141,6 @@
 +                        Q_ARG(QVariant, QString::fromStdString(family)));
 +            }
 +        }
-+        else if (cmd == "setcursor" && g_rootObj) {
-+            // {"t":"cmd","c":"setcursor","mode":"subtle"} -> setCursorMode(mode) in QML.
-+            // Values: "solid", "subtle", "hidden". Allow-list check in rmkbd (Go).
-+            auto mp = line.find("\"mode\":\"");
-+            if (mp != std::string::npos) {
-+                mp += 8;
-+                auto mq = line.find('"', mp);
-+                std::string mode = (mq != std::string::npos) ? line.substr(mp, mq - mp) : "";
-+                if (!mode.empty())
-+                    QMetaObject::invokeMethod(g_rootObj, "setCursorMode",
-+                        Qt::QueuedConnection,
-+                        Q_ARG(QVariant, QString::fromStdString(mode)));
-+            }
-+        }
 +    } else if (line.find("\"t\":\"info\"") != std::string::npos) {
 +        // {"t":"info","ip":"...","pin":"..."} -> setLobbyInfo(ip, pin) in QML.
 +        // Sent by rmkbd on every socket connect so the Lobby always shows current values.
