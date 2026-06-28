@@ -17,11 +17,17 @@ REPO="$(cd "$DIR/.." && pwd)"
 DEST="$REPO/third_party/keywriter/dist"
 
 mkdir -p "$DEST"
+# Download to a temp dir first: the artifact carries a README.md that would
+# collide with dist/README.md and abort gh's extraction. Copy only the two
+# artifacts we need (keywriter + qt5.tar.gz) over the top.
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
 if [ -n "${1:-}" ]; then
-    gh run download "$1" -n keywriter-dist -D "$DEST"
+    gh run download "$1" -n keywriter-dist -D "$TMP"
 else
-    gh run download -n keywriter-dist -D "$DEST"
+    gh run download -n keywriter-dist -D "$TMP"
 fi
+cp -f "$TMP/keywriter" "$TMP/qt5.tar.gz" "$DEST/"
 
 echo "Fetched into $DEST:"
 ls -lh "$DEST/keywriter" "$DEST/qt5.tar.gz"
