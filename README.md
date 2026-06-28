@@ -25,7 +25,7 @@ Work in progress, but already a usable appliance. Power on and the tablet boots 
 1. Clone this repo. Copy [secrets/remarkable.local.env.example](secrets/remarkable.local.env.example) to `remarkable.local.env` and fill in the device password (tablet: Settings → Help → Copyrights and licenses → General information).
 2. `bash scripts/bootstrap.sh` — installs your SSH key on the tablet.
 3. `bash scripts/deploy-keywriter.sh` — ships the editor (binary + Qt runtime, built by this repo's CI into `third_party/keywriter/dist/`).
-4. `bash scripts/deploy.sh` — cross-builds and ships the `rmkbd` daemon.
+4. `bash scripts/deploy-rmkbd.sh` — cross-builds and ships the `rmkbd` daemon.
 5. `bash scripts/install-service.sh` (on the Mac) installs the systemd unit. Then SSH into the tablet (`ssh root@<ip>`) and run `systemctl start rm1-writerdeck` to test, then `systemctl enable rm1-writerdeck` to boot straight into it. Enable only after the test passes — see the script's boot-loop note.
 
 ## How-to for users incl. shortcuts

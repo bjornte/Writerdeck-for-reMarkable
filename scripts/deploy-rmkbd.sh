@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# scripts/deploy.sh -- Cross-build rmkbd (ARMv7 static) and copy to the device.
+# scripts/deploy-rmkbd.sh -- Cross-build rmkbd (ARMv7 static) and copy to the device.
 # Run from the repo root on the Mac (the only machine that can reach the tablet).
 #
 # Usage:
-#   bash scripts/deploy.sh               # build + deploy + kill any running rmkbd
-#   bash scripts/deploy.sh --build-only  # just build; no device connection needed
+#   bash scripts/deploy-rmkbd.sh               # build + deploy + kill any running rmkbd
+#   bash scripts/deploy-rmkbd.sh --build-only  # just build; no device connection needed
 #
 # Requires: go (1.21+) on the Mac.
 
@@ -51,5 +51,5 @@ echo "======================================"
 echo "  DEPLOY DONE"
 echo "======================================"
 echo "  Binary : /home/root/rmkbd"
-echo "  Next   : bash scripts/test-phase4.sh"
+echo "  Next   : bash scripts/test-e2e.sh"
 echo "======================================"

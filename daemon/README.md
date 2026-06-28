@@ -20,6 +20,6 @@ daemon/
 ## Build & deploy
 Static ARMv7 (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). Deploys originate on the Mac — the only host that reaches the tablet:
 ```bash
-bash ../scripts/deploy.sh      # cross-build + ship to /home/root/  (rmkw = binary-only redeploy)
+bash ../scripts/deploy-rmkbd.sh      # cross-build + ship to /home/root/  (rmkw = binary-only redeploy)
 ```
-The ThinkPad can cross-build for a compile check (`../scripts/deploy.ps1`) but can't reach the device.
+The ThinkPad can cross-build for a compile check (`../scripts/build-rmkbd.ps1`) but can't reach the device.

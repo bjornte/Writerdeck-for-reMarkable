@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/test-phase4.sh -- Phase 4 end-to-end device test.
+# scripts/test-e2e.sh -- end-to-end device test (browser -> e-ink).
 #
 # Proves the browser capture client: a human types from the Mac browser
 # into keywriter on the e-ink.  No websocat needed -- the daemon now
@@ -20,10 +20,10 @@
 #   - CI-built keywriter on device (run deploy-keywriter.sh at least once)
 #
 # Usage (from repo root on the Mac):
-#   bash scripts/test-phase4.sh
-#   bash scripts/test-phase4.sh -s            # skip build+scp (~2s loop); rmkbd already on device
-#   bash scripts/test-phase4.sh -v            # verbose: log every translated key (keymap debugging)
-#   bash scripts/test-phase4.sh 192.168.1.9   # explicit target
+#   bash scripts/test-e2e.sh
+#   bash scripts/test-e2e.sh -s            # skip build+scp (~2s loop); rmkbd already on device
+#   bash scripts/test-e2e.sh -v            # verbose: log every translated key (keymap debugging)
+#   bash scripts/test-e2e.sh 192.168.1.9   # explicit target
 
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -46,10 +46,10 @@ PORT=8000
 RECON_DIR="$REPO/docs/recon"
 mkdir -p "$RECON_DIR"
 TS="$(date +%Y-%m-%dT%H-%M-%S)"
-LOG="$RECON_DIR/test-phase4-$TS.txt"
+LOG="$RECON_DIR/test-e2e-$TS.txt"
 exec > >(tee "$LOG") 2>&1
 
-echo "=== test-phase4  $TS  target=$TARGET ==="
+echo "=== test-e2e  $TS  target=$TARGET ==="
 echo
 
 # ---------------------------------------------------------------------------
@@ -169,4 +169,4 @@ echo "--- Phase 4 verdict ---"
 echo "  If typed text appeared on the e-ink: Phase 4 DONE-WHEN gate is GREEN."
 echo "  Check scratch.md above for what keywriter saved."
 echo "  Full log: $LOG"
-echo "  Sync back: rmpush 'test-phase4 result'"
+echo "  Sync back: rmpush 'test-e2e result'"
