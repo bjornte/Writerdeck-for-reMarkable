@@ -8,7 +8,7 @@ Background: The reMarkable 1 has a large, nice e-ink screen and a distraction-fr
 
 See the [r/writerDeck](https://www.reddit.com/r/writerDeck/) community for more on distraction-free writing.
 
-The project is 99% vibe coded and 1% code reviewed. I (the repo owner, Bjørn) have mostly just herded Claude and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (slightly patched) and a key-press injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
+The project is 99% vibe coded and 1% code reviewed. I (the repo owner, Bjørn) have mostly just herded Claude and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (slightly patched) and a keypress injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
 
 ## How it works
 
@@ -16,36 +16,9 @@ The project is 99% vibe coded and 1% code reviewed. I (the repo owner, Bjørn) h
 Physical keyboard → phone → Wi-Fi → web server on reMarkable → Writerdeck editor
 ```
 
-Three pieces — the daemon and client are built here, the editor is third-party (patched):
-
-- rmkbd — a small, static Go daemon running on the tablet. It serves an HTML capture page and a WebSocket, then forwards the keystrokes it receives into a local socket.
-- keywriter — the third-party [keywriter](https://github.com/dps/remarkable-keywriter) editor, patched to read that socket. A full-screen, distraction-free Markdown editor that saves `.md` on the tablet.
-- the client — a browser page (served by rmkbd) that captures keystrokes and sends them over the LAN. A laptop stands in during development; an iPhone with a Bluetooth keyboard is the goal.
-
-Keystrokes reach the editor through a local socket rather than `/dev/uinput`: this tablet's kernel can't load uinput, so the daemon feeds the patched keywriter instead. The reasoning is in [docs/decisions.md](docs/decisions.md).
-
 ## Status
 
-A work in progress, built phase by phase — but already a usable appliance. Power on and the tablet boots into a welcome Lobby showing its address and a one-time PIN. Enter that PIN on your phone and you can browse, create, rename, and edit notes — typing on the phone's keyboard while the words land on the e-ink and save as `.md`, with modifiers and copy/paste. Read a note back, then download it or copy it off the device. The physical Home button steps out to the stock tablet.
-
-The build work is essentially done; only optional polish remains. The living detail is in a few short files — start there:
-
-- The plan — what's left → [TODO.md](TODO.md)
-- How it works — architecture, environment, the dev loop → [docs/architecture.md](docs/architecture.md)
-- Why — the architecture decision record → [docs/decisions.md](docs/decisions.md)
-- What's done — the dated progress log → [DONE.md](DONE.md)
-
-## Repo layout
-
-The four standing docs are linked just above. The rest of the tree:
-
-| Path | What's there |
-|---|---|
-| [daemon/](daemon/) | The Go `rmkbd` daemon: WebSocket, editor-feed socket, embedded capture page |
-| [third_party/](third_party/) | The keywriter editor, cross-built from source in CI |
-| [scripts/](scripts/) | Cross-platform automation — PowerShell + bash twins (bootstrap, recon, deploy, test) |
-| [docs/](docs/) | Architecture, decisions, setup notes, and recon logs |
-| [secrets/](secrets/) | Local credentials — gitignored; see [secrets/README.md](secrets/README.md) |
+A work in progress, but already a usable appliance. Power on and the tablet boots into a welcome Lobby showing its address and a one-time PIN. Enter that PIN on your phone and you can browse & edit notes. Text entered on the phone's keyboard lands on the e-ink and saves as Markdown. Download or copy notes off the device, and vice versa.
 
 ## Installation guide for (expert) users
 
@@ -77,11 +50,36 @@ Development on the tablet is done over SSH from a machine on the same Wi-Fi. To 
 
 ## Design constraints
 
-A few rules shape every decision here:
-
 - No jailbreak, and preserve over-the-air firmware updates — so no Toltec.
 - No runtime dependencies on the tablet — just one static Go binary (`CGO_ENABLED=0`, ARMv7).
-- Markdown is the save format.
+
+
+## Main components
+
+Three pieces — the daemon and client are built here, the editor is third-party (patched):
+
+- rmkbd — a small, static Go daemon running on the tablet. It serves an HTML capture page and a WebSocket, then forwards the keystrokes it receives into a local socket.
+- the client — a browser page (served by rmkbd) that captures keystrokes and sends them over the LAN.
+- keywriter — the third-party [keywriter](https://github.com/dps/remarkable-keywriter) editor, patched to read that socket. A full-screen, distraction-free Markdown editor that saves `.md` on the tablet.
+
+Keystrokes reach the editor through a local socket rather than `/dev/uinput`: this tablet's kernel can't load uinput, so the daemon feeds the patched keywriter instead. The reasoning is in [docs/decisions.md](docs/decisions.md).
+
+
+## Repo layout
+
+- [Architecture](docs/architecture.md)
+- [Architecture decision record (ADR)](docs/decisions.md)
+- [Todo](TODO.md)
+- [Done](DONE.md)
+
+| Path | What's there |
+|---|---|
+| [daemon/](daemon/) | The Go `rmkbd` daemon: WebSocket, editor-feed socket, embedded capture page |
+| [third_party/](third_party/) | The keywriter editor, cross-built from source in CI |
+| [scripts/](scripts/) | Cross-platform automation — PowerShell + bash twins (bootstrap, recon, deploy, test) |
+| [docs/](docs/) | Architecture, decisions, setup notes, and recon logs |
+| [secrets/](secrets/) | Local credentials — gitignored; see [secrets/README.md](secrets/README.md) |
+
 
 ## License
 
