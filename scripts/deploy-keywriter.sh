@@ -98,13 +98,13 @@ QT5_TGZ="$DIST/qt5.tar.gz"
 
 echo "--- Pre-flight checks ---"
 if [ ! -f "$BINARY" ]; then
-    echo "ERROR: $BINARY not found." >&2
+    err "$BINARY not found."
     echo "  Run the CI build first (workflow: build-keywriter.yml)" >&2
     echo "  then: git pull" >&2
     exit 1
 fi
 if [ ! -f "$QT5_TGZ" ]; then
-    echo "ERROR: $QT5_TGZ not found." >&2
+    err "$QT5_TGZ not found."
     echo "  Run the CI build first (workflow: build-keywriter.yml)" >&2
     echo "  then: git pull" >&2
     exit 1
@@ -117,13 +117,13 @@ echo
 # Ping first: distinguishes "asleep / Wi-Fi dropped" from "missing SSH key".
 echo "--- Testing SSH key login to $TARGET ---"
 if ! ping -c1 -W2 "$TARGET" >/dev/null 2>&1; then
-    echo "ERROR: $TARGET is unreachable (ping failed)." >&2
+    err "$TARGET is unreachable (ping failed)."
     echo "  The reMarkable is probably asleep -- wake it and try again." >&2
     echo "  (If it's awake but on a different IP, update RM_HOST_WIFI in secrets/remarkable.local.env.)" >&2
     exit 1
 fi
 if ! rm_test_key "$TARGET"; then
-    echo "ERROR: key-based SSH to root@$TARGET failed (device is reachable)." >&2
+    err "key-based SSH to root@$TARGET failed (device is reachable)."
     echo "  Run: bash scripts/bootstrap.sh  to install the key." >&2
     exit 1
 fi
