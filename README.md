@@ -38,7 +38,7 @@ A work in progress, but already a usable appliance. Power on and the tablet boot
 Shortcuts:
 
 - Esc — toggles edit / preview on the tablet.
-- Ctrl-K — Switch note.
+- Ctrl-K — Switch note from within edit view.
 
 ## Getting started for devs
 
