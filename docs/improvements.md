@@ -4,7 +4,7 @@
 * General
    * Power button should be functional
    * Files could be encrypted
-   * could sync markdown to user's (private) GitHub repo
+   * Could sync Markdown to user's (private) GitHub repo
 * In reading view:
    * Paragraph distances could be greater. Postponed.
 * In Edit view
@@ -14,7 +14,8 @@
    * Maybe also a block to the left of the in-focus line
    * Interface for navigating to headlines
    * Status bar with affordances for: Title, terse confirmations, zooming, time
-* In lobby: on boot, refresh at intervals until on wifi, then update URL (starts with "?") 
+* In lobby:
+   * UX bug: On boot, URL shows "?". Fix: Refresh at intervals until on Wi-Fi, then update URL
 
 ## In browser
 * On the settings screen
