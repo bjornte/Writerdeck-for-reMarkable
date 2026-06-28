@@ -389,6 +389,92 @@ s, nboot = re.subn(
 )
 assert nboot == 1, "Component.onCompleted doLoad pattern not found (edit 7k)"
 
+# 7c2. Cursor state: dim while typing, strong while idle / navigating.
+#      cursorHideWhenTyping controls the typing look (toggle to switch A/A2):
+#        false (default, option A):  thin 2 px wide, gray #888 while typing.
+#        true  (option A2):          cursor invisible while typing.
+#      In both cases the cursor returns to the full 9 px black block 500 ms
+#      after the last keystroke (Timer added in step 8b), or immediately on
+#      Up/Down in edit mode. Blink is still intentionally absent (ghosts on e-ink).
+
+# 7c2a. Add cursor-state properties after readFont.
+assert '    property string readFont: "Inter"' in s, "readFont not found (7c2a)"
+s = s.replace(
+    '    property string readFont: "Inter"',
+    '    property string readFont: "Inter"\n'
+    '    property bool cursorStrong: true\n'
+    '    property string cursorMode: "subtle"',
+    1
+)
+
+# 7c2b. Cursor delegate: dynamic width + visible (targets 7c's 9-px block).
+#       Both properties are adjacent, so one subn covers them together.
+s, ncwv = re.subn(
+    r'width:\s*9\n(\s*visible:\s*)query\.cursorVisible',
+    r'width: cursorStrong ? 9 : (cursorMode === "hidden" ? 9 : 2)\n\1'
+    r'query.cursorVisible && (cursorStrong || cursorMode !== "hidden")',
+    s, count=1
+)
+assert ncwv == 1, "cursor delegate width+visible not found (7c2b)"
+
+# 7c2c. Cursor Rectangle color: black when strong, gray when typing.
+s, ncc = re.subn(
+    r'(anchors\.fill:\s*parent)\n(\s*color:\s*)"black"',
+    r'\1\n\2cursorStrong ? "black" : "#888888"',
+    s, count=1
+)
+assert ncc == 1, "cursor Rectangle color not found (7c2c)"
+
+# 7c2d. Arrow Down in edit mode -> strong cursor immediately.
+old_kd = (
+    'case Qt.Key_Down:\n'
+    '                            if (mode == 0)\n'
+    '                                flick.scrollDown()\n'
+    '                            break'
+)
+new_kd = (
+    'case Qt.Key_Down:\n'
+    '                            if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
+    '                            if (mode == 0)\n'
+    '                                flick.scrollDown()\n'
+    '                            break'
+)
+assert old_kd in s, "Key_Down case not found (7c2d)"
+s = s.replace(old_kd, new_kd, 1)
+
+# 7c2e. Arrow Up in edit mode -> strong cursor immediately.
+old_ku = (
+    'case Qt.Key_Up:\n'
+    '                            if (mode == 0)\n'
+    '                                flick.scrollUp()\n'
+    '                            break'
+)
+new_ku = (
+    'case Qt.Key_Up:\n'
+    '                            if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
+    '                            if (mode == 0)\n'
+    '                                flick.scrollUp()\n'
+    '                            break'
+)
+assert old_ku in s, "Key_Up case not found (7c2e)"
+s = s.replace(old_ku, new_ku, 1)
+
+# 7c2f. Add setCursorMode() so the C++ setcursor cmd can call it at runtime.
+#       Accepts "solid", "subtle", or "hidden"; resets to strong immediately
+#       so a mode switch never leaves the cursor in a dim or invisible state.
+old7c2f = '    function initFile(name) {'
+new7c2f = (
+    '    function setCursorMode(m) {\n'
+    '        cursorMode = m\n'
+    '        cursorStrong = true\n'
+    '        cursorTimer.stop()\n'
+    '    }\n'
+    '\n'
+    '    function initFile(name) {'
+)
+assert old7c2f in s, "function initFile not found (7c2f)"
+s = s.replace(old7c2f, new7c2f, 1)
+
 # 8. Add the Lobby Rectangle at the end of the body Rectangle, after the
 #    quick (isOmni) overlay.  Anchor: the last "        }\n    }\n}" in the file
 #    = quick close (8 sp) + body close (4 sp) + Window close (0 sp).
@@ -452,9 +538,36 @@ assert end_anchor in s, "QML end structure (quick+body+Window close) not found"
 last_pos = s.rfind(end_anchor)
 s = s[:last_pos + len(quick_close)] + lobby_rect + '\n' + s[last_pos + len(quick_close):]
 
+# 8b. Cursor-state Timer and Connections: siblings of the Lobby Rectangle,
+#     inside the body Rectangle. Timer (500 ms, one-shot) sets cursorStrong=true
+#     when typing stops. Connections fires on every text change to dim the cursor
+#     and restart the timer. To switch to option A2 (invisible while typing),
+#     set cursorHideWhenTyping: true in step 7c2a and rebuild.
+body_end = '    }\n}'
+assert body_end in s, "body+Window end not found (8b)"
+last_body_pos = s.rfind(body_end)
+cursor_state_block = (
+    '        Timer {\n'
+    '            id: cursorTimer\n'
+    '            interval: 500\n'
+    '            repeat: false\n'
+    '            onTriggered: cursorStrong = true\n'
+    '        }\n'
+    '        Connections {\n'
+    '            target: query\n'
+    '            onTextChanged: {\n'
+    '                if (cursorMode !== "solid") {\n'
+    '                    cursorStrong = false\n'
+    '                    cursorTimer.restart()\n'
+    '                }\n'
+    '            }\n'
+    '        }\n'
+)
+s = s[:last_body_pos] + cursor_state_block + s[last_body_pos:]
+
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby).')
+print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-mode(solid/subtle/hidden).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true
