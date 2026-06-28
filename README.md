@@ -43,16 +43,13 @@ The four standing docs are linked just above. The rest of the tree:
 | [docs/](docs/) | Architecture, decisions, setup notes, and recon logs |
 | [secrets/](secrets/) | Local credentials — gitignored; see [secrets/README.md](secrets/README.md) |
 
-## Getting started
+## Getting started for devs
 
-Most work happens on the tablet over SSH from a machine on the same Wi-Fi. (The author's own setup splits device work across two machines bridged by git — a corporate-VPN workaround, not needed to use the project.)
+Development on the tablet is done over SSH from a machine on the same Wi-Fi. To get started:
 
-To set up device access on a fresh machine:
-
-1. Read [TODO.md](TODO.md) and [DONE.md](DONE.md) to see where things stand.
+1. [TODO.md](TODO.md), [DONE.md](DONE.md) etc. briefs on current status.
 2. Create your local credentials: copy [secrets/remarkable.local.env.example](secrets/remarkable.local.env.example) to `remarkable.local.env` and fill in the device password — see [secrets/README.md](secrets/README.md).
-3. From a machine that can reach the tablet over Wi-Fi, run `bash scripts/bootstrap.sh`, then `bash scripts/recon.sh`.
-4. Iterate over Wi-Fi (`192.168.1.8`); keep the tablet awake (it drops Wi-Fi on suspend).
+3. Run `bash scripts/bootstrap.sh`, then `bash scripts/recon.sh`. Keep the tablet awake, and iterate over Wi-Fi.
 
 ## Design constraints
 
