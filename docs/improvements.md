@@ -3,8 +3,9 @@
 ## On reMarkable
 * General
    * Power button should be functional
+   * Some sleep logic should be included
    * Files could be encrypted
-   * Could sync Markdown to user's (private) GitHub repo
+   * Could sync Markdown to user's (private) GitHub repo — see [research-github-sync.md](research-github-sync.md)
 * In reading view:
    * Paragraph distances could be greater. Postponed.
 * In Edit view
@@ -15,6 +16,8 @@
    * Status bar with affordances for: Title, terse confirmations, zooming, time
 * In lobby:
    * UX bug: On boot, URL shows "?". Fix: Refresh at intervals until on Wi-Fi, then update URL
+* In settings:
+   * possible to exit service entirely (e.g. for battery performance reasons)
 
 ## In browser
 * On the settings screen
