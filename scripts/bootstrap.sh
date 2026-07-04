@@ -7,7 +7,7 @@
 # read from secrets/remarkable.local.env. After this succeeds, no more prompts.
 #
 # If you hit a "host key changed" error after a firmware update:
-#   ssh-keygen -R 10.11.99.1 ; ssh-keygen -R 192.168.1.8
+#   bash scripts/fix-hostkey.sh
 #
 # Usage:  bash scripts/bootstrap.sh        (run from repo root)
 #         bash scripts/bootstrap.sh --skip-wifi
