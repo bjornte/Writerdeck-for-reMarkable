@@ -29,6 +29,19 @@ Work in progress, but already a usable appliance. Power on and the tablet boots 
 5. `bash scripts/deploy-rmkbd.sh` — cross-builds and ships the `rmkbd` daemon.
 6. `bash scripts/install-service.sh` (on the Mac) installs the systemd unit. Then SSH into the tablet (`ssh root@<ip>`) and run `systemctl start rm1-writerdeck` to test, then `systemctl enable rm1-writerdeck` to boot straight into it. Enable only after the test passes — see the script's boot-loop note.
 
+### Optional: GitHub syncing of notes
+
+An optional feature syncing your notes towards a repo on GitHub. The assumed use case is that the repo is personal and private. Here's how to set up the repo and enable the feature:
+
+1. Here on GitHub, create a new private repo to hold your notes
+2. Go to the [create token](https://github.com/settings/personal-access-tokens/new) page. Create a fine-grained personal access token with Repository access limited to just that repo and `Repository permissions` → `Contents: Read and write`. Copy the token.
+3. On your phone, open ⚙ → GitHub sync: turn it on, enter the repo as `owner/repo`, and paste the token. The token is kept in that browser only.
+3. The reMarkable tablet never sees the token. It only records whether sync is enabled and the name of the repo.
+
+![Create token](docs/create-token.png)
+
+Edit conflicts never overwrite: the tablet's version is kept as `note (tablet copy).md` and a banner appears on the phone so you can reconcile.
+
 ## How-to for users incl. shortcuts
 
 1. Power on the tablet — it boots into a Lobby showing its address (`http://<ip>:8000`) and a one-time PIN.
