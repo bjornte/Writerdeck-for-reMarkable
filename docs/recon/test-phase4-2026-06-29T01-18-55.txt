@@ -1,0 +1,65 @@
+=== test-phase4  2026-06-29T01-18-55  target=192.168.1.8 ===
+
+--- Building rmkbd (ARMv7 static, with embedded index.html) ---
+  built: ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), statically linked, Go BuildID=DSZ_jeOFv_a-JMQneNEA/6vknaUmbGE7atZdjpFqv/EJs9L865761qjj-E0kid/gwaT91XlaNpzhbM2BTfo, BuildID[sha1]=a88be054acb0b23a5931f308eb6b3567a77c5f03, with debug_info, not stripped
+
+--- Deploying rmkbd -> /home/root/rmkbd ---
+  ************** 70s
+  OK
+
+--- Stopping xochitl ---
+  Done.
+
+--- Launching keywriter (backgrounded on device) ---
+keywriter launched
+  Qt init: ********** 6s
+
+--- Launching rmkbd daemon (port 8000) ---
+rmkbd started
+  WS ready: **** 2s
+
+======================================
+  >> OPEN THIS IN YOUR BROWSER <<
+
+     http://192.168.1.8:8000/
+
+  1. Click the page to focus it.
+  2. Type a few sentences.
+  3. Press Esc to toggle edit mode (first time enters edit mode).
+  4. Text should appear on the e-ink screen.
+
+  WS endpoint : ws://192.168.1.8:8000/ws
+  Holding 3 min...
+======================================
+  ********** 181s
+
+--- rmkbd daemon log (/tmp/rmkbd-phase4.log) ---
+  (terse by default: connections + a periodic key count; re-run with -v for per-key detail)
+  rmkbd: no PIN required (pinDigits=none)
+  rmkbd: serving capture page on http://<device-ip>:8000/
+  rmkbd: serving WebSocket on :8000/ws
+  rmkbd: watching home button on /dev/input/event1
+  rmkbd: connected to editor socket
+  rmkbd: client connected 192.168.1.215:49834
+  rmkbd: client disconnected 192.168.1.215:49834: read tcp 192.168.1.8:8000->192.168.1.215:49834: read: connection reset by peer (0 keys forwarded)
+
+--- keywriter Qt log (last 20 lines) ---
+  "/home/root"
+  QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-root'
+  qrc:/main.qml:442:9: QML Connections: Implicitly defined onFoo properties in Connections are deprecated. Use this syntax instead: function onFoo(<arguments>) { ... }
+  QFSFileEngine::map: Mapping a file beyond its size is not portable
+  Framebuffer initialized: QImage(QSize(1404, 1872),format=QImage::Format_RGB16,depth=16,devicePixelRatio=1,bytesPerLine=2816,sizeInBytes=5271552) 10813440
+
+--- scratch.md on device ---
+  (not found)
+
+--- Phase 4 verdict ---
+  If typed text appeared on the e-ink: Phase 4 DONE-WHEN gate is GREEN.
+  Check scratch.md above for what keywriter saved.
+  Full log: /Users/bjornte/dev/Writerdeck-for-reMarkable/docs/recon/test-phase4-2026-06-29T01-18-55.txt
+  Sync back: rmpush 'test-phase4 result'
+
+--- Cleanup ---
+  rmkbd stopped.
+  keywriter stopped.
+  xochitl restored.
