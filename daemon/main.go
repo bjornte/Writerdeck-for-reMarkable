@@ -567,7 +567,7 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, DELETE, PATCH, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, DELETE, PATCH, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		return
 	}
@@ -627,6 +627,27 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusNoContent)
 
+	case http.MethodPut:
+		// Upsert: write or overwrite content. Used by the sync engine to apply a
+		// version pulled from GitHub. 2 MiB limit matches POST /api/notes.
+		r.Body = http.MaxBytesReader(w, r.Body, 2<<20)
+		var putReq struct {
+			Content string `json:"content"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&putReq); err != nil {
+			http.Error(w, "bad request: need {content}", http.StatusBadRequest)
+			return
+		}
+		if err := os.MkdirAll(notesDirPath, 0755); err != nil {
+			http.Error(w, "cannot create notes dir", http.StatusInternalServerError)
+			return
+		}
+		if err := os.WriteFile(p, []byte(putReq.Content), 0644); err != nil {
+			http.Error(w, "write failed", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+
 	case http.MethodPatch:
 		// Rename: body {"name":"new-name.md"}
 		var req struct {
@@ -666,6 +687,27 @@ var settingsFilePath = "/home/root/.rmkbd/settings.json"
 type settingsData struct {
 	ReadFont  string `json:"readFont"`
 	PinDigits string `json:"pinDigits"` // "6", "4", or "none"; default "6"
+	SyncOn    bool   `json:"syncOn"`    // GitHub two-way sync enabled
+	SyncRepo  string `json:"syncRepo"`  // "owner/repo" of the notes repo; token never stored here
+}
+
+// isValidGitHubRepo returns true iff repo is a non-empty "owner/repo" string
+// where both parts contain only characters valid in GitHub owner/repo names.
+func isValidGitHubRepo(repo string) bool {
+	parts := strings.SplitN(repo, "/", 3)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return false
+	}
+	valid := func(s string) bool {
+		for _, c := range s {
+			if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+				(c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.') {
+				return false
+			}
+		}
+		return true
+	}
+	return valid(parts[0]) && valid(parts[1])
 }
 
 // fontOption is one entry in the reading-view font picker.
@@ -749,14 +791,19 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 			Fonts     []fontOption `json:"fonts"`
 			PinDigits string       `json:"pinDigits"`
 			PinOpts   []string     `json:"pinOpts"`
-		}{curSettings.ReadFont, fontRegistry, curSettings.PinDigits, []string{"6", "4", "none"}}
+			SyncOn    bool         `json:"syncOn"`
+			SyncRepo  string       `json:"syncRepo"`
+		}{curSettings.ReadFont, fontRegistry, curSettings.PinDigits, []string{"6", "4", "none"},
+			curSettings.SyncOn, curSettings.SyncRepo}
 		settingsMu.Unlock()
 		json.NewEncoder(w).Encode(resp) //nolint:errcheck
 
 	case http.MethodPost:
 		var req struct {
-			ReadFont  string `json:"readFont"`
-			PinDigits string `json:"pinDigits"`
+			ReadFont  string  `json:"readFont"`
+			PinDigits string  `json:"pinDigits"`
+			SyncOn    *bool   `json:"syncOn"`
+			SyncRepo  *string `json:"syncRepo"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "bad request", http.StatusBadRequest)
@@ -835,6 +882,23 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 				Expires:  exp,
 				MaxAge:   int(time.Until(exp).Seconds()),
 			})
+		}
+		if req.SyncRepo != nil {
+			repo := *req.SyncRepo
+			if repo != "" && !isValidGitHubRepo(repo) {
+				http.Error(w, `syncRepo must be "owner/repo"`, http.StatusBadRequest)
+				return
+			}
+			settingsMu.Lock()
+			curSettings.SyncRepo = repo
+			saveSettingsLocked()
+			settingsMu.Unlock()
+		}
+		if req.SyncOn != nil {
+			settingsMu.Lock()
+			curSettings.SyncOn = *req.SyncOn
+			saveSettingsLocked()
+			settingsMu.Unlock()
 		}
 		w.WriteHeader(http.StatusOK)
 
