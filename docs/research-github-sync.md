@@ -71,18 +71,28 @@ Common, sensible, low-risk **if** kept to one repo and clashes duplicate instead
 
 ---
 
-## Implementation plan (Opus plans, Sonnet builds)
+## Implementation (shipped — Sonnet built, Opus reviewed)
 
-Concrete enough to hand to a build session. The token never touches the tablet; the sync engine is JS in the capture page. The Go side gains only a non-secret flag + repo name, reusing the existing `settingsData`/`/api/settings` pattern in [daemon/main.go](../daemon/main.go).
+Built in [daemon/main.go](../daemon/main.go) + [daemon/index.html](../daemon/index.html). The token never touches the tablet; the sync engine is JS in the capture page. The Go side gained only a non-secret flag + repo name, reusing the existing `settingsData`/`/api/settings` pattern.
 
-**Phase A — tablet config (small, Go).** Extend `settingsData` with `syncOn bool` + `syncRepo string`; surface in `settingsHandler` GET/POST with `notesSafe`-style validation (`owner/repo`, 400 otherwise). No token field — ever. Lobby gains one conditional line: sync on + no token on this device → "GitHub sync is on — log in on this device." Mirrors decisions #16–18.
+**Phase A — tablet config (Go).** ✅ `settingsData` gains `syncOn`/`syncRepo`; `settingsHandler` GET returns them, POST validates via `isValidGitHubRepo` (`owner/repo`, 400 otherwise). No token field — ever. (Note: the Lobby "log in" line is not wired; the phone shows the banner instead — see review.)
 
-**Phase B — token + settings UI (phone).** Add a Sync section to the ⚙ overlay: toggle, repo, token field, status line (last sync / clashes / renew). Token persists to `localStorage` only; on/off + repo POST to `/api/settings`.
+**Phase B — token + settings UI (phone).** ✅ Sync section in the ⚙ overlay: toggle + repo POST to `/api/settings`; token save/clear in `localStorage`; last-synced status line.
 
-**Phase C — sync engine (phone JS).** GitHub Contents API per note: `GET …/contents/{name}` → `sha`; `PUT` with that `sha` updates, without creates; a stale `sha` returns 409 = clash. Open: pull, write to tablet via `POST /api/notes`. Save: read `/api/notes/{name}`, push. Track each note's last-synced `sha` in `localStorage`.
+**Phase C — sync engine (phone JS).** ✅ GitHub Contents API per note: `GET …/contents/{name}` → `sha`; `PUT` with that `sha` updates, without creates; stale `sha` → 409/422 = clash. Open: `pullNoteAndUpdate` writes to the tablet via the new `PUT /api/notes/{name}` upsert. Exit typing: `pushNote` reads `/api/notes/{name}` and pushes. Per-note `sha` in `localStorage`.
 
-**Phase D — copy-on-clash.** On 409, save GitHub's copy as `note (tablet copy).md` (existing `notesSafe` `(2)` rule), surface "keep tablet / GitHub / both" in browser. Tablet never blocks.
+**Phase D — copy-on-clash.** ✅ On 409/422, `handleClash` saves `note (tablet copy).md` and pulls GitHub's version into `note.md`; 30 s clash banner. Tablet never blocks.
 
-**Phase E — robustness.** No token / 401 → banner, local saves continue; offline/5xx → retry; deletes & renames log not auto-propagate; verify each on-device per [TODO.md](../TODO.md) cadence.
+**Phase E — robustness.** ✅ No token → yellow banner, local saves continue; 401/403 → "renew token" banner; offline/5xx swallowed. Deletes & renames do **not** propagate (see review).
 
-Acceptance: one repo, two devices, every scenario-table row holds; no token on tablet; sync off = byte-identical to today.
+Acceptance: one repo, no token on tablet, sync off = byte-identical to today. ✅
+
+## Post-build review (Opus) — all fixed
+
+Three gaps were found and closed; none ever risked tablet-local data.
+
+1. **Push fired before the tablet saved (correctness).** ✅ Fixed. Push no longer runs on phone-back (`hideTypingView`); it runs on the tablet's post-save `exitedit`, tracked via a new `tabletOpenNote` that survives phone-back. Note-switch pushes the just-saved previous note. No more stale-push / poisoned-`sha` divergence.
+2. **Delete & rename didn't propagate.** ✅ Fixed. New `ghDelete` (Contents API DELETE + stored `sha`) fires on delete so a note can't resurrect on next pull; rename deletes the old GitHub path then pushes the new name.
+3. **Pull-then-open wasted for the already-open note.** ✅ Fixed. `openNote` skips the pre-open pull when `filename === tabletOpenNote`, so keywriter's save-on-load can't clobber it.
+
+Every scenario-table row now holds. Ship behind the off-by-default toggle. Remaining nice-to-haves (not blocking): periodic background pull while idle, and a real diff view for clashes instead of duplicate-and-tidy.

@@ -224,6 +224,19 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
 .row-warn { font-size: 11px; color: #e57373; margin-top: 4px; }
 /* Allow settings box to scroll on small screens */
 #settings-box { overflow-y: auto; max-height: 80vh; }
+/* GitHub sync banners and token input */
+#sync-banner, #clash-banner {
+  margin: 8px 14px; padding: 10px 14px; border-radius: 8px;
+  font-size: 13px; line-height: 1.5;
+}
+#sync-banner  { background: #2a2000; color: #ffcc44; border: 1px solid #554400; }
+#clash-banner { background: #2a0000; color: #ff8888; border: 1px solid #550000; }
+.token-input {
+  flex: 1; font-size: 14px; padding: 8px 10px; border: 2px solid #555;
+  border-radius: 8px; background: #333; color: #eee; outline: none;
+  -webkit-appearance: none; min-width: 0;
+}
+.token-input:focus { border-color: #4caf50; }
 </style>
 </head>
 <body>
@@ -334,6 +347,11 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
   // "Edit/launch" flips this to true; Browse is the default companion view.
   var typingMode = false;
   var currentTypingFile = ''; // .md filename of the note currently open in the editor
+  // tabletOpenNote: the .md filename the tablet editor actually holds open. Unlike
+  // currentTypingFile (which tracks the phone's view and clears on phone-back), this
+  // clears only when the tablet truly saves+exits (exitedit), so the post-save GitHub
+  // push always targets the right note even after a phone-back.
+  var tabletOpenNote = '';
   var previewFilename = '';
 
   function applyMode() {
@@ -451,8 +469,14 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       try {
         var data = JSON.parse(event.data);
         if (data.type === 'exitedit') {
-          // Tablet left the edit view (Home pressed or open note deleted).
+          // Tablet left the edit view (Home pressed or open note deleted). Home
+          // SAVES the .md before broadcasting this, so now -- not phone-back -- is
+          // the correct moment to push. (On delete the push 404s harmlessly; the
+          // GitHub delete is handled in deleteNote.)
+          var saved = tabletOpenNote;
+          tabletOpenNote = '';
           if (typingMode) { hideTypingView(); }
+          if (saved) { pushNote(saved); }
         }
         // Unknown types are silently ignored -- forward-compatible.
       } catch (e) {}
@@ -468,7 +492,9 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
         if (!r.ok) throw new Error('server error');
         return r.json();
       })
-      .then(function(notes) { if (notes !== null) renderNotes(notes); })
+      .then(function(notes) {
+        if (notes !== null) { renderNotes(notes); updateSyncBannerFromState(); }
+      })
       .catch(function(err) { console.error('loadNotes failed:', err); });
   }
 
@@ -513,6 +539,7 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
     document.getElementById('typing-note').textContent = noteName;
     document.getElementById('typing').style.display = 'block';
     currentTypingFile = filename || '';
+    tabletOpenNote = filename || '';
     typingMode = true;
     applyMode();
   }
@@ -522,6 +549,9 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
   // can re-enter it by tapping Edit on any note.
   function hideTypingView(e) {
     if (e) e.stopPropagation();
+    // Phone-back only: the tablet keeps editing and has NOT saved, so we must not
+    // push here (that would ship a stale file and poison the stored SHA). The push
+    // happens on the tablet's post-save `exitedit` instead.
     currentTypingFile = '';
     typingMode = false;
     applyMode();
@@ -533,15 +563,27 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
   // openNote: POST /api/open to tell the tablet to save the current note and
   // open the chosen one; then switch the phone to the typing view.
   function openNote(filename, displayName) {
-    fetch('/api/open', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: filename })
-    }).then(function(r) {
-      if (r.status === 501) { alert('Not in supervisor mode.'); return; }
-      if (!r.ok) { alert('Could not open note (' + r.status + ').'); return; }
-      showTypingView(displayName || filename.replace(/\.md$/, ''), filename);
-    }).catch(function() { alert('Could not reach server.'); });
+    // The tablet's /api/open does saveAndLoad: it SAVES the currently-open note
+    // before loading the new one. Capture it so we can push that saved note.
+    var prev = tabletOpenNote;
+    function doOpen() {
+      fetch('/api/open', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: filename })
+      }).then(function(r) {
+        if (r.status === 501) { alert('Not in supervisor mode.'); return; }
+        if (!r.ok) { alert('Could not open note (' + r.status + ').'); return; }
+        showTypingView(displayName || filename.replace(/\.md$/, ''), filename);
+        // The note-switch just saved `prev` on the tablet -- push it to GitHub.
+        if (prev && prev !== filename) { pushNote(prev); }
+      }).catch(function() { alert('Could not reach server.'); });
+    }
+    // Skip the pre-open pull when the note is already open on the tablet:
+    // keywriter's save-on-load would immediately overwrite the pulled file.
+    if (!syncReady() || filename === tabletOpenNote) { doOpen(); return; }
+    // Pull newest GitHub version to tablet first (best-effort; open regardless of outcome).
+    pullNoteAndUpdate(filename).then(doOpen, doOpen);
   }
 
   function rewirePreviewButtons(filename, displayName) {
@@ -696,6 +738,9 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       document.getElementById('preview-title').textContent = newDisplayName;
       rewirePreviewButtons(newFilename, newDisplayName);
       loadNotes();
+      if (tabletOpenNote === filename) { tabletOpenNote = newFilename; }
+      // Propagate the rename to GitHub: delete the old path, then push the new one.
+      if (syncReady()) { ghDelete(filename).then(function() { pushNote(newFilename); }); }
     });
   }
 
@@ -704,6 +749,8 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
     fetch('/api/notes/' + encodeURIComponent(filename), { method: 'DELETE' })
       .then(function(r) {
         if (!r.ok) { alert('Could not delete note.'); return; }
+        if (tabletOpenNote === filename) { tabletOpenNote = ''; }
+        ghDelete(filename); // propagate to GitHub so it doesn't resurrect on next pull
         showList();
         loadNotes();
       });
@@ -759,6 +806,8 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
   var currentFont = '';
   var settingsFonts = [];
   var currentPinDigits = '6';
+  var syncOn = false;  // mirrors /api/settings syncOn
+  var syncRepo = '';   // mirrors /api/settings syncRepo
 
   // Auto-advance poll: while the PIN screen is up, poll GET /api/notes every
   // ~3 s. On 200 (owner switched to no-PIN, or PIN accepted from another
@@ -811,6 +860,8 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
         currentFont = data.readFont;
         settingsFonts = data.fonts;
         currentPinDigits = data.pinDigits || '6';
+        syncOn = !!data.syncOn;
+        syncRepo = data.syncRepo || '';
         renderSettingsList();
       })
       .catch(function() {});
@@ -872,6 +923,113 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       });
       list.appendChild(row);
     });
+
+    // ---- GitHub sync section ----
+    var syncHead = document.createElement('div');
+    syncHead.className = 'settings-section';
+    syncHead.textContent = 'GitHub sync';
+    list.appendChild(syncHead);
+
+    var syncToggle = document.createElement('div');
+    syncToggle.className = 'font-row' + (syncOn ? ' active' : '');
+    syncToggle.innerHTML = '<span>Sync notes to GitHub</span>' +
+      (syncOn ? '<span class="font-check">&#10003;</span>' : '');
+    syncToggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var newVal = !syncOn;
+      fetch('/api/settings', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ syncOn: newVal })
+      }).then(function(r) {
+        if (r.ok) { syncOn = newVal; renderSettingsList(); updateSyncBannerFromState(); }
+      }).catch(function(){});
+    });
+    list.appendChild(syncToggle);
+
+    if (syncOn) {
+      var repoLabel = document.createElement('div');
+      repoLabel.style.cssText = 'color:#888;font-size:12px;margin-top:6px;padding:0 2px;';
+      repoLabel.textContent = 'Private repo (owner/repo)';
+      list.appendChild(repoLabel);
+
+      var repoRow = document.createElement('div');
+      repoRow.style.cssText = 'display:flex;gap:6px;align-items:center;';
+      var repoInput = document.createElement('input');
+      repoInput.type = 'text'; repoInput.className = 'token-input';
+      repoInput.placeholder = 'e.g. alice/my-notes'; repoInput.value = syncRepo;
+      var repoSave = document.createElement('button');
+      repoSave.className = 'note-btn'; repoSave.textContent = 'Save';
+      repoSave.style.flexShrink = '0';
+      repoSave.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var val = repoInput.value.trim();
+        fetch('/api/settings', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ syncRepo: val })
+        }).then(function(r) {
+          if (!r.ok) { alert('Invalid repo \u2014 use owner/repo format.'); return; }
+          syncRepo = val;
+          repoInput.style.borderColor = '#4caf50';
+          setTimeout(function() { repoInput.style.borderColor = ''; }, 1500);
+        }).catch(function(){});
+      });
+      repoRow.appendChild(repoInput); repoRow.appendChild(repoSave);
+      list.appendChild(repoRow);
+
+      var tokLabel = document.createElement('div');
+      tokLabel.style.cssText = 'color:#888;font-size:12px;margin-top:6px;padding:0 2px;';
+      tokLabel.textContent = 'GitHub token (stays on this device \u2014 never sent to the tablet)';
+      list.appendChild(tokLabel);
+
+      var tokRow = document.createElement('div');
+      tokRow.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
+      var tokInput = document.createElement('input');
+      tokInput.type = 'password'; tokInput.className = 'token-input';
+      tokInput.placeholder = 'ghp_\u2026'; tokInput.autocomplete = 'off';
+      if (ghToken()) tokInput.value = '\u2022'.repeat(16);
+      var tokTouched = false;
+      tokInput.addEventListener('focus', function() {
+        if (!tokTouched) { tokInput.value = ''; tokTouched = true; }
+      });
+      var tokSave = document.createElement('button');
+      tokSave.className = 'note-btn'; tokSave.textContent = 'Save';
+      tokSave.style.flexShrink = '0';
+      tokSave.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var val = tokInput.value.trim();
+        if (!val) return;
+        localStorage.setItem('ghToken', val);
+        tokInput.value = '\u2022'.repeat(16); tokTouched = false;
+        tokInput.style.borderColor = '#4caf50';
+        setTimeout(function() { tokInput.style.borderColor = ''; }, 1500);
+        updateSyncBannerFromState();
+      });
+      var tokClear = document.createElement('button');
+      tokClear.className = 'note-btn danger'; tokClear.textContent = 'Clear';
+      tokClear.style.flexShrink = '0';
+      tokClear.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!confirm('Remove GitHub token from this device?')) return;
+        localStorage.removeItem('ghToken');
+        var keys = [];
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (k && (k.startsWith('ghSha_') || k.startsWith('ghPushFailed_'))) keys.push(k);
+        }
+        keys.forEach(function(k) { localStorage.removeItem(k); });
+        tokInput.value = ''; tokTouched = true;
+        updateSyncBannerFromState();
+      });
+      tokRow.appendChild(tokInput); tokRow.appendChild(tokSave); tokRow.appendChild(tokClear);
+      list.appendChild(tokRow);
+
+      var statusLine = document.createElement('div');
+      statusLine.className = 'sync-status-line';
+      statusLine.style.cssText = 'font-size:12px;color:#888;padding:4px 2px;';
+      var ls = localStorage.getItem('ghLastSync');
+      statusLine.textContent = ls ? 'Last synced: ' + ls : 'Never synced on this device';
+      list.appendChild(statusLine);
+    }
   }
 
   function applyFont(id) {
@@ -940,6 +1098,163 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       grab();
       loadNotes();
     }).catch(function() { errEl.textContent = 'Could not reach server.'; });
+  }
+
+  // ---- GitHub sync engine ----
+
+  function ghToken() { return localStorage.getItem('ghToken') || ''; }
+  function syncReady() { return syncOn && !!ghToken() && !!syncRepo; }
+
+  // UTF-8-safe base64 encode/decode (btoa/atob are ASCII-only without this wrapper).
+  function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
+  function b64decode(str) { return decodeURIComponent(escape(atob(str.replace(/\s/g, '')))); }
+
+  function ghUrl(filename) {
+    return 'https://api.github.com/repos/' + syncRepo + '/contents/' + encodeURIComponent(filename);
+  }
+  function ghHdrs() {
+    return {
+      'Authorization': 'Bearer ' + ghToken(),
+      'Accept': 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json'
+    };
+  }
+
+  function updateSyncBannerFromState() {
+    var el = document.getElementById('sync-banner');
+    if (!el) return;
+    if (syncOn && !ghToken()) {
+      el.innerHTML = '\u26a0 GitHub sync is on \u2014 add your token in <strong>\u2699 Settings</strong>.';
+      el.style.display = 'block';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  function showClashBanner(noteName, copyName) {
+    var el = document.getElementById('clash-banner');
+    if (!el) return;
+    el.innerHTML = '<strong>Sync clash:</strong> \u201c' + noteName + '\u201d was also edited on GitHub. ' +
+      'Your tablet version is now in \u201c' + copyName + '\u201d; ' +
+      '\u201c' + noteName + '\u201d now holds the GitHub version. Review both, delete the one you don\u2019t want.';
+    el.style.display = 'block';
+    setTimeout(function() { el.style.display = 'none'; }, 30000);
+  }
+
+  // handleClash: on a 409/422 push clash —
+  //   1. save current tablet content as "{name} (tablet copy).md"
+  //   2. fetch GitHub version, write it to "{name}.md" on the tablet
+  //   3. update stored SHA; show clash banner.
+  function handleClash(filename, tabletContent) {
+    var copyBase = filename.replace(/\.md$/, '') + ' (tablet copy)';
+    var createCopy = fetch('/api/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: copyBase, content: tabletContent })
+    }).catch(function() {});
+    var fetchGh = fetch(ghUrl(filename), { headers: ghHdrs() })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .catch(function() { return null; });
+    return Promise.all([createCopy, fetchGh]).then(function(results) {
+      var ghData = results[1];
+      if (!ghData) return;
+      var ghContent = b64decode(ghData.content);
+      return fetch('/api/notes/' + encodeURIComponent(filename), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: ghContent })
+      }).then(function(r) {
+        if (r.ok) localStorage.setItem('ghSha_' + filename, ghData.sha);
+        localStorage.removeItem('ghPushFailed_' + filename);
+        showClashBanner(filename.replace(/\.md$/, ''), copyBase);
+        loadNotes();
+      });
+    }).catch(function() {});
+  }
+
+  // pushNote: read note from tablet and push to GitHub; handle clash and auth errors.
+  function pushNote(filename) {
+    if (!syncReady()) return;
+    fetch('/api/notes/' + encodeURIComponent(filename))
+      .then(function(r) { return r.ok ? r.text() : null; })
+      .then(function(content) {
+        if (content === null) return;
+        var sha = localStorage.getItem('ghSha_' + filename) || null;
+        var body = { message: 'Writerdeck: ' + filename, content: b64encode(content) };
+        if (sha) body.sha = sha;
+        return fetch(ghUrl(filename), {
+          method: 'PUT', headers: ghHdrs(), body: JSON.stringify(body)
+        }).then(function(r) {
+          if (r.ok) {
+            return r.json().then(function(d) {
+              localStorage.setItem('ghSha_' + filename, d.content.sha);
+              localStorage.removeItem('ghPushFailed_' + filename);
+              var ts = new Date().toLocaleString();
+              localStorage.setItem('ghLastSync', ts);
+              var els = document.querySelectorAll('.sync-status-line');
+              for (var i = 0; i < els.length; i++) els[i].textContent = 'Last synced: ' + ts;
+            });
+          }
+          if (r.status === 409 || r.status === 422) { return handleClash(filename, content); }
+          if (r.status === 401 || r.status === 403) {
+            localStorage.setItem('ghPushFailed_' + filename, '1');
+            var banner = document.getElementById('sync-banner');
+            if (banner) {
+              banner.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>\u2699 Settings</strong>.';
+              banner.style.display = 'block';
+            }
+          } else {
+            localStorage.setItem('ghPushFailed_' + filename, '1');
+          }
+        });
+      }).catch(function() { localStorage.setItem('ghPushFailed_' + filename, '1'); });
+  }
+
+  // pullNoteAndUpdate: check GitHub for a newer version and write it to the tablet.
+  // If SHA matches stored SHA, nothing is fetched. Returns a promise.
+  function pullNoteAndUpdate(filename) {
+    if (!syncReady()) return Promise.resolve();
+    return fetch(ghUrl(filename), { headers: ghHdrs() })
+      .then(function(r) {
+        if (r.status === 404) return null; // not on GitHub yet
+        if (r.status === 401 || r.status === 403) {
+          var banner = document.getElementById('sync-banner');
+          if (banner) {
+            banner.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>\u2699 Settings</strong>.';
+            banner.style.display = 'block';
+          }
+          return null;
+        }
+        return r.ok ? r.json() : null;
+      })
+      .then(function(data) {
+        if (!data) return;
+        if (localStorage.getItem('ghSha_' + filename) === data.sha) return; // already up to date
+        var ghContent = b64decode(data.content);
+        return fetch('/api/notes/' + encodeURIComponent(filename), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: ghContent })
+        }).then(function(r) {
+          if (r.ok) localStorage.setItem('ghSha_' + filename, data.sha);
+        });
+      })
+      .catch(function() {});
+  }
+
+  // ghDelete: remove a note from GitHub via the Contents API (needs the file's
+  // current sha, tracked per note). No-op if the note was never synced from here.
+  function ghDelete(filename) {
+    if (!syncReady()) return Promise.resolve();
+    var sha = localStorage.getItem('ghSha_' + filename);
+    if (!sha) return Promise.resolve();
+    return fetch(ghUrl(filename), {
+      method: 'DELETE', headers: ghHdrs(),
+      body: JSON.stringify({ message: 'Writerdeck: delete ' + filename, sha: sha })
+    }).then(function() {
+      localStorage.removeItem('ghSha_' + filename);
+      localStorage.removeItem('ghPushFailed_' + filename);
+    }).catch(function() {});
   }
 
   window.addEventListener('load', function () {
