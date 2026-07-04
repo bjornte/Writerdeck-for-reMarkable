@@ -5,7 +5,6 @@
    * Power button should be functional
    * Some sleep logic should be included
    * Files could be encrypted
-   * Could sync Markdown to user's (private) GitHub repo — see [research-github-sync.md](research-github-sync.md)
 * In reading view:
    * Paragraph distances could be greater. Postponed.
 * In Edit view
