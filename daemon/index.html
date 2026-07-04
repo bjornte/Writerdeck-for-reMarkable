@@ -1293,9 +1293,13 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
   }
 
   // pushNote: read note from tablet and push to GitHub; handle clash and auth errors.
+  // MUST return its promise: reconcileAll sequences pushes through a reduce chain,
+  // and GitHub creates one commit per PUT parented on the current branch HEAD --
+  // if pushes fire concurrently, only one commit wins per round and the rest 409,
+  // which is exactly the "one file synced per attempt" failure this return fixes.
   function pushNote(filename) {
-    if (!syncReady()) return;
-    fetch('/api/notes/' + encodeURIComponent(filename))
+    if (!syncReady()) return Promise.resolve();
+    return fetch('/api/notes/' + encodeURIComponent(filename))
       .then(function(r) { return r.ok ? r.text() : null; })
       .then(function(content) {
         if (content === null) return;
