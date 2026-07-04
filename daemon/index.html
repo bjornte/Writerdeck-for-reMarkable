@@ -840,6 +840,7 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
             stopPinPoll();
             hidePinScreen();
             connect();
+            loadSyncConfig();
             return r.json();
           }
         })
@@ -1141,6 +1142,23 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
     document.getElementById('settings-btn').style.display = 'block';
   }
 
+  // loadSyncConfig: pull the non-secret syncOn/syncRepo flags at startup, not
+  // just when the Settings panel opens. Without this, connect-reconcile and the
+  // poll both saw the default `false` at page load and silently skipped -- the
+  // note would connect fine yet read "never synced". Runs post-auth; on success
+  // it kicks an immediate reconcile so first connect actually moves files.
+  function loadSyncConfig() {
+    return fetch('/api/settings')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (!data) return;
+        syncOn = !!data.syncOn;
+        syncRepo = data.syncRepo || '';
+        if (syncReady()) { reconcileAll('startup'); }
+      })
+      .catch(function() {});
+  }
+
   function checkAuthAndInit() {
     fetch('/api/notes')
       .then(function(r) {
@@ -1154,6 +1172,7 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
         connect();
         grab();
         renderNotes(notes);
+        loadSyncConfig(); // populate syncOn/syncRepo so auto-sync can fire
       })
       .catch(function() { setTimeout(checkAuthAndInit, 2000); });
   }
@@ -1185,6 +1204,7 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       connect();
       grab();
       loadNotes();
+      loadSyncConfig();
     }).catch(function() { errEl.textContent = 'Could not reach server.'; });
   }
 
