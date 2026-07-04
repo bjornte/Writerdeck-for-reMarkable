@@ -29,19 +29,15 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ❌ blocked
 
 ### 2026-07-05
 
-GitHub two-way sync — **device-verified**: 6 notes reconcile in one pass, both ways, no stray copies. Session bugs fixed:
+GitHub two-way note sync — optional, off by default, **device-verified** (6 notes reconcile in one pass, both ways, no stray copies). Research + SWOT + plan in [docs/research-github-sync.md](docs/research-github-sync.md).
 
-- "never synced" — `syncOn`/`syncRepo` only read on ⚙-open → `syncReady()` false at load. `loadSyncConfig()` now reads post-auth.
-- one-file-per-attempt — `pushNote` didn't `return` its fetch → concurrent PUTs, one commit wins per round. Returned the promise.
-- spurious "(tablet copy)" — `handleClash` now no-ops when both sides are byte-identical.
+- **Spine** — the token never touches the tablet: the phone browser is the sync engine (GitHub Contents API from the capture page, PAT in `localStorage`); the tablet holds only non-secret `syncOn`/`syncRepo`. Go ([daemon/main.go](daemon/main.go)): those two fields (`isValidGitHubRepo`, 400 on bad) + a `PUT /api/notes/{name}` upsert.
+- **Engine** — `reconcileAll()` ([daemon/index.html](daemon/index.html)) unions GitHub `contents/` + tablet `/api/notes` and per note: remote-only→pull, local-only→push, delete→`ghDelete`, both→classify. Classify uses a per-note content fingerprint (`strHash`, djb2) stored beside the `sha` to tell a local edit from a remote one; both-changed→`handleClash`, which keeps the tablet's copy as `note (tablet copy).md`, pulls GitHub's into `note.md`, banners it — never a merge on e-ink (and no-ops when the bytes already match).
+- **Triggers** — connect/reconnect, after verify, toggle-on, a 3-min poll (paused while typing), a manual **Sync now** button; the actively-open note is skipped, and a cloud push fires on the tablet's *save* signal, not the phone's view change.
 
-Lesson: a sequenced async primitive must return its promise, and load enablement flags at init not on panel-open.
-
-### 2026-07-04
-
-Sync made automatic — connect-reconcile replaces the event-only model (device-verified 2026-07-05). Real use surfaced the gap: a note could verify green yet read "Never synced", because sync only fired on open (pull) / Home (push). Surveyed comparable tools (GitJournal, Obsidian Git, Dropbox/Syncthing) — all reconcile on connect, react to change, and poll as a safety net. Added `reconcileAll()` in [daemon/index.html](daemon/index.html): lists GitHub `contents/` + tablet `/api/notes`, unions the names, and per note delegates to the existing primitives — remote-only→pull, local-only→push, both→classify. Classification is the new part: a per-note content fingerprint (`strHash`, djb2) tracked in `localStorage` beside the `sha` lets it tell a local edit from a remote one — local-changed→push, remote-changed→pull, both-changed→`handleClash` (now dedupes when the two sides are byte-identical, so no spurious "(tablet copy)" on first sync). Triggers: on WebSocket connect/reconnect, right after a successful verify, when the toggle flips on, a 3-min poll (paused while typing), and a manual **Sync now** button. The actively-open note is always skipped (open-pull + Home-push already own it). Auth failure routes through `catch` so it never falsely writes "Last synced". Durable lesson: an event-only sync is a bug, not a design — always reconcile on connect and poll as a backstop, because the other side edits when you're not looking.
-
-GitHub two-way note sync, phone-side engine (device-verified 2026-07-05). Optional, off by default; research + SWOT + scenario table + plan in [docs/research-github-sync.md](docs/research-github-sync.md). Spine: the **token never touches the tablet** — the phone browser is the sync engine (GitHub Contents API from the capture page, PAT in `localStorage`), the tablet holds only non-secret `syncOn`/`syncRepo`. Clashes never overwrite: a stale-`sha` `PUT` duplicates the tablet copy to `note (tablet copy).md`, pulls GitHub's into `note.md`, banners it — no merge on e-ink. Go ([daemon/main.go](daemon/main.go)): `settingsData`/`settingsHandler` gain the two fields (`isValidGitHubRepo`, 400 on bad) + a `PUT /api/notes/{name}` upsert. Phone ([daemon/index.html](daemon/index.html)): `pushNote`/`pullNoteAndUpdate`/`handleClash`/`ghDelete`, ⚙ Sync section, token/clash banners. Three Opus-review fixes before commit: push moved from phone-back to the tablet's post-save `exitedit` (phone-back is *before* keywriter saves → was shipping stale files); delete/rename now propagate via `ghDelete`; pre-open pull skipped when the note is already open. Committed `5f0ea96`. Durable lesson: trigger a cloud push on the tablet's *save* signal, never the phone's view change. Non-blocking later: idle background pull, clash diff view, Lobby "log in" line.
+Learning points:
+- A sequenced async primitive **must return its promise** — `pushNote` didn't, so `reconcileAll` didn't wait; concurrent PUTs against one branch HEAD let only one GitHub commit win per round (the "one file per attempt" bug).
+- **Load enablement flags at init, not on panel-open** — `syncOn`/`syncRepo` were read only when ⚙ opened, so `syncReady()` was false at load and every auto-trigger silently skipped ("never synced" despite a good token).
 
 ### 2026-06-29
 
