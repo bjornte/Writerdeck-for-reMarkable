@@ -237,6 +237,20 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
   -webkit-appearance: none; min-width: 0;
 }
 .token-input:focus { border-color: #4caf50; }
+/* Sync action buttons: clearly-enabled on the dark settings box (the shared
+   .note-btn is gray-on-transparent and reads as disabled here). */
+.sync-btn {
+  background: #4caf50; color: #fff; border: none; border-radius: 8px;
+  padding: 10px 16px; font-size: 14px; cursor: pointer; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.sync-btn:active { background: #3d9142; }
+.sync-btn-secondary {
+  background: #444; color: #ccc; border: none; border-radius: 8px;
+  padding: 10px 16px; font-size: 14px; cursor: pointer; flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.sync-btn-secondary:active { background: #555; }
 </style>
 </head>
 <body>
@@ -952,62 +966,77 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       repoLabel.textContent = 'Private repo (owner/repo)';
       list.appendChild(repoLabel);
 
-      var repoRow = document.createElement('div');
-      repoRow.style.cssText = 'display:flex;gap:6px;align-items:center;';
       var repoInput = document.createElement('input');
       repoInput.type = 'text'; repoInput.className = 'token-input';
+      repoInput.style.width = '100%';
       repoInput.placeholder = 'e.g. alice/my-notes'; repoInput.value = syncRepo;
-      var repoSave = document.createElement('button');
-      repoSave.className = 'note-btn'; repoSave.textContent = 'Save';
-      repoSave.style.flexShrink = '0';
-      repoSave.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var val = repoInput.value.trim();
-        fetch('/api/settings', {
-          method: 'POST', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ syncRepo: val })
-        }).then(function(r) {
-          if (!r.ok) { alert('Invalid repo \u2014 use owner/repo format.'); return; }
-          syncRepo = val;
-          repoInput.style.borderColor = '#4caf50';
-          setTimeout(function() { repoInput.style.borderColor = ''; }, 1500);
-        }).catch(function(){});
-      });
-      repoRow.appendChild(repoInput); repoRow.appendChild(repoSave);
-      list.appendChild(repoRow);
+      list.appendChild(repoInput);
 
       var tokLabel = document.createElement('div');
-      tokLabel.style.cssText = 'color:#888;font-size:12px;margin-top:6px;padding:0 2px;';
+      tokLabel.style.cssText = 'color:#888;font-size:12px;margin-top:8px;padding:0 2px;';
       tokLabel.textContent = 'GitHub token (stays on this device \u2014 never sent to the tablet)';
       list.appendChild(tokLabel);
 
-      var tokRow = document.createElement('div');
-      tokRow.style.cssText = 'display:flex;gap:6px;align-items:center;flex-wrap:wrap;';
       var tokInput = document.createElement('input');
       tokInput.type = 'password'; tokInput.className = 'token-input';
-      tokInput.placeholder = 'ghp_\u2026'; tokInput.autocomplete = 'off';
+      tokInput.style.width = '100%';
+      tokInput.placeholder = 'github_pat_\u2026 or ghp_\u2026'; tokInput.autocomplete = 'off';
       if (ghToken()) tokInput.value = '\u2022'.repeat(16);
       var tokTouched = false;
       tokInput.addEventListener('focus', function() {
         if (!tokTouched) { tokInput.value = ''; tokTouched = true; }
       });
-      var tokSave = document.createElement('button');
-      tokSave.className = 'note-btn'; tokSave.textContent = 'Save';
-      tokSave.style.flexShrink = '0';
-      tokSave.addEventListener('click', function(e) {
+      list.appendChild(tokInput);
+
+      // One primary action for the whole section: save repo (to tablet) + token
+      // (to this browser), then verify both against GitHub so you get a clear
+      // yes/no instead of a silent green flash.
+      var verifyLine = document.createElement('div');
+      verifyLine.className = 'sync-verify-line';
+      verifyLine.style.cssText = 'font-size:12px;padding:6px 2px;min-height:16px;color:#888;';
+
+      var actionRow = document.createElement('div');
+      actionRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:8px;';
+
+      var saveBtn = document.createElement('button');
+      saveBtn.className = 'sync-btn'; saveBtn.textContent = 'Save & verify';
+      saveBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        var val = tokInput.value.trim();
-        if (!val) return;
-        localStorage.setItem('ghToken', val);
-        tokInput.value = '\u2022'.repeat(16); tokTouched = false;
-        tokInput.style.borderColor = '#4caf50';
-        setTimeout(function() { tokInput.style.borderColor = ''; }, 1500);
-        updateSyncBannerFromState();
+        var repoVal = repoInput.value.trim();
+        // Persist the token only if the field was actually edited (an untouched
+        // masked field means "keep the existing token"); never wipe on blank here.
+        if (tokTouched && tokInput.value.trim()) {
+          localStorage.setItem('ghToken', tokInput.value.trim());
+          tokInput.value = '\u2022'.repeat(16); tokTouched = false;
+        }
+        var token = ghToken();
+        // Save the repo to the tablet first (non-secret), then verify.
+        fetch('/api/settings', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ syncRepo: repoVal })
+        }).then(function(r) {
+          if (!r.ok) {
+            verifyLine.style.color = '#e57373';
+            verifyLine.textContent = '\u2717 Invalid repo \u2014 use owner/repo format.';
+            return;
+          }
+          syncRepo = repoVal;
+          updateSyncBannerFromState();
+          if (!repoVal || !token) {
+            verifyLine.style.color = '#888';
+            verifyLine.textContent = 'Saved. Enter both repo and token to verify.';
+            return;
+          }
+          verifyGitHubRepo(repoVal, token, verifyLine);
+        }).catch(function() {
+          verifyLine.style.color = '#e57373';
+          verifyLine.textContent = '\u2717 Could not reach the tablet to save.';
+        });
       });
-      var tokClear = document.createElement('button');
-      tokClear.className = 'note-btn danger'; tokClear.textContent = 'Clear';
-      tokClear.style.flexShrink = '0';
-      tokClear.addEventListener('click', function(e) {
+
+      var clearBtn = document.createElement('button');
+      clearBtn.className = 'sync-btn-secondary'; clearBtn.textContent = 'Clear token';
+      clearBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         if (!confirm('Remove GitHub token from this device?')) return;
         localStorage.removeItem('ghToken');
@@ -1018,10 +1047,14 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
         }
         keys.forEach(function(k) { localStorage.removeItem(k); });
         tokInput.value = ''; tokTouched = true;
+        verifyLine.style.color = '#888';
+        verifyLine.textContent = 'Token removed from this device.';
         updateSyncBannerFromState();
       });
-      tokRow.appendChild(tokInput); tokRow.appendChild(tokSave); tokRow.appendChild(tokClear);
-      list.appendChild(tokRow);
+
+      actionRow.appendChild(saveBtn); actionRow.appendChild(clearBtn);
+      list.appendChild(actionRow);
+      list.appendChild(verifyLine);
 
       var statusLine = document.createElement('div');
       statusLine.className = 'sync-status-line';
@@ -1030,6 +1063,34 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       statusLine.textContent = ls ? 'Last synced: ' + ls : 'Never synced on this device';
       list.appendChild(statusLine);
     }
+  }
+
+  // verifyGitHubRepo: probe GET /repos/{owner}/{repo} with the token and report
+  // a plain-language result into statusEl. A 200 confirms both the token works
+  // and it can see the repo -- the exact thing that was silently unconfirmed before.
+  function verifyGitHubRepo(repo, token, statusEl) {
+    statusEl.style.color = '#888';
+    statusEl.textContent = 'Verifying with GitHub\u2026';
+    fetch('https://api.github.com/repos/' + repo, {
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json' }
+    }).then(function(r) {
+      if (r.status === 200) {
+        statusEl.style.color = '#4caf50';
+        statusEl.textContent = '\u2713 Connected \u2014 token works and can see ' + repo + '.';
+      } else if (r.status === 401 || r.status === 403) {
+        statusEl.style.color = '#e57373';
+        statusEl.textContent = '\u2717 Token rejected \u2014 check it is correct and not expired.';
+      } else if (r.status === 404) {
+        statusEl.style.color = '#e57373';
+        statusEl.textContent = '\u2717 Repo not found \u2014 check owner/repo, and that the token grants access to it.';
+      } else {
+        statusEl.style.color = '#e57373';
+        statusEl.textContent = '\u2717 GitHub error (' + r.status + ').';
+      }
+    }).catch(function() {
+      statusEl.style.color = '#e57373';
+      statusEl.textContent = '\u2717 Could not reach GitHub (offline, or the phone has no internet).';
+    });
   }
 
   function applyFont(id) {
