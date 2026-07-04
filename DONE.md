@@ -29,13 +29,13 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ❌ blocked
 
 ### 2026-07-05
 
-GitHub two-way sync — **device-verified end-to-end**: all six notes reconcile in one pass, both directions, no stray copies. Three bugs fixed this session (terse):
+GitHub two-way sync — **device-verified**: 6 notes reconcile in one pass, both ways, no stray copies. Session bugs fixed:
 
-- **"never synced" despite a good token** — `syncOn`/`syncRepo` were only read on ⚙-panel open, so at page load `syncReady()` was false and every auto-trigger skipped. New `loadSyncConfig()` reads them right after auth (wired into all three login paths) and kicks an immediate reconcile.
-- **one-file-per-attempt** — `pushNote` didn't `return` its `fetch`, so `reconcileAll`'s reduce chain didn't wait; concurrent PUTs against one branch HEAD let only one commit win per round (rest 409'd). Returning the promise serialises the PUTs.
-- **spurious "(tablet copy)" on first sync** — `handleClash` now fetches GitHub first and no-ops when both sides are byte-identical.
+- "never synced" — `syncOn`/`syncRepo` only read on ⚙-open → `syncReady()` false at load. `loadSyncConfig()` now reads post-auth.
+- one-file-per-attempt — `pushNote` didn't `return` its fetch → concurrent PUTs, one commit wins per round. Returned the promise.
+- spurious "(tablet copy)" — `handleClash` now no-ops when both sides are byte-identical.
 
-Durable lesson: any async primitive a sequencer drives must return its promise (a missing `return` silently turns "sequential" into "concurrent"), and auto-triggers are only as good as the earliest point their enablement config is loaded — load flags at init, never lazily on panel-open.
+Lesson: a sequenced async primitive must return its promise, and load enablement flags at init not on panel-open.
 
 ### 2026-07-04
 
