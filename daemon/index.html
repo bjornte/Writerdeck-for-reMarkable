@@ -349,6 +349,7 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
 
   var RETRY_MS = 2000;
   var ECHO_MAX = 300;
+  var SYNC_POLL_MS = 180000; // 3 min: safety-net reconcile for laptop-side edits
 
   var dot  = document.getElementById('dot');
   var msg  = document.getElementById('msg');
@@ -468,6 +469,9 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       setStatus('on', 'connected -- ' + window.location.host);
       grab();
       loadNotes();
+      // Connect-reconcile: the trigger the event-only model lacked. Runs on
+      // first connect and every reconnect (the natural "back online" hook).
+      if (syncReady()) { reconcileAll('connect'); }
     };
 
     ws.onclose = function () {
@@ -955,7 +959,8 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ syncOn: newVal })
       }).then(function(r) {
-        if (r.ok) { syncOn = newVal; renderSettingsList(); updateSyncBannerFromState(); }
+        if (r.ok) { syncOn = newVal; renderSettingsList(); updateSyncBannerFromState();
+          if (newVal && syncReady()) { reconcileAll('toggle'); } }
       }).catch(function(){});
     });
     list.appendChild(syncToggle);
@@ -1043,7 +1048,7 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
         var keys = [];
         for (var i = 0; i < localStorage.length; i++) {
           var k = localStorage.key(i);
-          if (k && (k.startsWith('ghSha_') || k.startsWith('ghPushFailed_'))) keys.push(k);
+          if (k && (k.startsWith('ghSha_') || k.startsWith('ghPushFailed_') || k.startsWith('ghLocalHash_'))) keys.push(k);
         }
         keys.forEach(function(k) { localStorage.removeItem(k); });
         tokInput.value = ''; tokTouched = true;
@@ -1052,7 +1057,24 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
         updateSyncBannerFromState();
       });
 
-      actionRow.appendChild(saveBtn); actionRow.appendChild(clearBtn);
+      var syncNowBtn = document.createElement('button');
+      syncNowBtn.className = 'sync-btn-secondary'; syncNowBtn.textContent = 'Sync now';
+      syncNowBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!syncReady()) {
+          verifyLine.style.color = '#e57373';
+          verifyLine.textContent = '\u2717 Save a repo and token first.';
+          return;
+        }
+        verifyLine.style.color = '#888';
+        verifyLine.textContent = 'Syncing all notes\u2026';
+        reconcileAll('manual').then(function(n) {
+          verifyLine.style.color = '#4caf50';
+          verifyLine.textContent = '\u2713 Synced ' + n + ' note' + (n === 1 ? '' : 's') + '.';
+        });
+      });
+
+      actionRow.appendChild(saveBtn); actionRow.appendChild(syncNowBtn); actionRow.appendChild(clearBtn);
       list.appendChild(actionRow);
       list.appendChild(verifyLine);
 
@@ -1076,7 +1098,12 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
     }).then(function(r) {
       if (r.status === 200) {
         statusEl.style.color = '#4caf50';
-        statusEl.textContent = '\u2713 Connected \u2014 token works and can see ' + repo + '.';
+        statusEl.textContent = '\u2713 Connected \u2014 syncing your notes\u2026';
+        // First-connect reconcile: turn a just-verified token into an actual sync.
+        reconcileAll('after verify').then(function(n) {
+          statusEl.style.color = '#4caf50';
+          statusEl.textContent = '\u2713 Connected \u2014 synced ' + n + ' note' + (n === 1 ? '' : 's') + ' with ' + repo + '.';
+        });
       } else if (r.status === 401 || r.status === 403) {
         statusEl.style.color = '#e57373';
         statusEl.textContent = '\u2717 Token rejected \u2014 check it is correct and not expired.';
@@ -1207,30 +1234,42 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
   //   2. fetch GitHub version, write it to "{name}.md" on the tablet
   //   3. update stored SHA; show clash banner.
   function handleClash(filename, tabletContent) {
-    var copyBase = filename.replace(/\.md$/, '') + ' (tablet copy)';
-    var createCopy = fetch('/api/notes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: copyBase, content: tabletContent })
-    }).catch(function() {});
-    var fetchGh = fetch(ghUrl(filename), { headers: ghHdrs() })
+    return fetch(ghUrl(filename), { headers: ghHdrs() })
       .then(function(r) { return r.ok ? r.json() : null; })
-      .catch(function() { return null; });
-    return Promise.all([createCopy, fetchGh]).then(function(results) {
-      var ghData = results[1];
-      if (!ghData) return;
-      var ghContent = b64decode(ghData.content);
-      return fetch('/api/notes/' + encodeURIComponent(filename), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: ghContent })
-      }).then(function(r) {
-        if (r.ok) localStorage.setItem('ghSha_' + filename, ghData.sha);
-        localStorage.removeItem('ghPushFailed_' + filename);
-        showClashBanner(filename.replace(/\.md$/, ''), copyBase);
-        loadNotes();
-      });
-    }).catch(function() {});
+      .then(function(ghData) {
+        if (!ghData) return;
+        var ghContent = b64decode(ghData.content);
+        // Not a real clash if both sides already hold identical text: adopt
+        // GitHub's sha + fingerprint, no duplicate, no banner.
+        if (ghContent === tabletContent) {
+          localStorage.setItem('ghSha_' + filename, ghData.sha);
+          localStorage.setItem('ghLocalHash_' + filename, strHash(tabletContent));
+          localStorage.removeItem('ghPushFailed_' + filename);
+          return;
+        }
+        var copyBase = filename.replace(/\.md$/, '') + ' (tablet copy)';
+        // Keep the tablet's version as a copy, then bring GitHub's into note.md.
+        return fetch('/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: copyBase, content: tabletContent })
+        }).catch(function() {}).then(function() {
+          return fetch('/api/notes/' + encodeURIComponent(filename), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: ghContent })
+          });
+        }).then(function(r) {
+          if (r && r.ok) {
+            localStorage.setItem('ghSha_' + filename, ghData.sha);
+            localStorage.setItem('ghLocalHash_' + filename, strHash(ghContent));
+          }
+          localStorage.removeItem('ghPushFailed_' + filename);
+          showClashBanner(filename.replace(/\.md$/, ''), copyBase);
+          loadNotes();
+        });
+      })
+      .catch(function() {});
   }
 
   // pushNote: read note from tablet and push to GitHub; handle clash and auth errors.
@@ -1249,6 +1288,7 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
           if (r.ok) {
             return r.json().then(function(d) {
               localStorage.setItem('ghSha_' + filename, d.content.sha);
+              localStorage.setItem('ghLocalHash_' + filename, strHash(content));
               localStorage.removeItem('ghPushFailed_' + filename);
               var ts = new Date().toLocaleString();
               localStorage.setItem('ghLastSync', ts);
@@ -1297,7 +1337,10 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: ghContent })
         }).then(function(r) {
-          if (r.ok) localStorage.setItem('ghSha_' + filename, data.sha);
+          if (r.ok) {
+            localStorage.setItem('ghSha_' + filename, data.sha);
+            localStorage.setItem('ghLocalHash_' + filename, strHash(ghContent));
+          }
         });
       })
       .catch(function() {});
@@ -1314,8 +1357,110 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
       body: JSON.stringify({ message: 'Writerdeck: delete ' + filename, sha: sha })
     }).then(function() {
       localStorage.removeItem('ghSha_' + filename);
+      localStorage.removeItem('ghLocalHash_' + filename);
       localStorage.removeItem('ghPushFailed_' + filename);
     }).catch(function() {});
+  }
+
+  // strHash: cheap deterministic fingerprint (djb2) of a note's text, used to
+  // tell whether the tablet copy changed since the last sync -- the missing
+  // signal that lets reconcile distinguish a local-only edit from a real clash.
+  function strHash(s) {
+    var h = 5381;
+    for (var i = 0; i < s.length; i++) { h = ((h << 5) + h + s.charCodeAt(i)) | 0; }
+    return String(h >>> 0);
+  }
+
+  // reconcileAll: full two-way sync of every note -- the trigger the event-only
+  // model was missing. Runs on first connect/verify, on reconnect, on a periodic
+  // poll, and from "Sync now". Per note it delegates to the same safe primitives
+  // used elsewhere: remote-only -> pull; local-only -> push; both -> compare
+  // fingerprints and push / pull / keep-both. The actively-open note is skipped
+  // (its own open-pull + Home-push own it). Resolves to the note count.
+  var syncing = false;
+  function reconcileAll(reason) {
+    if (!syncReady() || syncing) return Promise.resolve(0);
+    syncing = true;
+    var statusEls = document.querySelectorAll('.sync-status-line');
+    for (var s = 0; s < statusEls.length; s++) statusEls[s].textContent = 'Syncing\u2026';
+    var remoteList = fetch('https://api.github.com/repos/' + syncRepo + '/contents/', { headers: ghHdrs() })
+      .then(function(r) {
+        if (r.status === 404) return []; // empty repo
+        if (r.status === 401 || r.status === 403) {
+          var b = document.getElementById('sync-banner');
+          if (b) { b.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>\u2699 Settings</strong>.'; b.style.display = 'block'; }
+          return null; // auth failure sentinel
+        }
+        return r.ok ? r.json() : [];
+      }).catch(function() { return []; });
+    var localList = fetch('/api/notes').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
+    return Promise.all([remoteList, localList]).then(function(res) {
+      var remote = res[0], local = res[1];
+      if (remote === null) throw new Error('auth'); // banner already shown; skip success line
+      var remoteMap = {};
+      remote.forEach(function(e) {
+        if (e && e.type === 'file' && /\.md$/.test(e.name)) remoteMap[e.name] = e.sha;
+      });
+      var names = {};
+      Object.keys(remoteMap).forEach(function(n) { names[n] = true; });
+      (local || []).forEach(function(e) { if (e && e.name) names[e.name] = true; });
+      var list = Object.keys(names).filter(function(n) { return n !== tabletOpenNote; });
+      // Sequential: gentle on the rate limit, no concurrent tablet writes.
+      return list.reduce(function(chain, name) {
+        return chain.then(function() { return reconcileOne(name, remoteMap[name]); });
+      }, Promise.resolve()).then(function() { return list.length; });
+    }).then(function(count) {
+      var ts = new Date().toLocaleString();
+      localStorage.setItem('ghLastSync', ts);
+      var els = document.querySelectorAll('.sync-status-line');
+      for (var i = 0; i < els.length; i++) els[i].textContent = 'Last synced: ' + ts;
+      loadNotes();
+      syncing = false;
+      return count;
+    }).catch(function() {
+      // Failed or auth-rejected: don't claim a sync happened. Restore the line.
+      var ls = localStorage.getItem('ghLastSync');
+      var els = document.querySelectorAll('.sync-status-line');
+      for (var j = 0; j < els.length; j++) {
+        els[j].textContent = ls ? 'Last synced: ' + ls : 'Never synced on this device';
+      }
+      syncing = false;
+      return 0;
+    });
+  }
+
+  // reconcileOne: reconcile a single note given its remote sha (undefined if not
+  // on GitHub). Classifies via stored sha (remote change) + stored fingerprint
+  // (local change) into push / pull / keep-both.
+  function reconcileOne(name, remoteSha) {
+    var hasRemote = !!remoteSha;
+    return fetch('/api/notes/' + encodeURIComponent(name))
+      .then(function(r) { return r.ok ? r.text() : null; })
+      .then(function(localContent) {
+        var hasLocal = localContent !== null;
+        if (hasLocal && !hasRemote) { return pushNote(name); }
+        if (!hasLocal && hasRemote) { return pullNoteAndUpdate(name); }
+        if (!hasLocal && !hasRemote) { return; }
+        var storedSha = localStorage.getItem('ghSha_' + name);
+        var storedHash = localStorage.getItem('ghLocalHash_' + name);
+        var remoteChanged = storedSha !== remoteSha;            // includes no-stored-sha
+        var localChanged = storedHash !== strHash(localContent); // includes no-stored-hash
+        if (remoteChanged && localChanged) { return handleClash(name, localContent); }
+        if (localChanged) { return pushNote(name); }
+        if (remoteChanged) { return pullNoteAndUpdate(name); }
+        return; // both unchanged
+      })
+      .catch(function() {});
+  }
+
+  // startSyncPoll: periodic safety-net reconcile so notes edited on the laptop
+  // land without any user action. Skipped while actively typing on the tablet.
+  var syncPollTimer = null;
+  function startSyncPoll() {
+    if (syncPollTimer) return;
+    syncPollTimer = setInterval(function() {
+      if (syncReady() && !typingMode) { reconcileAll('poll'); }
+    }, SYNC_POLL_MS);
   }
 
   window.addEventListener('load', function () {
@@ -1381,6 +1526,7 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
     });
     applyMode();
     checkAuthAndInit();
+    startSyncPoll();
   });
 }());
 </script>
