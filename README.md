@@ -31,7 +31,13 @@ Work in progress, but already a usable appliance. Power on and the tablet boots 
 
 ### Optional: GitHub syncing of notes
 
-An optional feature syncing your notes towards a repo on GitHub. The assumed use case is that the repo is personal and private. Here's how to set up the repo and enable the feature:
+Optionally, sync your notes towards GitHub. The assumed use case is to use a repo that's personal & private.
+
+Edit conflicts never overwrite. The reMarkable's version is kept as `note (tablet copy).md`. A banner appears on the phone so you can reconcile.
+
+If a note has edits on the reMarkable that haven't synced yet, deleting or renaming the note elsewhere keeps the note rather than removing it.
+
+To set up the repo and enable syncing:
 
 1. Here on GitHub, create a new private repo to hold your notes
 2. Go to the [create token](https://github.com/settings/personal-access-tokens/new) page. Create a fine-grained personal access token with Repository access limited to just that repo and `Repository permissions` → `Contents: Read and write`. Copy the token.
@@ -39,10 +45,6 @@ An optional feature syncing your notes towards a repo on GitHub. The assumed use
 3. The reMarkable tablet never sees the token. It only records whether sync is enabled and the name of the repo.
 
 ![Create token](docs/create-token.png)
-
-Edit conflicts never overwrite: the tablet's version is kept as `note (tablet copy).md` and a banner appears on the phone so you can reconcile.
-
-If a note has tablet edits that haven't synced yet, deleting or renaming it elsewhere keeps the note rather than removing it.
 
 ## How-to for users incl. shortcuts
 
