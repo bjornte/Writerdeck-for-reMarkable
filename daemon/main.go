@@ -47,11 +47,23 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// indexHTML is the browser capture page, embedded at compile time.
-// The daemon serves it at / so any browser on the LAN can open it and type.
+// Static assets embedded at compile time; all served with Cache-Control: no-store.
+// app.css, app.js, state.js, and sync.js are split out so index.html stays markup-only.
 //
 //go:embed index.html
 var indexHTML []byte
+
+//go:embed app.css
+var appCSS []byte
+
+//go:embed app.js
+var appJS []byte
+
+//go:embed state.js
+var stateJS []byte
+
+//go:embed sync.js
+var syncJS []byte
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
@@ -1469,6 +1481,26 @@ func main() {
 	fmt.Fprintf(os.Stderr, "rmkbd: serving capture page on http://<device-ip>%s/\n", addr)
 	fmt.Fprintf(os.Stderr, "rmkbd: serving WebSocket on %s/ws\n", addr)
 	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/app.css", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		w.Write(appCSS) //nolint:errcheck
+	})
+	http.HandleFunc("/app.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		w.Write(appJS) //nolint:errcheck
+	})
+	http.HandleFunc("/state.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		w.Write(stateJS) //nolint:errcheck
+	})
+	http.HandleFunc("/sync.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+		w.Write(syncJS) //nolint:errcheck
+	})
 	http.HandleFunc("/ws", wsHandler(ec, *verbose))
 	http.HandleFunc("/api/pin", pinHandler)
 	http.HandleFunc("/api/launch", launchHandler)
