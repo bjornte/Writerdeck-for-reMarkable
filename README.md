@@ -57,7 +57,6 @@ Shortcuts:
 
 - Esc — toggles edit / preview on the tablet.
 - Ctrl-K — Switch note from within edit view.
-- Ctrl-left/right — In preview mode, rotate screen (landscape/portrait)
 
 ## Getting started for devs
 
