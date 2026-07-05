@@ -839,6 +839,10 @@ import {
       uploadFile(this.files[0]);
       this.value = '';
     });
+    document.getElementById('typing-rotate').addEventListener('click', function(e) {
+      e.stopPropagation();
+      fetch('/api/rotate', { method: 'POST' }).catch(function() {});
+    });
     document.getElementById('typing-paste').addEventListener('click', function(e) {
       e.stopPropagation(); showPasteModal();
     });

@@ -532,9 +532,24 @@ cursor_state_block = (
 )
 s = s[:last_body_pos] + cursor_state_block + s[last_body_pos:]
 
+# rotateScreen(): rotate the display 90 degrees clockwise. Called by the C++
+# rotate cmd sent by rmkbd on POST /api/rotate. Increments root.rotation by 90
+# mod 360; the body Rectangle already swaps its width/height at 90/270 degrees
+# (upstream geometry is untouched, so portrait/landscape swap is automatic).
+old_rotate_fn = '    function initFile(name) {'
+new_rotate_fn = (
+    '    function rotateScreen() {\n'
+    '        root.rotation = (root.rotation + 90) % 360\n'
+    '    }\n'
+    '\n'
+    '    function initFile(name) {'
+)
+assert old_rotate_fn in s, "function initFile not found (rotateScreen)"
+s = s.replace(old_rotate_fn, new_rotate_fn, 1)
+
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing).')
+print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true
