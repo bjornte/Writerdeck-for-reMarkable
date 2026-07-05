@@ -141,6 +141,9 @@
 +                        Q_ARG(QVariant, QString::fromStdString(family)));
 +            }
 +        }
++        else if (cmd == "rotate" && g_rootObj)
++            // {"t":"cmd","c":"rotate"} -> rotateScreen() in QML: rotate display 90 CW.
++            QMetaObject::invokeMethod(g_rootObj, "rotateScreen", Qt::QueuedConnection);
 +    } else if (line.find("\"t\":\"info\"") != std::string::npos) {
 +        // {"t":"info","ip":"...","pin":"..."} -> setLobbyInfo(ip, pin) in QML.
 +        // Sent by rmkbd on every socket connect so the Lobby always shows current values.

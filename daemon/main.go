@@ -1411,6 +1411,35 @@ func openHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// rotateHandler handles POST /api/rotate: rotates the editor display 90 degrees
+// clockwise. Sends {"t":"cmd","c":"rotate"} to keywriter, which calls
+// rotateScreen() in QML (increments root.rotation by 90 mod 360).
+func rotateHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		return
+	}
+	if !checkAuth(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if activeSess == nil {
+		http.Error(w, "not in supervisor mode", http.StatusNotImplemented)
+		return
+	}
+	if !activeSess.isActive() {
+		http.Error(w, "no active editor session", http.StatusConflict)
+		return
+	}
+	activeSess.ec.write([]byte(`{"t":"cmd","c":"rotate"}`))
+	w.WriteHeader(http.StatusOK)
+}
+
 // selftest sends "hello world" + Return over the editor socket,
 // replicating the Phase 2 smoke test without needing a browser.
 // No leading Escape: keywriter now boots in edit mode.
@@ -1505,6 +1534,7 @@ func main() {
 	http.HandleFunc("/api/pin", pinHandler)
 	http.HandleFunc("/api/launch", launchHandler)
 	http.HandleFunc("/api/open", openHandler)
+	http.HandleFunc("/api/rotate", rotateHandler)
 	http.HandleFunc("/api/notes", notesListHandler)
 	http.HandleFunc("/api/notes/", notesItemHandler)
 	http.HandleFunc("/api/settings", settingsHandler)
