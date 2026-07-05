@@ -42,6 +42,8 @@ An optional feature syncing your notes towards a repo on GitHub. The assumed use
 
 Edit conflicts never overwrite: the tablet's version is kept as `note (tablet copy).md` and a banner appears on the phone so you can reconcile.
 
+If a note has tablet edits that haven't synced yet, deleting or renaming it elsewhere keeps the note rather than removing it.
+
 ## How-to for users incl. shortcuts
 
 1. Power on the tablet — it boots into a Lobby showing its address (`http://<ip>:8000`) and a one-time PIN.
@@ -53,6 +55,7 @@ Shortcuts:
 
 - Esc — toggles edit / preview on the tablet.
 - Ctrl-K — Switch note from within edit view.
+- Ctrl-left/right — In preview mode, rotate screen (landscape/portrait)
 
 ## Getting started for devs
 

@@ -207,6 +207,29 @@ export function ghDelete(filename) {
   }).catch(function() {});
 }
 
+// applyRemoteDelete: a previously-synced, locally-unchanged note has vanished from
+// GitHub -> treat as a real upstream delete. Confirms with a fresh per-note GET
+// (guards against a stale/empty bulk list or a transient network error mapping
+// failure -> [] in reconcileAll) before removing it from the tablet. A false
+// positive self-heals on the next sync (re-pulled via the !hasLocal && hasRemote
+// branch). Never touches the currently-open note.
+function applyRemoteDelete(name) {
+  if (!syncReady() || name === state.tabletOpenNote) return Promise.resolve();
+  return fetch(ghUrl(name), { headers: ghHdrs() })
+    .then(function(r) {
+      if (r.status !== 404) return;                    // still there / uncertain -> do nothing (safe)
+      return fetch('/api/notes/' + encodeURIComponent(name), { method: 'DELETE' })
+        .then(function(dr) {
+          if (dr && dr.ok) {
+            localStorage.removeItem('ghSha_' + name);
+            localStorage.removeItem('ghLocalHash_' + name);
+            localStorage.removeItem('ghPushFailed_' + name);
+          }
+        });
+    })
+    .catch(function() {});                             // network error -> no delete
+}
+
 // strHash: cheap deterministic fingerprint (djb2) of a note's text, used to
 // tell whether the tablet copy changed since the last sync -- the missing
 // signal that lets reconcile distinguish a local-only edit from a real clash.
@@ -283,7 +306,13 @@ function reconcileOne(name, remoteSha) {
     .then(function(r) { return r.ok ? r.text() : null; })
     .then(function(localContent) {
       var hasLocal = localContent !== null;
-      if (hasLocal && !hasRemote) { return pushNote(name); }
+      if (hasLocal && !hasRemote) {
+        if (!localStorage.getItem('ghSha_' + name)) { return pushNote(name); }              // never synced -> new note -> push
+        if (localStorage.getItem('ghLocalHash_' + name) !== strHash(localContent)) {
+          return pushNote(name);                                                             // edited since last sync -> keep words, resurrect
+        }
+        return applyRemoteDelete(name);                                                     // synced + pristine + gone -> confirm & delete
+      }
       if (!hasLocal && hasRemote) { return pullNoteAndUpdate(name); }
       if (!hasLocal && !hasRemote) { return; }
       var storedSha = localStorage.getItem('ghSha_' + name);
