@@ -29,6 +29,8 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ❌ blocked
 
 ### 2026-07-05
 
+Front-end de-monolithed (Opus-reviewed; device-verify pending). The 1559-line [daemon/index.html](daemon/index.html) is now markup-only (91 lines) + [daemon/app.css](daemon/app.css) + an ES-module graph: [daemon/state.js](daemon/state.js) (shared mutable state) ← [daemon/sync.js](daemon/sync.js) (GitHub engine) ← [daemon/app.js](daemon/app.js) (UI shell). Byte-identical behavior, no bundler, no deps; all four ship via `//go:embed` ([daemon/main.go](daemon/main.go)) with `no-store` + correct `Content-Type` (`text/javascript` is mandatory for the module routes). Rejected React/bundler (fights the imperative focus-trap, breaks the static-binary/zero-dep ethos). Review finding, pre-existing (not this refactor): `#sync-banner`/`#clash-banner` are CSS-styled and read via guarded `getElementById`, but no such element is ever placed in the DOM, so those inline sync warnings silently no-op.
+
 GitHub two-way note sync — optional, off by default, **device-verified** (6 notes reconcile in one pass, both ways, no stray copies). Research + SWOT + plan in [docs/research-github-sync.md](docs/research-github-sync.md).
 
 - **Spine** — the token never touches the tablet: the phone browser is the sync engine (GitHub Contents API from the capture page, PAT in `localStorage`); the tablet holds only non-secret `syncOn`/`syncRepo`. Go ([daemon/main.go](daemon/main.go)): those two fields (`isValidGitHubRepo`, 400 on bad) + a `PUT /api/notes/{name}` upsert.
