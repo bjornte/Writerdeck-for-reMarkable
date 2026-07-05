@@ -15,6 +15,7 @@
    * Status bar with affordances for: Title, terse confirmations, zooming, time
 * In lobby:
    * UX bug: On boot, URL shows "?". Fix: Refresh at intervals until on Wi-Fi, then update URL
+   * Could include an affordace (button) to open the file chooser (`ctrl-K`)
 * In settings:
    * possible to exit service entirely (e.g. for battery performance reasons)
 
