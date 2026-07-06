@@ -1,6 +1,9 @@
 # Writerdeck for reMarkable 1
 
-A text editor for the reMarkable 1, with a bridge for a physical keyboard. Pair a keyboard to another device — your phone, say — and type over Wi-Fi onto the tablet's e-ink, saving Markdown.
+A text editor for the reMarkable 1, with two connection options for USB & Bluetooth keyboards.
+
+* For USB: Connect the keyboard using An [OTG cable](https://en.wikipedia.org/wiki/USB_On-The-Go#OTG_micro_cables) (Micro-USB male to USB-A female)
+* For Bluetooth: Pair a keyboard to another device — your phone, say — and type over Wi-Fi onto the tablet's e-ink, saving Markdown.
 
 ![Writerdeck for reMarkable 1](docs/Writerdeck-for-reMarkable.jpg)
 
@@ -57,6 +60,7 @@ Shortcuts:
 
 - Esc — toggles edit / preview on the tablet.
 - Ctrl-K — Switch note from within edit view.
+- For a USB connected keyboard, Ctrl + side arrows rotate to landscape in reading view
 
 ## Getting started for devs
 
