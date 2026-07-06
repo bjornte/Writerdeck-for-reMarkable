@@ -2,12 +2,13 @@
 
 ## On reMarkable
 * General
-   * For USB-connected keyboards, it should be possible to activate the program using a keyboard shortcut
-   * For USB-connected keyboards, support additional keyboard locales, e.g. Norwegian
    * Power button should be functional
    * Some sleep logic should be included
    * Files could be encrypted
    * When WiFi and thus URL changes, syncing fails. Setting page on new URL misses the token. Manual fix is to paste it in again. Do the browsers' security architecture make it impossible to share the token across URLs?
+* For USB-connected keyboards
+   * Activate the program using a keyboard shortcut
+   * Support additional keyboard locales, incl. Norwegian
 * In Edit view
    * Page navigation and corresponding keyboard shortcuts generally work, but  leave a lot to be desired
    * More VS Code-like shortcuts & behaviour. E.g., when in indented list, newline could add spaces to match previous indentation
