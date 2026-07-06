@@ -1,9 +1,9 @@
 # Writerdeck for reMarkable 1
 
-A text editor for the reMarkable 1, with two connection options for USB & Bluetooth keyboards.
+A Markdown editor for the reMarkable 1, with connection options for USB & Bluetooth keyboards.
 
 * For USB: Connect the keyboard using an [OTG cable](https://en.wikipedia.org/wiki/USB_On-The-Go#OTG_micro_cables) (Micro-USB male to USB-A female)
-* For Bluetooth: Pair a keyboard to another device — your phone, say — and type over Wi-Fi onto the tablet's e-ink, saving Markdown.
+* For Bluetooth: Pair a keyboard to another device — your phone, say — and type over Wi-Fi
 
 ![Writerdeck for reMarkable 1](docs/Writerdeck-for-reMarkable.jpg)
 
