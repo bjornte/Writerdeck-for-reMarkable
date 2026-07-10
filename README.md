@@ -54,13 +54,13 @@ To set up the repo and enable syncing:
 1. Power on the tablet — it boots into a Lobby showing its address (`http://<ip>:8000`) and a one-time PIN.
 2. Open that address in the phone's browser, and enter the PIN.
 3. Pair a physical keyboard to your phone.
-4. Tap a note to read it, or Edit to type — keystrokes land on the e-ink and save as `.md`. New makes a note; Rename / Delete / Download / Copy live in the read view; ⚙ picks the reading font and PIN length (6 / 4 / off).
+4. Tap a note to read it, or Edit to type — keystrokes land on the e-ink and save as `.md`. New makes a note; Rename / Delete / Download / Copy live in the read view; **Preferences** picks the reading font, PIN length, and display rotation (6 / 4 / off for PIN).
 
 Shortcuts:
 
-- Esc — toggles edit / preview on the tablet.
-- Ctrl-K — Switch note from within edit view.
-- For a USB connected keyboard, Ctrl + side arrows rotate to landscape in reading view
+- Esc — in Writerdeck: toggles edit / preview (or closes the note picker). From **stock reMarkable UI** with a USB keyboard: launches Writerdeck to the Lobby.
+- Ctrl-K — switch note from within edit view; from the Lobby, opens the note picker (button or keyboard).
+- For a USB connected keyboard, Ctrl + side arrows rotate the display in preview/read mode and in the Lobby; **Ctrl+R** also rotates 90° clockwise in the Lobby (angle is remembered across sessions)
 
 ## Getting started for devs
 

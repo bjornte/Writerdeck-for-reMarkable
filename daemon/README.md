@@ -7,7 +7,8 @@ The Go daemon that runs on the reMarkable — Component A of the architecture (s
 
 - Serves the capture page + WebSocket on `:8000` — `index.html` is embedded via `go:embed` (nothing extra to deploy). The browser sends key events; the daemon forwards them to keywriter as integer Unicode codepoints (`{"t":"text","cp":N}`, escaping-proof) plus named keys/modifiers — keywriter takes Qt input, so there is no fd to swap; it replays decoded keys.
 - Notes file-manager API on `/api/notes` (list / read / create / rename / delete over `/home/root/Writerdeck-user-documents`), gated by a per-boot PIN (`/api/pin` → HttpOnly session cookie that also guards the WS upgrade).
-- Supervisor / lifecycle split — owns the `xochitl ↔ keywriter` toggle in Go: keeps serving `:8000` even under the stock GUI and summons keywriter on demand (`/api/open`, `/api/launch`); boot auto-launches one editor session; the physical Home button relays through to keywriter (two-level Home). Pushes the Lobby's IP + PIN to keywriter on socket connect.
+- Settings API on `/api/settings` and rotate on `POST /api/rotate` — font, PIN length, and display rotation persist to `/home/root/.Writerdeck/settings.json`; rotation is pushed to Writerdeck on connect (`setrotation`) and after phone rotate.
+- Supervisor / lifecycle split — owns the `xochitl ↔ keywriter` toggle in Go: keeps serving `:8000` even under the stock GUI and summons keywriter on demand (`/api/open`, `/api/launch`); boot auto-launches one editor session; the physical Home button relays through to keywriter (two-level Home). **USB Escape** (evdev hotplug watch) launches Writerdeck to the Lobby from stock UI when no editor session is active — not a wake-from-sleep path (power button only). Pushes the Lobby's IP + PIN to keywriter on socket connect.
 
 ## Layout
 ```

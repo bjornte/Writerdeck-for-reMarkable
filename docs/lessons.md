@@ -16,7 +16,9 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **ETXTBSY on deploy** — kill by full path before copying; stream to `.new`, then `mv`.
 
-**Browser rotate needs keywriter deploy** — `POST /api/rotate` is rmkbd-only, but the tablet must handle the socket `rotate` cmd. `deploy-rmkbd.sh` alone leaves an old keywriter that ignores it.
+**Browser rotate needs both binaries** — `POST /api/rotate` is handled by Writerdeck-server (saves `"rotation"` in `settings.json`), but restore and USB persistence need Writerdeck to handle `setrotation` and relay `rotationChanged` via `rotation_watcher`. `deploy-rmkbd.sh` alone leaves an old editor at 0° on relaunch; phone rotate may save without the tablet moving.
+
+**Rotation watcher is a separate moc'd unit** — `Q_OBJECT` in patched `main.cpp` won't link on the ARM Qt build. Keep `rotation_watcher.{h,cpp}` in `edit.pro` (copied by `build-keywriter.sh`).
 
 ## systemd & device
 

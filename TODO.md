@@ -44,7 +44,8 @@ Power again after wake → restart editor session and reopen the note that was o
 - [x] Lobby: repo URL when sync on — device-verified; `pushLobbyInfo` sends `syncOn`/`syncRepo`; Lobby shows `Sync: github.com/owner/repo`.
 - [x] Reading view: no auto-scroll to bottom — device-verified; `ensureVisible` only in edit mode (Esc to preview keeps scroll position).
 - [x] Browser: battery/Wi-Fi status in top bar — `GET /api/status`, polled every 30s.
-- [x] Browser: exit Writerdeck from Settings — `POST /api/shutdown` stops editor, restores xochitl, exits `rmkbd`.
+- [x] Browser: exit Writerdeck from Settings — `POST /api/shutdown` stops editor, restores xochitl, exits `Writerdeck-server`.
+- [x] USB Escape launch — from stock UI (no session), Esc on USB keyboard → Lobby (`watchUSBKeyboardForLaunch` in `daemon/main.go`). Not Esc-to-wake (power button only).
 - [ ] Lobby: file-picker button — shipped (`openNotePicker` + Lobby button + Ctrl-K from Lobby); **verify on USB keyboard**.
 
 > Dev-ergonomics polish is already done (deploy ticker, binary-only `rmkw` redeploy, SSH preflight) — see [docs/architecture.md](docs/architecture.md).
@@ -62,7 +63,7 @@ Power again after wake → restart editor session and reopen the note that was o
 ## Resume prompt (paste into a fresh chat)
 
 > Project rM1-Writerdeck — a reMarkable 1 as a Wi-Fi Markdown typewriter. A static Go daemon (`rmkbd`) on the tablet serves a WebSocket + HTML capture page and feeds a patched keywriter over a local socket (this kernel can't load `/dev/uinput`); keywriter saves `.md`. The client is the Mac in dev, the iPhone in use.
-> State: Phases 0–8 and most of Phase 9 polish are done & device-verified (see [DONE.md](DONE.md)). **Next:** power button device test; Lobby file-picker shipped (verify Ctrl-K on USB keyboard).
+> State: Phases 0–8 and most of Phase 9 polish are done & device-verified (see [DONE.md](DONE.md)). **Next:** power button device test; Lobby file-picker verify on USB keyboard.
 > Read first: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [DONE](DONE.md), [lessons](docs/lessons.md). Power-button notes in **Next up** above.
 > Dev: device SSH/deploy over Wi-Fi; IP in `secrets/remarkable.local.env` (`RM_HOST_WIFI`, currently `192.168.1.8`).
 > Constraints: no jailbreak; preserve OTA; no Toltec; static Go binary (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). SSH password gitignored in `secrets/remarkable.local.env`. Iterate over Wi-Fi; keep the tablet awake.

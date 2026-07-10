@@ -16,7 +16,7 @@ Below is the feature list — what works today. Open work lives in [TODO.md](TOD
 
 Power on, the tablet boots into a distraction-free editor. Open `http://<tablet-ip>:8000/` in a browser, pick a note, type. Keystrokes travel over WebSocket to `rmkbd`, which feeds a patched keywriter over a local socket. No app to install — the tablet is the server.
 
-Home from the editor saves and returns to the Lobby. Home from the Lobby quits to the stock reMarkable UI. `rmkbd` keeps serving `:8000` either way, so you can launch writing again without a reboot.
+Home from the editor saves and returns to the Lobby. Home from the Lobby quits to the stock reMarkable UI. `Writerdeck-server` keeps serving `:8000` either way — relaunch from the phone (**Edit**) or **Esc on a USB keyboard** (stock UI only).
 
 ## Lobby
 
@@ -40,7 +40,7 @@ PIN on the tablet, shown on e-ink each boot. Choose 6 digits, 4 digits, or none 
 
 ## Settings & sync (browser)
 
-**Settings** — reading font, PIN length, display rotate, and **Exit Writerdeck** (stops the service and returns the tablet to stock UI). **Sync** — separate panel for optional GitHub two-way sync. Both dismiss with Done, ×, ESC, or a backdrop click.
+**Preferences** — reading font, PIN length, display rotate, and **Exit Writerdeck** (stops the service and returns the tablet to stock UI). **Sync** — separate panel for optional GitHub two-way sync. Both dismiss with Done, ×, ESC, or a backdrop click.
 
 The top bar shows tablet battery and Wi-Fi (`96% · Wi-Fi`), refreshed every 30 seconds.
 
@@ -56,7 +56,7 @@ Built from source keywriter, patched for socket input. Renders full-panel via li
 
 **Editing.** Block cursor hides while you type, reappears after a pause. Ctrl-K note switcher saves before switching. Mac-style navigation in edit mode (device-verified): Home/End line start/end (Cmd+Home/End doc start/end); Option/Alt+←/→ word; Cmd+←/→ line end; Cmd+↑/↓ doc start/end; Shift extends selection; plain ←/→ scroll the page. **Power button** while editing: save, sleep screen (“Writerdeck is sleeping…”), suspend; press power again to wake and resume. **USB Escape** from stock reMarkable UI (no editor session): launches Writerdeck to the Lobby. Wider margins, paper-like Lobby theme.
 
-**Rotate.** Preferences → Display → **Rotate tablet 90°** (global — affects Lobby, read, and edit). USB Ctrl+←/→ still works in preview mode. Angle persists in `.Writerdeck/settings.json` and restores on relaunch.
+**Rotate.** Preferences → Display → **Rotate tablet 90°** (global — affects Lobby, read, and edit). USB in preview/read: Ctrl+←/→. USB in Lobby: **Ctrl+R** (90° clockwise) or Ctrl+←/→ (same as preview). Angle is stored as `"rotation"` in `.Writerdeck/settings.json`, pushed to Writerdeck on connect via socket `setrotation`, and restored after exit/relaunch. USB changes sync back to the server via `rotationChanged`.
 
 ## GitHub sync
 

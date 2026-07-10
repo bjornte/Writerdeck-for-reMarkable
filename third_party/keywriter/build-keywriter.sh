@@ -209,6 +209,23 @@ new4b = (
 assert old4b in s, "Ctrl-K handler block not found (edit 4b)"
 s = s.replace(old4b, new4b, 1)
 
+# 4c. Ctrl-R in Lobby rotates the display 90° clockwise (preview uses Ctrl+Right).
+old4c = (
+    '            event.accepted = true\n'
+    '        } else if (event.key === Qt.Key_Q && (ctrlPressed || (event.modifiers & Qt.ControlModifier))) {\n'
+)
+new4c = (
+    '            event.accepted = true\n'
+    '        } else if (event.key === Qt.Key_R && (ctrlPressed || (event.modifiers & Qt.ControlModifier))) {\n'
+    '            if (isLobby) {\n'
+    '                rotateScreen()\n'
+    '                event.accepted = true\n'
+    '            }\n'
+    '        } else if (event.key === Qt.Key_Q && (ctrlPressed || (event.modifiers & Qt.ControlModifier))) {\n'
+)
+assert old4c in s, "handleKeyDown Ctrl-Q anchor not found (edit 4c)"
+s = s.replace(old4c, new4c, 1)
+
 # 5b. Ctrl-K note-switcher data-loss fix. The omni (note-switcher) Enter handler
 #     saves the current note before switching, but it calls a bare saveFile(),
 #     which writes `doc` -- and in edit mode (mode==1) the live text is in
@@ -805,6 +822,41 @@ new7o_rot_l = (
 assert old7o_rot_l in s, "preview Ctrl+Left rotate not found (7o)"
 s = s.replace(old7o_rot_l, new7o_rot_l, 1)
 
+# 7p. Lobby rotation: same Ctrl+arrow as preview (Lobby boots in edit mode).
+old7p = (
+    '        if (mode == 0)\n'
+    '            switch (event.key) {\n'
+    '            case Qt.Key_Home:\n'
+    '                Qt.quit()\n'
+    '                break\n'
+    '            case Qt.Key_Right:\n'
+    '                if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
+    '                    root.rotation = (root.rotation + 90) % 360\n'
+    '                break\n'
+    '            case Qt.Key_Left:\n'
+    '                if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
+    '                    root.rotation = (root.rotation - 90) % 360\n'
+    '                break\n'
+    '            }'
+)
+new7p = (
+    '        if (mode == 0 && event.key === Qt.Key_Home)\n'
+    '            Qt.quit()\n'
+    '        else if (mode == 0 || isLobby) {\n'
+    '            switch (event.key) {\n'
+    '            case Qt.Key_Right:\n'
+    '                if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
+    '                    root.rotation = (root.rotation + 90) % 360\n'
+    '                break\n'
+    '            case Qt.Key_Left:\n'
+    '                if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
+    '                    root.rotation = (root.rotation - 90) % 360\n'
+    '                break\n'
+    '            }'
+)
+assert old7p in s, "handleKey rotate block not found (7p)"
+s = s.replace(old7p, new7p, 1)
+
 # 8. Add the Lobby Rectangle at the end of the body Rectangle, after the
 #    quick (isOmni) overlay.  Anchor: the last "        }\n    }\n}" in the file
 #    = quick close (8 sp) + body close (4 sp) + Window close (0 sp).
@@ -958,7 +1010,7 @@ s = s.replace(old_rotate_fn, new_rotate_fn, 1)
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + prepareSleep + sleep-screen + Lobby rect + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
+print('  All QML edits applied (props + setLobbyInfo + handleHome + prepareSleep + sleep-screen + Lobby rect + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true
