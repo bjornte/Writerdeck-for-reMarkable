@@ -852,7 +852,8 @@ new7p = (
     '                if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
     '                    root.rotation = (root.rotation - 90) % 360\n'
     '                break\n'
-    '            }'
+    '            }\n'
+    '        }'
 )
 assert old7p in s, "handleKey rotate block not found (7p)"
 s = s.replace(old7p, new7p, 1)
@@ -1007,6 +1008,12 @@ new_rotate_fn = (
 )
 assert old_rotate_fn in s, "function initFile not found (rotateScreen)"
 s = s.replace(old_rotate_fn, new_rotate_fn, 1)
+
+# Sanity: handleKey must close before Component.onCompleted (patch 7p regressed once).
+hk = s.find('    function handleKey(event) {')
+co = s.find('    Component.onCompleted: {')
+assert hk >= 0 and co > hk, "handleKey / Component.onCompleted anchors missing"
+assert s[hk:co].count('{') == s[hk:co].count('}'), "handleKey brace mismatch -- QML will fail to load"
 
 with open('main.qml', 'w') as f:
     f.write(s)
