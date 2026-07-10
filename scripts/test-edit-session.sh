@@ -37,13 +37,26 @@ exec > >(tee "$LOG") 2>&1
 
 echo "=== test-edit-session  $TS  target=$TARGET  note=$NOTE ==="
 
+# Ensure server is listening and we start from stock UI (xochitl up, no editor).
+ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 "root@$TARGET" <<'PREP' || true
+if ! wget -qO- --timeout=3 http://127.0.0.1:8000/api/status >/dev/null 2>&1; then
+  kill $(pidof Writerdeck-server) 2>/dev/null || true
+  kill $(pidof Writerdeck) 2>/dev/null || true
+  sleep 1
+  systemctl start xochitl 2>/dev/null || true
+  nohup /home/root/Writerdeck-server --editor /home/root/Writerdeck-launcher.sh >/tmp/wd-server.log 2>&1 &
+  sleep 4
+fi
+kill $(pidof Writerdeck) 2>/dev/null || true
+sleep 2
+systemctl start xochitl 2>/dev/null || true
+PREP
+
 _restore() {
     echo
-    echo "--- Cleanup (restore stock UI if editor still up) ---"
+    echo "--- Cleanup (return tablet to stock UI; keep server running) ---"
     ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 "root@$TARGET" \
-        'wget -qO- --post-data="" http://127.0.0.1:8000/api/shutdown 2>/dev/null || true
-         sleep 1
-         systemctl start xochitl 2>/dev/null || true' || true
+        'kill $(pidof Writerdeck) 2>/dev/null || true; sleep 2; systemctl start xochitl 2>/dev/null || true' || true
 }
 trap _restore EXIT
 
@@ -86,10 +99,13 @@ while [ "\$i" -le "\$HOLD" ]; do
     fail=1
     break
   fi
-  case "\$st" in
-    *'"editorActive":true'*) ;;
-    *) echo "FAIL: editorActive not true at t=\${i}s" | tee -a "\$log"; fail=1; break ;;
-  esac
+  if echo "\$st" | grep -q '"editorActive":true'; then
+    :
+  else
+    echo "FAIL: editorActive not true at t=\${i}s" | tee -a "\$log"
+    fail=1
+    break
+  fi
   i=\$((i + 1))
   sleep 1
 done
