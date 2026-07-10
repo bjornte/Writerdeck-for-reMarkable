@@ -21,8 +21,7 @@
    * Paragraph distances could be greater. Postponed.
    * should not automatically scroll to the bottom
 * In lobby:
-   * UX bug: On boot, URL shows "?". Fix: Refresh at intervals until on Wi-Fi, then update URL
-   *  Could include an affordace (button) to open the file picker (`ctrl-K`)
+   * Could include an affordace (button) to open the file picker (`ctrl-K`)
    * When the notes sync to GitHub is enabled, the repo URL should be listed in the Lobby 
 * In settings:
    * possible to exit service entirely (e.g. for battery performance reasons)
@@ -30,10 +29,10 @@
 ## In browser
 
 * On main screen
-   * Settings button with label `Settings`, not just cog wheel
-   * Dedicated `Sync` button, and separate sync UI from settings.
+   * ~~Settings button with label `Settings`, not just cog wheel~~ (done 2026-07-10)
+   * ~~Dedicated `Sync` button, and separate sync UI from settings.~~ (done 2026-07-10)
 * On the settings screen
    * Possible to exit service entirely on reMarkable (e.g. for battery performance reasons)
-   * When the notes sync to GitHub is enabled, there should be a link to this repo from the browser.
+   * ~~When the notes sync to GitHub is enabled, there should be a link to this repo from the browser.~~ (done 2026-07-10 — in Sync panel)
    * For later: Choose more fonts (for reMarkable edit view, and views in the browser. Maybe one font across all?) and later maybe other things
-   * In settings, when in a laptop browser, clicking outside the pop-up or ESC closes it. Also, small close button in top right. Or use a whole page for settings, rather than a pop-up. Pop-ups are not great on mobile.
+   * ~~In settings, when in a laptop browser, clicking outside the pop-up or ESC closes it. Also, small close button in top right.~~ (done 2026-07-10 — settings + sync overlays)

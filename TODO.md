@@ -14,6 +14,19 @@ Phases 0–8 are done and device-verified — the Companion appliance works end-
 
 ---
 
+## Browser quick wins (from [docs/improvements.md](docs/improvements.md))
+
+Daemon-only (`daemon/index.html`, `daemon/app.js`, `daemon/app.css`); deploy with `bash scripts/deploy-rmkbd.sh`. No keywriter rebuild.
+
+- [x] **Sync warning banners** — `sync.js` + CSS reference `#sync-banner` / `#clash-banner` but nodes are missing from `index.html`; warnings silently no-op. Add both `<div>`s (e.g. above `#notes` or in `#bar` area).
+- [x] **Settings popup: ESC + click-outside close** — `hideSettings()` exists; only `#settings-done` is wired (`app.js` ~889–894). Add `document` `keydown` (Escape) and `#settings-screen` backdrop click → `hideSettings()`.
+- [x] **Settings popup: close button** — Add top-right × in `#settings-box`; wire to `hideSettings()`. Style in `app.css`.
+- [x] **Settings button label** — `#settings-btn` is cog-only (`title="Font settings"`). Show visible "Settings" text (keep or drop icon).
+- [x] **GitHub repo link in settings** — In `renderSettingsList()`, when `state.syncOn && state.syncRepo`, render `<a href="https://github.com/{repo}">` below the repo input.
+- [x] **Dedicated Sync button** — Extract sync controls from settings panel; add top-level Sync button + use fixed banners above. Pairs with sync-banner item.
+
+---
+
 ## Phase 9 — Polish / stretch (optional)
 
 - [ ] Cursor navigation niceties (QML patch): ArrowDown on the last line → move cursor to end of line; ArrowUp on the first line → move cursor to start. (Intercept in `Keys.onPressed` when `cursorPosition` is already on the boundary line.)

@@ -157,10 +157,41 @@ func (e *editorConn) ready() bool {
 	return e.conn != nil
 }
 
-// getLocalIP returns the first non-loopback IPv4 address, or "?" on failure.
-// Used to populate the tablet Lobby screen so the user can read the URL
-// without needing to know the device's Wi-Fi IP in advance.
+// ipv4OnInterface returns the first IPv4 on name, or "" if the interface is
+// down or has no suitable address.
+func ipv4OnInterface(name string) string {
+	iface, err := net.InterfaceByName(name)
+	if err != nil || iface.Flags&net.FlagUp == 0 {
+		return ""
+	}
+	addrs, err := iface.Addrs()
+	if err != nil {
+		return ""
+	}
+	for _, addr := range addrs {
+		var ip net.IP
+		switch v := addr.(type) {
+		case *net.IPNet:
+			ip = v.IP
+		case *net.IPAddr:
+			ip = v.IP
+		}
+		if ip == nil || ip.IsLoopback() {
+			continue
+		}
+		if ip4 := ip.To4(); ip4 != nil {
+			return ip4.String()
+		}
+	}
+	return ""
+}
+
+// getLocalIP returns the device's Wi-Fi IPv4, preferring wlan0, or "?" if none
+// is up yet. Used to populate the tablet Lobby screen.
 func getLocalIP() string {
+	if ip := ipv4OnInterface("wlan0"); ip != "" {
+		return ip
+	}
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return "?"
@@ -169,24 +200,8 @@ func getLocalIP() string {
 		if iface.Flags&net.FlagLoopback != 0 || iface.Flags&net.FlagUp == 0 {
 			continue
 		}
-		addrs, err := iface.Addrs()
-		if err != nil {
-			continue
-		}
-		for _, addr := range addrs {
-			var ip net.IP
-			switch v := addr.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
-			if ip == nil || ip.IsLoopback() {
-				continue
-			}
-			if ip4 := ip.To4(); ip4 != nil {
-				return ip4.String()
-			}
+		if ip := ipv4OnInterface(iface.Name); ip != "" {
+			return ip
 		}
 	}
 	return "?"
@@ -959,10 +974,16 @@ func generateToken() string {
 	return hex.EncodeToString(b[:])
 }
 
+var (
+	lobbyIPMu         sync.Mutex
+	lastPushedLobbyIP string
+)
+
 // pushLobbyInfo sends {"t":"info","ip":...}"pin":...} to the editor socket so
 // the Lobby screen reflects the current IP and PIN. When pin is "" (no-PIN
 // mode) the QML conditional shows a friendly "no PIN needed" line instead.
-// Called on each editor connect (dialLoop) and on every PIN change.
+// Called on each editor connect (dialLoop), on every PIN change, when the IP
+// changes (watchLobbyIP), and when the Lobby is shown on demand.
 func pushLobbyInfo() {
 	ip := getLocalIP()
 	authMu.Lock()
@@ -975,6 +996,28 @@ func pushLobbyInfo() {
 	}{"info", ip, pin})
 	if globalEC != nil {
 		globalEC.write(infoMsg)
+	}
+	lobbyIPMu.Lock()
+	lastPushedLobbyIP = ip
+	lobbyIPMu.Unlock()
+}
+
+// watchLobbyIP re-pushes lobby info when wlan0 gets an address after boot or
+// when the DHCP lease changes. pushLobbyInfo on socket connect alone is too
+// early on cold boot: DHCP often completes after keywriter has already shown
+// http://?:8000.
+func watchLobbyIP() {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		ip := getLocalIP()
+		lobbyIPMu.Lock()
+		changed := ip != lastPushedLobbyIP
+		lobbyIPMu.Unlock()
+		if !changed || globalEC == nil || !globalEC.ready() {
+			continue
+		}
+		pushLobbyInfo()
 	}
 }
 
@@ -1210,6 +1253,7 @@ func lobbyHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	pushLobbyInfo()
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -1500,6 +1544,7 @@ func main() {
 	ec := &editorConn{}
 	globalEC = ec
 	go dialLoop(ec)
+	go watchLobbyIP()
 
 	if *doSelftest {
 		selftest(ec)

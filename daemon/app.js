@@ -519,6 +519,20 @@ import {
     }).catch(function() {});
   }
 
+  function updateBannerOffset() {
+    var stack = document.getElementById('banner-stack');
+    var h = 40;
+    if (stack) {
+      var visible = 0;
+      ['sync-banner', 'clash-banner'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el.style.display !== 'none') visible += el.offsetHeight;
+      });
+      h += visible;
+    }
+    document.documentElement.style.setProperty('--below-bar', h + 'px');
+  }
+
   function showSettings() {
     document.getElementById('settings-screen').style.display = 'flex';
     loadSettingsPanel();
@@ -527,6 +541,25 @@ import {
   function hideSettings() {
     document.getElementById('settings-screen').style.display = 'none';
     grab();
+  }
+
+  function showSync() {
+    document.getElementById('sync-screen').style.display = 'flex';
+    loadSyncPanel();
+  }
+
+  function hideSync() {
+    document.getElementById('sync-screen').style.display = 'none';
+    grab();
+  }
+
+  function wireOverlayDismiss(screenId, boxId, hideFn) {
+    var screen = document.getElementById(screenId);
+    var box = document.getElementById(boxId);
+    screen.addEventListener('click', function(e) {
+      if (e.target === screen) hideFn();
+    });
+    box.addEventListener('click', function(e) { e.stopPropagation(); });
   }
 
   function loadSettingsPanel() {
@@ -541,6 +574,24 @@ import {
         renderSettingsList();
       })
       .catch(function() {});
+  }
+
+  function loadSyncPanel() {
+    fetch('/api/settings')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        state.syncOn = !!data.syncOn;
+        state.syncRepo = data.syncRepo || '';
+        renderSyncPanel();
+        updateSyncBannerFromState();
+      })
+      .catch(function() {});
+  }
+
+  function renderSyncPanel() {
+    var list = document.getElementById('sync-list');
+    list.innerHTML = '';
+    renderSyncControls(list);
   }
 
   function renderSettingsList() {
@@ -599,13 +650,9 @@ import {
       });
       list.appendChild(row);
     });
+  }
 
-    // ---- GitHub sync section ----
-    var syncHead = document.createElement('div');
-    syncHead.className = 'settings-section';
-    syncHead.textContent = 'GitHub sync';
-    list.appendChild(syncHead);
-
+  function renderSyncControls(list) {
     var syncToggle = document.createElement('div');
     syncToggle.className = 'font-row' + (state.syncOn ? ' active' : '');
     syncToggle.innerHTML = '<span>Sync notes to GitHub</span>' +
@@ -617,8 +664,12 @@ import {
         method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ syncOn: newVal })
       }).then(function(r) {
-        if (r.ok) { state.syncOn = newVal; renderSettingsList(); updateSyncBannerFromState();
-          if (newVal && syncReady()) { reconcileAll('toggle'); } }
+        if (r.ok) {
+          state.syncOn = newVal;
+          renderSyncPanel();
+          updateSyncBannerFromState();
+          if (newVal && syncReady()) { reconcileAll('toggle'); }
+        }
       }).catch(function(){});
     });
     list.appendChild(syncToggle);
@@ -634,6 +685,14 @@ import {
       repoInput.style.width = '100%';
       repoInput.placeholder = 'e.g. alice/my-notes'; repoInput.value = state.syncRepo;
       list.appendChild(repoInput);
+
+      if (state.syncRepo) {
+        var repoLink = document.createElement('div');
+        repoLink.className = 'repo-link';
+        repoLink.innerHTML = '<a href="https://github.com/' + state.syncRepo +
+          '" target="_blank" rel="noopener noreferrer">github.com/' + state.syncRepo + '</a>';
+        list.appendChild(repoLink);
+      }
 
       var tokLabel = document.createElement('div');
       tokLabel.style.cssText = 'color:#888;font-size:12px;margin-top:8px;padding:0 2px;';
@@ -685,6 +744,16 @@ import {
           }
           state.syncRepo = repoVal;
           updateSyncBannerFromState();
+          var link = list.querySelector('.repo-link');
+          if (repoVal) {
+            if (!link) {
+              link = document.createElement('div');
+              link.className = 'repo-link';
+              repoInput.parentNode.insertBefore(link, repoInput.nextSibling);
+            }
+            link.innerHTML = '<a href="https://github.com/' + repoVal +
+              '" target="_blank" rel="noopener noreferrer">github.com/' + repoVal + '</a>';
+          } else if (link) { link.remove(); }
           if (!repoVal || !token) {
             verifyLine.style.color = '#888';
             verifyLine.textContent = 'Saved. Enter both repo and token to verify.';
@@ -758,6 +827,7 @@ import {
     stopPinPoll();
     document.getElementById('pin-screen').style.display = 'none';
     document.getElementById('settings-btn').style.display = 'block';
+    document.getElementById('sync-btn').style.display = 'block';
   }
 
   // loadSyncConfig: pull the non-secret syncOn/syncRepo flags at startup, not
@@ -772,6 +842,7 @@ import {
         if (!data) return;
         state.syncOn = !!data.syncOn;
         state.syncRepo = data.syncRepo || '';
+        updateSyncBannerFromState();
         if (syncReady()) { reconcileAll('startup'); }
       })
       .catch(function() {});
@@ -827,7 +898,8 @@ import {
   }
 
   window.addEventListener('load', function () {
-    initSync({ onNotesChanged: loadNotes });
+    initSync({ onNotesChanged: loadNotes, onBannerChange: updateBannerOffset });
+    updateBannerOffset();
     document.getElementById('new-btn').addEventListener('click', createNote);
     document.getElementById('upload-btn').addEventListener('click', function(e) {
       e.stopPropagation();
@@ -891,6 +963,25 @@ import {
     });
     document.getElementById('settings-done').addEventListener('click', function(e) {
       e.stopPropagation(); hideSettings();
+    });
+    document.getElementById('settings-close').addEventListener('click', function(e) {
+      e.stopPropagation(); hideSettings();
+    });
+    document.getElementById('sync-btn').addEventListener('click', function(e) {
+      e.stopPropagation(); showSync();
+    });
+    document.getElementById('sync-done').addEventListener('click', function(e) {
+      e.stopPropagation(); hideSync();
+    });
+    document.getElementById('sync-close').addEventListener('click', function(e) {
+      e.stopPropagation(); hideSync();
+    });
+    wireOverlayDismiss('settings-screen', 'settings-box', hideSettings);
+    wireOverlayDismiss('sync-screen', 'sync-box', hideSync);
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape') return;
+      if (document.getElementById('settings-screen').style.display === 'flex') hideSettings();
+      else if (document.getElementById('sync-screen').style.display === 'flex') hideSync();
     });
     applyMode();
     checkAuthAndInit();

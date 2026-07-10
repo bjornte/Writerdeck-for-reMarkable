@@ -11,7 +11,13 @@
 <div id="bar">
   <div id="dot"></div>
   <span id="msg">connecting...</span>
-  <button id="settings-btn" style="display:none" title="Font settings">&#9881;</button>
+  <button id="sync-btn" style="display:none" title="GitHub sync">Sync</button>
+  <button id="settings-btn" style="display:none" title="Settings">&#9881; Settings</button>
+</div>
+
+<div id="banner-stack">
+  <div id="sync-banner" style="display:none"></div>
+  <div id="clash-banner" style="display:none"></div>
 </div>
 
 <div id="pin-screen">
@@ -28,9 +34,19 @@
 
 <div id="settings-screen" style="display:none">
   <div id="settings-box">
+    <button id="settings-close" type="button" class="overlay-close" aria-label="Close">&times;</button>
     <p id="settings-title">Settings</p>
     <div id="settings-list"></div>
     <button id="settings-done">Done</button>
+  </div>
+</div>
+
+<div id="sync-screen" style="display:none">
+  <div id="sync-box">
+    <button id="sync-close" type="button" class="overlay-close" aria-label="Close">&times;</button>
+    <p id="sync-title">GitHub sync</p>
+    <div id="sync-list"></div>
+    <button id="sync-done">Done</button>
   </div>
 </div>
 

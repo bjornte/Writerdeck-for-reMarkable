@@ -27,6 +27,12 @@ Legend: ✅ done · 🟡 in progress · ⬜ not started · ❌ blocked
 
 ## Log (newest first)
 
+### 2026-07-10
+
+Phase 9 — browser quick wins (rmkbd-only; device-verified via deploy + live HTML/JS fetch). From [docs/improvements.md](docs/improvements.md) / [TODO.md](TODO.md): (1) `#sync-banner` / `#clash-banner` DOM nodes — sync warnings no longer silently no-op; fixed `#banner-stack` below `#bar` with `--below-bar` offset for content panels. (2) Settings overlay: ESC, backdrop click, top-right ×. (3) Bar buttons: **Sync** (dedicated overlay with all GitHub controls) + **⚙ Settings** label (font + PIN only). (4) Clickable `github.com/{repo}` link in Sync panel when repo set. Banner copy now points at **Sync**, not Settings. Files: [daemon/index.html](daemon/index.html), [daemon/app.js](daemon/app.js), [daemon/app.css](daemon/app.css), [daemon/sync.js](daemon/sync.js). Deploy: `bash scripts/deploy-rmkbd.sh`.
+
+Phase 9 — Lobby URL refreshes after Wi-Fi comes up (rmkbd-only). On cold boot the Lobby often showed `http://?:8000` because `pushLobbyInfo()` ran once at editor-socket connect, before `wlan0` had a DHCP address, and never ran again. Fix in [daemon/main.go](daemon/main.go): `getLocalIP()` now prefers `wlan0`; a `watchLobbyIP()` goroutine polls every 2 s and re-pushes `{"t":"info",…}` when the address changes; `POST /api/lobby` also refreshes before showing the PIN. No keywriter rebuild — QML `setLobbyInfo()` already updates the display. Deploy: `bash scripts/deploy-rmkbd.sh`.
+
 ### 2026-07-05
 
 Phase 9 — landscape/rotate via phone button (CI-built; device-verify pending). `POST /api/rotate` in [daemon/main.go](daemon/main.go) → `{"t":"cmd","c":"rotate"}` on the socket → `rotateScreen()` QML function (added by [build-keywriter.sh](third_party/keywriter/build-keywriter.sh)) → `root.rotation = (root.rotation + 90) % 360`. The body Rectangle's existing width/height swap at 90°/270° means portrait↔landscape is automatic. Phone UI: a "Rotate" button sits alongside "Paste from here" in the typing-view header.

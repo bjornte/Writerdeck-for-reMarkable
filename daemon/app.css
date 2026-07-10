@@ -19,6 +19,19 @@ html, body {
 }
 #dot.on  { background: #4caf50; }
 #dot.off { background: #e53935; }
+#sync-btn, #settings-btn {
+  background: transparent; color: #aaa; border: none;
+  font-size: 13px; cursor: pointer; padding: 4px 8px;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+#sync-btn { margin-left: auto; }
+#sync-btn:active, #settings-btn:active { color: #fff; }
+#banner-stack {
+  position: fixed; top: 40px; left: 0; right: 0; z-index: 90;
+}
+:root { --below-bar: 40px; }
+#notes, #preview, #typing { top: var(--below-bar); }
 /* PIN auth screen */
 #pin-screen {
   position: fixed; inset: 0; background: #f5f5f0;
@@ -45,7 +58,7 @@ html, body {
 #pin-err { color: #e53935; font-size: 14px; min-height: 20px; text-align: center; }
 /* Notes panel */
 #notes {
-  position: fixed; top: 40px; left: 0; right: 0; bottom: 0;
+  position: fixed; left: 0; right: 0; bottom: 0;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
   background: #f5f5f0;
 }
@@ -106,7 +119,7 @@ html, body {
 #notes-empty { padding: 40px 14px; text-align: center; color: #bbb; font-size: 15px; }
 /* Preview */
 #preview {
-  position: fixed; top: 40px; left: 0; right: 0; bottom: 0;
+  position: fixed; left: 0; right: 0; bottom: 0;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
   background: #f5f5f0; display: none;
 }
@@ -127,7 +140,7 @@ html, body {
 }
 /* Typing view: shown while an editor session is active on the tablet */
 #typing {
-  position: fixed; top: 40px; left: 0; right: 0; bottom: 110px;
+  position: fixed; left: 0; right: 0; bottom: 110px;
   background: #f5f5f0; display: none; overflow-y: auto;
 }
 #typing-head {
@@ -176,27 +189,28 @@ body.typing-dark #foot { border-top-color: #222; }
 body.typing-dark #typing-note,
 body.typing-dark #echo { color: #ddd; }
 body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
-/* Settings gear button in #bar */
-#settings-btn {
-  margin-left: auto;
-  background: transparent; color: #aaa; border: none;
-  font-size: 18px; cursor: pointer; padding: 4px 6px;
-  -webkit-tap-highlight-color: transparent;
-}
-#settings-btn:active { color: #fff; }
 /* Settings overlay */
-#settings-screen {
+#settings-screen, #sync-screen {
   position: fixed; inset: 0; background: rgba(0,0,0,0.75);
   display: flex; align-items: center; justify-content: center;
   z-index: 100;
 }
-#settings-box {
+#settings-box, #sync-box {
   background: #222; border-radius: 16px; padding: 28px 24px;
   display: flex; flex-direction: column; align-items: stretch; gap: 14px;
   width: 320px; max-width: 90vw;
+  position: relative;
+  overflow-y: auto; max-height: 80vh;
 }
-#settings-title { color: #ccc; font-size: 15px; text-align: center; margin-bottom: 4px; }
-#settings-list { display: flex; flex-direction: column; gap: 6px; }
+.overlay-close {
+  position: absolute; top: 10px; right: 12px;
+  background: transparent; border: none; color: #888;
+  font-size: 24px; line-height: 1; cursor: pointer; padding: 4px 8px;
+  -webkit-tap-highlight-color: transparent;
+}
+.overlay-close:active { color: #fff; }
+#settings-title, #sync-title { color: #ccc; font-size: 15px; text-align: center; margin-bottom: 4px; }
+#settings-list, #sync-list { display: flex; flex-direction: column; gap: 6px; }
 .font-row {
   background: #333; border-radius: 8px; padding: 12px 14px;
   display: flex; justify-content: space-between; align-items: center;
@@ -206,7 +220,7 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
 .font-row:active { background: #444; }
 .font-row.active { background: #1b4c20; color: #fff; }
 .font-row .font-check { color: #4caf50; font-size: 16px; }
-#settings-done {
+#settings-done, #sync-done {
   background: #4caf50; color: #fff; border: none; border-radius: 8px;
   padding: 12px 0; font-size: 16px; cursor: pointer; margin-top: 4px;
   -webkit-tap-highlight-color: transparent;
@@ -215,15 +229,17 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
 .settings-section { color: #888; font-size: 12px; margin-top: 10px; padding: 0 2px; letter-spacing: 0.5px; text-transform: uppercase; }
 /* Warning label inside a PIN row */
 .row-warn { font-size: 11px; color: #e57373; margin-top: 4px; }
-/* Allow settings box to scroll on small screens */
-#settings-box { overflow-y: auto; max-height: 80vh; }
 /* GitHub sync banners and token input */
 #sync-banner, #clash-banner {
-  margin: 8px 14px; padding: 10px 14px; border-radius: 8px;
-  font-size: 13px; line-height: 1.5;
+  padding: 10px 14px; font-size: 13px; line-height: 1.5;
 }
-#sync-banner  { background: #2a2000; color: #ffcc44; border: 1px solid #554400; }
-#clash-banner { background: #2a0000; color: #ff8888; border: 1px solid #550000; }
+#sync-banner  { background: #2a2000; color: #ffcc44; border-bottom: 1px solid #554400; }
+#clash-banner { background: #2a0000; color: #ff8888; border-bottom: 1px solid #550000; }
+.repo-link {
+  font-size: 13px; padding: 4px 2px 0;
+}
+.repo-link a { color: #64b5f6; text-decoration: none; }
+.repo-link a:active { text-decoration: underline; }
 .token-input {
   flex: 1; font-size: 14px; padding: 8px 10px; border: 2px solid #555;
   border-radius: 8px; background: #333; color: #eee; outline: none;

@@ -6,14 +6,14 @@ import { state } from './state.js';
 
 var SYNC_POLL_MS = 180000; // 3 min: safety-net reconcile for laptop-side edits
 
-// _onNotesChanged: injected by initSync; called after the engine mutates the
-// note list so the UI (loadNotes) stays in step. No-op until initSync fires.
+// initSync: wire back-references into app.js. Call once from the load
+// handler: initSync({ onNotesChanged: loadNotes, onBannerChange: updateBannerOffset }).
 var _onNotesChanged = function() {};
+var _onBannerChange = function() {};
 
-// initSync: wire the one back-reference into app.js. Call once from the load
-// handler: initSync({ onNotesChanged: loadNotes }).
 export function initSync(opts) {
   _onNotesChanged = opts.onNotesChanged || function() {};
+  _onBannerChange = opts.onBannerChange || function() {};
 }
 
 // setSyncToken / clearSyncStorage: encapsulate the gh* localStorage key
@@ -53,11 +53,12 @@ export function updateSyncBannerFromState() {
   var el = document.getElementById('sync-banner');
   if (!el) return;
   if (state.syncOn && !ghToken()) {
-    el.innerHTML = '\u26a0 GitHub sync is on \u2014 add your token in <strong>\u2699 Settings</strong>.';
+    el.innerHTML = '\u26a0 GitHub sync is on \u2014 add your token in <strong>Sync</strong>.';
     el.style.display = 'block';
   } else {
     el.style.display = 'none';
   }
+  _onBannerChange();
 }
 
 function showClashBanner(noteName, copyName) {
@@ -67,7 +68,8 @@ function showClashBanner(noteName, copyName) {
     'Your tablet version is now in \u201c' + copyName + '\u201d; ' +
     '\u201c' + noteName + '\u201d now holds the GitHub version. Review both, delete the one you don\u2019t want.';
   el.style.display = 'block';
-  setTimeout(function() { el.style.display = 'none'; }, 30000);
+  setTimeout(function() { el.style.display = 'none'; _onBannerChange(); }, 30000);
+  _onBannerChange();
 }
 
 // handleClash: on a 409/422 push clash --
@@ -146,8 +148,9 @@ export function pushNote(filename) {
           localStorage.setItem('ghPushFailed_' + filename, '1');
           var banner = document.getElementById('sync-banner');
           if (banner) {
-            banner.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>\u2699 Settings</strong>.';
+            banner.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>Sync</strong>.';
             banner.style.display = 'block';
+            _onBannerChange();
           }
         } else {
           localStorage.setItem('ghPushFailed_' + filename, '1');
@@ -166,7 +169,7 @@ export function pullNoteAndUpdate(filename) {
       if (r.status === 401 || r.status === 403) {
         var banner = document.getElementById('sync-banner');
         if (banner) {
-          banner.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>\u2699 Settings</strong>.';
+          banner.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>Sync</strong>.';
           banner.style.display = 'block';
         }
         return null;
@@ -256,7 +259,7 @@ export function reconcileAll(reason) {
       if (r.status === 404) return []; // empty repo
       if (r.status === 401 || r.status === 403) {
         var b = document.getElementById('sync-banner');
-        if (b) { b.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>\u2699 Settings</strong>.'; b.style.display = 'block'; }
+        if (b) { b.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>Sync</strong>.'; b.style.display = 'block'; _onBannerChange(); }
         return null; // auth failure sentinel
       }
       return r.ok ? r.json() : [];
