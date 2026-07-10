@@ -467,6 +467,88 @@ new_ku = (
 assert old_ku in s, "Key_Up case not found (7c2e)"
 s = s.replace(old_ku, new_ku, 1)
 
+# 7n. Cursor boundary niceties (edit mode): Down on the last line -> end of line;
+#     Up on the first line -> start of line. Accept the key so QTextEdit does not
+#     no-op or scroll the flickable instead.
+old7n_kd = (
+    'case Qt.Key_Down:\n'
+    '                            if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
+    '                            if (mode == 0)\n'
+    '                                flick.scrollDown()\n'
+    '                            break'
+)
+new7n_kd = (
+    'case Qt.Key_Down:\n'
+    '                            if (mode == 1) {\n'
+    '                                cursorStrong = true; cursorTimer.stop()\n'
+    '                                if (root.cursorOnLastLine()) {\n'
+    '                                    root.moveCursorEndOfLine()\n'
+    '                                    event.accepted = true\n'
+    '                                    break\n'
+    '                                }\n'
+    '                            }\n'
+    '                            if (mode == 0)\n'
+    '                                flick.scrollDown()\n'
+    '                            break'
+)
+assert old7n_kd in s, "Key_Down case not found (7n)"
+s = s.replace(old7n_kd, new7n_kd, 1)
+
+old7n_ku = (
+    'case Qt.Key_Up:\n'
+    '                            if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
+    '                            if (mode == 0)\n'
+    '                                flick.scrollUp()\n'
+    '                            break'
+)
+new7n_ku = (
+    'case Qt.Key_Up:\n'
+    '                            if (mode == 1) {\n'
+    '                                cursorStrong = true; cursorTimer.stop()\n'
+    '                                if (root.cursorOnFirstLine()) {\n'
+    '                                    root.moveCursorStartOfLine()\n'
+    '                                    event.accepted = true\n'
+    '                                    break\n'
+    '                                }\n'
+    '                            }\n'
+    '                            if (mode == 0)\n'
+    '                                flick.scrollUp()\n'
+    '                            break'
+)
+assert old7n_ku in s, "Key_Up case not found (7n)"
+s = s.replace(old7n_ku, new7n_ku, 1)
+
+old7n_fn = '    function showLobby() {'
+new7n_fn = (
+    '    function cursorOnLastLine() {\n'
+    '        if (mode != 1) return false\n'
+    '        return query.text.indexOf("\\n", query.cursorPosition) === -1\n'
+    '    }\n'
+    '\n'
+    '    function cursorOnFirstLine() {\n'
+    '        if (mode != 1) return false\n'
+    '        var pos = query.cursorPosition\n'
+    '        return pos === 0 || query.text.lastIndexOf("\\n", pos - 1) === -1\n'
+    '    }\n'
+    '\n'
+    '    function moveCursorEndOfLine() {\n'
+    '        var pos = query.cursorPosition\n'
+    '        var t = query.text\n'
+    '        var nl = t.indexOf("\\n", pos)\n'
+    '        query.cursorPosition = nl === -1 ? t.length : nl\n'
+    '    }\n'
+    '\n'
+    '    function moveCursorStartOfLine() {\n'
+    '        var pos = query.cursorPosition\n'
+    '        var prev = query.text.lastIndexOf("\\n", pos - 1)\n'
+    '        query.cursorPosition = prev === -1 ? 0 : prev + 1\n'
+    '    }\n'
+    '\n'
+    '    function showLobby() {'
+)
+assert old7n_fn in s, "function showLobby not found (7n)"
+s = s.replace(old7n_fn, new7n_fn, 1)
+
 # 8. Add the Lobby Rectangle at the end of the body Rectangle, after the
 #    quick (isOmni) overlay.  Anchor: the last "        }\n    }\n}" in the file
 #    = quick close (8 sp) + body close (4 sp) + Window close (0 sp).
@@ -580,7 +662,7 @@ s = s.replace(old_rotate_fn, new_rotate_fn, 1)
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
+print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true

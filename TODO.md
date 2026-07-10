@@ -22,7 +22,7 @@ Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md
 
 ## Phase 9 — Polish / stretch (optional)
 
-- [ ] Cursor navigation niceties (QML patch): ArrowDown on the last line → move cursor to end of line; ArrowUp on the first line → move cursor to start. (Intercept in `Keys.onPressed` when `cursorPosition` is already on the boundary line.)
+- [x] Cursor navigation niceties — Down on last line → end of line; Up on first line → line start (edit mode).
 - [ ] Mac-style modifier+arrow navigation: Alt+Arrow = word jump, Cmd+Arrow = line/doc start/end, Shift+Arrow = select, Shift+Alt/Cmd+Arrow = select by word/line. Match macOS TextEdit behavior.
 - [ ] Word/character count, simple status line.
 - [ ] Multiple notes / quick-switch UX review.
