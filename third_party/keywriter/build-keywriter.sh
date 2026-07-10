@@ -465,7 +465,7 @@ lobby_rect = (
     '                    font.family: "Noto Mono"\n'
     '                }\n'
     '                Text {\n'
-    '                    text: "A text editor for reMarkable 1 with bridge for your physical keyboard.\\n\\nConnect a keyboard to e.g. your phone, then connect to reMarkable over Wi-Fi.\\n\\nOpen in your phone' + chr(39) + 's browser:"\n'
+    '                    text: "A text editor for reMarkable 1 with bridge for your physical keyboard.\\n\\nFor Bluetooth: Connect a keyboard to e.g. your phone, then connect to reMarkable over Wi-Fi.\\n\\nFor USB: Connect the keyboard using an OTG cable.\\n\\nOpen in your phone' + chr(39) + 's browser:"\n'
     '                    color: "#555555"\n'
     '                    font.pointSize: 13\n'
     '                    font.family: "Noto Sans"\n'
