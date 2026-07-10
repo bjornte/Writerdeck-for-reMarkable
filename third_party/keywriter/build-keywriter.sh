@@ -142,6 +142,20 @@ new3 = (
 assert old3 in s, "function initFile not found in main.qml"
 s = s.replace(old3, new3, 1)
 
+# 3b. openNotePicker(): leave Lobby and show the Ctrl-K note switcher (omni).
+old3b = '    function saveAndLoad(name) {'
+new3b = (
+    '    function openNotePicker() {\n'
+    '        isLobby = false\n'
+    '        isOmni = true\n'
+    '        omniQuery = ""\n'
+    '    }\n'
+    '\n'
+    '    function saveAndLoad(name) {'
+)
+assert old3b in s, "function saveAndLoad not found (edit 3b)"
+s = s.replace(old3b, new3b, 1)
+
 # 4. Ctrl-K note-switcher: also accept event.modifiers.
 #    Our injector sets the modifier FLAG on the K event but never sends a
 #    standalone Key_Control press, so ctrlPressed is always false for injected
@@ -164,6 +178,23 @@ new4q = (
 )
 assert old4q in s, "Ctrl-Q handler not found in main.qml"
 s = s.replace(old4q, new4q, 1)
+
+# 4b. Ctrl-K from Lobby opens the note picker; in editor it toggles omni.
+old4b = (
+    '        } else if (event.key === Qt.Key_K && (ctrlPressed || (event.modifiers & Qt.ControlModifier))) {\n'
+    '            isOmni = !isOmni\n'
+    '            event.accepted = true\n'
+    '        }'
+)
+new4b = (
+    '        } else if (event.key === Qt.Key_K && (ctrlPressed || (event.modifiers & Qt.ControlModifier))) {\n'
+    '            if (isLobby) openNotePicker()\n'
+    '            else isOmni = !isOmni\n'
+    '            event.accepted = true\n'
+    '        }'
+)
+assert old4b in s, "Ctrl-K handler block not found (edit 4b)"
+s = s.replace(old4b, new4b, 1)
 
 # 5b. Ctrl-K note-switcher data-loss fix. The omni (note-switcher) Enter handler
 #     saves the current note before switching, but it calls a bare saveFile(),
@@ -793,6 +824,25 @@ lobby_rect = (
     '                    width: lobby.width * 0.8\n'
     '                    wrapMode: Text.WordWrap\n'
     '                }\n'
+    '                Rectangle {\n'
+    '                    width: Math.min(lobby.width * 0.55, 420)\n'
+    '                    height: 54\n'
+    '                    color: "#f0f0f0"\n'
+    '                    border.color: "#333333"\n'
+    '                    border.width: 2\n'
+    '                    radius: 4\n'
+    '                    Text {\n'
+    '                        anchors.centerIn: parent\n'
+    '                        text: "Open note\\u2026  (Ctrl-K)"\n'
+    '                        color: "black"\n'
+    '                        font.pointSize: 14\n'
+    '                        font.family: "Noto Sans"\n'
+    '                    }\n'
+    '                    MouseArea {\n'
+    '                        anchors.fill: parent\n'
+    '                        onClicked: openNotePicker()\n'
+    '                    }\n'
+    '                }\n'
     '                Text {\n'
     '                    text: "Home = exit to reMarkable UI"\n'
     '                    color: "#555555"\n'
@@ -885,7 +935,7 @@ s = s.replace(old_rotate_fn, new_rotate_fn, 1)
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + prepareSleep + sleep-screen + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
+print('  All QML edits applied (props + setLobbyInfo + handleHome + prepareSleep + sleep-screen + Lobby rect + openNotePicker + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true
