@@ -667,21 +667,28 @@ s, n7o_kp = re.subn(
 )
 assert n7o_kp == 1, "Keys.onPressed header not found (7o)"
 
-old7o_lr = (
+old7o_l = (
     '                        case Qt.Key_Left:\n'
     '                            flick.scrollUp()\n'
-    '                            break\n'
-    '                        case Qt.Key_Right:\n'
-    '                            flick.scrollDown()\n'
     '                            break'
 )
-new7o_lr = (
+new7o_l = (
     '                        case Qt.Key_Left:\n'
     '                            if (event.modifiers === Qt.NoModifier) {\n'
     '                                if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
     '                                flick.scrollUp()\n'
     '                            }\n'
-    '                            break\n'
+    '                            break'
+)
+assert old7o_l in s, "Key_Left scroll case not found (7o)"
+s = s.replace(old7o_l, new7o_l, 1)
+
+old7o_r = (
+    '                        case Qt.Key_Right:\n'
+    '                            flick.scrollDown()\n'
+    '                            break'
+)
+new7o_r = (
     '                        case Qt.Key_Right:\n'
     '                            if (event.modifiers === Qt.NoModifier) {\n'
     '                                if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
@@ -689,8 +696,8 @@ new7o_lr = (
     '                            }\n'
     '                            break'
 )
-assert old7o_lr in s, "Key_Left/Right scroll cases not found (7o)"
-s = s.replace(old7o_lr, new7o_lr, 1)
+assert old7o_r in s, "Key_Right scroll case not found (7o)"
+s = s.replace(old7o_r, new7o_r, 1)
 
 old7o_rot_r = (
     '        case Qt.Key_Right:\n'
