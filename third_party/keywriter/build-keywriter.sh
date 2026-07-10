@@ -616,11 +616,17 @@ new7n_fn = (
     '        var shift = mods & Qt.ShiftModifier\n'
     '        var cmd = mods & Qt.ControlModifier\n'
     '        var alt = mods & Qt.AltModifier\n'
-    '        if (!cmd && !alt) return false\n'
     '        var text = query.text\n'
     '        var pos = query.cursorPosition\n'
     '        var newPos = pos\n'
-    '        if (event.key === Qt.Key_Left) {\n'
+    '        if (event.key === Qt.Key_Home || event.key === Qt.Key_End) {\n'
+    '            if (alt) return false\n'
+    '            newPos = (event.key === Qt.Key_Home)\n'
+    '                ? (cmd ? 0 : lineStartPos(pos, text))\n'
+    '                : (cmd ? text.length : lineEndPos(pos, text))\n'
+    '        } else if (!cmd && !alt) {\n'
+    '            return false\n'
+    '        } else if (event.key === Qt.Key_Left) {\n'
     '            if (alt) newPos = wordLeftPos(pos, text)\n'
     '            else newPos = lineStartPos(pos, text)\n'
     '        } else if (event.key === Qt.Key_Right) {\n'
@@ -838,7 +844,7 @@ s = s.replace(old_rotate_fn, new_rotate_fn, 1)
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
+print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true

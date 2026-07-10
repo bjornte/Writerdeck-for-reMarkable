@@ -23,7 +23,7 @@ Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md
 ## Phase 9 — Polish / stretch (optional)
 
 - [x] Cursor navigation niceties — Down on last line → end of line; Up on first line → line start (edit mode).
-- [x] Mac-style modifier+arrow navigation — Alt=word/paragraph, Cmd=line/doc ends, Shift=select (`handleMacArrow` in QML).
+- [x] Mac-style modifier+arrow navigation — Alt=word/paragraph, Cmd=line/doc ends, Shift=select, Home/End line/doc (`handleMacArrow` in QML).
 - [ ] Word/character count, simple status line.
 - [ ] Multiple notes / quick-switch UX review.
 - [ ] Paragraph spacing in Read view (postponed): Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`. Next: `line-height`, spacer nodes, or Markdown pre-process — see [docs/lessons.md](docs/lessons.md).

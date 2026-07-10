@@ -52,7 +52,7 @@ Built from source keywriter, patched for socket input. Renders full-panel via li
 
 **Reading view.** Pick Inter, Literata, EB Garamond, or DejaVu from the phone. Page up/down in read and edit (about four-fifths of a screen per step). Esc from edit keeps your scroll position — no jump to the bottom.
 
-**Editing.** Block cursor hides while you type, reappears after a pause. Ctrl-K note switcher saves before switching. Mac-style arrows in edit mode: Option/Alt+←/→ word, Cmd+←/→ line end, Cmd+↑/↓ doc start/end, Shift extends selection; plain ←/→ scroll the page. Wider margins, paper-like Lobby theme.
+**Editing.** Block cursor hides while you type, reappears after a pause. Ctrl-K note switcher saves before switching. Mac-style navigation in edit mode: Home/End line start/end (Cmd+Home/End doc start/end); Option/Alt+←/→ word; Cmd+←/→ line end; Cmd+↑/↓ doc start/end; Shift extends selection; plain ←/→ scroll the page. Wider margins, paper-like Lobby theme.
 
 **Rotate.** Settings → Display → **Rotate tablet 90°** (global — affects Lobby, read, and edit). USB Ctrl+←/→ still works in preview mode. Calls `POST /api/rotate` → socket `rotate` cmd → `root.rotation`.
 
