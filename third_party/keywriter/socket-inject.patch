@@ -149,8 +149,8 @@
 +                g_rootObj->setProperty("rotation", (r + 90) % 360);
 +            }, Qt::QueuedConnection);
 +    } else if (line.find("\"t\":\"info\"") != std::string::npos) {
-+        // {"t":"info","ip":"...","pin":"..."} -> setLobbyInfo(ip, pin) in QML.
-+        // Sent by rmkbd on every socket connect so the Lobby always shows current values.
++        // {"t":"info","ip":"...","pin":"...","syncOn":...,"syncRepo":"..."}
++        // -> setLobbyInfo(ip, pin, syncOn, syncRepo) in QML.
 +        auto ip_p = line.find("\"ip\":\"");
 +        auto pin_p = line.find("\"pin\":\"");
 +        if (ip_p != std::string::npos && pin_p != std::string::npos && g_rootObj) {
@@ -159,10 +159,21 @@
 +            if (ip_q != std::string::npos && pin_q != std::string::npos) {
 +                std::string ip  = line.substr(ip_p,  ip_q  - ip_p);
 +                std::string pin = line.substr(pin_p, pin_q - pin_p);
++                bool syncOn = line.find("\"syncOn\":true") != std::string::npos;
++                std::string syncRepo;
++                auto sr_p = line.find("\"syncRepo\":\"");
++                if (sr_p != std::string::npos) {
++                    sr_p += 12;
++                    auto sr_q = line.find('"', sr_p);
++                    if (sr_q != std::string::npos)
++                        syncRepo = line.substr(sr_p, sr_q - sr_p);
++                }
 +                QMetaObject::invokeMethod(g_rootObj, "setLobbyInfo",
 +                    Qt::QueuedConnection,
 +                    Q_ARG(QVariant, QString::fromStdString(ip)),
-+                    Q_ARG(QVariant, QString::fromStdString(pin)));
++                    Q_ARG(QVariant, QString::fromStdString(pin)),
++                    Q_ARG(QVariant, syncOn),
++                    Q_ARG(QVariant, QString::fromStdString(syncRepo)));
 +            }
 +        }
 +    }

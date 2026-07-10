@@ -920,12 +920,14 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 			curSettings.SyncRepo = repo
 			saveSettingsLocked()
 			settingsMu.Unlock()
+			pushLobbyInfo()
 		}
 		if req.SyncOn != nil {
 			settingsMu.Lock()
 			curSettings.SyncOn = *req.SyncOn
 			saveSettingsLocked()
 			settingsMu.Unlock()
+			pushLobbyInfo()
 		}
 		w.WriteHeader(http.StatusOK)
 
@@ -979,21 +981,24 @@ var (
 	lastPushedLobbyIP string
 )
 
-// pushLobbyInfo sends {"t":"info","ip":...}"pin":...} to the editor socket so
-// the Lobby screen reflects the current IP and PIN. When pin is "" (no-PIN
-// mode) the QML conditional shows a friendly "no PIN needed" line instead.
-// Called on each editor connect (dialLoop), on every PIN change, when the IP
-// changes (watchLobbyIP), and when the Lobby is shown on demand.
+// pushLobbyInfo sends {"t":"info","ip":...,"pin":...,"syncOn":...,"syncRepo":...}
+// to the editor socket so the Lobby reflects current connect + sync settings.
 func pushLobbyInfo() {
 	ip := getLocalIP()
 	authMu.Lock()
 	pin := authPIN
 	authMu.Unlock()
+	settingsMu.Lock()
+	syncOn := curSettings.SyncOn
+	syncRepo := curSettings.SyncRepo
+	settingsMu.Unlock()
 	infoMsg, _ := json.Marshal(struct {
-		T   string `json:"t"`
-		IP  string `json:"ip"`
-		PIN string `json:"pin"`
-	}{"info", ip, pin})
+		T        string `json:"t"`
+		IP       string `json:"ip"`
+		PIN      string `json:"pin"`
+		SyncOn   bool   `json:"syncOn"`
+		SyncRepo string `json:"syncRepo"`
+	}{"info", ip, pin, syncOn, syncRepo})
 	if globalEC != nil {
 		globalEC.write(infoMsg)
 	}

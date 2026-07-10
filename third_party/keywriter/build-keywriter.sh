@@ -178,7 +178,9 @@ new6 = (
     '    property bool isOmni: false\n'
     '    property bool isLobby: true\n'
     '    property string lobbyIP: ""\n'
-    '    property string lobbyPIN: ""'
+    '    property string lobbyPIN: ""\n'
+    '    property bool lobbySyncOn: false\n'
+    '    property string lobbySyncRepo: ""'
 )
 assert old6 in s, "isOmni property not found in main.qml"
 s = s.replace(old6, new6, 1)
@@ -191,9 +193,11 @@ s = s.replace(old6, new6, 1)
 #      - Lobby   -> Qt.quit() -> cmd.Wait fires -> s.end() -> xochitl restarts
 old7 = '    function initFile(name) {'
 new7 = (
-    '    function setLobbyInfo(ip, pin) {\n'
+    '    function setLobbyInfo(ip, pin, syncOn, syncRepo) {\n'
     '        lobbyIP = ip\n'
     '        lobbyPIN = pin\n'
+    '        lobbySyncOn = !!syncOn\n'
+    '        lobbySyncRepo = syncRepo || ""\n'
     '    }\n'
     '\n'
     '    function handleHome() {\n'
@@ -492,6 +496,15 @@ lobby_rect = (
     '                    color: "#555555"\n'
     '                    font.pointSize: 11\n'
     '                    font.family: "Noto Sans"\n'
+    '                }\n'
+    '                Text {\n'
+    '                    visible: lobbySyncOn && lobbySyncRepo !== ""\n'
+    '                    text: "Sync: github.com/" + lobbySyncRepo\n'
+    '                    color: "#1b5e20"\n'
+    '                    font.pointSize: 11\n'
+    '                    font.family: "Noto Mono"\n'
+    '                    width: lobby.width * 0.8\n'
+    '                    wrapMode: Text.WordWrap\n'
     '                }\n'
     '                Text {\n'
     '                    text: "github.com/bjornte/Writerdeck-for-reMarkable"\n'

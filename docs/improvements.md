@@ -22,7 +22,7 @@
    * should not automatically scroll to the bottom
 * In lobby:
    * Could include an affordace (button) to open the file picker (`ctrl-K`)
-   * When the notes sync to GitHub is enabled, the repo URL should be listed in the Lobby 
+   * ~~When the notes sync to GitHub is enabled, the repo URL should be listed in the Lobby~~ (done — green `Sync: github.com/owner/repo` line when sync on)
 * In settings:
    * possible to exit service entirely (e.g. for battery performance reasons)
 

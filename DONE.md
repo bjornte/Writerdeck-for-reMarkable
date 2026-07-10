@@ -18,7 +18,7 @@ Home from the editor saves and returns to the Lobby. Home from the Lobby quits t
 
 ## Lobby
 
-Full-screen welcome on e-ink: project title, connect URL, PIN (if enabled), and how-to text. The URL tracks Wi-Fi — when `wlan0` gets an address after boot, the Lobby updates. A second device can ask the tablet to show the PIN again (`Show PIN on tablet` on the phone).
+Full-screen welcome on e-ink: project title, connect URL, PIN (if enabled), and how-to text. The URL tracks Wi-Fi — when `wlan0` gets an address after boot, the Lobby updates. A second device can ask the tablet to show the PIN again (`Show PIN on tablet` on the phone). When GitHub sync is on, the Lobby also shows the notes repo (`Sync: github.com/owner/repo`).
 
 ## Phone companion
 

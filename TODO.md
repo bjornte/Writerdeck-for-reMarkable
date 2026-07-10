@@ -17,8 +17,7 @@ Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md
 ## Next up (lowest effort first)
 
 1. **Lobby: file-picker button** — visible affordance for Ctrl-K omni (`build-keywriter.sh` + deploy).
-2. **Lobby: repo URL when sync on** — extend `pushLobbyInfo` payload + QML line.
-3. **Reading view: no auto-scroll to bottom** — QML scroll position on mode toggle.
+2. **Reading view: no auto-scroll to bottom** — QML scroll position on mode toggle.
 
 ---
 
@@ -31,7 +30,7 @@ Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md
 - [ ] Battery/Wi-Fi indicators on the capture page.
 - [ ] Paragraph spacing in Read view (postponed): Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`. Next: `line-height`, spacer nodes, or Markdown pre-process — see [docs/lessons.md](docs/lessons.md).
 - [x] Sync: marker-aware delete/rename — device-verified ([decisions.md](docs/decisions.md) #19).
-- [x] Landscape/rotate — device-verified; control in Settings → Display.
+- [x] Lobby: repo URL when sync on — `pushLobbyInfo` sends `syncOn`/`syncRepo`; Lobby shows `Sync: github.com/owner/repo`.
 - [ ] Fallback spike (only if keywriter becomes a blocker): a self-contained on-device editor using `libremarkable` (Rust framebuffer) that takes text over the socket — removes the keywriter-compat risk at the cost of building an editor. Documented fallback (see [docs/decisions.md](docs/decisions.md)), not the default.
 
 > Dev-ergonomics polish is already done (deploy ticker, binary-only `rmkw` redeploy, SSH preflight) — see [docs/architecture.md](docs/architecture.md).
