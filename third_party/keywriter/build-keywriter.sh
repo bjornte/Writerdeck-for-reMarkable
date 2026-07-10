@@ -531,23 +531,192 @@ new7n_fn = (
     '        return pos === 0 || query.text.lastIndexOf("\\n", pos - 1) === -1\n'
     '    }\n'
     '\n'
+    '    function isSpaceChar(c) {\n'
+    '        return c === " " || c === "\\t" || c === "\\n"\n'
+    '    }\n'
+    '\n'
+    '    function lineStartPos(pos, text) {\n'
+    '        var prev = text.lastIndexOf("\\n", pos - 1)\n'
+    '        return prev === -1 ? 0 : prev + 1\n'
+    '    }\n'
+    '\n'
+    '    function lineEndPos(pos, text) {\n'
+    '        var nl = text.indexOf("\\n", pos)\n'
+    '        return nl === -1 ? text.length : nl\n'
+    '    }\n'
+    '\n'
+    '    function wordLeftPos(pos, text) {\n'
+    '        if (pos <= 0) return 0\n'
+    '        pos--\n'
+    '        while (pos > 0 && isSpaceChar(text.charAt(pos))) pos--\n'
+    '        while (pos > 0 && !isSpaceChar(text.charAt(pos - 1))) pos--\n'
+    '        return pos\n'
+    '    }\n'
+    '\n'
+    '    function wordRightPos(pos, text) {\n'
+    '        var len = text.length\n'
+    '        if (pos >= len) return len\n'
+    '        while (pos < len && !isSpaceChar(text.charAt(pos))) pos++\n'
+    '        while (pos < len && isSpaceChar(text.charAt(pos))) pos++\n'
+    '        return pos\n'
+    '    }\n'
+    '\n'
+    '    function paragraphUpPos(pos, text) {\n'
+    '        var lineStart = lineStartPos(pos, text)\n'
+    '        if (lineStart === 0) return 0\n'
+    '        var i = lineStart - 1\n'
+    '        while (i > 0) {\n'
+    '            if (text.charAt(i) === "\\n" && text.charAt(i - 1) === "\\n")\n'
+    '                return i + 1\n'
+    '            i--\n'
+    '        }\n'
+    '        return 0\n'
+    '    }\n'
+    '\n'
+    '    function paragraphDownPos(pos, text) {\n'
+    '        var len = text.length\n'
+    '        var lineEnd = lineEndPos(pos, text)\n'
+    '        if (lineEnd >= len) return len\n'
+    '        var i = lineEnd + 1\n'
+    '        while (i < len - 1) {\n'
+    '            if (text.charAt(i) === "\\n" && text.charAt(i + 1) === "\\n")\n'
+    '                return i + 2\n'
+    '            i++\n'
+    '        }\n'
+    '        return len\n'
+    '    }\n'
+    '\n'
+    '    function moveCursorTo(newPos, extend) {\n'
+    '        var len = query.text.length\n'
+    '        newPos = Math.max(0, Math.min(newPos, len))\n'
+    '        if (!extend) {\n'
+    '            query.cursorPosition = newPos\n'
+    '            return\n'
+    '        }\n'
+    '        var anchor = query.cursorPosition\n'
+    '        if (query.selectionStart !== query.selectionEnd) {\n'
+    '            anchor = (query.cursorPosition === query.selectionEnd)\n'
+    '                ? query.selectionStart : query.selectionEnd\n'
+    '        }\n'
+    '        query.select(Math.min(anchor, newPos), Math.max(anchor, newPos))\n'
+    '        query.cursorPosition = newPos\n'
+    '    }\n'
+    '\n'
     '    function moveCursorEndOfLine() {\n'
-    '        var pos = query.cursorPosition\n'
-    '        var t = query.text\n'
-    '        var nl = t.indexOf("\\n", pos)\n'
-    '        query.cursorPosition = nl === -1 ? t.length : nl\n'
+    '        moveCursorTo(lineEndPos(query.cursorPosition, query.text), false)\n'
     '    }\n'
     '\n'
     '    function moveCursorStartOfLine() {\n'
+    '        moveCursorTo(lineStartPos(query.cursorPosition, query.text), false)\n'
+    '    }\n'
+    '\n'
+    '    function handleMacArrow(event) {\n'
+    '        if (mode != 1) return false\n'
+    '        var mods = event.modifiers\n'
+    '        var shift = mods & Qt.ShiftModifier\n'
+    '        var cmd = mods & Qt.ControlModifier\n'
+    '        var alt = mods & Qt.AltModifier\n'
+    '        if (!cmd && !alt) return false\n'
+    '        var text = query.text\n'
     '        var pos = query.cursorPosition\n'
-    '        var prev = query.text.lastIndexOf("\\n", pos - 1)\n'
-    '        query.cursorPosition = prev === -1 ? 0 : prev + 1\n'
+    '        var newPos = pos\n'
+    '        if (event.key === Qt.Key_Left) {\n'
+    '            if (alt) newPos = wordLeftPos(pos, text)\n'
+    '            else newPos = lineStartPos(pos, text)\n'
+    '        } else if (event.key === Qt.Key_Right) {\n'
+    '            if (alt) newPos = wordRightPos(pos, text)\n'
+    '            else newPos = lineEndPos(pos, text)\n'
+    '        } else if (event.key === Qt.Key_Up) {\n'
+    '            if (cmd) newPos = 0\n'
+    '            else newPos = paragraphUpPos(pos, text)\n'
+    '        } else if (event.key === Qt.Key_Down) {\n'
+    '            if (cmd) newPos = text.length\n'
+    '            else newPos = paragraphDownPos(pos, text)\n'
+    '        } else {\n'
+    '            return false\n'
+    '        }\n'
+    '        cursorStrong = true\n'
+    '        cursorTimer.stop()\n'
+    '        moveCursorTo(newPos, !!shift)\n'
+    '        event.accepted = true\n'
+    '        return true\n'
     '    }\n'
     '\n'
     '    function showLobby() {'
 )
 assert old7n_fn in s, "function showLobby not found (7n)"
 s = s.replace(old7n_fn, new7n_fn, 1)
+
+# 7o. Mac-style modifier+arrow in edit mode; plain Left/Right keep page-scroll.
+s, n7o_kp = re.subn(
+    r'([ \t]+Keys\.onPressed:\s*\{\s*\n)([ \t]+)switch\(event\.key\)\{',
+    lambda m: (
+        m.group(1)
+        + m.group(2) + 'if (mode == 1) {\n'
+        + m.group(2) + '    if (root.handleMacArrow(event))\n'
+        + m.group(2) + '        return\n'
+        + m.group(2) + '    if (event.modifiers === Qt.ShiftModifier) {\n'
+        + m.group(2) + '        cursorStrong = true; cursorTimer.stop()\n'
+        + m.group(2) + '        event.accepted = false\n'
+        + m.group(2) + '        return\n'
+        + m.group(2) + '    }\n'
+        + m.group(2) + '}\n'
+        + m.group(2) + 'switch(event.key){'
+    ),
+    s, count=1
+)
+assert n7o_kp == 1, "Keys.onPressed header not found (7o)"
+
+old7o_lr = (
+    '                        case Qt.Key_Left:\n'
+    '                            flick.scrollUp()\n'
+    '                            break\n'
+    '                        case Qt.Key_Right:\n'
+    '                            flick.scrollDown()\n'
+    '                            break'
+)
+new7o_lr = (
+    '                        case Qt.Key_Left:\n'
+    '                            if (event.modifiers === Qt.NoModifier) {\n'
+    '                                if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
+    '                                flick.scrollUp()\n'
+    '                            }\n'
+    '                            break\n'
+    '                        case Qt.Key_Right:\n'
+    '                            if (event.modifiers === Qt.NoModifier) {\n'
+    '                                if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
+    '                                flick.scrollDown()\n'
+    '                            }\n'
+    '                            break'
+)
+assert old7o_lr in s, "Key_Left/Right scroll cases not found (7o)"
+s = s.replace(old7o_lr, new7o_lr, 1)
+
+old7o_rot_r = (
+    '        case Qt.Key_Right:\n'
+    '            if (ctrlPressed)\n'
+    '                root.rotation = (root.rotation + 90) % 360'
+)
+new7o_rot_r = (
+    '        case Qt.Key_Right:\n'
+    '            if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
+    '                root.rotation = (root.rotation + 90) % 360'
+)
+assert old7o_rot_r in s, "preview Ctrl+Right rotate not found (7o)"
+s = s.replace(old7o_rot_r, new7o_rot_r, 1)
+
+old7o_rot_l = (
+    '        case Qt.Key_Left:\n'
+    '            if (ctrlPressed)\n'
+    '                root.rotation = (root.rotation - 90) % 360'
+)
+new7o_rot_l = (
+    '        case Qt.Key_Left:\n'
+    '            if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
+    '                root.rotation = (root.rotation - 90) % 360'
+)
+assert old7o_rot_l in s, "preview Ctrl+Left rotate not found (7o)"
+s = s.replace(old7o_rot_l, new7o_rot_l, 1)
 
 # 8. Add the Lobby Rectangle at the end of the body Rectangle, after the
 #    quick (isOmni) overlay.  Anchor: the last "        }\n    }\n}" in the file
@@ -662,7 +831,7 @@ s = s.replace(old_rotate_fn, new_rotate_fn, 1)
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
+print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true

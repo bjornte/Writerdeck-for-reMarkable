@@ -12,7 +12,7 @@
 * In Edit view
    * Page navigation and corresponding keyboard shortcuts generally work, but  leave a lot to be desired
    * More VS Code-like shortcuts & behaviour. E.g., when in indented list, newline could add spaces to match previous indentation
-   * On the Das Keyboard, some Command-arrow combinations are confusing
+   * ~~On the Das Keyboard, some Command-arrow combinations are confusing~~ (done — Mac-style `handleMacArrow`: Alt=word/paragraph, Cmd=line/doc, Shift=select)
    * Maybe also a cursor block to the left of the in-focus line
    * Interface for navigating between headlines
    * Status bar with affordances for: Title, terse confirmations, zooming, time, battery
