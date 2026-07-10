@@ -177,6 +177,7 @@ old6 = '    property bool isOmni: false'
 new6 = (
     '    property bool isOmni: false\n'
     '    property bool isLobby: true\n'
+    '    property bool isSleeping: false\n'
     '    property string lobbyIP: ""\n'
     '    property string lobbyPIN: ""\n'
     '    property bool lobbySyncOn: false\n'
@@ -198,6 +199,13 @@ new7 = (
     '        lobbyPIN = pin\n'
     '        lobbySyncOn = !!syncOn\n'
     '        lobbySyncRepo = syncRepo || ""\n'
+    '    }\n'
+    '\n'
+    '    function prepareSleep() {\n'
+    '        if (mode == 1) doc = query.text\n'
+    '        saveFile()\n'
+    '        isLobby = false\n'
+    '        isSleeping = true\n'
     '    }\n'
     '\n'
     '    function handleHome() {\n'
@@ -795,6 +803,27 @@ lobby_rect = (
     '                    font.family: "Noto Mono"\n'
     '                }\n'
     '            }\n'
+    '        }\n'
+    '        Rectangle {\n'
+    '            id: sleepScreen\n'
+    '            anchors.fill: parent\n'
+    '            color: "white"\n'
+    '            visible: isSleeping\n'
+    '            z: 10\n'
+    '            Column {\n'
+    '                anchors.centerIn: parent\n'
+    '                width: sleepScreen.width * 0.75\n'
+    '                spacing: 24\n'
+    '                Text {\n'
+    '                    text: "Writerdeck is sleeping.\\n\\nWi-Fi is off. Press power button to wake."\n'
+    '                    color: "black"\n'
+    '                    font.pointSize: 18\n'
+    '                    font.family: "Noto Sans"\n'
+    '                    width: parent.width\n'
+    '                    wrapMode: Text.WordWrap\n'
+    '                    horizontalAlignment: Text.AlignHCenter\n'
+    '                }\n'
+    '            }\n'
     '        }'
 )
 quick_close = '        }\n'
@@ -844,7 +873,7 @@ s = s.replace(old_rotate_fn, new_rotate_fn, 1)
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
+print('  All QML edits applied (props + setLobbyInfo + handleHome + prepareSleep + sleep-screen + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true

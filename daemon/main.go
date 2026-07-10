@@ -94,7 +94,11 @@ type inputEvent struct {
 const (
 	evKey     = 1   // EV_KEY
 	keyHome   = 102 // KEY_HOME -- middle (home) button, confirmed on /dev/input/event1
+	keyPower  = 116 // KEY_POWER -- top power button
+	keyWake   = 143 // KEY_WAKEUP -- fires on some wake paths
 	buttonDev = "/dev/input/event1"
+
+	sleepPaintDelay = 2500 * time.Millisecond
 )
 
 // wsMsg is the JSON message received from the browser on keydown.
@@ -251,33 +255,38 @@ func dialLoop(ec *editorConn) {
 	}
 }
 
-// watchHomeButton reads physical button events from the gpio-keys device.
-// Supervisor mode (s != nil): loops for the lifetime of rmkbd; on each HOME
-// press it ends the active session if one is running (idle presses while
-// xochitl is up are ignored -- xochitl handles them; we do not EVIOCGRAB).
-// Standalone mode (s == nil): sends a single quit to ec then returns.
-func watchHomeButton(s *session, ec *editorConn) {
+// watchPhysicalButtons reads gpio-keys events (Home, Power, page buttons).
+// Supervisor mode (s != nil): Home relay + Power sleep/wake (see session.sleepForPower).
+// Standalone mode (s == nil): Home sends quit to ec then returns.
+func watchPhysicalButtons(s *session, ec *editorConn) {
 	f, err := os.Open(buttonDev)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "rmkbd: home-button watcher: %v (OK on non-device machines)\n", err)
+		fmt.Fprintf(os.Stderr, "rmkbd: button watcher: %v (OK on non-device machines)\n", err)
 		return
 	}
 	defer f.Close()
-	fmt.Fprintln(os.Stderr, "rmkbd: watching home button on "+buttonDev)
+	fmt.Fprintln(os.Stderr, "rmkbd: watching physical buttons on "+buttonDev)
+	var debounce time.Time
 	for {
 		var ev inputEvent
 		if err := binary.Read(f, binary.LittleEndian, &ev); err != nil {
-			fmt.Fprintf(os.Stderr, "rmkbd: home-button read error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "rmkbd: button read error: %v\n", err)
 			return
 		}
-		if ev.Type == evKey && ev.Code == keyHome && ev.Value == 1 {
+		if ev.Type != evKey || ev.Value != 1 {
+			continue
+		}
+		if ev.Code != keyHome && ev.Code != keyPower && ev.Code != keyWake {
+			continue
+		}
+		if time.Since(debounce) < 800*time.Millisecond {
+			continue
+		}
+		debounce = time.Now()
+
+		if ev.Code == keyHome {
 			if s != nil {
 				if s.isActive() {
-					// Two-level Home (8e): relay to editor so QML decides.
-					// Editing -> save + return to Lobby; Lobby -> Qt.quit() ->
-					// cmd.Wait() fires -> s.end() -> xochitl restarts.
-					// Don't call s.quit() here -- that would force an immediate
-					// exit bypassing the Lobby. SIGTERM still uses s.quit().
 					fmt.Fprintln(os.Stderr, "rmkbd: home button -- relaying to editor")
 					currentNoteMu.Lock()
 					currentNote = ""
@@ -288,14 +297,34 @@ func watchHomeButton(s *session, ec *editorConn) {
 					fmt.Fprintln(os.Stderr, "rmkbd: home button -- no active session, ignoring")
 				}
 			} else {
-				// Standalone: one-shot send quit + return.
 				fmt.Fprintln(os.Stderr, "rmkbd: home button pressed -- sending quit to editor")
 				ec.write([]byte(`{"t":"cmd","c":"quit"}`))
 				return
 			}
+			continue
+		}
+
+		// Power or Wakeup: sleep while editing, wake after suspend.
+		if s == nil {
+			continue
+		}
+		if s.isSleeping() {
+			currentNoteMu.Lock()
+			note := currentNote
+			currentNoteMu.Unlock()
+			fmt.Fprintln(os.Stderr, "rmkbd: power button -- waking from sleep")
+			go func() { _ = s.wakeFromSleep(note) }()
+			continue
+		}
+		if s.isActive() {
+			fmt.Fprintln(os.Stderr, "rmkbd: power button -- sleep")
+			go s.sleepForPower()
 		}
 	}
 }
+
+// watchHomeButton is kept as an alias for callers that haven't been renamed yet.
+func watchHomeButton(s *session, ec *editorConn) { watchPhysicalButtons(s, ec) }
 
 // translate converts a browser key event to an editor-feed NDJSON line.
 // Returns nil if the key should be ignored (e.g. lone modifier keys).
@@ -1338,10 +1367,18 @@ func shutdownHandler(w http.ResponseWriter, r *http.Request) {
 type session struct {
 	mu         sync.Mutex
 	active     bool
+	sleeping   bool // power-button sleep: editor stopped, xochitl stays down
 	cmd        *exec.Cmd
 	doneCh     chan struct{}
 	editorPath string
 	ec         *editorConn
+}
+
+// isSleeping returns true after a power-button sleep until wake completes.
+func (s *session) isSleeping() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.sleeping
 }
 
 // isActive returns true if an editor session is currently running.
@@ -1388,25 +1425,29 @@ func (s *session) start() error {
 	return nil
 }
 
-// end marks the session inactive and restarts xochitl.
-// Called by the background cmd.Wait() goroutine. Safe to call multiple times.
+// end marks the session inactive and restarts xochitl (unless sleeping for power).
 func (s *session) end() {
 	s.mu.Lock()
 	if !s.active {
 		s.mu.Unlock()
 		return
 	}
+	wasSleeping := s.sleeping
 	s.active = false
 	ch := s.doneCh
 	s.cmd = nil
 	s.doneCh = nil
-	s.mu.Unlock() // release before blocking on systemctl
-	currentNoteMu.Lock()
-	currentNote = ""
-	currentNoteMu.Unlock()
-	broadcast([]byte(`{"type":"exitedit"}`))
-	fmt.Fprintln(os.Stderr, "rmkbd: session: starting xochitl")
-	exec.Command("systemctl", "start", "xochitl").Run() //nolint:errcheck
+	s.mu.Unlock()
+	if wasSleeping {
+		fmt.Fprintln(os.Stderr, "rmkbd: session: editor stopped for sleep (xochitl stays down)")
+	} else {
+		currentNoteMu.Lock()
+		currentNote = ""
+		currentNoteMu.Unlock()
+		broadcast([]byte(`{"type":"exitedit"}`))
+		fmt.Fprintln(os.Stderr, "rmkbd: session: starting xochitl")
+		exec.Command("systemctl", "start", "xochitl").Run() //nolint:errcheck
+	}
 	if ch != nil {
 		close(ch)
 	}
@@ -1435,6 +1476,73 @@ func (s *session) quit() {
 		}
 		<-doneCh
 	}
+}
+
+// sleepForPower saves via QML, shows the sleep screen, stops keywriter (releases
+// systemd-inhibit), and suspends. The e-ink frame persists until wake.
+func (s *session) sleepForPower() {
+	if !s.isActive() {
+		return
+	}
+	s.ec.write([]byte(`{"t":"cmd","c":"preparesleep"}`))
+	broadcast([]byte(`{"type":"exitedit"}`))
+	time.Sleep(sleepPaintDelay)
+
+	s.mu.Lock()
+	s.sleeping = true
+	cmd := s.cmd
+	doneCh := s.doneCh
+	s.mu.Unlock()
+
+	if cmd != nil && cmd.Process != nil {
+		fmt.Fprintln(os.Stderr, "rmkbd: stopping editor before suspend")
+		syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM) //nolint:errcheck
+		if doneCh != nil {
+			select {
+			case <-doneCh:
+			case <-time.After(3 * time.Second):
+				syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) //nolint:errcheck
+				<-doneCh
+			}
+		}
+	}
+	fmt.Fprintln(os.Stderr, "rmkbd: suspending")
+	exec.Command("systemctl", "suspend").Run() //nolint:errcheck
+}
+
+// wakeFromSleep starts a fresh editor session and reopens the note that was open.
+func (s *session) wakeFromSleep(noteName string) error {
+	s.mu.Lock()
+	if !s.sleeping {
+		s.mu.Unlock()
+		return nil
+	}
+	s.sleeping = false
+	s.mu.Unlock()
+
+	if err := s.start(); err != nil {
+		return err
+	}
+	if noteName == "" {
+		return nil
+	}
+	for i := 0; i < 10; i++ {
+		if s.ec.ready() {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	if !s.ec.ready() {
+		return fmt.Errorf("editor socket not ready after wake")
+	}
+	editorName := filepath.Base(noteName)
+	cmd, _ := json.Marshal(struct {
+		T    string `json:"t"`
+		C    string `json:"c"`
+		Name string `json:"name"`
+	}{"cmd", "open", editorName})
+	s.ec.write(cmd)
+	return nil
 }
 
 // launchHandler handles POST /api/launch: starts an editor session if idle.

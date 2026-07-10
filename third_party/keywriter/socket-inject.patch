@@ -121,6 +121,8 @@
 +        }
 +        else if (cmd == "home" && g_rootObj)
 +            QMetaObject::invokeMethod(g_rootObj, "handleHome", Qt::QueuedConnection);
++        else if (cmd == "preparesleep" && g_rootObj)
++            QMetaObject::invokeMethod(g_rootObj, "prepareSleep", Qt::QueuedConnection);
 +        else if (cmd == "notedeleted" && g_rootObj)
 +            // Go to the Lobby WITHOUT saveFile() -- the file is gone, no resurrection.
 +            QMetaObject::invokeMethod(g_rootObj, "noteDeleted", Qt::QueuedConnection);

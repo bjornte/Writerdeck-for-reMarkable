@@ -16,29 +16,24 @@ Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md
 
 ## Next up
 
-1. **Power button** — make functional during Writerdeck sessions (see investigation below).
+1. **Power button** — implemented (Option A): save → sleep screen → suspend; power again to wake. **Needs device test.**
 2. **Lobby: file-picker button** — blocked until USB keyboard (Ctrl-K omni testing).
 
 ---
 
 ## Power button — investigation (2026-07-10)
 
-**Hardware:** `KEY_POWER` (116) on `/dev/input/event1` (`gpio-keys`), alongside Home (102), page buttons (105/106), and `KEY_WAKEUP` (143). Confirmed with `evtest` on device.
+**Shipped (pending device test):** Short power press while editing → `prepareSleep()` (save + on-screen message) → stop keywriter → `systemctl suspend`. Message:
 
-**Stock OS:** `systemd-logind` has `HandlePowerKey=ignore` (`/etc/systemd/logind.conf.d/powerkey.conf`) — logind does not act on the power key. With xochitl running, xochitl/Qt handles sleep/wake UI. Suspend is available (`/sys/power/state` → `mem`).
+> Writerdeck is sleeping.
+>
+> Wi-Fi is off. Press power button to wake.
 
-**Writerdeck gap:** During an editor session xochitl is **stopped**. `rmkbd` watches `event1` but only handles `KEY_HOME` (`watchHomeButton` in `daemon/main.go`). Power presses are ignored. `systemd-inhibit --what=sleep` on keywriter blocks auto-suspend but does not map the physical power key.
+Power again after wake → restart editor session and reopen the note that was open.
 
-**Likely user-visible symptom:** Power button appears dead (no sleep, no shutdown UI) while editing — unlike stock reMarkable behavior.
+**Hardware:** `KEY_POWER` (116) on `/dev/input/event1` (`gpio-keys`), alongside Home (102), page buttons (105/106), and `KEY_WAKEUP` (143).
 
-**Implementation sketch (not started):**
-- Extend the gpio-keys watcher to handle `KEY_POWER` (short vs long press if needed).
-- Short press: save open note → `systemctl suspend` (or write `mem` to `/sys/power/state`).
-- Long press: optional shutdown path (`remarkable-shutdown` / `poweroff`) — needs UX care.
-- On wake: rmkbd is still running (`:8000` up); editor session state TBD (resume keywriter vs drop to Lobby).
-- Device-test required; cannot fully verify over SSH alone.
-
-Related: [improvements.md](docs/improvements.md) “Some sleep logic” — same family of work.
+**Stock OS:** `systemd-logind` has `HandlePowerKey=ignore`. With xochitl running, xochitl handles sleep/wake. During Writerdeck sessions xochitl is stopped; `rmkbd` now watches Power/Wakeup via `watchPhysicalButtons`.
 
 ---
 

@@ -2,8 +2,8 @@
 
 ## On reMarkable
 * General
-   * Power button should be functional — **investigated**; see [TODO.md](../TODO.md) Power button section. Root cause: xochitl stopped during sessions, `rmkbd` only watches Home; logind ignores power key.
-   * Some sleep logic should be included — tied to power button; suspend path exists (`mem` in `/sys/power/state`).
+   * ~~Power button should be functional~~ (implemented — save, sleep screen, suspend; wake restores editor; device test pending)
+   * ~~Some sleep logic should be included~~ (same — power-button sleep path in `rmkbd`)
    * Files could be encrypted
 * For USB-connected keyboards
    * Activate the program using a keyboard shortcut
