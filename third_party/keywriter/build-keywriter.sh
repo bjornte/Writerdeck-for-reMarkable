@@ -823,7 +823,7 @@ lobby_rect = (
     '                width: sleepScreen.width * 0.75\n'
     '                spacing: 24\n'
     '                Text {\n'
-    '                    text: "Writerdeck is sleeping.\\n\\nWi-Fi is off. Press power button to wake."\n'
+    '                    text: "Writerdeck is sleeping.\\n\\nWi-Fi is off. Press power to wake."\n'
     '                    color: "black"\n'
     '                    font.pointSize: 18\n'
     '                    font.family: "Noto Sans"\n'
