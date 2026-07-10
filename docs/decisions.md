@@ -1,6 +1,6 @@
 # Writerdeck for reMarkable 1 — Architecture Decision Record (ADR)
 
-The why behind the project's choices — the durable record so a fresh reader (or LLM) doesn't re-litigate settled ground or retry a dead path. How the system works is in [architecture.md](architecture.md); the open plan is in [../TODO.md](../TODO.md); the dated progress log is in [../DONE.md](../DONE.md).
+The why behind the project's choices — the durable record so a fresh reader (or LLM) doesn't re-litigate settled ground or retry a dead path. How it works: [architecture.md](architecture.md). Open plan: [../TODO.md](../TODO.md). Shipped: [../DONE.md](../DONE.md). Operational gotchas: [lessons.md](lessons.md).
 
 Each entry: a decision, its status, and the reasoning. Newest/most-foundational first.
 
@@ -13,7 +13,7 @@ Status: active (the core architecture). Keystrokes reach the editor over a local
 Status: active. keywriter takes keyboard input via Qt QPA — there is no `/dev/input` fd to swap. So a detached socket-reader thread in `main.cpp` (`socket-inject.patch`, applied with `git apply --recount`, built `-pthread`) posts synthetic `QKeyEvent`s to `focusWindow()` (the `QQuickWindow`, which replays the real key path including QML `Keys` handlers). Wire format: browser→daemon is full JSON; daemon→keywriter rides text as an integer Unicode codepoint (`{"t":"text","cp":N}` → `QString::fromUcs4`, escaping-proof). The keymap lives browser-side (forward `event.key`, layout already resolved), not in the editor.
 
 ## 3. Build keywriter from source (the 4-yr-old prebuilt is dead)
-Status: resolved. The prebuilt binary dies at the loader (`libQt5Quick.so.5`) — Qt is static-linked into xochitl on 2026 firmware, so `LD_LIBRARY_PATH` can't rescue it. Cross-build from source in `ghcr.io/toltec-dev/qt:v3.3` (CI) + deploy a Qt5 runtime sysroot. Renders via linuxfb alone (the rM1 has a real `/dev/fb0`; linuxfb drives the EPDC, so rm2fb is not needed). The "do not regress" build fixes (linuxfb not the absent `epaper` QPA, guard the hardcoded `qputenv`, bundle the whole `qml/` tree incl. `QtQuick.2/` + DejaVu fonts, panel geometry/DPI as launch-env) live in [build-keywriter.sh](../third_party/keywriter/build-keywriter.sh) and [DONE.md](../DONE.md).
+Status: resolved. The prebuilt binary dies at the loader (`libQt5Quick.so.5`) — Qt is static-linked into xochitl on 2026 firmware, so `LD_LIBRARY_PATH` can't rescue it. Cross-build from source in `ghcr.io/toltec-dev/qt:v3.3` (CI) + deploy a Qt5 runtime sysroot. Renders via linuxfb alone (the rM1 has a real `/dev/fb0`; linuxfb drives the EPDC, so rm2fb is not needed). The "do not regress" build fixes live in [build-keywriter.sh](../third_party/keywriter/build-keywriter.sh) and [lessons.md](lessons.md).
 
 ## 4. No Toltec
 Status: by design. Toltec locks the firmware to a supported version range and can soft-brick on unsupported versions — it conflicts with "preserve OTA updates". Only revisit if the owner ever accepts the version lock for a Python fast-path.
@@ -39,7 +39,7 @@ Status: built (Phase 8 slice 8f), device-verified. The native iOS share sheet ne
 Status: active. Author-specific dev-environment workaround, not part of the product: a corporate VPN keeps the dev laptop off the LAN, so device work runs on a second machine and git bridges the two. A reverse tunnel was *feasible* but deferred (infra + exposure risk) in favor of the git bridge; the clean fix is an IT split-tunnel exception.
 
 ## 11. Wi-Fi is the dev path (not USB)
-Status: active. The Mac's USB-ethernet gadget is inactive (no DHCP lease / no macOS RNDIS); Wi-Fi `192.168.1.8` key login works. Scripts default to it via `$RM_HOST`.
+Status: active. The Mac's USB-ethernet gadget is inactive (no DHCP lease / no macOS RNDIS); Wi-Fi SSH works when `RM_HOST_WIFI` in secrets matches the tablet (DHCP — changes with network).
 
 ## 12. Deploy transport = gzip-over-ssh (scp deadlocks)
 Status: active. `scp` wedges at a fixed ~255 KB offset on this Mac→Wi-Fi→tablet link (SFTP app-level windowing deadlock — *not* sleep, *not* QoS; `IPQoS`+keepalives didn't clear it). `rm_send_file` ([scripts/_env.sh](../scripts/_env.sh)) streams the file gzip'd through the SSH channel (`gzip -c src | ssh … 'gzip -dc > dst'`) with a post-copy `wc -c` size check. Lesson: when scp stalls at a fixed offset on an embedded link, switch transports — don't tune scp.

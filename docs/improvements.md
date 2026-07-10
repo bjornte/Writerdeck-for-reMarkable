@@ -16,7 +16,7 @@
    * Maybe also a cursor block to the left of the in-focus line
    * Interface for navigating between headlines
    * Status bar with affordances for: Title, terse confirmations, zooming, time, battery
-   * The rotate button (in the browser) seemingly does not work. The direct USB keyboard shortcut works, however.
+   * ~~The rotate button (in the browser) seemingly does not work.~~ Done — in Settings → Display; affects all tablet screens.
 * In reading view:
    * Paragraph distances could be greater. Postponed.
    * should not automatically scroll to the bottom

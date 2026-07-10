@@ -1456,8 +1456,8 @@ func openHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // rotateHandler handles POST /api/rotate: rotates the editor display 90 degrees
-// clockwise. Sends {"t":"cmd","c":"rotate"} to keywriter, which calls
-// rotateScreen() in QML (increments root.rotation by 90 mod 360).
+// clockwise. Sends {"t":"cmd","c":"rotate"} to keywriter, which sets
+// root.rotation on the QML root object (works in edit or preview mode).
 func rotateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Origin", "*")

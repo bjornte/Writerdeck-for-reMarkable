@@ -2,7 +2,7 @@
 
 > rM1-Writerdeck turns a first-gen reMarkable 1 e-paper tablet into a distraction-free Markdown typewriter: type on an iPhone (or laptop) keyboard, the keystrokes travel over Wi-Fi to the tablet, which shows the text on e-ink and saves `.md`.
 >
-> This file is just the open work. How it works (architecture, environment, dev loop) → [docs/architecture.md](docs/architecture.md). Why each choice was made (the ADR) → [docs/decisions.md](docs/decisions.md). What's already done (the dated progress log) → [DONE.md](DONE.md).
+> This file is just the open work. How it works → [docs/architecture.md](docs/architecture.md). Why → [docs/decisions.md](docs/decisions.md). What's shipped → [DONE.md](DONE.md). Gotchas → [docs/lessons.md](docs/lessons.md).
 >
 > Keystrokes reach the editor over a local socket, not `/dev/uinput` (this kernel can't load uinput — see [docs/decisions.md](docs/decisions.md)). Verify each item on the device before checking it off.
 
@@ -10,20 +10,16 @@
 
 ## Status
 
-Phases 0–8 are done and device-verified — the Companion appliance works end-to-end (the full flow and phase table are in [DONE.md](DONE.md)). All planned build work is done; only the optional Phase 9 polish below remains.
+Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md](DONE.md)). Optional polish below remains.
 
 ---
 
-## Browser quick wins (from [docs/improvements.md](docs/improvements.md))
+## Next up (lowest effort first)
 
-Daemon-only (`daemon/index.html`, `daemon/app.js`, `daemon/app.css`); deploy with `bash scripts/deploy-rmkbd.sh`. No keywriter rebuild.
-
-- [x] **Sync warning banners** — `sync.js` + CSS reference `#sync-banner` / `#clash-banner` but nodes are missing from `index.html`; warnings silently no-op. Add both `<div>`s (e.g. above `#notes` or in `#bar` area).
-- [x] **Settings popup: ESC + click-outside close** — `hideSettings()` exists; only `#settings-done` is wired (`app.js` ~889–894). Add `document` `keydown` (Escape) and `#settings-screen` backdrop click → `hideSettings()`.
-- [x] **Settings popup: close button** — Add top-right × in `#settings-box`; wire to `hideSettings()`. Style in `app.css`.
-- [x] **Settings button label** — `#settings-btn` is cog-only (`title="Font settings"`). Show visible "Settings" text (keep or drop icon).
-- [x] **GitHub repo link in settings** — In `renderSettingsList()`, when `state.syncOn && state.syncRepo`, render `<a href="https://github.com/{repo}">` below the repo input.
-- [x] **Dedicated Sync button** — Extract sync controls from settings panel; add top-level Sync button + use fixed banners above. Pairs with sync-banner item.
+1. **Verify marker-aware sync delete** — built in `sync.js`; test GitHub-side delete propagates to tablet ([decisions.md](docs/decisions.md) #19).
+2. **Lobby: file-picker button** — visible affordance for Ctrl-K omni (`build-keywriter.sh` + deploy).
+3. **Lobby: repo URL when sync on** — extend `pushLobbyInfo` payload + QML line.
+4. **Reading view: no auto-scroll to bottom** — QML scroll position on mode toggle.
 
 ---
 
@@ -34,14 +30,14 @@ Daemon-only (`daemon/index.html`, `daemon/app.js`, `daemon/app.css`); deploy wit
 - [ ] Word/character count, simple status line.
 - [ ] Multiple notes / quick-switch UX review.
 - [ ] Battery/Wi-Fi indicators on the capture page.
-- [ ] Paragraph spacing in Read view (postponed, was spec item C): Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`, so the inter-paragraph gap didn't change on e-ink (the `readHtml()` helper stays wired, so resuming only swaps the injected CSS). Next approaches: `line-height` on `<p>`, an injected spacer paragraph (`<p>&nbsp;</p>`), or pre-process the Markdown for vertical rhythm — see [DONE.md](DONE.md) 2026-06-27.
-- [ ] Sync: marker-aware delete/rename so an external delete isn't resurrected. *Delete half built (Opus-reviewed; browser/device-verify pending) — see [DONE.md](DONE.md) 2026-07-05 + [docs/decisions.md](docs/decisions.md) #19; verify on device, then check off.* The reconciler now treats "on the tablet + stored `sha` marker + pristine + gone from GitHub" as a real delete (confirmed by a per-note 404), so a GitHub-side / committed-VS-Code delete propagates instead of resurrecting, and an external rename reconciles as delete-old + pull-new instead of duplicating. Still open by design: a purely-local unpushed tablet delete is left alone (GitHub stays authoritative), and an unpushed local edit resurrects rather than deletes.
-- [ ] Landscape/rotate: verify on device that `libqsgepaper` repaints a rotated QML tree cleanly on e-ink — then check off. The "Rotate" button is built (CI-build; device-verify pending — see [DONE.md](DONE.md) 2026-07-05).
+- [ ] Paragraph spacing in Read view (postponed): Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`. Next: `line-height`, spacer nodes, or Markdown pre-process — see [docs/lessons.md](docs/lessons.md).
+- [ ] Sync: marker-aware delete/rename — built in `sync.js`; device-verify pending ([decisions.md](docs/decisions.md) #19).
+- [x] Landscape/rotate — device-verified; control in Settings → Display.
 - [ ] Fallback spike (only if keywriter becomes a blocker): a self-contained on-device editor using `libremarkable` (Rust framebuffer) that takes text over the socket — removes the keywriter-compat risk at the cost of building an editor. Documented fallback (see [docs/decisions.md](docs/decisions.md)), not the default.
 
 > Dev-ergonomics polish is already done (deploy ticker, binary-only `rmkw` redeploy, SSH preflight) — see [docs/architecture.md](docs/architecture.md).
 
-> Shipped Phase 9 polish was pruned once device-verified — upload, the 6/4/none PIN chooser and Lobby-on-demand (P/L), the reading-view font picker, and the edit-view ↔ browser sync (S0/S1/S2) all used to live here as checklist items + specs; their durable lessons are now in [DONE.md](DONE.md) (the dated log) and [docs/decisions.md](docs/decisions.md) (#16–#18). Recover full specs from git history if a regression needs them.
+> Shipped polish pruned once verified — upload, PIN chooser, Lobby-on-demand, fonts, browser sync UI, etc. Lessons in [docs/lessons.md](docs/lessons.md) and [docs/decisions.md](docs/decisions.md). Recover specs from git history if a regression needs them.
 
 ---
 
@@ -55,7 +51,7 @@ Daemon-only (`daemon/index.html`, `daemon/app.js`, `daemon/app.css`); deploy wit
 
 > Project rM1-Writerdeck — a reMarkable 1 as a Wi-Fi Markdown typewriter. A static Go daemon (`rmkbd`) on the tablet serves a WebSocket + HTML capture page and feeds a patched keywriter over a local socket (this kernel can't load `/dev/uinput`); keywriter saves `.md`. The client is the Mac in dev, the iPhone in use.
 > State: Phases 0–8 and most of Phase 9 polish are done & device-verified (see Status above + [DONE.md](DONE.md)); only the optional Phase 9 stretch backlog above remains. Do not redo finished phases, retry uinput, or rebuild keywriter from scratch.
-> Read first: [docs/architecture.md](docs/architecture.md) (how it works), [docs/decisions.md](docs/decisions.md) (the why / ADR), [DONE.md](DONE.md) (what's done), then pick an item from the Phase 9 — Polish / stretch list above.
-> Dev: the assistant commits on one machine; device SSH/deploy runs on the dev machine over Wi-Fi `192.168.1.8`; git bridges them.
+> Read first: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [DONE](DONE.md), [lessons](docs/lessons.md). Pick from **Next up** or Phase 9 below.
+> Dev: device SSH/deploy over Wi-Fi; IP in `secrets/remarkable.local.env` (`RM_HOST_WIFI`, currently `10.0.0.20`).
 > Constraints: no jailbreak; preserve OTA; no Toltec; static Go binary (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). SSH password gitignored in `secrets/remarkable.local.env`. Iterate over Wi-Fi; keep the tablet awake.
 > Refs: editor https://github.com/dps/remarkable-keywriter · input docs https://remarkable.guide/devel/device/input.html.

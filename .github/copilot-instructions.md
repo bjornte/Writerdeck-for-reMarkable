@@ -2,7 +2,7 @@
 
 rM1-Writerdeck turns a reMarkable 1 e-paper tablet into a distraction-free Markdown typewriter by forwarding keystrokes from an iPhone keyboard over Wi-Fi. A static Go daemon (`rmkbd`) on the tablet receives key events and feeds them to the third-party keywriter editor (patched to read a local socket), which saves `.md`.
 
-For background, consult  [todo](../TODO.md), [architecture](../docs/architecture.md), [decisions](../docs/decisions.md), and [done](../DONE.md).
+For background, consult [todo](../TODO.md), [architecture](../docs/architecture.md), [decisions](../docs/decisions.md), [done](../DONE.md), and [lessons](../docs/lessons.md).
 
 ## Model usage protocol (Opus <-> Sonnet) — the operating rule
 
@@ -39,7 +39,7 @@ Daemon loop: `deploy-rmkbd.sh` (embeds `daemon/*` via `go:embed`) → `systemctl
 
 ## Doc hygiene
 
-- Update [todo](../TODO.md) and [done](../DONE.md) as work progresses; durable *how-it-works* goes in [architecture](../docs/architecture.md) and *why* in [decisions](../docs/decisions.md). Do not create new summary markdown files for changes — fold them into these standing docs.
+- Update [todo](../TODO.md) and [done](../DONE.md) as work progresses; durable *how-it-works* → [architecture](../docs/architecture.md); *why* → [decisions](../docs/decisions.md); operational gotchas → [lessons](../docs/lessons.md). Do not create new summary markdown files — fold into these standing docs.
 - Keep TODO/DONE terse but human-friendly: plain language, durable lessons over blow-by-blow. Prune step-by-step narration, commit hashes, and durations once a lesson is settled; don't repeat the date within a day.
 - Prune dead files as paths close — not just prose. When a phase finishes or a path is declared closed-failed, delete the machinery that only served it (one-off scripts, generated logs, build harnesses, committed binaries) — but capture the durable lesson in TODO/DONE first. Git history is the archive: keep the gravestone (why it failed), drop the tooling. Before deleting, grep for references and fix link rot; never remove a file a live script still calls. Regenerable outputs (e.g. `docs/recon/` logs) are always safe to drop — keep the folder via `.gitkeep`.
 

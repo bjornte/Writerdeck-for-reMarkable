@@ -594,6 +594,26 @@ import {
     renderSyncControls(list);
   }
 
+  function requestRotate(onMsg) {
+    return fetch('/api/rotate', { method: 'POST' })
+      .then(function(r) {
+        if (r.ok) {
+          if (onMsg) { onMsg.style.color = '#4caf50'; onMsg.textContent = 'Rotated 90\u00b0.'; }
+          return;
+        }
+        var err = 'Rotate failed (' + r.status + ').';
+        if (r.status === 409) err = 'No editor session \u2014 open a note on the tablet.';
+        else if (r.status === 401) err = 'Not authorized \u2014 reconnect and enter PIN.';
+        if (onMsg) { onMsg.style.color = '#e57373'; onMsg.textContent = err; }
+        else { alert(err); }
+      })
+      .catch(function() {
+        var err = 'Could not reach the tablet.';
+        if (onMsg) { onMsg.style.color = '#e57373'; onMsg.textContent = err; }
+        else { alert(err); }
+      });
+  }
+
   function renderSettingsList() {
     var list = document.getElementById('settings-list');
     list.innerHTML = '';
@@ -650,6 +670,28 @@ import {
       });
       list.appendChild(row);
     });
+
+    // ---- Display section ----
+    var dh = document.createElement('div');
+    dh.className = 'settings-section';
+    dh.textContent = 'Display';
+    list.appendChild(dh);
+
+    var rotateMsg = document.createElement('div');
+    rotateMsg.style.cssText = 'font-size:12px;padding:4px 2px;min-height:16px;color:#888;';
+
+    var rotateBtn = document.createElement('button');
+    rotateBtn.className = 'sync-btn';
+    rotateBtn.style.width = '100%';
+    rotateBtn.textContent = 'Rotate tablet 90\u00b0';
+    rotateBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      rotateMsg.style.color = '#888';
+      rotateMsg.textContent = 'Rotating\u2026';
+      requestRotate(rotateMsg);
+    });
+    list.appendChild(rotateBtn);
+    list.appendChild(rotateMsg);
   }
 
   function renderSyncControls(list) {
@@ -910,10 +952,6 @@ import {
     document.getElementById('file-input').addEventListener('change', function() {
       uploadFile(this.files[0]);
       this.value = '';
-    });
-    document.getElementById('typing-rotate').addEventListener('click', function(e) {
-      e.stopPropagation();
-      fetch('/api/rotate', { method: 'POST' }).catch(function() {});
     });
     document.getElementById('typing-paste').addEventListener('click', function(e) {
       e.stopPropagation(); showPasteModal();

@@ -533,9 +533,9 @@ cursor_state_block = (
 s = s[:last_body_pos] + cursor_state_block + s[last_body_pos:]
 
 # rotateScreen(): rotate the display 90 degrees clockwise. Called by the C++
-# rotate cmd sent by rmkbd on POST /api/rotate. Increments root.rotation by 90
-# mod 360; the body Rectangle already swaps its width/height at 90/270 degrees
-# (upstream geometry is untouched, so portrait/landscape swap is automatic).
+# rotate cmd sent by rmkbd on POST /api/rotate (C++ sets root.rotation directly;
+# this function remains for symmetry / manual calls). Increments root.rotation by
+# 90 mod 360; the body Rectangle already swaps its width/height at 90/270 degrees.
 old_rotate_fn = '    function initFile(name) {'
 new_rotate_fn = (
     '    function rotateScreen() {\n'

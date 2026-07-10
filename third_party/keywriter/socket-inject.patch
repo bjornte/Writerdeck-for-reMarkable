@@ -142,8 +142,12 @@
 +            }
 +        }
 +        else if (cmd == "rotate" && g_rootObj)
-+            // {"t":"cmd","c":"rotate"} -> rotateScreen() in QML: rotate display 90 CW.
-+            QMetaObject::invokeMethod(g_rootObj, "rotateScreen", Qt::QueuedConnection);
++            // {"t":"cmd","c":"rotate"} -> bump root.rotation 90 CW (any mode).
++            QMetaObject::invokeMethod(qApp, []() {
++                if (!g_rootObj) return;
++                int r = g_rootObj->property("rotation").toInt();
++                g_rootObj->setProperty("rotation", (r + 90) % 360);
++            }, Qt::QueuedConnection);
 +    } else if (line.find("\"t\":\"info\"") != std::string::npos) {
 +        // {"t":"info","ip":"...","pin":"..."} -> setLobbyInfo(ip, pin) in QML.
 +        // Sent by rmkbd on every socket connect so the Lobby always shows current values.
