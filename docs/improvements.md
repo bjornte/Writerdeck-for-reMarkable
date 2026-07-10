@@ -5,7 +5,7 @@
 - General
   - Files could be encrypted (maybe only files in a subfolder?)
 - For USB-connected keyboards
-  - Activate the program using a keyboard shortcut
+  - ~~Activate the program using a keyboard shortcut~~ (done — Esc wakes from sleep or launches to Lobby when idle)
   - Support additional keyboard locales, incl. Norwegian
 - In Edit view
   - Page navigation and corresponding keyboard shortcuts generally work, but leave a lot to be desired
