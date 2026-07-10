@@ -1,0 +1,24 @@
+=== test-edit-session  2026-07-11T01-20-05  target=192.168.1.8  note=vetle.md ===
+=== before ===
+997
+1018
+wget: can't connect to remote host (127.0.0.1): Connection refused
+
+=== POST /api/open ===
+FAIL: /api/open HTTP error
+--- t=1s ---
+Writerdeck=997 xochitl=1018 status={}
+FAIL: xochitl running while editor should be up (t=1s)
+=== before ===
+
+=== POST /api/open ===
+wget: can't connect to remote host (127.0.0.1): Connection refused
+FAIL: /api/open HTTP error
+--- t=1s ---
+Writerdeck=997 xochitl=1018 status={}
+FAIL: xochitl running while editor should be up (t=1s)
+
+=== verdict: FAIL ===
+Full log: /Users/bjornte/dev/Writerdeck-for-reMarkable/docs/recon/test-edit-session-2026-07-11T01-20-05.txt
+
+--- Cleanup (restore stock UI if editor still up) ---

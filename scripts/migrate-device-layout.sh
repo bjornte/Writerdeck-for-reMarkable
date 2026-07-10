@@ -53,6 +53,15 @@ systemctl daemon-reload 2>/dev/null || true
 
 # Stale socket from old editor binary name.
 rm -f /run/rmkbd.sock /run/Writerdeck.sock 2>/dev/null || true
+
+# Remove legacy binaries and dirs (post-rename cleanup).
+for f in /home/root/rmkbd /home/root/rmkbd.new \
+         /home/root/keywriter /home/root/keywriter.new \
+         /home/root/launch-keywriter.sh; do
+  if [ -e "$f" ]; then rm -f "$f" && echo "  removed $f"; fi
+done
+if [ -d /home/root/edit ]; then rm -rf /home/root/edit && echo "  removed /home/root/edit"; fi
+if [ -d /home/root/.rmkbd ]; then rm -rf /home/root/.rmkbd && echo "  removed /home/root/.rmkbd"; fi
 EOS
 )" "$target"
 }
