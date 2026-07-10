@@ -96,17 +96,14 @@ type inputEvent struct {
 
 const (
 	evKey     = 1   // EV_KEY
-	keyEsc    = 1   // KEY_ESC -- USB keyboard wake / launch
 	keyHome   = 102 // KEY_HOME -- middle (home) button, confirmed on /dev/input/event1
 	keyPower  = 116 // KEY_POWER -- top power button
 	keyWake   = 143 // KEY_WAKEUP -- fires on some wake paths
 	buttonDev = "/dev/input/event1"
 
-	saveAckTimeout   = 10 * time.Second // wait for keywriter {"t":"saved",...}
-	paintAckTimeout  = 3 * time.Second  // e-ink sleep screen {"t":"ready",...}
-	syncAckTimeout   = 45 * time.Second // power sleep waits for GitHub reconcile
-	keyboardRescan   = 3 * time.Second  // hotplug rescan for USB keyboards
-	keyboardDebounce = 800 * time.Millisecond
+	saveAckTimeout  = 10 * time.Second  // wait for keywriter {"t":"saved",...}
+	paintAckTimeout = 3 * time.Second   // e-ink sleep screen {"t":"ready",...}
+	syncAckTimeout  = 45 * time.Second  // power sleep waits for GitHub reconcile
 )
 
 // wsMsg is the JSON message received from the browser on keydown.
@@ -422,122 +419,6 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 
 // watchHomeButton is kept as an alias for callers that haven't been renamed yet.
 func watchHomeButton(s *session, ec *editorConn) { watchPhysicalButtons(s, ec) }
-
-// findKeyboardInputDevices returns /dev/input/event* nodes that look like USB
-// keyboards (name contains "keyboard"), excluding gpio-keys on event1.
-func findKeyboardInputDevices() []string {
-	entries, err := os.ReadDir("/sys/class/input")
-	if err != nil {
-		return nil
-	}
-	var out []string
-	for _, e := range entries {
-		if !strings.HasPrefix(e.Name(), "event") {
-			continue
-		}
-		dev := "/dev/input/" + e.Name()
-		if dev == buttonDev {
-			continue
-		}
-		namePath := filepath.Join("/sys/class/input", e.Name(), "device", "name")
-		b, err := os.ReadFile(namePath)
-		if err != nil {
-			continue
-		}
-		name := strings.ToLower(strings.TrimSpace(string(b)))
-		if !strings.Contains(name, "keyboard") {
-			continue
-		}
-		out = append(out, dev)
-	}
-	return out
-}
-
-// handleKeyboardWake reacts to Escape on a USB keyboard when Writerdeck-server
-// should act instead of the editor: resume after power sleep, or launch to Lobby.
-func handleKeyboardWake(s *session) {
-	if s == nil {
-		return
-	}
-	if s.isSleeping() {
-		currentNoteMu.Lock()
-		note := currentNote
-		currentNoteMu.Unlock()
-		fmt.Fprintln(os.Stderr, "writerdeck-server: Escape -- waking from sleep")
-		go func() { _ = s.wakeFromSleep(note) }()
-		return
-	}
-	if s.isActive() {
-		return // editor running -- Qt handles Escape (omni close / preview toggle)
-	}
-	fmt.Fprintln(os.Stderr, "writerdeck-server: Escape -- launching editor to Lobby")
-	go func() {
-		if err := s.start(); err != nil {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: Escape launch failed: %v\n", err)
-		}
-	}()
-}
-
-func readUSBKeyboardEvents(dev string, s *session, debounce *struct {
-	mu sync.Mutex
-	t  time.Time
-}) {
-	f, err := os.Open(dev)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	fmt.Fprintf(os.Stderr, "writerdeck-server: watching USB keyboard %s for Escape\n", dev)
-	for {
-		var ev inputEvent
-		if err := binary.Read(f, binary.LittleEndian, &ev); err != nil {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: keyboard %s: %v\n", dev, err)
-			return
-		}
-		if ev.Type != evKey || ev.Value != 1 || ev.Code != keyEsc {
-			continue
-		}
-		debounce.mu.Lock()
-		if time.Since(debounce.t) < keyboardDebounce {
-			debounce.mu.Unlock()
-			continue
-		}
-		debounce.t = time.Now()
-		debounce.mu.Unlock()
-		handleKeyboardWake(s)
-	}
-}
-
-// watchUSBKeyboard rescans for USB keyboards and listens for Escape to wake from
-// sleep or start an editor session (Lobby) when idle. Active sessions ignore
-// Escape here so keywriter keeps normal edit/preview behaviour.
-func watchUSBKeyboard(s *session) {
-	fmt.Fprintln(os.Stderr, "writerdeck-server: USB keyboard wake/launch watcher started")
-	var debounce struct {
-		mu sync.Mutex
-		t  time.Time
-	}
-	running := make(map[string]struct{})
-	var mu sync.Mutex
-	for {
-		for _, dev := range findKeyboardInputDevices() {
-			mu.Lock()
-			if _, ok := running[dev]; ok {
-				mu.Unlock()
-				continue
-			}
-			running[dev] = struct{}{}
-			mu.Unlock()
-			go func(d string) {
-				readUSBKeyboardEvents(d, s, &debounce)
-				mu.Lock()
-				delete(running, d)
-				mu.Unlock()
-			}(dev)
-		}
-		time.Sleep(keyboardRescan)
-	}
-}
 
 // translate converts a browser key event to an editor-feed NDJSON line.
 // Returns nil if the key should be ignored (e.g. lone modifier keys).
@@ -2061,7 +1942,6 @@ func main() {
 
 		// Always-on Home watcher: loops for rmkbd's lifetime.
 		go watchHomeButton(activeSess, ec)
-		go watchUSBKeyboard(activeSess)
 
 		// HTTP server always-on in the background.
 		go func() {
