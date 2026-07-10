@@ -142,11 +142,10 @@ new3 = (
 assert old3 in s, "function initFile not found in main.qml"
 s = s.replace(old3, new3, 1)
 
-# 3b. openNotePicker(): leave Lobby and show the Ctrl-K note switcher (omni).
+# 3b. openNotePicker(): show omni over the Lobby (keep isLobby true; z-order in 3c).
 old3b = '    function saveAndLoad(name) {'
 new3b = (
     '    function openNotePicker() {\n'
-    '        isLobby = false\n'
     '        isOmni = true\n'
     '        omniQuery = ""\n'
     '    }\n'
@@ -155,6 +154,12 @@ new3b = (
 )
 assert old3b in s, "function saveAndLoad not found (edit 3b)"
 s = s.replace(old3b, new3b, 1)
+
+# 3c. Omni z-order above Lobby so Open/Ctrl-K from Lobby never exposes stale doc.
+old3c = '        Rectangle {\n            id: quick\n'
+new3c = '        Rectangle {\n            id: quick\n            z: isOmni ? 10 : 0\n'
+assert old3c in s, "quick Rectangle not found (edit 3c)"
+s = s.replace(old3c, new3c, 1)
 
 # 4. Ctrl-K note-switcher: also accept event.modifiers.
 #    Our injector sets the modifier FLAG on the K event but never sends a
@@ -188,8 +193,10 @@ old4b = (
 )
 new4b = (
     '        } else if (event.key === Qt.Key_K && (ctrlPressed || (event.modifiers & Qt.ControlModifier))) {\n'
-    '            if (isLobby) openNotePicker()\n'
-    '            else isOmni = !isOmni\n'
+    '            if (isLobby) {\n'
+    '                if (isOmni) isOmni = false\n'
+    '                else openNotePicker()\n'
+    '            } else isOmni = !isOmni\n'
     '            event.accepted = true\n'
     '        }'
 )
@@ -212,6 +219,25 @@ s, nk = re.subn(
     s, count=1
 )
 assert nk == 1, "omni Enter saveFile pattern not found in main.qml (Ctrl-K data-loss fix)"
+
+# 5c. Omni pick from Lobby: hide Lobby once a note is chosen.
+old5c = (
+    '            doLoad(omniList.currentItem.text)\n'
+    '            }\n'
+    '            isOmni = false\n'
+    '            event.accepted = true\n'
+    '            return'
+)
+new5c = (
+    '            doLoad(omniList.currentItem.text)\n'
+    '            }\n'
+    '            isLobby = false\n'
+    '            isOmni = false\n'
+    '            event.accepted = true\n'
+    '            return'
+)
+assert old5c in s, "omni Enter close block not found (edit 5c)"
+s = s.replace(old5c, new5c, 1)
 
 # 6. Add isLobby / lobbyIP / lobbyPIN properties after isOmni.
 #    isLobby starts true so the device shows the Lobby on boot; saveAndLoad()
@@ -259,6 +285,8 @@ new7 = (
     '            saveFile()\n'
     '            isLobby = true\n'
     '            currentFile = ""\n'
+    '            doc = ""\n'
+    '            query.text = ""\n'
     '        }\n'
     '    }\n'
     '\n'
@@ -935,7 +963,7 @@ s = s.replace(old_rotate_fn, new_rotate_fn, 1)
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + prepareSleep + sleep-screen + Lobby rect + openNotePicker + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
+print('  All QML edits applied (props + setLobbyInfo + handleHome + prepareSleep + sleep-screen + Lobby rect + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true
