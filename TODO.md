@@ -16,10 +16,9 @@ Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md
 
 ## Next up (lowest effort first)
 
-1. **Verify marker-aware sync delete** — built in `sync.js`; test GitHub-side delete propagates to tablet ([decisions.md](docs/decisions.md) #19).
-2. **Lobby: file-picker button** — visible affordance for Ctrl-K omni (`build-keywriter.sh` + deploy).
-3. **Lobby: repo URL when sync on** — extend `pushLobbyInfo` payload + QML line.
-4. **Reading view: no auto-scroll to bottom** — QML scroll position on mode toggle.
+1. **Lobby: file-picker button** — visible affordance for Ctrl-K omni (`build-keywriter.sh` + deploy).
+2. **Lobby: repo URL when sync on** — extend `pushLobbyInfo` payload + QML line.
+3. **Reading view: no auto-scroll to bottom** — QML scroll position on mode toggle.
 
 ---
 
@@ -31,7 +30,7 @@ Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md
 - [ ] Multiple notes / quick-switch UX review.
 - [ ] Battery/Wi-Fi indicators on the capture page.
 - [ ] Paragraph spacing in Read view (postponed): Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`. Next: `line-height`, spacer nodes, or Markdown pre-process — see [docs/lessons.md](docs/lessons.md).
-- [ ] Sync: marker-aware delete/rename — built in `sync.js`; device-verify pending ([decisions.md](docs/decisions.md) #19).
+- [x] Sync: marker-aware delete/rename — device-verified ([decisions.md](docs/decisions.md) #19).
 - [x] Landscape/rotate — device-verified; control in Settings → Display.
 - [ ] Fallback spike (only if keywriter becomes a blocker): a self-contained on-device editor using `libremarkable` (Rust framebuffer) that takes text over the socket — removes the keywriter-compat risk at the cost of building an editor. Documented fallback (see [docs/decisions.md](docs/decisions.md)), not the default.
 

@@ -56,7 +56,9 @@ Built from source keywriter, patched for socket input. Renders full-panel via li
 
 ## GitHub sync
 
-Optional, off by default. The phone reconciles tablet notes with a private repo — pull what's missing either way, push local-only notes, handle clashes by keeping both copies with clear names. External deletes on GitHub propagate when the tablet copy is pristine. Delete and rename from outside the browser still have known limitations — see [docs/decisions.md](docs/decisions.md) #19.
+Optional, off by default. The phone reconciles tablet notes with a private repo — pull what's missing either way, push local-only notes, handle clashes by keeping both copies with clear names.
+
+**Marker-aware delete** — a note deleted on GitHub (VS Code, web UI, git) propagates to the tablet when the local copy is pristine and carries a stored `sha`. Unpushed local edits resurrect instead of deleting. External renames reconcile as delete-old + pull-new. Tablet-only deletes still don't propagate to GitHub by design.
 
 Triggers: connect, toggle on, three-minute poll, manual Sync now. Skips the note currently open on the tablet.
 
