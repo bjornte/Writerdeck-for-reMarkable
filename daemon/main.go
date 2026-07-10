@@ -875,6 +875,7 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
+		pushLobbyInfo()
 
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -945,6 +946,7 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			broadcast([]byte(`{"type":"exitedit"}`))
 		}
 		w.WriteHeader(http.StatusNoContent)
+		pushLobbyInfo()
 
 	case http.MethodPut:
 		// Upsert: write or overwrite content. Used by the sync engine to apply a
@@ -1007,8 +1009,9 @@ type settingsData struct {
 	ReadFont  string `json:"readFont"`
 	PinDigits string `json:"pinDigits"` // "6", "4", or "none"; default "6"
 	Rotation  int    `json:"rotation"`  // display rotation in degrees (0, 90, 180, 270)
-	SyncOn    bool   `json:"syncOn"`    // GitHub two-way sync enabled
-	SyncRepo  string `json:"syncRepo"`  // "owner/repo" of the notes repo; token never stored here
+	SyncOn     bool  `json:"syncOn"`               // GitHub two-way sync enabled
+	SyncRepo   string `json:"syncRepo"`          // "owner/repo" of the notes repo; token never stored here
+	LastSyncAt int64  `json:"lastSyncAt,omitempty"` // unix seconds of last browser reconcile ack
 }
 
 // normalizeRotation maps any integer to a 0-359 degree value.
@@ -1283,8 +1286,53 @@ var (
 	lastPushedLobbyIP string
 )
 
-// pushLobbyInfo sends {"t":"info","ip":...,"pin":...,"syncOn":...,"syncRepo":...}
-// to the editor socket so the Lobby reflects current connect + sync settings.
+// countNotes returns the number of .md files in the notes directory.
+func countNotes() int {
+	entries, err := os.ReadDir(notesDirPath)
+	if err != nil {
+		return 0
+	}
+	n := 0
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".md") {
+			n++
+		}
+	}
+	return n
+}
+
+// formatLastSyncAgo turns a unix timestamp into a short relative time string.
+func formatLastSyncAgo(unix int64) string {
+	if unix <= 0 {
+		return ""
+	}
+	d := time.Since(time.Unix(unix, 0))
+	if d < time.Minute {
+		return "just now"
+	}
+	if d < time.Hour {
+		m := int(d.Minutes())
+		if m == 1 {
+			return "1 minute ago"
+		}
+		return fmt.Sprintf("%d minutes ago", m)
+	}
+	if d < 24*time.Hour {
+		h := int(d.Hours())
+		if h == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", h)
+	}
+	days := int(d.Hours() / 24)
+	if days == 1 {
+		return "1 day ago"
+	}
+	return fmt.Sprintf("%d days ago", days)
+}
+
+// pushLobbyInfo sends {"t":"info",...} to the editor socket so the Lobby
+// reflects current connect, sync, and notes state.
 func pushLobbyInfo() {
 	ip := getLocalIP()
 	authMu.Lock()
@@ -1293,14 +1341,17 @@ func pushLobbyInfo() {
 	settingsMu.Lock()
 	syncOn := curSettings.SyncOn
 	syncRepo := curSettings.SyncRepo
+	lastSync := formatLastSyncAgo(curSettings.LastSyncAt)
 	settingsMu.Unlock()
 	infoMsg, _ := json.Marshal(struct {
-		T        string `json:"t"`
-		IP       string `json:"ip"`
-		PIN      string `json:"pin"`
-		SyncOn   bool   `json:"syncOn"`
-		SyncRepo string `json:"syncRepo"`
-	}{"info", ip, pin, syncOn, syncRepo})
+		T         string `json:"t"`
+		IP        string `json:"ip"`
+		PIN       string `json:"pin"`
+		SyncOn    bool   `json:"syncOn"`
+		SyncRepo  string `json:"syncRepo"`
+		NoteCount int    `json:"noteCount"`
+		LastSync  string `json:"lastSync"`
+	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync})
 	if globalEC != nil {
 		globalEC.write(infoMsg)
 	}
@@ -1648,6 +1699,11 @@ func syncAckHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	signalSyncAck()
+	settingsMu.Lock()
+	curSettings.LastSyncAt = time.Now().Unix()
+	saveSettingsLocked()
+	settingsMu.Unlock()
+	pushLobbyInfo()
 	w.WriteHeader(http.StatusOK)
 }
 

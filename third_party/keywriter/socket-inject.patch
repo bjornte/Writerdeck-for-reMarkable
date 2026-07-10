@@ -205,8 +205,8 @@
 +                g_rootObj->setProperty("rotation", (r + 90) % 360);
 +            }, Qt::QueuedConnection);
 +    } else if (line.find("\"t\":\"info\"") != std::string::npos) {
-+        // {"t":"info","ip":"...","pin":"...","syncOn":...,"syncRepo":"..."}
-+        // -> setLobbyInfo(ip, pin, syncOn, syncRepo) in QML.
++        // {"t":"info","ip":"...","pin":"...","syncOn":...,"syncRepo":"...","noteCount":N,"lastSync":"..."}
++        // -> setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync) in QML.
 +        auto ip_p = line.find("\"ip\":\"");
 +        auto pin_p = line.find("\"pin\":\"");
 +        if (ip_p != std::string::npos && pin_p != std::string::npos && g_rootObj) {
@@ -224,12 +224,28 @@
 +                    if (sr_q != std::string::npos)
 +                        syncRepo = line.substr(sr_p, sr_q - sr_p);
 +                }
++                int noteCount = 0;
++                auto nc_p = line.find("\"noteCount\":");
++                if (nc_p != std::string::npos) {
++                    nc_p += 12;
++                    noteCount = std::atoi(line.c_str() + nc_p);
++                }
++                std::string lastSync;
++                auto ls_p = line.find("\"lastSync\":\"");
++                if (ls_p != std::string::npos) {
++                    ls_p += 12;
++                    auto ls_q = line.find('"', ls_p);
++                    if (ls_q != std::string::npos)
++                        lastSync = line.substr(ls_p, ls_q - ls_p);
++                }
 +                QMetaObject::invokeMethod(g_rootObj, "setLobbyInfo",
 +                    Qt::QueuedConnection,
 +                    Q_ARG(QVariant, QString::fromStdString(ip)),
 +                    Q_ARG(QVariant, QString::fromStdString(pin)),
 +                    Q_ARG(QVariant, syncOn),
-+                    Q_ARG(QVariant, QString::fromStdString(syncRepo)));
++                    Q_ARG(QVariant, QString::fromStdString(syncRepo)),
++                    Q_ARG(QVariant, noteCount),
++                    Q_ARG(QVariant, QString::fromStdString(lastSync)));
 +            }
 +        }
 +    }
