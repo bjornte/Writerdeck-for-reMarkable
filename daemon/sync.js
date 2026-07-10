@@ -298,6 +298,8 @@ export function reconcileAll(reason, opts) {
     var els = document.querySelectorAll('.sync-status-line');
     for (var i = 0; i < els.length; i++) els[i].textContent = 'Last synced: ' + ts;
     _onNotesChanged();
+    // Tell the daemon so Lobby can show "Last sync was …" and power-sleep can proceed.
+    fetch('/api/sync/ack', { method: 'POST', credentials: 'same-origin' }).catch(function() {});
     syncing = false;
     return count;
   }).catch(function() {
