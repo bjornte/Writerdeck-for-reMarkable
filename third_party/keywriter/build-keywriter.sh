@@ -221,23 +221,12 @@ s, nk = re.subn(
 assert nk == 1, "omni Enter saveFile pattern not found in main.qml (Ctrl-K data-loss fix)"
 
 # 5c. Omni pick from Lobby: hide Lobby once a note is chosen.
-old5c = (
-    '            doLoad(omniList.currentItem.text)\n'
-    '            }\n'
-    '            isOmni = false\n'
-    '            event.accepted = true\n'
-    '            return'
+s, n5c = re.subn(
+    r'(\s+doLoad\(omniList\.currentItem\.text\)\n\s+\}\n)(\s+)isOmni = false',
+    r'\1\2isLobby = false\n\2isOmni = false',
+    s, count=1
 )
-new5c = (
-    '            doLoad(omniList.currentItem.text)\n'
-    '            }\n'
-    '            isLobby = false\n'
-    '            isOmni = false\n'
-    '            event.accepted = true\n'
-    '            return'
-)
-assert old5c in s, "omni Enter close block not found (edit 5c)"
-s = s.replace(old5c, new5c, 1)
+assert n5c == 1, "omni Enter close block not found (edit 5c)"
 
 # 6. Add isLobby / lobbyIP / lobbyPIN properties after isOmni.
 #    isLobby starts true so the device shows the Lobby on boot; saveAndLoad()
