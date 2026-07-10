@@ -20,7 +20,9 @@ Home from the editor saves and returns to the Lobby. Home from the Lobby quits t
 
 ## Lobby
 
-Full-screen welcome on e-ink: project title, connect URL, PIN (if enabled), and how-to text. **Open note… (Ctrl-K)** button opens the note switcher from the Lobby; Ctrl-K on a USB keyboard does the same. The URL tracks Wi-Fi — when `wlan0` gets an address after boot, the Lobby updates. A second device can ask the tablet to show the PIN again (`Show PIN on tablet` on the phone). When GitHub sync is on, the Lobby also shows the notes repo (`Sync: github.com/owner/repo`).
+Full-screen welcome on e-ink, vertically centered when it fits (scrolls if taller than the viewport). Sections: title and tagline; **Notes** (count + Ctrl-K); **Syncing** (relative last-sync time when known, repo URL, or a setup hint); **Keyboard connection** (USB OTG, Bluetooth/phone URL, PIN); **Shortcuts** (Esc launch from stock UI, Ctrl-K/R/Q, Home); open-source footer.
+
+Fed by `pushLobbyInfo` → `{"t":"info",…}` on socket connect — IP, PIN, `syncOn`/`syncRepo`, note count, formatted last sync — and re-pushed when `wlan0` gets an address, a reconcile finishes, or notes are created/deleted. Ctrl-K opens the note picker from the Lobby. **Show PIN on tablet** on the phone drops back to the Lobby when a second device needs the PIN.
 
 ## Phone companion
 
@@ -64,7 +66,7 @@ Optional, off by default. The phone reconciles tablet notes with a private repo 
 
 **Marker-aware delete** — a note deleted on GitHub (VS Code, web UI, git) propagates to the tablet when the local copy is pristine and carries a stored `sha`. Unpushed local edits resurrect instead of deleting. External renames reconcile as delete-old + pull-new. Tablet-only deletes still don't propagate to GitHub by design.
 
-Triggers: connect, toggle on, three-minute poll, manual Sync now, **tablet Home or Power** (full reconcile via phone browser). Skips the note currently open on the tablet during reconcile — `tabletOpenNote` is cleared before sync runs.
+Triggers: connect, toggle on, three-minute poll, manual Sync now, **tablet Home or Power** (full reconcile via phone browser). Each successful reconcile POSTs `/api/sync/ack`, which stores `lastSyncAt` in settings and refreshes the Lobby. Skips the note currently open on the tablet during reconcile — `tabletOpenNote` is cleared before sync runs.
 
 ## Infrastructure
 

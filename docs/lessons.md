@@ -46,7 +46,7 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **Font IDs must match Qt family names exactly** or the editor silently falls back to DejaVu.
 
-**QML `Text` needs explicit `width` + `wrapMode`** or long Lobby copy runs off-screen.
+**QML `Text` needs explicit `width` + `wrapMode`** or long Lobby copy runs off-screen. The Lobby uses a `Flickable` with vertical centering when content fits (`y = max(0, (viewport − height) / 2)`); taller content scrolls from the top.
 
 **Apostrophes in Python patch heredocs** — use `' + chr(39) + '`, not a literal `'`.
 
@@ -61,6 +61,8 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 **Inline `onclick` can't reach IIFE closures** — use `addEventListener`.
 
 **`navigator.clipboard` needs HTTPS** — on plain http LAN, Copy falls back to `execCommand('copy')`.
+
+**Lobby last-sync on tablet** — relative time comes from `lastSyncAt` in `settings.json`. The phone must POST `/api/sync/ack` after reconcile; `reconcileAll` does this on every success (not only on power sleep). `pushLobbyInfo` formats it for the Lobby and re-pushes on ack.
 
 **Load sync flags at page init**, not when the Settings panel opens — otherwise auto-sync silently skips.
 
