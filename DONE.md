@@ -38,7 +38,9 @@ PIN on the tablet, shown on e-ink each boot. Choose 6 digits, 4 digits, or none 
 
 ## Settings & sync (browser)
 
-**Settings** — reading font and PIN length. **Sync** — separate panel for optional GitHub two-way sync. Both dismiss with Done, ×, ESC, or a backdrop click.
+**Settings** — reading font, PIN length, display rotate, and **Exit Writerdeck** (stops the service and returns the tablet to stock UI). **Sync** — separate panel for optional GitHub two-way sync. Both dismiss with Done, ×, ESC, or a backdrop click.
+
+The top bar shows tablet battery and Wi-Fi (`96% · Wi-Fi`), refreshed every 30 seconds.
 
 Sync warnings appear in a banner when sync is on but the browser has no token. The repo link opens on GitHub when configured.
 

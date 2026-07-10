@@ -38,6 +38,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -1262,6 +1263,72 @@ func lobbyHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// statusHandler serves GET /api/status: tablet battery, Wi-Fi, and editor state.
+func statusHandler(w http.ResponseWriter, r *http.Request) {
+	if !checkAuth(w, r) {
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	battery := -1
+	charging := false
+	if data, err := os.ReadFile("/sys/class/power_supply/bq27441-0/capacity"); err == nil {
+		if p, err := strconv.Atoi(strings.TrimSpace(string(data))); err == nil && p >= 0 && p <= 100 {
+			battery = p
+		}
+	}
+	if st, err := os.ReadFile("/sys/class/power_supply/bq27441-0/status"); err == nil {
+		s := strings.TrimSpace(string(st))
+		charging = s == "Charging" || s == "Full"
+	}
+	wifi := false
+	if st, err := os.ReadFile("/sys/class/net/wlan0/operstate"); err == nil {
+		wifi = strings.TrimSpace(string(st)) == "up"
+	}
+	editorActive := false
+	if activeSess != nil {
+		editorActive = activeSess.isActive()
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(struct { //nolint:errcheck
+		Battery      int    `json:"battery"`
+		Charging     bool   `json:"charging"`
+		Wifi         bool   `json:"wifi"`
+		IP           string `json:"ip"`
+		EditorActive bool   `json:"editorActive"`
+	}{battery, charging, wifi, getLocalIP(), editorActive})
+}
+
+// shutdownHandler handles POST /api/shutdown: end the editor session, restore
+// xochitl, and exit rmkbd. The phone companion disconnects until rmkbd is
+// started again (SSH, reboot hook, or systemd).
+func shutdownHandler(w http.ResponseWriter, r *http.Request) {
+	if !checkAuth(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if activeSess == nil {
+		http.Error(w, "not in supervisor mode", http.StatusNotImplemented)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		if activeSess.isActive() {
+			activeSess.quit()
+		} else {
+			exec.Command("systemctl", "start", "xochitl").Run() //nolint:errcheck
+		}
+		fmt.Fprintln(os.Stderr, "rmkbd: shutdown requested from phone -- exiting")
+		os.Exit(0)
+	}()
+}
+
 // --- Session manager ---
 // An editor session is a sub-lifecycle: xochitl stopped, keywriter running
 // (with systemd-inhibit in launch-keywriter.sh holding the sleep lock).
@@ -1589,6 +1656,8 @@ func main() {
 	http.HandleFunc("/api/notes/", notesItemHandler)
 	http.HandleFunc("/api/settings", settingsHandler)
 	http.HandleFunc("/api/lobby", lobbyHandler) // pre-auth: reveals PIN on e-ink only
+	http.HandleFunc("/api/status", statusHandler)
+	http.HandleFunc("/api/shutdown", shutdownHandler)
 
 	if *editorPath != "" {
 		// Supervisor mode: rmkbd is always-on; editor sessions are on-demand.

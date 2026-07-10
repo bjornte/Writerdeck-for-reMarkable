@@ -16,6 +16,7 @@ import {
 
   var dot  = document.getElementById('dot');
   var msg  = document.getElementById('msg');
+  var tabletStatus = document.getElementById('tablet-status');
   var echo = document.getElementById('echo');
   var trap = document.getElementById('trap');
   var buf = '';
@@ -36,6 +37,40 @@ import {
   function setStatus(cls, text) {
     dot.className = cls;
     msg.textContent = text;
+  }
+
+  var statusTimer = null;
+  var STATUS_MS = 30000;
+
+  function formatTabletStatus(data) {
+    var parts = [];
+    if (data.battery >= 0) {
+      parts.push(data.battery + '%' + (data.charging ? ' +' : ''));
+    }
+    parts.push(data.wifi ? 'Wi-Fi' : 'no Wi-Fi');
+    return parts.join(' \u00b7 ');
+  }
+
+  function refreshTabletStatus() {
+    fetch('/api/status')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (!data) return;
+        tabletStatus.textContent = formatTabletStatus(data);
+        tabletStatus.style.display = 'inline';
+      })
+      .catch(function() {});
+  }
+
+  function startStatusPoll() {
+    refreshTabletStatus();
+    if (statusTimer) clearInterval(statusTimer);
+    statusTimer = setInterval(refreshTabletStatus, STATUS_MS);
+  }
+
+  function stopStatusPoll() {
+    if (statusTimer) { clearInterval(statusTimer); statusTimer = null; }
+    tabletStatus.style.display = 'none';
   }
 
   function appendEcho(key) {
@@ -692,6 +727,46 @@ import {
     });
     list.appendChild(rotateBtn);
     list.appendChild(rotateMsg);
+
+    // ---- Service section ----
+    var svh = document.createElement('div');
+    svh.className = 'settings-section';
+    svh.textContent = 'Service';
+    list.appendChild(svh);
+
+    var exitWarn = document.createElement('div');
+    exitWarn.className = 'row-warn';
+    exitWarn.style.cssText = 'padding:4px 2px 8px;line-height:1.4;';
+    exitWarn.textContent = 'Stop Writerdeck and return the tablet to the stock reMarkable UI. Reconnect later via SSH or reboot.';
+    list.appendChild(exitWarn);
+
+    var exitMsg = document.createElement('div');
+    exitMsg.style.cssText = 'font-size:12px;padding:4px 2px;min-height:16px;color:#888;';
+
+    var exitBtn = document.createElement('button');
+    exitBtn.className = 'sync-btn-danger';
+    exitBtn.textContent = 'Exit Writerdeck';
+    exitBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      if (!confirm('Exit Writerdeck on the tablet? This page will disconnect.')) return;
+      exitMsg.style.color = '#888';
+      exitMsg.textContent = 'Stopping\u2026';
+      fetch('/api/shutdown', { method: 'POST' })
+        .then(function(r) {
+          if (!r.ok) throw new Error('status ' + r.status);
+          exitMsg.style.color = '#4caf50';
+          exitMsg.textContent = 'Stopped. Stock UI should be back on the tablet.';
+          if (ws) { ws.close(); }
+          setStatus('off', 'Writerdeck stopped on tablet');
+          stopStatusPoll();
+        })
+        .catch(function() {
+          exitMsg.style.color = '#e57373';
+          exitMsg.textContent = 'Could not stop -- try again or use SSH.';
+        });
+    });
+    list.appendChild(exitBtn);
+    list.appendChild(exitMsg);
   }
 
   function renderSyncControls(list) {
@@ -861,6 +936,7 @@ import {
   }
 
   function showPinScreen() {
+    stopStatusPoll();
     document.getElementById('pin-screen').style.display = 'flex';
     startPinPoll();
   }
@@ -870,6 +946,7 @@ import {
     document.getElementById('pin-screen').style.display = 'none';
     document.getElementById('settings-btn').style.display = 'block';
     document.getElementById('sync-btn').style.display = 'block';
+    startStatusPoll();
   }
 
   // loadSyncConfig: pull the non-secret syncOn/syncRepo flags at startup, not

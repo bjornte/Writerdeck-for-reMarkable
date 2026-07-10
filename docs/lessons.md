@@ -24,6 +24,8 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **`HOME=/home/root` in launch-keywriter.sh** — under systemd, root's `$HOME` is `/`, so keywriter's save path breaks without the export.
 
+**No `pkill` on the device** (BusyBox). Kill by `pidof rmkbd` / `pidof keywriter` + `kill`. Deploy scripts already do this; ad-hoc SSH restarts must too, or you stack duplicate processes.
+
 **Keep the tablet awake** — it drops Wi-Fi on suspend.
 
 ## keywriter / QML

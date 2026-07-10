@@ -26,15 +26,17 @@ Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md
 - [ ] Mac-style modifier+arrow navigation: Alt+Arrow = word jump, Cmd+Arrow = line/doc start/end, Shift+Arrow = select, Shift+Alt/Cmd+Arrow = select by word/line. Match macOS TextEdit behavior.
 - [ ] Word/character count, simple status line.
 - [ ] Multiple notes / quick-switch UX review.
-- [ ] Battery/Wi-Fi indicators on the capture page.
 - [ ] Paragraph spacing in Read view (postponed): Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`. Next: `line-height`, spacer nodes, or Markdown pre-process — see [docs/lessons.md](docs/lessons.md).
 - [x] Sync: marker-aware delete/rename — device-verified ([decisions.md](docs/decisions.md) #19).
-- [x] Reading view: no auto-scroll to bottom — `ensureVisible` only in edit mode (Esc to preview keeps scroll position).
+- [x] Lobby: repo URL when sync on — device-verified; `pushLobbyInfo` sends `syncOn`/`syncRepo`; Lobby shows `Sync: github.com/owner/repo`.
+- [x] Reading view: no auto-scroll to bottom — device-verified; `ensureVisible` only in edit mode (Esc to preview keeps scroll position).
+- [x] Browser: battery/Wi-Fi status in top bar — `GET /api/status`, polled every 30s.
+- [x] Browser: exit Writerdeck from Settings — `POST /api/shutdown` stops editor, restores xochitl, exits `rmkbd`.
 - [ ] Fallback spike (only if keywriter becomes a blocker): a self-contained on-device editor using `libremarkable` (Rust framebuffer) that takes text over the socket — removes the keywriter-compat risk at the cost of building an editor. Documented fallback (see [docs/decisions.md](docs/decisions.md)), not the default.
 
 > Dev-ergonomics polish is already done (deploy ticker, binary-only `rmkw` redeploy, SSH preflight) — see [docs/architecture.md](docs/architecture.md).
 
-> Shipped polish pruned once verified — upload, PIN chooser, Lobby-on-demand, fonts, browser sync UI, etc. Lessons in [docs/lessons.md](docs/lessons.md) and [docs/decisions.md](docs/decisions.md). Recover specs from git history if a regression needs them.
+> Shipped polish pruned once verified — upload, PIN chooser, Lobby-on-demand, Lobby sync repo line, read-view scroll, fonts, browser sync UI, etc. Lessons in [docs/lessons.md](docs/lessons.md) and [docs/decisions.md](docs/decisions.md). Recover specs from git history if a regression needs them.
 
 ---
 
