@@ -86,6 +86,8 @@ RUN set -eux; \
     fc-list "EB Garamond" | grep -qi "garamond" || { echo "ERROR: EB Garamond missing (fonts-ebgaramond apt?)" >&2; exit 1; }
 
 COPY socket-inject.patch /socket-inject.patch
+COPY rotation_watcher.h /rotation_watcher.h
+COPY rotation_watcher.cpp /rotation_watcher.cpp
 COPY build-keywriter.sh /build-keywriter.sh
 RUN chmod +x /build-keywriter.sh
 

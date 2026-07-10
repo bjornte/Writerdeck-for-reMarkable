@@ -84,6 +84,12 @@ echo "=== Applying socket-injection patch ==="
 # --ignore-whitespace: tolerate any whitespace/CRLF drift in upstream main.cpp.
 git apply --recount --ignore-whitespace /socket-inject.patch
 echo "  Patch applied."
+
+# Rotation persistence: moc'd helper for rotationChanged -> server notify.
+cp /rotation_watcher.h /rotation_watcher.cpp /keywriter/
+printf '\nHEADERS += rotation_watcher.h\nSOURCES += rotation_watcher.cpp\n' >> edit.pro
+echo "  rotation_watcher added to edit.pro."
+
 # Add -pthread to edit.pro for std::thread (socket reader thread).
 printf '\nQMAKE_CXXFLAGS += -pthread\nQMAKE_LFLAGS += -pthread\n' >> edit.pro
 echo "  -pthread added to edit.pro."
@@ -819,7 +825,7 @@ lobby_rect = (
     '                    font.family: "Noto Mono"\n'
     '                }\n'
     '                Text {\n'
-    '                    text: "A text editor for reMarkable 1 and a physical keyboard.\\n\\nFor Bluetooth keyboards: Connect the keyboard to your phone, from there to reMarkable over Wi-Fi.\\n\\nFor USB keyboards: Connect using an OTG cable.\\n\\nOpen in your phone' + chr(39) + 's browser:"\n'
+    '                    text: "A text editor for use with a physical keyboard. Markdown support.\\n\\nFor Bluetooth keyboards: Connect the keyboard to your phone, from there to reMarkable over Wi-Fi.\\n\\nFor USB keyboards: Connect using an OTG cable.\\n\\nOpen in your phone' + chr(39) + 's browser:"\n'
     '                    color: "#555555"\n'
     '                    font.pointSize: 13\n'
     '                    font.family: "Noto Sans"\n'
