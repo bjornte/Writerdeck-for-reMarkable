@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# scripts/paths.sh -- Device layout names (SOURCE ONLY).
+# Every deploy/install script should source this via _env.sh.
+
+DEVICE_HOME="/home/root"
+DEVICE_EDITOR="${DEVICE_HOME}/Writerdeck"
+DEVICE_SERVER="${DEVICE_HOME}/Writerdeck-server"
+DEVICE_LAUNCHER="${DEVICE_HOME}/Writerdeck-launcher.sh"
+DEVICE_NOTES_DIR="${DEVICE_HOME}/Writerdeck-user-documents"
+DEVICE_SETTINGS_DIR="${DEVICE_HOME}/.Writerdeck"
+DEVICE_SETTINGS_FILE="${DEVICE_SETTINGS_DIR}/settings.json"
+DEVICE_SOCKET="/run/Writerdeck.sock"
+SYSTEMD_UNIT="writerdeck.service"
+SYSTEMD_UNIT_PATH="/etc/systemd/system/${SYSTEMD_UNIT}"
+
+# Legacy paths (pre-rename); used only for one-time migration on the device.
+LEGACY_SERVER="${DEVICE_HOME}/rmkbd"
+LEGACY_EDITOR="${DEVICE_HOME}/keywriter"
+LEGACY_LAUNCHER="${DEVICE_HOME}/launch-keywriter.sh"
+LEGACY_NOTES_DIR="${DEVICE_HOME}/edit"
+LEGACY_SETTINGS_DIR="${DEVICE_HOME}/.rmkbd"
+LEGACY_SOCKET="/run/rmkbd.sock"
+LEGACY_SYSTEMD_UNIT="rm1-writerdeck.service"
+
+export DEVICE_HOME DEVICE_EDITOR DEVICE_SERVER DEVICE_LAUNCHER \
+  DEVICE_NOTES_DIR DEVICE_SETTINGS_DIR DEVICE_SETTINGS_FILE DEVICE_SOCKET \
+  SYSTEMD_UNIT SYSTEMD_UNIT_PATH \
+  LEGACY_SERVER LEGACY_EDITOR LEGACY_LAUNCHER LEGACY_NOTES_DIR \
+  LEGACY_SETTINGS_DIR LEGACY_SOCKET LEGACY_SYSTEMD_UNIT

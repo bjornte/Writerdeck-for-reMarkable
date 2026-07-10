@@ -5,14 +5,14 @@
 # Unknown U4 (does the built binary + sysroot run and render?).
 #
 # Pre-conditions (all fulfilled by the CI build + git pull):
-#   third_party/keywriter/dist/keywriter   -- ARM binary built from source
+#   third_party/keywriter/dist/Writerdeck   -- ARM binary built from source
 #   third_party/keywriter/dist/qt5.tar.gz  -- Qt5 runtime sysroot (compressed)
 #   scripts/_env.sh, secrets/remarkable.local.env -- SSH credentials
 #
 # Device layout after deploy:
-#   /home/root/keywriter          -- the binary (multi-GB /home, not rootfs)
+#   /home/root/Writerdeck          -- the binary (multi-GB /home, not rootfs)
 #   /home/root/qt5/{lib,qml,plugins}/  -- Qt5 runtime sysroot
-#   /home/root/edit/scratch.md    -- keywriter's notes dir (pre-seeded)
+#   /home/root/Writerdeck-user-documents/scratch.md    -- keywriter's notes dir (pre-seeded)
 #
 # Launch environment:
 #   LD_LIBRARY_PATH=/home/root/qt5/lib
@@ -39,6 +39,8 @@ set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=/dev/null
 . "$DIR/_env.sh"
+# shellcheck source=/dev/null
+. "$DIR/migrate-device-layout.sh"
 REPO="$(cd "$DIR/.." && pwd)"
 
 # Args (any order): a target IP/host, or -b|--binary (binary-only fast deploy,
@@ -89,11 +91,13 @@ fi
 echo "=== deploy-keywriter  $TS  target=$TARGET ==="
 echo
 
+migrate_device_layout "$TARGET"
+
 # ---------------------------------------------------------------------------
 # 0. Pre-flight: confirm artifacts exist from the CI build (pulled via git).
 # ---------------------------------------------------------------------------
 DIST="$REPO/third_party/keywriter/dist"
-BINARY="$DIST/keywriter"
+BINARY="$DIST/Writerdeck"
 QT5_TGZ="$DIST/qt5.tar.gz"
 
 echo "--- Pre-flight checks ---"
@@ -146,30 +150,30 @@ fi
 
 # ---------------------------------------------------------------------------
 # 2. Deploy to device.
-#    - Binary -> /home/root/keywriter (NOT /home/root/edit/ which is notes dir)
+#    - Binary -> /home/root/Writerdeck (NOT /home/root/Writerdeck-user-documents/ which is notes dir)
 #    - Qt5 sysroot -> /home/root/qt5/
 #    Both live on the multi-GB /home partition, not the 96%-full rootfs.
 # ---------------------------------------------------------------------------
-echo "--- Deploying binary -> /home/root/keywriter ---"
+echo "--- Deploying binary -> /home/root/Writerdeck ---"
 if [ "$RM_SKIP_DEPLOY" = "1" ]; then
     echo "  (RM_SKIP_DEPLOY=1 -- skipping transfer; using binary+sysroot already on device)"
 else
 # Stop any running keywriter FIRST: a live instance holds the executable busy
 # (ETXTBSY -> scp "dest open Failure") -- e.g. a prior test left it running.
 # pkill -x is unreliable on this device, so kill by full path + pidof.
-rm_ssh 'pkill -f /home/root/keywriter 2>/dev/null; for p in $(pidof keywriter); do kill "$p" 2>/dev/null; done; sleep 0.5; true' "$TARGET"
+rm_ssh 'for p in $(pidof Writerdeck 2>/dev/null); do kill "$p" 2>/dev/null; done; sleep 0.5; true' "$TARGET"
 # Stream to a temp name, then atomically mv into place (rename never hits ETXTBSY).
 # rm_send_file = gzip-over-ssh stream (scp deadlocks on this link). See _env.sh.
-rm_send_file "$BINARY" "/home/root/keywriter.new" "$TARGET"
-rm_ssh 'mv -f /home/root/keywriter.new /home/root/keywriter && chmod +x /home/root/keywriter' "$TARGET"
+rm_send_file "$BINARY" "/home/root/Writerdeck.new" "$TARGET"
+rm_ssh 'mv -f /home/root/Writerdeck.new /home/root/Writerdeck && chmod +x /home/root/Writerdeck' "$TARGET"
 echo "  OK"
 
-# Deploy launch-keywriter.sh (the authoritative keywriter launch env, used by
+# Deploy Writerdeck-launcher.sh (the authoritative keywriter launch env, used by
 # the systemd unit via --editor). Deployed alongside the binary so the script
 # and binary versions stay in sync.
-echo "--- Deploying launch-keywriter.sh -> /home/root/launch-keywriter.sh ---"
-rm_send_file "$DIR/launch-keywriter.sh" "/home/root/launch-keywriter.sh" "$TARGET"
-rm_ssh 'chmod +x /home/root/launch-keywriter.sh' "$TARGET"
+echo "--- Deploying Writerdeck-launcher.sh -> /home/root/Writerdeck-launcher.sh ---"
+rm_send_file "$DIR/Writerdeck-launcher.sh" "/home/root/Writerdeck-launcher.sh" "$TARGET"
+rm_ssh 'chmod +x /home/root/Writerdeck-launcher.sh' "$TARGET"
 echo "  OK"
 echo
 
@@ -205,18 +209,18 @@ echo
 # test-e2e.sh, which launches keywriter AND rmkbd and holds them. Exiting
 # here keeps the iteration loop ~1 s and the output to a few lines.
 if [ "$RM_BINARY_ONLY" = "1" ]; then
-    echo "Binary-only deploy done: /home/root/keywriter + launch-keywriter.sh updated."
+    echo "Binary-only deploy done: /home/root/Writerdeck + Writerdeck-launcher.sh updated."
     echo "Next: bash scripts/test-e2e.sh -s"
     exit 0
 fi
 
 # ---------------------------------------------------------------------------
 # 3. Prep the notes directory.
-#    keywriter hardcodes notes dir = /home/root/edit/ (main.qml).
+#    keywriter hardcodes notes dir = /home/root/Writerdeck-user-documents/ (main.qml).
 # ---------------------------------------------------------------------------
-echo "--- Preparing notes dir (/home/root/edit/) ---"
+echo "--- Preparing notes dir (/home/root/Writerdeck-user-documents/) ---"
 rm_ssh \
-    'mkdir -p /home/root/edit; echo ok' \
+    'mkdir -p /home/root/Writerdeck-user-documents; echo ok' \
     "$TARGET"
 echo
 
@@ -230,9 +234,9 @@ restore_xochitl() {
     if [ "$XOCHITL_STOPPED" = "1" ]; then
         echo
         echo "--- Restoring xochitl ---"
-        # Kill keywriter first so it doesn't linger holding /home/root/keywriter
+        # Kill keywriter first so it doesn't linger holding /home/root/Writerdeck
         # busy (ETXTBSY on the next deploy) or fight xochitl over the framebuffer.
-        rm_ssh 'pkill -f /home/root/keywriter 2>/dev/null; for p in $(pidof keywriter); do kill "$p" 2>/dev/null; done; true' "$TARGET" || true
+        rm_ssh 'for p in $(pidof Writerdeck 2>/dev/null); do kill "$p" 2>/dev/null; done; true' "$TARGET" || true
         rm_ssh 'systemctl start xochitl 2>/dev/null || true' "$TARGET" || true
         echo "  xochitl restored."
     fi
@@ -260,7 +264,7 @@ export QT_QPA_PLATFORM=\"$RM_QPA\"
 export QT_FONT_DPI=$RM_FONT_DPI
 export QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS=rotate=180
 export QT_QPA_GENERIC_PLUGINS=evdevtablet
-nohup /home/root/keywriter >/tmp/kw.log 2>&1 </dev/null &
+nohup /home/root/Writerdeck >/tmp/kw.log 2>&1 </dev/null &
 echo \$!
 "
 KW_PID="$(rm_ssh "$LAUNCH_CMD" "$TARGET" | tr -d '\r\n')"

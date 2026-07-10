@@ -1,10 +1,10 @@
-// rmkbd -- reMarkable network keyboard daemon.
+// Writerdeck-server -- reMarkable Wi-Fi typewriter daemon.
 //
 // Serves a WebSocket on 0.0.0.0:8000/ws and forwards received key events
-// to the patched keywriter editor over a local Unix socket (/run/rmkbd.sock).
+// to the patched Writerdeck editor over a local Unix socket (/run/Writerdeck.sock).
 //
 // Architecture (two layers, two parsers):
-//   Browser --WebSocket--> rmkbd --Unix socket--> keywriter (patched)
+//   Browser --WebSocket--> Writerdeck-server --Unix socket--> Writerdeck (patched keywriter)
 //
 // WebSocket message (JSON, from browser keydown):
 //   {"type":"key","key":"<KeyboardEvent.key>"}
@@ -13,16 +13,16 @@
 //   {"t":"text","cp":<unicode-codepoint-int>}   -- single printable char
 //   {"t":"key","k":"Escape|Return|Backspace|Tab|ArrowUp|ArrowDown|ArrowLeft|ArrowRight"}
 //   {"t":"cmd","c":"home|open|..."}               -- editor commands (save paths ack back)
-// keywriter -> rmkbd acks: {"t":"saved"|"ready","c":"<cmd>"}
+// Writerdeck -> Writerdeck-server acks: {"t":"saved"|"ready","c":"<cmd>"}
 //
 // Integer codepoints are escaping-proof: JSON special chars in typed text
 // can never corrupt the naive C++ substring parser (see socket-inject.patch).
 //
 // Usage on the device:
-//   /home/root/rmkbd               # serve on :8000 (terse log: connections + a periodic key count)
-//   /home/root/rmkbd -v            # also log every translated key (keymap debugging)
-//   /home/root/rmkbd --selftest    # one-shot hello world+Return (no browser needed)
-//   /home/root/rmkbd --port 9000   # custom port
+//   /home/root/Writerdeck-server               # serve on :8000
+//   /home/root/Writerdeck-server -v            # verbose key logging
+//   /home/root/Writerdeck-server --selftest    # one-shot hello world+Return
+//   /home/root/Writerdeck-server --port 9000   # custom port
 package main
 
 import (
@@ -80,7 +80,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 const (
-	sockPath    = "/run/rmkbd.sock"
+	sockPath    = "/run/Writerdeck.sock"
 	defaultPort = 8000
 )
 
@@ -207,7 +207,7 @@ func (e *editorConn) writeCmdWaitAck(cmd []byte, typ, cmdName string, timeout ti
 		return true
 	case <-time.After(timeout):
 		e.cancelAckWait(typ, cmdName)
-		fmt.Fprintf(os.Stderr, "rmkbd: ack timeout %s/%s\n", typ, cmdName)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: ack timeout %s/%s\n", typ, cmdName)
 		return false
 	}
 }
@@ -233,7 +233,7 @@ func (e *editorConn) write(line []byte) {
 	}
 	_, err := e.conn.Write(append(line, '\n'))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "rmkbd: editor socket write error: %v -- will redial\n", err)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: editor socket write error: %v -- will redial\n", err)
 		e.conn.Close()
 		e.conn = nil
 	}
@@ -311,14 +311,14 @@ func dialLoop(ec *editorConn) {
 		c, err := net.Dial("unix", sockPath)
 		if err != nil {
 			if !logged {
-				fmt.Fprintf(os.Stderr, "rmkbd: waiting for editor socket (retrying silently until connected)...\n")
+				fmt.Fprintf(os.Stderr, "writerdeck-server: waiting for editor socket (retrying silently until connected)...\n")
 				logged = true
 			}
 			time.Sleep(time.Second)
 			continue
 		}
 		logged = false
-		fmt.Fprintln(os.Stderr, "rmkbd: connected to editor socket")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: connected to editor socket")
 		ec.set(c)
 		// Push lobby info so keywriter displays the current IP and PIN (or the
 		// no-PIN text when pin is ""). Always send even in no-PIN mode so the
@@ -341,7 +341,7 @@ func dialLoop(ec *editorConn) {
 		for sc.Scan() {
 			ec.handleEditorLine(sc.Bytes())
 		}
-		fmt.Fprintln(os.Stderr, "rmkbd: editor socket closed -- redialling")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: editor socket closed -- redialling")
 		ec.clearAckWaits()
 		ec.set(nil)
 	}
@@ -353,16 +353,16 @@ func dialLoop(ec *editorConn) {
 func watchPhysicalButtons(s *session, ec *editorConn) {
 	f, err := os.Open(buttonDev)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "rmkbd: button watcher: %v (OK on non-device machines)\n", err)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: button watcher: %v (OK on non-device machines)\n", err)
 		return
 	}
 	defer f.Close()
-	fmt.Fprintln(os.Stderr, "rmkbd: watching physical buttons on "+buttonDev)
+	fmt.Fprintln(os.Stderr, "writerdeck-server: watching physical buttons on "+buttonDev)
 	var debounce time.Time
 	for {
 		var ev inputEvent
 		if err := binary.Read(f, binary.LittleEndian, &ev); err != nil {
-			fmt.Fprintf(os.Stderr, "rmkbd: button read error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "writerdeck-server: button read error: %v\n", err)
 			return
 		}
 		if ev.Type != evKey || ev.Value != 1 {
@@ -379,7 +379,7 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 		if ev.Code == keyHome {
 			if s != nil {
 				if s.isActive() {
-					fmt.Fprintln(os.Stderr, "rmkbd: home button -- relaying to editor")
+					fmt.Fprintln(os.Stderr, "writerdeck-server: home button -- relaying to editor")
 					go func() {
 						ec.writeCmdWaitAck([]byte(`{"t":"cmd","c":"home"}`), "saved", "home", saveAckTimeout)
 						currentNoteMu.Lock()
@@ -388,10 +388,10 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 						broadcast([]byte(`{"type":"exitedit","source":"home"}`))
 					}()
 				} else {
-					fmt.Fprintln(os.Stderr, "rmkbd: home button -- no active session, ignoring")
+					fmt.Fprintln(os.Stderr, "writerdeck-server: home button -- no active session, ignoring")
 				}
 			} else {
-				fmt.Fprintln(os.Stderr, "rmkbd: home button pressed -- sending quit to editor")
+				fmt.Fprintln(os.Stderr, "writerdeck-server: home button pressed -- sending quit to editor")
 				ec.write([]byte(`{"t":"cmd","c":"quit"}`))
 				return
 			}
@@ -406,12 +406,12 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 			currentNoteMu.Lock()
 			note := currentNote
 			currentNoteMu.Unlock()
-			fmt.Fprintln(os.Stderr, "rmkbd: power button -- waking from sleep")
+			fmt.Fprintln(os.Stderr, "writerdeck-server: power button -- waking from sleep")
 			go func() { _ = s.wakeFromSleep(note) }()
 			continue
 		}
 		if s.isActive() {
-			fmt.Fprintln(os.Stderr, "rmkbd: power button -- sleep")
+			fmt.Fprintln(os.Stderr, "writerdeck-server: power button -- sleep")
 			go s.sleepForPower()
 		}
 	}
@@ -542,9 +542,9 @@ func waitSyncAck(timeout time.Duration) {
 	}
 	select {
 	case <-ch:
-		fmt.Fprintln(os.Stderr, "rmkbd: sync ack received")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: sync ack received")
 	case <-time.After(timeout):
-		fmt.Fprintln(os.Stderr, "rmkbd: sync ack timeout -- proceeding")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: sync ack timeout -- proceeding")
 	}
 	syncAckMu.Lock()
 	if syncAckCh == ch {
@@ -580,7 +580,7 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 		tok := authToken
 		authMu.Unlock()
 		if required {
-			cookie, err := r.Cookie("rmkbd_token")
+			cookie, err := r.Cookie("writerdeck_token")
 			if err != nil || cookie.Value != tok {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
@@ -588,7 +588,7 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 		}
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "rmkbd: WS upgrade error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "writerdeck-server: WS upgrade error: %v\n", err)
 			return
 		}
 		// Register in the broadcast hub; writer goroutine owns all conn writes.
@@ -612,12 +612,12 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 			}
 		}()
 		remote := r.RemoteAddr
-		fmt.Fprintf(os.Stderr, "rmkbd: client connected %s\n", remote)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: client connected %s\n", remote)
 		var keys int
 		for {
 			_, msg, err := conn.ReadMessage()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "rmkbd: client disconnected %s: %v (%d keys forwarded)\n", remote, err, keys)
+				fmt.Fprintf(os.Stderr, "writerdeck-server: client disconnected %s: %v (%d keys forwarded)\n", remote, err, keys)
 				return
 			}
 			var ev wsMsg
@@ -630,9 +630,9 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 			}
 			keys++
 			if verbose {
-				fmt.Fprintf(os.Stderr, "rmkbd: key=%q -> %s\n", ev.Key, line)
+				fmt.Fprintf(os.Stderr, "writerdeck-server: key=%q -> %s\n", ev.Key, line)
 			} else if keys%logEvery == 0 {
-				fmt.Fprintf(os.Stderr, "rmkbd: forwarded %d keys\n", keys)
+				fmt.Fprintf(os.Stderr, "writerdeck-server: forwarded %d keys\n", keys)
 			}
 			ec.write(line)
 		}
@@ -642,8 +642,8 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 // --- Notes API ---
 
 // notesDirPath is where .md notes are stored.
-// Override with --notes-dir for local testing (default: /home/root/edit).
-var notesDirPath = "/home/root/edit"
+// Override with --notes-dir for local testing (default: /home/root/Writerdeck-user-documents).
+var notesDirPath = "/home/root/Writerdeck-user-documents"
 
 // noteInfo is the JSON shape returned by GET /api/notes.
 type noteInfo struct {
@@ -875,7 +875,7 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 
 // settingsFilePath is the JSON settings store on the device.
 // Override with --settings-file for local dev (mirrors --notes-dir).
-var settingsFilePath = "/home/root/.rmkbd/settings.json"
+var settingsFilePath = "/home/root/.Writerdeck/settings.json"
 
 // settingsData is the on-disk and in-memory settings schema.
 type settingsData struct {
@@ -956,7 +956,7 @@ func loadSettings() {
 func saveSettingsLocked() {
 	dir := filepath.Dir(settingsFilePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "rmkbd: settings mkdir %s: %v\n", dir, err)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: settings mkdir %s: %v\n", dir, err)
 		return
 	}
 	data, err := json.Marshal(curSettings)
@@ -965,7 +965,7 @@ func saveSettingsLocked() {
 	}
 	tmp := settingsFilePath + ".tmp"
 	if err := os.WriteFile(tmp, data, 0644); err != nil {
-		fmt.Fprintf(os.Stderr, "rmkbd: settings write: %v\n", err)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: settings write: %v\n", err)
 		return
 	}
 	os.Rename(tmp, settingsFilePath) //nolint:errcheck
@@ -1068,7 +1068,7 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 			// Without this, switching from no-PIN to 6-digit would instantly 401 the changer.
 			exp := nextMorningCutoff(time.Now())
 			http.SetCookie(w, &http.Cookie{
-				Name:     "rmkbd_token",
+				Name:     "writerdeck_token",
 				Value:    newToken,
 				Path:     "/",
 				HttpOnly: true,
@@ -1195,7 +1195,7 @@ func watchLobbyIP() {
 
 // checkAuth returns true if the request is authorized.
 // Always returns true for OPTIONS (preflight) or when PIN auth is disabled.
-// When PIN auth is enabled, checks the rmkbd_token session cookie.
+// When PIN auth is enabled, checks the writerdeck_token session cookie.
 func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method == http.MethodOptions {
 		return true
@@ -1207,7 +1207,7 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 	if !required {
 		return true
 	}
-	cookie, err := r.Cookie("rmkbd_token")
+	cookie, err := r.Cookie("writerdeck_token")
 	if err != nil || cookie.Value != tok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return false
@@ -1296,7 +1296,7 @@ func pinHandler(w http.ResponseWriter, r *http.Request) {
 		authMu.Unlock()
 		exp := nextMorningCutoff(time.Now())
 		http.SetCookie(w, &http.Cookie{
-			Name:     "rmkbd_token",
+			Name:     "writerdeck_token",
 			Value:    tok,
 			Path:     "/",
 			HttpOnly: true,
@@ -1363,7 +1363,7 @@ func pinHandler(w http.ResponseWriter, r *http.Request) {
 	// fallback for older ones -- both point at the same wall-clock moment.
 	exp := nextMorningCutoff(time.Now())
 	http.SetCookie(w, &http.Cookie{
-		Name:     "rmkbd_token",
+		Name:     "writerdeck_token",
 		Value:    currentTok,
 		Path:     "/",
 		HttpOnly: true,
@@ -1490,7 +1490,7 @@ func shutdownHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			exec.Command("systemctl", "start", "xochitl").Run() //nolint:errcheck
 		}
-		fmt.Fprintln(os.Stderr, "rmkbd: shutdown requested from phone -- exiting")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: shutdown requested from phone -- exiting")
 		os.Exit(0)
 	}()
 }
@@ -1555,9 +1555,9 @@ func (s *session) start() error {
 	if s.active {
 		return fmt.Errorf("session already active")
 	}
-	fmt.Fprintln(os.Stderr, "rmkbd: session: stopping xochitl")
+	fmt.Fprintln(os.Stderr, "writerdeck-server: session: stopping xochitl")
 	if err := exec.Command("systemctl", "stop", "xochitl").Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "rmkbd: warning: stop xochitl: %v\n", err)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: warning: stop xochitl: %v\n", err)
 	}
 	time.Sleep(time.Second)
 	cmd := exec.Command(s.editorPath)
@@ -1570,14 +1570,14 @@ func (s *session) start() error {
 		exec.Command("systemctl", "start", "xochitl").Run() //nolint:errcheck
 		return fmt.Errorf("start editor: %w", err)
 	}
-	fmt.Fprintf(os.Stderr, "rmkbd: session: editor started (pid %d)\n", cmd.Process.Pid)
+	fmt.Fprintf(os.Stderr, "writerdeck-server: session: editor started (pid %d)\n", cmd.Process.Pid)
 	doneCh := make(chan struct{})
 	s.cmd = cmd
 	s.doneCh = doneCh
 	s.active = true
 	go func() {
 		cmd.Wait() //nolint:errcheck
-		fmt.Fprintln(os.Stderr, "rmkbd: session: editor process exited")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: session: editor process exited")
 		s.end()
 	}()
 	return nil
@@ -1597,13 +1597,13 @@ func (s *session) end() {
 	s.doneCh = nil
 	s.mu.Unlock()
 	if wasSleeping {
-		fmt.Fprintln(os.Stderr, "rmkbd: session: editor stopped for sleep (xochitl stays down)")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: session: editor stopped for sleep (xochitl stays down)")
 	} else {
 		currentNoteMu.Lock()
 		currentNote = ""
 		currentNoteMu.Unlock()
 		broadcast([]byte(`{"type":"exitedit"}`))
-		fmt.Fprintln(os.Stderr, "rmkbd: session: starting xochitl")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: session: starting xochitl")
 		exec.Command("systemctl", "start", "xochitl").Run() //nolint:errcheck
 	}
 	if ch != nil {
@@ -1622,13 +1622,13 @@ func (s *session) quit() {
 	if !active || doneCh == nil {
 		return
 	}
-	fmt.Fprintln(os.Stderr, "rmkbd: session: sending quit to editor")
+	fmt.Fprintln(os.Stderr, "writerdeck-server: session: sending quit to editor")
 	s.ec.write([]byte(`{"t":"cmd","c":"quit"}`))
 	select {
 	case <-doneCh:
-		fmt.Fprintln(os.Stderr, "rmkbd: session: editor exited cleanly")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: session: editor exited cleanly")
 	case <-time.After(3 * time.Second):
-		fmt.Fprintln(os.Stderr, "rmkbd: session: 3s timeout -- SIGTERM to process group")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: session: 3s timeout -- SIGTERM to process group")
 		if cmd != nil && cmd.Process != nil {
 			syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM) //nolint:errcheck
 		}
@@ -1643,10 +1643,10 @@ func (s *session) sleepForPower() {
 		return
 	}
 	if !s.ec.writeCmdWaitAck([]byte(`{"t":"cmd","c":"preparesleep"}`), "saved", "preparesleep", saveAckTimeout) {
-		fmt.Fprintln(os.Stderr, "rmkbd: preparesleep save ack missed -- continuing")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: preparesleep save ack missed -- continuing")
 	}
 	if !s.ec.waitAck("ready", "preparesleep", paintAckTimeout) {
-		fmt.Fprintln(os.Stderr, "rmkbd: sleep screen ready ack missed -- continuing")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: sleep screen ready ack missed -- continuing")
 	}
 	beginSyncWait()
 	broadcast([]byte(`{"type":"exitedit","source":"power","awaitSync":true}`))
@@ -1659,7 +1659,7 @@ func (s *session) sleepForPower() {
 	s.mu.Unlock()
 
 	if cmd != nil && cmd.Process != nil {
-		fmt.Fprintln(os.Stderr, "rmkbd: stopping editor before suspend")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: stopping editor before suspend")
 		syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM) //nolint:errcheck
 		if doneCh != nil {
 			select {
@@ -1670,7 +1670,7 @@ func (s *session) sleepForPower() {
 			}
 		}
 	}
-	fmt.Fprintln(os.Stderr, "rmkbd: suspending")
+	fmt.Fprintln(os.Stderr, "writerdeck-server: suspending")
 	exec.Command("systemctl", "suspend").Run() //nolint:errcheck
 }
 
@@ -1796,7 +1796,7 @@ func openHandler(w http.ResponseWriter, r *http.Request) {
 	currentNote = editorName
 	currentNoteMu.Unlock()
 	if !activeSess.ec.writeCmdWaitAck(cmd, "saved", "open", saveAckTimeout) {
-		fmt.Fprintln(os.Stderr, "rmkbd: open save ack missed -- continuing")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: open save ack missed -- continuing")
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -1834,14 +1834,14 @@ func rotateHandler(w http.ResponseWriter, r *http.Request) {
 // replicating the Phase 2 smoke test without needing a browser.
 // No leading Escape: keywriter now boots in edit mode.
 func selftest(ec *editorConn) {
-	fmt.Fprintln(os.Stderr, "rmkbd: --selftest: waiting for editor socket...")
+	fmt.Fprintln(os.Stderr, "writerdeck-server: --selftest: waiting for editor socket...")
 	for !ec.ready() {
 		time.Sleep(500 * time.Millisecond)
 	}
 	time.Sleep(3 * time.Second) // let keywriter finish QML init
 
 	send := func(line []byte) {
-		fmt.Fprintf(os.Stderr, "rmkbd: selftest send %s\n", line)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: selftest send %s\n", line)
 		ec.write(line)
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -1852,7 +1852,7 @@ func selftest(ec *editorConn) {
 		send([]byte(fmt.Sprintf(`{"t":"text","cp":%d}`, r)))
 	}
 	send([]byte(`{"t":"key","k":"Return"}`))
-	fmt.Fprintln(os.Stderr, "rmkbd: selftest done")
+	fmt.Fprintln(os.Stderr, "writerdeck-server: selftest done")
 }
 
 func main() {
@@ -1860,8 +1860,8 @@ func main() {
 	doSelftest := flag.Bool("selftest", false, "send hardcoded hello world+Return and exit")
 	verbose := flag.Bool("v", false, "verbose: log every translated key (default logs only a periodic count)")
 	editorPath := flag.String("editor", "", "path to editor launch script; rmkbd spawns it as a child and owns its lifecycle (supervisor mode, used by systemd unit)")
-	flag.StringVar(&notesDirPath, "notes-dir", notesDirPath, "directory for .md notes (default: /home/root/edit; override for local dev)")
-	flag.StringVar(&settingsFilePath, "settings-file", settingsFilePath, "path to settings JSON (default /home/root/.rmkbd/settings.json; override for local dev)")
+	flag.StringVar(&notesDirPath, "notes-dir", notesDirPath, "directory for .md notes (default: /home/root/Writerdeck-user-documents; override for local dev)")
+	flag.StringVar(&settingsFilePath, "settings-file", settingsFilePath, "path to settings JSON (default /home/root/.Writerdeck/settings.json; override for local dev)")
 	flag.Parse()
 
 	loadSettings()
@@ -1882,9 +1882,9 @@ func main() {
 	pinRequired = bootPinLen > 0
 	authMu.Unlock()
 	if authPIN != "" {
-		fmt.Fprintf(os.Stderr, "rmkbd: PIN is %s (will be shown on tablet Lobby; for now read from this log)\n", authPIN)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: PIN is %s (will be shown on tablet Lobby; for now read from this log)\n", authPIN)
 	} else {
-		fmt.Fprintln(os.Stderr, "rmkbd: no PIN required (pinDigits=none)")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: no PIN required (pinDigits=none)")
 	}
 
 	ec := &editorConn{}
@@ -1898,8 +1898,8 @@ func main() {
 	}
 
 	addr := fmt.Sprintf(":%d", *port)
-	fmt.Fprintf(os.Stderr, "rmkbd: serving capture page on http://<device-ip>%s/\n", addr)
-	fmt.Fprintf(os.Stderr, "rmkbd: serving WebSocket on %s/ws\n", addr)
+	fmt.Fprintf(os.Stderr, "writerdeck-server: serving capture page on http://<device-ip>%s/\n", addr)
+	fmt.Fprintf(os.Stderr, "writerdeck-server: serving WebSocket on %s/ws\n", addr)
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/app.css", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
@@ -1946,32 +1946,32 @@ func main() {
 		// HTTP server always-on in the background.
 		go func() {
 			if err := http.ListenAndServe(addr, nil); err != nil {
-				fmt.Fprintf(os.Stderr, "rmkbd: HTTP server: %v\n", err)
+				fmt.Fprintf(os.Stderr, "writerdeck-server: HTTP server: %v\n", err)
 			}
 		}()
 
 		// Reconcile: kill any stray keywriter from a previous crash so two
 		// editors don't fight for the framebuffer on startup.
-		fmt.Fprintln(os.Stderr, "rmkbd: reconcile: killing any stray keywriter")
-		exec.Command("pkill", "-f", "keywriter").Run() //nolint:errcheck
+		fmt.Fprintln(os.Stderr, "writerdeck-server: reconcile: killing any stray Writerdeck editor")
+		exec.Command("sh", "-c", "for p in $(pidof Writerdeck 2>/dev/null); do kill $p 2>/dev/null; done").Run() //nolint:errcheck
 		time.Sleep(500 * time.Millisecond)
 
 		// Auto-launch first session: power-on = typewriter (unchanged behaviour).
-		fmt.Fprintln(os.Stderr, "rmkbd: auto-launching editor session on boot")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: auto-launching editor session on boot")
 		if err := activeSess.start(); err != nil {
-			fmt.Fprintf(os.Stderr, "rmkbd: auto-launch failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "writerdeck-server: auto-launch failed: %v\n", err)
 		}
 
 		// Block until SIGTERM/SIGINT; gracefully end any active session first.
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 		sig := <-sigCh
-		fmt.Fprintf(os.Stderr, "rmkbd: signal %v received\n", sig)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: signal %v received\n", sig)
 		if activeSess.isActive() {
-			fmt.Fprintln(os.Stderr, "rmkbd: ending active session before exit")
+			fmt.Fprintln(os.Stderr, "writerdeck-server: ending active session before exit")
 			activeSess.quit()
 		}
-		fmt.Fprintln(os.Stderr, "rmkbd: exiting (ExecStopPost safety net restarts xochitl if needed)")
+		fmt.Fprintln(os.Stderr, "writerdeck-server: exiting (ExecStopPost safety net restarts xochitl if needed)")
 		os.Exit(0)
 	}
 
@@ -1979,7 +1979,7 @@ func main() {
 	// Still watch the home button: sends a single quit to ec (one-shot).
 	go watchHomeButton(nil, ec)
 	if err := http.ListenAndServe(addr, nil); err != nil {
-		fmt.Fprintf(os.Stderr, "rmkbd: server error: %v\n", err)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: server error: %v\n", err)
 		os.Exit(1)
 	}
 }

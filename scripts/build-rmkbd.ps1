@@ -17,8 +17,8 @@ try {
     $env:GOARCH     = "arm"
     $env:GOARM      = "7"
     $env:CGO_ENABLED = "0"
-    go build -trimpath -o "$REPO\rmkbd" .
-    Write-Host "  built: $REPO\rmkbd"
+    go build -trimpath -o "$REPO\Writerdeck-server" .
+    Write-Host "  built: $REPO\Writerdeck-server"
 } finally {
     Remove-Item Env:\GOOS, Env:\GOARCH, Env:\GOARM, Env:\CGO_ENABLED -ErrorAction SilentlyContinue
     Pop-Location

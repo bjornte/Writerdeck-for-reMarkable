@@ -20,7 +20,7 @@
 +#include <QTimer>
 +#include <mutex>
 +
-+static const char *RMKBD_SOCK = "/run/rmkbd.sock";
++static const char *WRITERDECK_SOCK = "/run/Writerdeck.sock";
 +static QObject *g_rootObj = nullptr; // stashed after QML load; used by cmd handler
 +static int g_clientFd = -1;
 +static std::mutex g_clientMu;
@@ -215,13 +215,13 @@
 +// across restarts of the daemon without touching the editor process.
 +static void rmkbdSocketReader()
 +{
-+    ::unlink(RMKBD_SOCK);
++    ::unlink(WRITERDECK_SOCK);
 +    int srv = ::socket(AF_UNIX, SOCK_STREAM, 0);
 +    if (srv < 0) return;
 +    struct sockaddr_un addr;
 +    std::memset(&addr, 0, sizeof(addr));
 +    addr.sun_family = AF_UNIX;
-+    std::strncpy(addr.sun_path, RMKBD_SOCK, sizeof(addr.sun_path) - 1);
++    std::strncpy(addr.sun_path, WRITERDECK_SOCK, sizeof(addr.sun_path) - 1);
 +    if (::bind(srv, reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) < 0) {
 +        ::close(srv); return;
 +    }

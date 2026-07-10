@@ -28,8 +28,8 @@ docs/dev-behind-firewall-howto.md
 # ──────────────────────────────────────────────────────────────
 # Build artifacts (the Go daemon and friends)
 # ──────────────────────────────────────────────────────────────
-/rmkbd
-/rmkbd.exe
+/Writerdeck-server
+/Writerdeck-server.exe
 *.o
 *.exe
 dist/
@@ -54,7 +54,7 @@ Thumbs.db
 # ──────────────────────────────────────────────────────────────
 
 /third_party/**/*.bin
-# Raw qmake TARGET output from build-keywriter.sh (the committed artifact is dist/keywriter)
+# Raw qmake TARGET output from build-keywriter.sh (the committed artifact is dist/Writerdeck)
 /third_party/keywriter/edit
 
 # ──────────────────────────────────────────────────────────────
@@ -66,5 +66,5 @@ Thumbs.db
 
 # Public release: ship source-only. The keywriter binary + qt5.tar.gz are
 # CI-built (build-keywriter.yml); they are NOT committed in this public mirror.
-third_party/keywriter/dist/keywriter
+third_party/keywriter/dist/Writerdeck
 third_party/keywriter/dist/qt5.tar.gz

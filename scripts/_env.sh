@@ -5,6 +5,8 @@
 
 # Resolve repo paths relative to this script.
 _THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+# shellcheck source=/dev/null
+. "$_THIS_DIR/paths.sh"
 _SECRETS="$_THIS_DIR/../secrets/remarkable.local.env"
 
 if [ ! -f "$_SECRETS" ]; then

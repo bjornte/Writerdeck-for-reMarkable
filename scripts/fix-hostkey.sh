@@ -42,5 +42,5 @@ else
   echo "    1. Re-record RM_ROOT_PASSWORD in secrets/remarkable.local.env"
   echo "       (tablet: Settings > Help > Copyrights and licenses > General information)."
   echo "    2. bash scripts/bootstrap.sh      # re-install your SSH key"
-  echo "    3. If boot-to-typewriter stopped: systemctl enable rm1-writerdeck (on device)."
+  echo "    3. If boot-to-typewriter stopped: systemctl enable writerdeck (on device)."
 fi

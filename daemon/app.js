@@ -16,7 +16,6 @@ import {
 
   var dot  = document.getElementById('dot');
   var msg  = document.getElementById('msg');
-  var tabletStatus = document.getElementById('tablet-status');
   var echo = document.getElementById('echo');
   var trap = document.getElementById('trap');
   var buf = '';
@@ -40,37 +39,82 @@ import {
   }
 
   var statusTimer = null;
-  var STATUS_MS = 30000;
+  var STATUS_MS = 5000;
+  var STATUS_TIMEOUT_MS = 4000;
+  var statusPolling = false;
+  var tabletReachable = false;
+  var tabletInfo = null;
+  var wsReady = false;
 
-  function formatTabletStatus(data) {
+  function tabletExtras(data) {
     var parts = [];
     if (data.battery >= 0) {
       parts.push(data.battery + '%' + (data.charging ? ' +' : ''));
     }
-    parts.push(data.wifi ? 'Wi-Fi' : 'no Wi-Fi');
-    return parts.join(' \u00b7 ');
+    if (!data.wifi) { parts.push('no Wi-Fi'); }
+    return parts.length ? ' \u00b7 ' + parts.join(' \u00b7 ') : '';
+  }
+
+  // One bar state: HTTP /api/status is the fast truth for reachability; the
+  // WebSocket only gates "ready to type" once the tablet is actually there.
+  function updateConnectionBar() {
+    if (!statusPolling) {
+      dot.className = '';
+      msg.textContent = '';
+      return;
+    }
+    if (!tabletReachable) {
+      setStatus('off', 'Tablet offline');
+      return;
+    }
+    if (wsReady) {
+      setStatus('on', 'Connected' + tabletExtras(tabletInfo || {}));
+      return;
+    }
+    setStatus('', 'Connecting\u2026');
+  }
+
+  function markTabletOffline() {
+    tabletReachable = false;
+    tabletInfo = null;
+    updateConnectionBar();
+    if (ws && ws.readyState === WebSocket.OPEN) { ws.close(); }
   }
 
   function refreshTabletStatus() {
-    fetch('/api/status')
-      .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(data) {
-        if (!data) return;
-        tabletStatus.textContent = formatTabletStatus(data);
-        tabletStatus.style.display = 'inline';
+    var ctrl = new AbortController();
+    var timer = setTimeout(function() { ctrl.abort(); }, STATUS_TIMEOUT_MS);
+    fetch('/api/status', { signal: ctrl.signal, credentials: 'same-origin' })
+      .then(function(r) {
+        clearTimeout(timer);
+        return r.ok ? r.json() : null;
       })
-      .catch(function() {});
+      .then(function(data) {
+        if (!data) { markTabletOffline(); return; }
+        tabletReachable = true;
+        tabletInfo = data;
+        updateConnectionBar();
+      })
+      .catch(function() {
+        clearTimeout(timer);
+        markTabletOffline();
+      });
   }
 
   function startStatusPoll() {
+    statusPolling = true;
     refreshTabletStatus();
     if (statusTimer) clearInterval(statusTimer);
     statusTimer = setInterval(refreshTabletStatus, STATUS_MS);
   }
 
   function stopStatusPoll() {
+    statusPolling = false;
     if (statusTimer) { clearInterval(statusTimer); statusTimer = null; }
-    tabletStatus.style.display = 'none';
+    tabletReachable = false;
+    tabletInfo = null;
+    wsReady = false;
+    updateConnectionBar();
   }
 
   function appendEcho(key) {
@@ -153,13 +197,14 @@ import {
   });
 
   function connect() {
-    var url = 'ws://' + window.location.host + '/ws';
-    setStatus('', 'connecting to ' + url + '...');
+    wsReady = false;
+    updateConnectionBar();
 
-    ws = new WebSocket(url);
+    ws = new WebSocket('ws://' + window.location.host + '/ws');
 
     ws.onopen = function () {
-      setStatus('on', 'connected -- ' + window.location.host);
+      wsReady = true;
+      updateConnectionBar();
       grab();
       loadNotes();
       // Connect-reconcile: the trigger the event-only model lacked. Runs on
@@ -168,7 +213,8 @@ import {
     };
 
     ws.onclose = function () {
-      setStatus('off', 'disconnected -- retry in ' + (RETRY_MS / 1000) + 's');
+      wsReady = false;
+      updateConnectionBar();
       setTimeout(connect, RETRY_MS);
     };
 

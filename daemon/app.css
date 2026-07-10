@@ -19,10 +19,6 @@ html, body {
 }
 #dot.on  { background: #4caf50; }
 #dot.off { background: #e53935; }
-#tablet-status {
-  color: #888; font-size: 12px; white-space: nowrap; margin-left: auto;
-  display: none;
-}
 #sync-btn, #settings-btn {
   background: transparent; color: #aaa; border: none;
   font-size: 13px; cursor: pointer; padding: 4px 8px;

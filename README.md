@@ -30,7 +30,7 @@ Work in progress, but already a usable appliance. Power on and the tablet boots 
 3. `bash scripts/fetch-keywriter-dist.sh` — downloads the CI-built editor (keywriter binary + Qt runtime) into `third_party/keywriter/dist/`. Source-only mirror: these aren't committed, so fetch them from CI first (needs `gh`: `brew install gh && gh auth login`).
 4. `bash scripts/deploy-keywriter.sh` — ships the editor to the tablet.
 5. `bash scripts/deploy-rmkbd.sh` — cross-builds and ships the `rmkbd` daemon.
-6. `bash scripts/install-service.sh` (on the Mac) installs the systemd unit. Then SSH into the tablet (`ssh root@<ip>`) and run `systemctl start rm1-writerdeck` to test, then `systemctl enable rm1-writerdeck` to boot straight into it. Enable only after the test passes — see the script's boot-loop note.
+6. `bash scripts/install-service.sh` (on the Mac) installs the systemd unit. Then SSH into the tablet (`ssh root@<ip>`) and run `systemctl start writerdeck` to test, then `systemctl enable writerdeck` to boot straight into it. Enable only after the test passes — see the script's boot-loop note.
 
 ### Optional: GitHub syncing of notes
 

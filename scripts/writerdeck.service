@@ -1,0 +1,24 @@
+[Unit]
+Description=Writerdeck - reMarkable Wi-Fi typewriter
+Documentation=https://github.com/bjornte/Writerdeck-for-reMarkable
+After=network.target
+
+# ExecStart lives on /home -- wait for the partition mount on cold boot.
+RequiresMountsFor=/home/root
+
+[Service]
+Type=simple
+
+ExecStopPost=/bin/sh -c 'sleep 1; systemctl start xochitl'
+
+# Writerdeck-server is always-on: serves :8000 even while xochitl is up.
+# --editor: supervisor mode -- owns the xochitl<->Writerdeck toggle.
+ExecStart=/home/root/Writerdeck-server --editor /home/root/Writerdeck-launcher.sh
+
+Restart=no
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

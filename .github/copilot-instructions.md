@@ -35,7 +35,7 @@ See if `dev-behind-firewall-howto.md` exists locally in the docs folder. If so, 
 
 If dev host on same Wi-Fi as tablet: build, deploy, test locally (no git-bridge). Secrets in `secrets/remarkable.local.env`; scripts source `scripts/_env.sh` for `RM_HOST`.
 
-Daemon loop: `deploy-rmkbd.sh` (embeds `daemon/*` via `go:embed`) → `systemctl restart rm1-writerdeck` (deploy kills rmkbd). Verify: `curl http://$RM_HOST:8000/` + `/app.js`; UI at same URL (PIN `none` skips auth). GitHub token is browser `localStorage` only — per-origin, not on tablet. keywriter changes = CI + `deploy-keywriter.sh`, not `deploy-rmkbd.sh`.
+Daemon loop: `deploy-rmkbd.sh` (embeds `daemon/*` via `go:embed`) → `systemctl restart writerdeck` (deploy kills rmkbd). Verify: `curl http://$RM_HOST:8000/` + `/app.js`; UI at same URL (PIN `none` skips auth). GitHub token is browser `localStorage` only — per-origin, not on tablet. keywriter changes = CI + `deploy-keywriter.sh`, not `deploy-rmkbd.sh`.
 
 ## Doc hygiene
 

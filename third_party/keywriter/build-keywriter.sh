@@ -99,6 +99,10 @@ import re, sys
 with open('main.qml') as f:
     s = f.read()
 
+# 0. Notes directory: upstream uses $HOME/edit/; Writerdeck uses Writerdeck-user-documents/.
+assert 'file://%1/edit/' in s, "notes folder path not found in main.qml"
+s = s.replace('file://%1/edit/', 'file://%1/Writerdeck-user-documents/', 1)
+
 # 1. Boot in edit mode (unique string; safe global replace).
 assert 'property int mode: 0' in s, "mode property not found in main.qml"
 s = s.replace('property int mode: 0', 'property int mode: 1', 1)
@@ -823,7 +827,7 @@ lobby_rect = (
     '                width: sleepScreen.width * 0.75\n'
     '                spacing: 24\n'
     '                Text {\n'
-    '                    text: "Writerdeck is sleeping.\\n\\nWi-Fi is off. Press power to wake."\n'
+    '                    text: "Writerdeck is sleeping.\\nWi-Fi is off. Press power to wake."\n'
     '                    color: "black"\n'
     '                    font.pointSize: 18\n'
     '                    font.family: "Noto Sans"\n'
@@ -902,8 +906,8 @@ echo
 # 3. Copy the keywriter binary to /out.
 # ---------------------------------------------------------------------------
 mkdir -p "${OUT_DIR}"
-cp edit "${OUT_DIR}/keywriter"
-echo "  keywriter -> ${OUT_DIR}/keywriter"
+cp edit "${OUT_DIR}/Writerdeck"
+echo "  Writerdeck -> ${OUT_DIR}/Writerdeck"
 echo
 
 # ---------------------------------------------------------------------------

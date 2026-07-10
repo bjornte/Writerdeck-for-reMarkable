@@ -2,7 +2,7 @@
 # scripts/fetch-keywriter-dist.sh -- pull the CI-built keywriter artifacts
 # (keywriter binary + qt5.tar.gz) into third_party/keywriter/dist/ on the Mac.
 #
-# Why this exists: the public mirror ships source-only -- dist/keywriter and
+# Why this exists: the public mirror ships source-only -- dist/Writerdeck and
 # dist/qt5.tar.gz are gitignored, so `git pull` never brings them. CI builds
 # them and uploads them as the "keywriter-dist" artifact instead. This script
 # downloads that artifact so deploy-keywriter.sh can find it. Requires gh
@@ -30,8 +30,8 @@ if [ -n "${1:-}" ]; then
 else
     gh run download -n keywriter-dist -D "$TMP"
 fi
-cp -f "$TMP/keywriter" "$TMP/qt5.tar.gz" "$DEST/"
+cp -f "$TMP/Writerdeck" "$TMP/qt5.tar.gz" "$DEST/"
 
 echo "Fetched into $DEST:"
-ls -lh "$DEST/keywriter" "$DEST/qt5.tar.gz"
+ls -lh "$DEST/Writerdeck" "$DEST/qt5.tar.gz"
 echo "Next: bash scripts/deploy-keywriter.sh -b"
