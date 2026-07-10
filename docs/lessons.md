@@ -38,6 +38,8 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **Ctrl+K / modifier flags** — keywriter's `ctrlPressed` bool only flips on a standalone Control key. Injected keys use the modifier *flag*; `handleKeyDown` must also read `event.modifiers & Qt.ControlModifier`.
 
+**USB Escape launch** — `Writerdeck-server` watches USB keyboard evdev nodes (hotplug rescan every 3 s). Escape while no active session and not sleeping → `start()` (Lobby). Ignored while editing (keywriter owns Esc) and while sleeping (power button wakes). Not an Esc-to-wake path.
+
 **Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`.** Use `line-height` or spacer nodes; always verify on device.
 
 **Font IDs must match Qt family names exactly** or the editor silently falls back to DejaVu.
