@@ -19,7 +19,7 @@
    * ~~The rotate button (in the browser) seemingly does not work.~~ Done — in Settings → Display; affects all tablet screens.
 * In reading view:
    * Paragraph distances could be greater. Postponed.
-   * should not automatically scroll to the bottom
+   * ~~should not automatically scroll to the bottom~~ (done — `ensureVisible` gated to edit mode)
 * In lobby:
    * Could include an affordace (button) to open the file picker (`ctrl-K`)
    * ~~When the notes sync to GitHub is enabled, the repo URL should be listed in the Lobby~~ (done — green `Sync: github.com/owner/repo` line when sync on)

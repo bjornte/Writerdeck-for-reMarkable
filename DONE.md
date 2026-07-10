@@ -48,7 +48,7 @@ The GitHub token never leaves the browser (`localStorage`). The tablet holds onl
 
 Built from source keywriter, patched for socket input. Renders full-panel via linuxfb. Norwegian and other Unicode characters work through the browser path.
 
-**Reading view.** Pick Inter, Literata, EB Garamond, or DejaVu from the phone. Page up/down in read and edit (about four-fifths of a screen per step).
+**Reading view.** Pick Inter, Literata, EB Garamond, or DejaVu from the phone. Page up/down in read and edit (about four-fifths of a screen per step). Esc from edit keeps your scroll position — no jump to the bottom.
 
 **Editing.** Block cursor hides while you type, reappears after a pause. Ctrl-K note switcher saves before switching. Wider margins, paper-like Lobby theme.
 

@@ -281,6 +281,24 @@ assert 'contentY += 400' in s, "scrollDown contentY not found in main.qml"
 s = s.replace('contentY -= 400', 'contentY -= 1500', 1)
 s = s.replace('contentY += 400', 'contentY += 1500', 1)
 
+# 7m. Read view: don't auto-scroll to bottom on Esc (toggle to preview).
+#     Upstream onCursorRectangleChanged always calls flick.ensureVisible; when
+#     mode flips to RichText the reflow chases the edit cursor (often the doc
+#     end). Only auto-scroll while editing -- read mode uses arrow/page scroll.
+old7m = (
+    '                onCursorRectangleChanged: {\n'
+    '                    flick.ensureVisible(cursorRectangle)\n'
+    '                }'
+)
+new7m = (
+    '                onCursorRectangleChanged: {\n'
+    '                    if (mode == 1)\n'
+    '                        flick.ensureVisible(cursorRectangle)\n'
+    '                }'
+)
+assert old7m in s, "onCursorRectangleChanged ensureVisible block not found (edit 7m)"
+s = s.replace(old7m, new7m, 1)
+
 # 7f. Paragraph spacing in Read (RichText) view: inject margin-bottom via a
 #     root readHtml() helper so Edit (PlainText) is untouched. Risk: Qt RichText
 #     CSS subset is partial -- margin-bottom on <p> is expected to work but must
@@ -463,7 +481,7 @@ lobby_rect = (
     '                anchors.centerIn: parent\n'
     '                spacing: 28\n'
     '                Text {\n'
-    '                    text: "Writerdeck for reMarkable"\n'
+    '                    text: "Writerdeck for reMarkable 1"\n'
     '                    color: "black"\n'
     '                    font.pointSize: 28\n'
     '                    font.family: "Noto Mono"\n'
@@ -499,7 +517,7 @@ lobby_rect = (
     '                }\n'
     '                Text {\n'
     '                    visible: lobbySyncOn && lobbySyncRepo !== ""\n'
-    '                    text: "Sync: github.com/" + lobbySyncRepo\n'
+    '                    text: "Your docs are synced to: github.com/" + lobbySyncRepo\n'
     '                    color: "#1b5e20"\n'
     '                    font.pointSize: 11\n'
     '                    font.family: "Noto Mono"\n'
@@ -562,7 +580,7 @@ s = s.replace(old_rotate_fn, new_rotate_fn, 1)
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
+print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true
