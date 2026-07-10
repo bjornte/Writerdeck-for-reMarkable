@@ -279,16 +279,26 @@
 +}
 +// end rM1-Writerdeck socket input
 +
++// Relay QML rotationChanged to Writerdeck-server (old-style SLOT; no lambdas).
++class RotationWatcher : public QObject
++{
++    Q_OBJECT
++public slots:
++    void onRotationChanged()
++    {
++        if (g_applyingRotation || !g_rootObj) return;
++        rmkbdSendRotation(g_rootObj->property("rotation").toInt());
++    }
++};
++
  int main(int argc, char *argv[])
  {
 @@ -37,5 +135,6 @@
      if (engine.rootObjects().isEmpty())
          return -1;
 +    g_rootObj = engine.rootObjects().first(); // stash for cmd handler thread
-+    QObject::connect(g_rootObj, SIGNAL(rotationChanged()), qApp, []() {
-+        if (g_applyingRotation || !g_rootObj) return;
-+        rmkbdSendRotation(g_rootObj->property("rotation").toInt());
-+    }, Qt::QueuedConnection);
++    static RotationWatcher rotWatcher;
++    QObject::connect(g_rootObj, SIGNAL(rotationChanged()), &rotWatcher, SLOT(onRotationChanged()));
  
 +    std::thread(rmkbdSocketReader).detach(); // rM1-Writerdeck: start socket listener
      return app.exec();
