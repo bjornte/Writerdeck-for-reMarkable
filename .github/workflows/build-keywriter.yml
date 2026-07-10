@@ -7,6 +7,8 @@ on:
       - 'third_party/keywriter/Dockerfile'
       - 'third_party/keywriter/build-keywriter.sh'
       - 'third_party/keywriter/socket-inject.patch'
+      - 'third_party/keywriter/rotation_watcher.h'
+      - 'third_party/keywriter/rotation_watcher.cpp'
       - '.github/workflows/build-keywriter.yml'
 
 permissions:
