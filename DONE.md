@@ -56,7 +56,7 @@ Built from source keywriter, patched for socket input. Renders full-panel via li
 
 **Editing.** Block cursor hides while you type, reappears after a pause. Ctrl-K note switcher saves before switching. Mac-style navigation in edit mode (device-verified): Home/End line start/end (Cmd+Home/End doc start/end); Option/Alt+←/→ word; Cmd+←/→ line end; Cmd+↑/↓ doc start/end; Shift extends selection; plain ←/→ scroll the page. **Power button** while editing: save, sleep screen (“Writerdeck is sleeping…”), suspend; press power again to wake and resume. Wider margins, paper-like Lobby theme.
 
-**Rotate.** Settings → Display → **Rotate tablet 90°** (global — affects Lobby, read, and edit). USB Ctrl+←/→ still works in preview mode. Calls `POST /api/rotate` → socket `rotate` cmd → `root.rotation`.
+**Rotate.** Preferences → Display → **Rotate tablet 90°** (global — affects Lobby, read, and edit). USB Ctrl+←/→ still works in preview mode. Angle persists in `.Writerdeck/settings.json` and restores on relaunch.
 
 ## GitHub sync
 

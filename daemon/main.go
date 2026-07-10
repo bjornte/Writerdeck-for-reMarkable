@@ -14,6 +14,7 @@
 //   {"t":"key","k":"Escape|Return|Backspace|Tab|ArrowUp|ArrowDown|ArrowLeft|ArrowRight"}
 //   {"t":"cmd","c":"home|open|..."}               -- editor commands (save paths ack back)
 // Writerdeck -> Writerdeck-server acks: {"t":"saved"|"ready","c":"<cmd>"}
+//   {"t":"rotation","degrees":<0|90|180|270>}   -- display rotation changed (USB or UI)
 //
 // Integer codepoints are escaping-proof: JSON special chars in typed text
 // can never corrupt the naive C++ substring parser (see socket-inject.patch).
@@ -214,14 +215,21 @@ func (e *editorConn) writeCmdWaitAck(cmd []byte, typ, cmdName string, timeout ti
 
 func (e *editorConn) handleEditorLine(line []byte) {
 	var msg struct {
-		T string `json:"t"`
-		C string `json:"c"`
+		T       string `json:"t"`
+		C       string `json:"c"`
+		Degrees int    `json:"degrees"`
 	}
 	if json.Unmarshal(line, &msg) != nil {
 		return
 	}
-	if msg.T == "saved" || msg.T == "ready" {
+	switch msg.T {
+	case "saved", "ready":
 		e.signalAck(msg.T, msg.C)
+	case "rotation":
+		settingsMu.Lock()
+		curSettings.Rotation = normalizeRotation(msg.Degrees)
+		saveSettingsLocked()
+		settingsMu.Unlock()
 	}
 }
 
@@ -336,6 +344,15 @@ func dialLoop(ec *editorConn) {
 			}{"cmd", "setfont", fontFamily})
 			ec.write(fontMsg)
 		}
+		settingsMu.Lock()
+		rotation := curSettings.Rotation
+		settingsMu.Unlock()
+		rotMsg, _ := json.Marshal(struct {
+			T       string `json:"t"`
+			C       string `json:"c"`
+			Degrees int    `json:"degrees"`
+		}{"cmd", "setrotation", rotation})
+		ec.write(rotMsg)
 		// Read ack lines until the connection dies.
 		sc := bufio.NewScanner(c)
 		for sc.Scan() {
@@ -881,8 +898,18 @@ var settingsFilePath = "/home/root/.Writerdeck/settings.json"
 type settingsData struct {
 	ReadFont  string `json:"readFont"`
 	PinDigits string `json:"pinDigits"` // "6", "4", or "none"; default "6"
+	Rotation  int    `json:"rotation"`  // display rotation in degrees (0, 90, 180, 270)
 	SyncOn    bool   `json:"syncOn"`    // GitHub two-way sync enabled
 	SyncRepo  string `json:"syncRepo"`  // "owner/repo" of the notes repo; token never stored here
+}
+
+// normalizeRotation maps any integer to a 0-359 degree value.
+func normalizeRotation(deg int) int {
+	deg %= 360
+	if deg < 0 {
+		deg += 360
+	}
+	return deg
 }
 
 // isValidGitHubRepo returns true iff repo is a non-empty "owner/repo" string
@@ -1802,8 +1829,7 @@ func openHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // rotateHandler handles POST /api/rotate: rotates the editor display 90 degrees
-// clockwise. Sends {"t":"cmd","c":"rotate"} to keywriter, which sets
-// root.rotation on the QML root object (works in edit or preview mode).
+// clockwise, persists the new angle to settings.json, and pushes it to Writerdeck.
 func rotateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -1826,7 +1852,17 @@ func rotateHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no active editor session", http.StatusConflict)
 		return
 	}
-	activeSess.ec.write([]byte(`{"t":"cmd","c":"rotate"}`))
+	settingsMu.Lock()
+	curSettings.Rotation = normalizeRotation(curSettings.Rotation + 90)
+	rotation := curSettings.Rotation
+	saveSettingsLocked()
+	settingsMu.Unlock()
+	rotMsg, _ := json.Marshal(struct {
+		T       string `json:"t"`
+		C       string `json:"c"`
+		Degrees int    `json:"degrees"`
+	}{"cmd", "setrotation", rotation})
+	activeSess.ec.write(rotMsg)
 	w.WriteHeader(http.StatusOK)
 }
 

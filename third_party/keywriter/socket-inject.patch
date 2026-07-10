@@ -24,6 +24,7 @@
 +static QObject *g_rootObj = nullptr; // stashed after QML load; used by cmd handler
 +static int g_clientFd = -1;
 +static std::mutex g_clientMu;
++static bool g_applyingRotation = false;
 +
 +// Write one NDJSON ack line back to rmkbd (saved / ready).
 +static void rmkbdSendAck(const std::string &kind, const std::string &cmd)
@@ -31,6 +32,15 @@
 +    std::lock_guard<std::mutex> lock(g_clientMu);
 +    if (g_clientFd < 0) return;
 +    std::string line = "{\"t\":\"" + kind + "\",\"c\":\"" + cmd + "\"}\n";
++    ::write(g_clientFd, line.data(), line.size());
++}
++
++// Notify Writerdeck-server when the user rotates via USB keyboard.
++static void rmkbdSendRotation(int deg)
++{
++    std::lock_guard<std::mutex> lock(g_clientMu);
++    if (g_clientFd < 0) return;
++    std::string line = "{\"t\":\"rotation\",\"degrees\":" + std::to_string(deg) + "}\n";
 +    ::write(g_clientFd, line.data(), line.size());
 +}
 +
@@ -172,6 +182,21 @@
 +                        Q_ARG(QVariant, QString::fromStdString(family)));
 +            }
 +        }
++        else if (cmd == "setrotation" && g_rootObj) {
++            // {"t":"cmd","c":"setrotation","degrees":90} -> restore/push saved angle.
++            auto dp = line.find("\"degrees\":");
++            if (dp != std::string::npos) {
++                int deg = std::atoi(line.c_str() + dp + 10);
++                QMetaObject::invokeMethod(qApp, [deg]() {
++                    if (!g_rootObj) return;
++                    g_applyingRotation = true;
++                    int r = deg % 360;
++                    if (r < 0) r += 360;
++                    g_rootObj->setProperty("rotation", r);
++                    g_applyingRotation = false;
++                }, Qt::QueuedConnection);
++            }
++        }
 +        else if (cmd == "rotate" && g_rootObj)
 +            // {"t":"cmd","c":"rotate"} -> bump root.rotation 90 CW (any mode).
 +            QMetaObject::invokeMethod(qApp, []() {
@@ -260,6 +285,10 @@
      if (engine.rootObjects().isEmpty())
          return -1;
 +    g_rootObj = engine.rootObjects().first(); // stash for cmd handler thread
++    QObject::connect(g_rootObj, SIGNAL(rotationChanged()), qApp, []() {
++        if (g_applyingRotation || !g_rootObj) return;
++        rmkbdSendRotation(g_rootObj->property("rotation").toInt());
++    }, Qt::QueuedConnection);
  
 +    std::thread(rmkbdSocketReader).detach(); // rM1-Writerdeck: start socket listener
      return app.exec();
