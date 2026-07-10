@@ -17,9 +17,30 @@
 +#include <QCoreApplication>
 +#include <QWindow>
 +#include <QVariant>
++#include <QTimer>
++#include <mutex>
 +
 +static const char *RMKBD_SOCK = "/run/rmkbd.sock";
 +static QObject *g_rootObj = nullptr; // stashed after QML load; used by cmd handler
++static int g_clientFd = -1;
++static std::mutex g_clientMu;
++
++// Write one NDJSON ack line back to rmkbd (saved / ready).
++static void rmkbdSendAck(const std::string &kind, const std::string &cmd)
++{
++    std::lock_guard<std::mutex> lock(g_clientMu);
++    if (g_clientFd < 0) return;
++    std::string line = "{\"t\":\"" + kind + "\",\"c\":\"" + cmd + "\"}\n";
++    ::write(g_clientFd, line.data(), line.size());
++}
++
++// Run a QML save handler on the GUI thread; block until done, then ack.
++static void invokeSaveCmd(const char *method, const char *ackCmd)
++{
++    if (!g_rootObj) return;
++    QMetaObject::invokeMethod(g_rootObj, method, Qt::BlockingQueuedConnection);
++    rmkbdSendAck("saved", ackCmd);
++}
 +
 +// Parse one NDJSON line and dispatch a synthetic QKeyEvent on the GUI thread.
 +// Supported events:
@@ -113,22 +134,30 @@
 +                np += 8;
 +                auto nq = line.find('"', np);
 +                std::string name = (nq != std::string::npos) ? line.substr(np, nq - np) : "";
-+                if (!name.empty())
++                if (!name.empty()) {
 +                    QMetaObject::invokeMethod(g_rootObj, "saveAndLoad",
-+                        Qt::QueuedConnection,
++                        Qt::BlockingQueuedConnection,
 +                        Q_ARG(QVariant, QString::fromStdString(name)));
++                    rmkbdSendAck("saved", "open");
++                }
 +            }
 +        }
 +        else if (cmd == "home" && g_rootObj)
-+            QMetaObject::invokeMethod(g_rootObj, "handleHome", Qt::QueuedConnection);
-+        else if (cmd == "preparesleep" && g_rootObj)
-+            QMetaObject::invokeMethod(g_rootObj, "prepareSleep", Qt::QueuedConnection);
++            invokeSaveCmd("handleHome", "home");
++        else if (cmd == "preparesleep" && g_rootObj) {
++            invokeSaveCmd("prepareSleep", "preparesleep");
++            // E-ink needs a beat after isSleeping=true before suspend/sync.
++            QMetaObject::invokeMethod(qApp, []() {
++                QTimer::singleShot(800, qApp, []() {
++                    rmkbdSendAck("ready", "preparesleep");
++                });
++            }, Qt::QueuedConnection);
++        }
 +        else if (cmd == "notedeleted" && g_rootObj)
 +            // Go to the Lobby WITHOUT saveFile() -- the file is gone, no resurrection.
 +            QMetaObject::invokeMethod(g_rootObj, "noteDeleted", Qt::QueuedConnection);
 +        else if (cmd == "showlobby" && g_rootObj)
-+            // Bring the Lobby to the foreground without quitting. Saves current note first.
-+            QMetaObject::invokeMethod(g_rootObj, "showLobby", Qt::QueuedConnection);
++            invokeSaveCmd("showLobby", "showlobby");
 +        else if (cmd == "setfont" && g_rootObj) {
 +            // {"t":"cmd","c":"setfont","family":"Inter"} -> setReadFont(name) in QML.
 +            // Changes the reading-view font; the allow-list check lives in rmkbd (Go).
@@ -200,6 +229,11 @@
 +    for (;;) {
 +        int fd = ::accept(srv, nullptr, nullptr);
 +        if (fd < 0) continue;
++        {
++            std::lock_guard<std::mutex> lock(g_clientMu);
++            if (g_clientFd >= 0) ::close(g_clientFd);
++            g_clientFd = fd;
++        }
 +        std::string buf;
 +        char ch;
 +        while (::read(fd, &ch, 1) == 1) {
@@ -209,6 +243,10 @@
 +            } else {
 +                buf += ch;
 +            }
++        }
++        {
++            std::lock_guard<std::mutex> lock(g_clientMu);
++            if (g_clientFd == fd) g_clientFd = -1;
 +        }
 +        ::close(fd);
 +        buf.clear(); // flush any partial line on disconnect

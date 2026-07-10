@@ -60,7 +60,7 @@ The tablet is the web server — the phone/Mac just open Safari, no app to insta
 | Device | reMarkable 1 (first gen), codename *zero-gravitas* |
 | OS / kernel | `20260506100933` · kernel `5.4.70-v1.6.3-rm10x` |
 | `/dev/uinput` | Absent & un-addable (open → `ENODEV`; kernel exports trimmed via `CONFIG_TRIM_UNUSED_KSYMS`, so no out-of-tree `uinput.ko` can bind). Gate permanently 🔴 RED. Don't retry — the editor is fed over a socket instead; see [decisions.md](decisions.md). |
-| SSH path | `ssh root@<tablet-ip>` over Wi-Fi (key login works) — the working path. USB (`10.11.99.1`) is dead on the Mac (no DHCP lease). Wi-Fi IP is DHCP; set `RM_HOST_WIFI` in `secrets/remarkable.local.env` (currently `10.0.0.20`). Reserve the tablet's MAC on the router so the IP stays put for the iPhone. |
+| SSH path | `ssh root@<tablet-ip>` over Wi-Fi (key login works) — the working path. USB (`10.11.99.1`) is dead on the Mac (no DHCP lease). Wi-Fi IP is DHCP; set `RM_HOST_WIFI` in `secrets/remarkable.local.env` (currently `192.168.1.8`). Reserve the tablet's MAC on the router so the IP stays put for the iPhone. |
 | SSH password | gitignored in [../secrets/remarkable.local.env](../secrets/remarkable.local.env). Source: device `Settings → Help → Copyrights and licenses → General information`. Regenerates after every firmware update — re-record then. |
 | Notes dir | `/home/root/edit/` (keywriter boots to the Lobby; files are opened from the phone via the companion page). Deploy the binary to `/home/root/keywriter` — not `/home/root/edit` (that's the notes *directory*). |
 | Buttons | On `/dev/input/event1` (value 1 = press): middle/Home = `KEY_HOME` 102, left 105, right 106, power 116. Readable with xochitl up (Qt doesn't `EVIOCGRAB`). |

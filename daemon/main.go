@@ -12,6 +12,8 @@
 // Editor-feed wire format (NDJSON to keywriter's naive C++ parser):
 //   {"t":"text","cp":<unicode-codepoint-int>}   -- single printable char
 //   {"t":"key","k":"Escape|Return|Backspace|Tab|ArrowUp|ArrowDown|ArrowLeft|ArrowRight"}
+//   {"t":"cmd","c":"home|open|..."}               -- editor commands (save paths ack back)
+// keywriter -> rmkbd acks: {"t":"saved"|"ready","c":"<cmd>"}
 //
 // Integer codepoints are escaping-proof: JSON special chars in typed text
 // can never corrupt the naive C++ substring parser (see socket-inject.patch).
@@ -24,6 +26,7 @@
 package main
 
 import (
+	"bufio"
 	_ "embed"
 	crand "crypto/rand"
 	"crypto/subtle"
@@ -98,9 +101,9 @@ const (
 	keyWake   = 143 // KEY_WAKEUP -- fires on some wake paths
 	buttonDev = "/dev/input/event1"
 
-	saveSettleDelay = time.Second        // let keywriter flush save before browser sync
-	sleepPaintDelay = 2500 * time.Millisecond
-	syncAckTimeout  = 45 * time.Second   // power sleep waits for GitHub reconcile
+	saveAckTimeout  = 10 * time.Second  // wait for keywriter {"t":"saved",...}
+	paintAckTimeout = 3 * time.Second   // e-ink sleep screen {"t":"ready",...}
+	syncAckTimeout  = 45 * time.Second  // power sleep waits for GitHub reconcile
 )
 
 // wsMsg is the JSON message received from the browser on keydown.
@@ -130,9 +133,96 @@ var namedKeys = map[string]string{
 
 // editorConn holds the live connection to keywriter's socket.
 // rmkbd dials and redials; keywriter is the server.
+// keywriter writes back {"t":"saved"|"ready","c":"<cmd>"} ack lines.
 type editorConn struct {
 	mu   sync.Mutex
 	conn net.Conn
+
+	ackMu   sync.Mutex
+	ackWait []*ackWait
+}
+
+type ackWait struct {
+	typ string
+	cmd string
+	ch  chan struct{}
+}
+
+func (e *editorConn) registerAckWait(typ, cmd string) chan struct{} {
+	ch := make(chan struct{}, 1)
+	e.ackMu.Lock()
+	e.ackWait = append(e.ackWait, &ackWait{typ: typ, cmd: cmd, ch: ch})
+	e.ackMu.Unlock()
+	return ch
+}
+
+func (e *editorConn) cancelAckWait(typ, cmd string) {
+	e.ackMu.Lock()
+	defer e.ackMu.Unlock()
+	for i, w := range e.ackWait {
+		if w.typ == typ && w.cmd == cmd {
+			e.ackWait = append(e.ackWait[:i], e.ackWait[i+1:]...)
+			return
+		}
+	}
+}
+
+func (e *editorConn) signalAck(typ, cmd string) {
+	e.ackMu.Lock()
+	defer e.ackMu.Unlock()
+	for i, w := range e.ackWait {
+		if w.typ == typ && w.cmd == cmd {
+			select {
+			case w.ch <- struct{}{}:
+			default:
+			}
+			e.ackWait = append(e.ackWait[:i], e.ackWait[i+1:]...)
+			return
+		}
+	}
+}
+
+func (e *editorConn) clearAckWaits() {
+	e.ackMu.Lock()
+	defer e.ackMu.Unlock()
+	e.ackWait = nil
+}
+
+func (e *editorConn) waitAck(typ, cmd string, timeout time.Duration) bool {
+	ch := e.registerAckWait(typ, cmd)
+	select {
+	case <-ch:
+		return true
+	case <-time.After(timeout):
+		e.cancelAckWait(typ, cmd)
+		return false
+	}
+}
+
+func (e *editorConn) writeCmdWaitAck(cmd []byte, typ, cmdName string, timeout time.Duration) bool {
+	ch := e.registerAckWait(typ, cmdName)
+	e.write(cmd)
+	select {
+	case <-ch:
+		return true
+	case <-time.After(timeout):
+		e.cancelAckWait(typ, cmdName)
+		fmt.Fprintf(os.Stderr, "rmkbd: ack timeout %s/%s\n", typ, cmdName)
+		return false
+	}
+}
+
+func (e *editorConn) handleEditorLine(line []byte) {
+	var msg struct {
+		T string `json:"t"`
+		C string `json:"c"`
+	}
+	if json.Unmarshal(line, &msg) != nil {
+		return
+	}
+	if msg.T == "saved" || msg.T == "ready" {
+		e.signalAck(msg.T, msg.C)
+	}
 }
 
 func (e *editorConn) write(line []byte) {
@@ -246,13 +336,13 @@ func dialLoop(ec *editorConn) {
 			}{"cmd", "setfont", fontFamily})
 			ec.write(fontMsg)
 		}
-		// Block until the connection dies (detect via a zero-byte read).
-		// No deadline: keywriter never writes back, so a deadline would
-		// fire on every idle connection and tear down a healthy socket.
-		// A real EOF/disconnect unblocks Read immediately.
-		buf := make([]byte, 1)
-		c.Read(buf) //nolint:errcheck
+		// Read ack lines until the connection dies.
+		sc := bufio.NewScanner(c)
+		for sc.Scan() {
+			ec.handleEditorLine(sc.Bytes())
+		}
 		fmt.Fprintln(os.Stderr, "rmkbd: editor socket closed -- redialling")
+		ec.clearAckWaits()
 		ec.set(nil)
 	}
 }
@@ -291,8 +381,7 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 				if s.isActive() {
 					fmt.Fprintln(os.Stderr, "rmkbd: home button -- relaying to editor")
 					go func() {
-						ec.write([]byte(`{"t":"cmd","c":"home"}`))
-						time.Sleep(saveSettleDelay)
+						ec.writeCmdWaitAck([]byte(`{"t":"cmd","c":"home"}`), "saved", "home", saveAckTimeout)
 						currentNoteMu.Lock()
 						currentNote = ""
 						currentNoteMu.Unlock()
@@ -1327,8 +1416,8 @@ func lobbyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if activeSess.isActive() {
-		// Editor is running: send showlobby -- QML saves current note then shows Lobby.
-		activeSess.ec.write([]byte(`{"t":"cmd","c":"showlobby"}`))
+		// Editor is running: save current note then show Lobby; wait for save ack.
+		activeSess.ec.writeCmdWaitAck([]byte(`{"t":"cmd","c":"showlobby"}`), "saved", "showlobby", saveAckTimeout)
 	} else {
 		// No active session: start one -- it boots directly into the Lobby.
 		if err := activeSess.start(); err != nil {
@@ -1553,8 +1642,12 @@ func (s *session) sleepForPower() {
 	if !s.isActive() {
 		return
 	}
-	s.ec.write([]byte(`{"t":"cmd","c":"preparesleep"}`))
-	time.Sleep(sleepPaintDelay)
+	if !s.ec.writeCmdWaitAck([]byte(`{"t":"cmd","c":"preparesleep"}`), "saved", "preparesleep", saveAckTimeout) {
+		fmt.Fprintln(os.Stderr, "rmkbd: preparesleep save ack missed -- continuing")
+	}
+	if !s.ec.waitAck("ready", "preparesleep", paintAckTimeout) {
+		fmt.Fprintln(os.Stderr, "rmkbd: sleep screen ready ack missed -- continuing")
+	}
 	beginSyncWait()
 	broadcast([]byte(`{"type":"exitedit","source":"power","awaitSync":true}`))
 	waitSyncAck(syncAckTimeout)
@@ -1702,7 +1795,9 @@ func openHandler(w http.ResponseWriter, r *http.Request) {
 	currentNoteMu.Lock()
 	currentNote = editorName
 	currentNoteMu.Unlock()
-	activeSess.ec.write(cmd)
+	if !activeSess.ec.writeCmdWaitAck(cmd, "saved", "open", saveAckTimeout) {
+		fmt.Fprintln(os.Stderr, "rmkbd: open save ack missed -- continuing")
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
