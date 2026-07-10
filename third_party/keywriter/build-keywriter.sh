@@ -700,27 +700,27 @@ assert old7o_r in s, "Key_Right scroll case not found (7o)"
 s = s.replace(old7o_r, new7o_r, 1)
 
 old7o_rot_r = (
-    '        case Qt.Key_Right:\n'
-    '            if (ctrlPressed)\n'
-    '                root.rotation = (root.rotation + 90) % 360'
+    '            case Qt.Key_Right:\n'
+    '                if (ctrlPressed)\n'
+    '                    root.rotation = (root.rotation + 90) % 360'
 )
 new7o_rot_r = (
-    '        case Qt.Key_Right:\n'
-    '            if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
-    '                root.rotation = (root.rotation + 90) % 360'
+    '            case Qt.Key_Right:\n'
+    '                if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
+    '                    root.rotation = (root.rotation + 90) % 360'
 )
 assert old7o_rot_r in s, "preview Ctrl+Right rotate not found (7o)"
 s = s.replace(old7o_rot_r, new7o_rot_r, 1)
 
 old7o_rot_l = (
-    '        case Qt.Key_Left:\n'
-    '            if (ctrlPressed)\n'
-    '                root.rotation = (root.rotation - 90) % 360'
+    '            case Qt.Key_Left:\n'
+    '                if (ctrlPressed)\n'
+    '                    root.rotation = (root.rotation - 90) % 360'
 )
 new7o_rot_l = (
-    '        case Qt.Key_Left:\n'
-    '            if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
-    '                root.rotation = (root.rotation - 90) % 360'
+    '            case Qt.Key_Left:\n'
+    '                if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
+    '                    root.rotation = (root.rotation - 90) % 360'
 )
 assert old7o_rot_l in s, "preview Ctrl+Left rotate not found (7o)"
 s = s.replace(old7o_rot_l, new7o_rot_l, 1)
