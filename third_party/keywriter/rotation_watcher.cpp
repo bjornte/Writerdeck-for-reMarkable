@@ -1,4 +1,5 @@
 #include "rotation_watcher.h"
+#include <QVariant>
 
 void RotationWatcher::onRotationChanged()
 {
