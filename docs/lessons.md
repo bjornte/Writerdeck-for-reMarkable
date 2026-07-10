@@ -30,7 +30,7 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 ## keywriter / QML
 
-**Every save path must sync `query.text → doc` before `saveFile()`** in edit mode. A bare `saveFile()` writes stale `doc`. Guards: saveAndQuit, handleHome, showLobby, saveAndLoad, omni switcher.
+**Every save path must sync `query.text → doc` before `saveFile()`** in edit mode. A bare `saveFile()` writes stale `doc`. Guards: saveAndQuit, handleHome, showLobby, saveAndLoad, omni switcher, Ctrl-Q.
 
 **Lobby is a clean no-file state** — clear `currentFile` on every return; guard `saveFile()` when empty. A stale `currentFile` resurrects deleted notes.
 

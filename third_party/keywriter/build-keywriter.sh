@@ -147,11 +147,19 @@ new4k = 'event.key === Qt.Key_K && (ctrlPressed || (event.modifiers & Qt.Control
 assert old4k in s, "Ctrl-K handler not found in main.qml"
 s = s.replace(old4k, new4k)
 
-# 5. Ctrl-Q quit: same fix.
-old4q = 'event.key === Qt.Key_Q && ctrlPressed'
-new4q = 'event.key === Qt.Key_Q && (ctrlPressed || (event.modifiers & Qt.ControlModifier))'
+# 5. Ctrl-Q quit: modifier fix + save before exit (saveAndQuit, not bare Qt.quit).
+old4q = (
+    '        } else if (event.key === Qt.Key_Q && ctrlPressed) {\n'
+    '            Qt.quit()\n'
+    '        }'
+)
+new4q = (
+    '        } else if (event.key === Qt.Key_Q && (ctrlPressed || (event.modifiers & Qt.ControlModifier))) {\n'
+    '            saveAndQuit()\n'
+    '        }'
+)
 assert old4q in s, "Ctrl-Q handler not found in main.qml"
-s = s.replace(old4q, new4q)
+s = s.replace(old4q, new4q, 1)
 
 # 5b. Ctrl-K note-switcher data-loss fix. The omni (note-switcher) Enter handler
 #     saves the current note before switching, but it calls a bare saveFile(),
