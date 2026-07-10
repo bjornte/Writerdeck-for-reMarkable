@@ -180,14 +180,26 @@ import {
       try {
         var data = JSON.parse(event.data);
         if (data.type === 'exitedit') {
-          // Tablet left the edit view (Home pressed or open note deleted). Home
-          // SAVES the .md before broadcasting this, so now -- not phone-back -- is
-          // the correct moment to push. (On delete the push 404s harmlessly; the
-          // GitHub delete is handled in deleteNote.)
           var saved = state.tabletOpenNote;
           state.tabletOpenNote = '';
           if (state.typingMode) { hideTypingView(); }
-          if (saved) { pushNote(saved); }
+          var awaitAck = !!data.awaitSync;
+          function ackSync() {
+            if (awaitAck) {
+              fetch('/api/sync/ack', { method: 'POST', credentials: 'same-origin' });
+            }
+          }
+          if (data.source === 'home' || data.source === 'power') {
+            if (syncReady()) {
+              reconcileAll('tablet-' + data.source, { wait: true }).finally(ackSync);
+            } else {
+              ackSync();
+            }
+          } else if (syncReady()) {
+            reconcileAll('tablet-exit');
+          } else if (saved) {
+            pushNote(saved);
+          }
         }
         // Unknown types are silently ignored -- forward-compatible.
       } catch (e) {}

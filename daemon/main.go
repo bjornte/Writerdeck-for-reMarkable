@@ -98,7 +98,9 @@ const (
 	keyWake   = 143 // KEY_WAKEUP -- fires on some wake paths
 	buttonDev = "/dev/input/event1"
 
+	saveSettleDelay = time.Second        // let keywriter flush save before browser sync
 	sleepPaintDelay = 2500 * time.Millisecond
+	syncAckTimeout  = 45 * time.Second   // power sleep waits for GitHub reconcile
 )
 
 // wsMsg is the JSON message received from the browser on keydown.
@@ -288,11 +290,14 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 			if s != nil {
 				if s.isActive() {
 					fmt.Fprintln(os.Stderr, "rmkbd: home button -- relaying to editor")
-					currentNoteMu.Lock()
-					currentNote = ""
-					currentNoteMu.Unlock()
-					go ec.write([]byte(`{"t":"cmd","c":"home"}`))
-					broadcast([]byte(`{"type":"exitedit"}`))
+					go func() {
+						ec.write([]byte(`{"t":"cmd","c":"home"}`))
+						time.Sleep(saveSettleDelay)
+						currentNoteMu.Lock()
+						currentNote = ""
+						currentNoteMu.Unlock()
+						broadcast([]byte(`{"type":"exitedit","source":"home"}`))
+					}()
 				} else {
 					fmt.Fprintln(os.Stderr, "rmkbd: home button -- no active session, ignoring")
 				}
@@ -414,7 +419,50 @@ type wsClient struct {
 var (
 	wsClientsMu sync.Mutex
 	wsClients   = make(map[*wsClient]bool)
+
+	syncAckMu sync.Mutex
+	syncAckCh chan struct{} // set while power-sleep waits for browser reconcile
 )
+
+// signalSyncAck unblocks sleepForPower after the phone browser finishes GitHub sync.
+func signalSyncAck() {
+	syncAckMu.Lock()
+	ch := syncAckCh
+	syncAckCh = nil
+	syncAckMu.Unlock()
+	if ch != nil {
+		select {
+		case ch <- struct{}{}:
+		default:
+		}
+	}
+}
+
+func beginSyncWait() {
+	syncAckMu.Lock()
+	syncAckCh = make(chan struct{}, 1)
+	syncAckMu.Unlock()
+}
+
+func waitSyncAck(timeout time.Duration) {
+	syncAckMu.Lock()
+	ch := syncAckCh
+	syncAckMu.Unlock()
+	if ch == nil {
+		return
+	}
+	select {
+	case <-ch:
+		fmt.Fprintln(os.Stderr, "rmkbd: sync ack received")
+	case <-time.After(timeout):
+		fmt.Fprintln(os.Stderr, "rmkbd: sync ack timeout -- proceeding")
+	}
+	syncAckMu.Lock()
+	if syncAckCh == ch {
+		syncAckCh = nil
+	}
+	syncAckMu.Unlock()
+}
 
 // broadcast pushes msg to every registered browser client.
 func broadcast(msg []byte) {
@@ -1358,6 +1406,27 @@ func shutdownHandler(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
+// syncAckHandler handles POST /api/sync/ack: the phone browser calls this after
+// reconcileAll completes so power-button sleep can suspend without cutting Wi-Fi
+// mid-upload.
+func syncAckHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		return
+	}
+	if !checkAuth(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	signalSyncAck()
+	w.WriteHeader(http.StatusOK)
+}
+
 // --- Session manager ---
 // An editor session is a sub-lifecycle: xochitl stopped, keywriter running
 // (with systemd-inhibit in launch-keywriter.sh holding the sleep lock).
@@ -1485,8 +1554,10 @@ func (s *session) sleepForPower() {
 		return
 	}
 	s.ec.write([]byte(`{"t":"cmd","c":"preparesleep"}`))
-	broadcast([]byte(`{"type":"exitedit"}`))
 	time.Sleep(sleepPaintDelay)
+	beginSyncWait()
+	broadcast([]byte(`{"type":"exitedit","source":"power","awaitSync":true}`))
+	waitSyncAck(syncAckTimeout)
 
 	s.mu.Lock()
 	s.sleeping = true
@@ -1766,6 +1837,7 @@ func main() {
 	http.HandleFunc("/api/lobby", lobbyHandler) // pre-auth: reveals PIN on e-ink only
 	http.HandleFunc("/api/status", statusHandler)
 	http.HandleFunc("/api/shutdown", shutdownHandler)
+	http.HandleFunc("/api/sync/ack", syncAckHandler)
 
 	if *editorPath != "" {
 		// Supervisor mode: rmkbd is always-on; editor sessions are on-demand.

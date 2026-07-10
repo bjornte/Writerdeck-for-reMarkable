@@ -249,8 +249,20 @@ function strHash(s) {
 // fingerprints and push / pull / keep-both. The actively-open note is skipped
 // (its own open-pull + Home-push own it). Resolves to the note count.
 var syncing = false;
-export function reconcileAll(reason) {
-  if (!syncReady() || syncing) return Promise.resolve(0);
+export function reconcileAll(reason, opts) {
+  opts = opts || {};
+  if (!syncReady()) return Promise.resolve(0);
+  if (syncing) {
+    if (opts.wait) {
+      return new Promise(function(resolve) {
+        (function poll() {
+          if (!syncing) resolve(reconcileAll(reason, opts));
+          else setTimeout(poll, 250);
+        })();
+      });
+    }
+    return Promise.resolve(0);
+  }
   syncing = true;
   var statusEls = document.querySelectorAll('.sync-status-line');
   for (var s = 0; s < statusEls.length; s++) statusEls[s].textContent = 'Syncing\u2026';

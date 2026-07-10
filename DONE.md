@@ -64,7 +64,7 @@ Optional, off by default. The phone reconciles tablet notes with a private repo 
 
 **Marker-aware delete** — a note deleted on GitHub (VS Code, web UI, git) propagates to the tablet when the local copy is pristine and carries a stored `sha`. Unpushed local edits resurrect instead of deleting. External renames reconcile as delete-old + pull-new. Tablet-only deletes still don't propagate to GitHub by design.
 
-Triggers: connect, toggle on, three-minute poll, manual Sync now. Skips the note currently open on the tablet.
+Triggers: connect, toggle on, three-minute poll, manual Sync now, **tablet Home or Power** (full reconcile via phone browser). Skips the note currently open on the tablet during reconcile — `tabletOpenNote` is cleared before sync runs.
 
 ## Infrastructure
 
