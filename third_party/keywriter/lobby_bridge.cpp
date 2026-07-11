@@ -49,6 +49,14 @@ void LobbyBridge::renameNote(const QString &oldName, const QString &newName)
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
 }
 
+void LobbyBridge::notifyOpen(const QString &name)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("open");
+    o[QStringLiteral("name")] = name;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
 void LobbyBridge::deliverNotesList(const QVariantList &items)
 {
     if (!m_root)

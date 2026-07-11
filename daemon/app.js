@@ -21,8 +21,8 @@ import {
   var buf = '';
   var ws;
   // state.typingMode: false=Browse (list/read, no capture), true=Type (capture + echo).
-  // state.tabletOpenNote: the .md filename the tablet editor actually holds open;
-  //   clears only on exitedit (post-save), so the GitHub push always targets the
+  // state.tabletOpenNote: server-known open file (.md); from openedit WS or phone
+  //   /api/open; clears on exitedit (post-save), so GitHub push waits for save.
   //   right file even after a phone-back. Both live in state.js so sync.js can read them.
   var currentTypingFile = ''; // phone-view-only; clears on phone-back
   var previewFilename = '';
@@ -225,7 +225,9 @@ import {
     ws.onmessage = function (event) {
       try {
         var data = JSON.parse(event.data);
-        if (data.type === 'exitedit') {
+        if (data.type === 'openedit') {
+          state.tabletOpenNote = data.name || '';
+        } else if (data.type === 'exitedit') {
           var saved = state.tabletOpenNote;
           state.tabletOpenNote = '';
           if (state.typingMode) { hideTypingView(); }

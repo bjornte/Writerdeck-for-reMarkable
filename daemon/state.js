@@ -7,7 +7,7 @@
 export var state = {
   syncOn: false,        // mirrors /api/settings syncOn
   syncRepo: '',         // mirrors /api/settings syncRepo
-  tabletOpenNote: '',   // .md filename the tablet editor actually holds open;
-                        // clears only on exitedit (post-save), not phone-back
+  tabletOpenNote: '',   // .md filename the tablet editor holds open; set by server
+                        // openedit (phone /api/open or tablet doLoad); clears on exitedit
   typingMode: false     // false=Browse (list/read), true=Type (capture + echo)
 };

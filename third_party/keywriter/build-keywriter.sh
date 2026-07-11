@@ -133,6 +133,7 @@ new2b = (
     '                currentFile = name\n'
     '                doc = response\n'
     '                query.text = response\n'
+    '                writerdeck.notifyOpen(name)\n'
 )
 assert old2b in s, "doLoad doc=response block not found (edit 2b)"
 s = s.replace(old2b, new2b, 1)

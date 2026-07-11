@@ -14,7 +14,9 @@
 //   {"t":"key","k":"Escape|Return|Backspace|Tab|ArrowUp|ArrowDown|ArrowLeft|ArrowRight"}
 //   {"t":"cmd","c":"home|open|..."}               -- editor commands (save paths ack back)
 // Writerdeck -> Writerdeck-server acks: {"t":"saved"|"ready","c":"<cmd>"}
+//   {"t":"open","name":"<file>.md"}             -- editor reports open file (edit lease)
 //   {"t":"rotation","degrees":<0|90|180|270>}   -- display rotation changed (USB or UI)
+// Browser <- Writerdeck-server: {"type":"openedit","name":"<file>.md"} on tablet open
 //
 // Integer codepoints are escaping-proof: JSON special chars in typed text
 // can never corrupt the naive C++ substring parser (see socket-inject.patch).
@@ -233,6 +235,15 @@ func (e *editorConn) handleEditorLine(line []byte) {
 	switch msg.T {
 	case "req":
 		handleEditorReq(msg.Op, msg.Name, msg.Old)
+	case "open":
+		name := filepath.Base(msg.Name)
+		if notesSafe(name) == "" {
+			return
+		}
+		currentNoteMu.Lock()
+		currentNote = name
+		currentNoteMu.Unlock()
+		broadcastOpenEdit(name)
 	case "saved", "ready":
 		e.signalAck(msg.T, msg.C)
 	case "rotation":
@@ -710,6 +721,18 @@ func waitSyncAck(timeout time.Duration) {
 	syncAckMu.Unlock()
 }
 
+// broadcastOpenEdit tells phone clients which note the tablet editor holds open.
+func broadcastOpenEdit(name string) {
+	if name == "" {
+		return
+	}
+	msg, _ := json.Marshal(struct {
+		Type string `json:"type"`
+		Name string `json:"name"`
+	}{"openedit", name})
+	broadcast(msg)
+}
+
 // broadcast pushes msg to every registered browser client.
 func broadcast(msg []byte) {
 	wsClientsMu.Lock()
@@ -723,8 +746,8 @@ func broadcast(msg []byte) {
 }
 
 // currentNote is the basename (.md) of the note the editor currently has open.
-// Protected by currentNoteMu. Set by openHandler; cleared by watchHomeButton,
-// session.end(), and the DELETE handler on a match.
+// Protected by currentNoteMu. Set by openHandler and editor {"t":"open"} reports;
+// cleared by watchHomeButton, session.end(), and the DELETE handler on a match.
 var (
 	currentNoteMu sync.Mutex
 	currentNote   string
@@ -768,6 +791,20 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 				}
 			}
 		}()
+		// Tell new clients which note the tablet editor holds open (edit lease).
+		currentNoteMu.Lock()
+		openNote := currentNote
+		currentNoteMu.Unlock()
+		if openNote != "" {
+			msg, _ := json.Marshal(struct {
+				Type string `json:"type"`
+				Name string `json:"name"`
+			}{"openedit", openNote})
+			select {
+			case client.send <- msg:
+			default:
+			}
+		}
 		remote := r.RemoteAddr
 		fmt.Fprintf(os.Stderr, "writerdeck-server: client connected %s\n", remote)
 		var keys int
@@ -2143,6 +2180,7 @@ func openHandler(w http.ResponseWriter, r *http.Request) {
 	currentNoteMu.Lock()
 	currentNote = editorName
 	currentNoteMu.Unlock()
+	broadcastOpenEdit(editorName)
 	if !activeSess.ec.writeCmdWaitAck(cmd, "saved", "open", saveAckTimeout) {
 		fmt.Fprintln(os.Stderr, "writerdeck-server: open save ack missed -- continuing")
 	}

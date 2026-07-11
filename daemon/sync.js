@@ -375,12 +375,13 @@ function reconcileOne(name, remoteSha) {
 }
 
 // startSyncPoll: periodic safety-net reconcile so notes edited on the laptop
-// land without any user action. Skipped while actively typing on the tablet.
+// land without any user action. Skipped while the tablet editor holds a file
+// open (server-known edit lease via openedit, not phone typingMode).
 var syncPollTimer = null;
 export function startSyncPoll() {
   if (syncPollTimer) return;
   syncPollTimer = setInterval(function() {
-    if (syncReady() && !state.typingMode) { reconcileAll('poll'); }
+    if (syncReady() && !state.tabletOpenNote) { reconcileAll('poll'); }
   }, SYNC_POLL_MS);
 }
 
