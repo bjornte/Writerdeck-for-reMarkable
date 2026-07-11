@@ -161,7 +161,7 @@ else
 # Stop any running keywriter FIRST: a live instance holds the executable busy
 # (ETXTBSY -> scp "dest open Failure") -- e.g. a prior test left it running.
 # pkill -x is unreliable on this device, so kill by full path + pidof.
-rm_ssh 'for p in $(pidof Writerdeck 2>/dev/null); do kill "$p" 2>/dev/null; done; sleep 0.5; true' "$TARGET"
+rm_ssh 'wget -q -O /dev/null --post-data="" http://127.0.0.1:8000/api/flush-save 2>/dev/null || true; for p in $(pidof Writerdeck 2>/dev/null); do kill -TERM "$p" 2>/dev/null; done; i=0; while pidof Writerdeck >/dev/null 2>&1 && [ "$i" -lt 30 ]; do sleep 0.2; i=$((i+1)); done; for p in $(pidof Writerdeck 2>/dev/null); do kill -KILL "$p" 2>/dev/null; done; sleep 0.3; true' "$TARGET"
 # Stream to a temp name, then atomically mv into place (rename never hits ETXTBSY).
 # rm_send_file = gzip-over-ssh stream (scp deadlocks on this link). See _env.sh.
 rm_send_file "$BINARY" "/home/root/Writerdeck.new" "$TARGET"

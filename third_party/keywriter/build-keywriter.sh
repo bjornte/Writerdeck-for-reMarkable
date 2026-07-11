@@ -783,13 +783,7 @@ s = s.replace(old7i, new7i, 1)
 
 # 7t. Autosave: periodic flush of query.text -> disk while editing (slice 9).
 #     Uses saveFile() (loopback HTTP -> atomic writeNoteFile on server).
-assert '    property bool cursorStrong: true' in s, "cursorStrong not found (edit 7t)"
-s = s.replace(
-    '    property bool cursorStrong: true',
-    '    property bool cursorStrong: true\n'
-    '    property string autosaveSnapshot: ""',
-    1
-)
+#     autosaveSnapshot property is added in 7c2a (after readFont).
 old7t = '    function reloadNote() {'
 new7t = (
     '    function autosaveTick() {\n'
@@ -832,7 +826,8 @@ assert '    property string readFont: "Inter"' in s, "readFont not found (7c2a)"
 s = s.replace(
     '    property string readFont: "Inter"',
     '    property string readFont: "Inter"\n'
-    '    property bool cursorStrong: true',
+    '    property bool cursorStrong: true\n'
+    '    property string autosaveSnapshot: ""',
     1
 )
 

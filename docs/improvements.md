@@ -73,7 +73,7 @@ Today only **phone** `POST /api/open` sets server `currentNote` and browser `tab
 - **`/api/open` continues on save-ack timeout** — switch may proceed before the previous note is flushed to disk.
 - **Disk↔buffer drift** — ~~reconcile pull / clash overwrite disk without editor reload~~ **Slice 8:** server `diskchanged` WS + phone drift banner; `POST /api/reload` → `reloadnote` on tablet (needs current Writerdeck for reload button).
 - ~~**No atomic write** for notes (server)~~ — **Shipped slice 6** (`writeNoteFile` temp+rename on POST/PUT/create). ~~**Tablet `file://` in-place**~~ — **slice 10:** `saveFile()` → loopback `PUT /api/notes` → `writeNoteFile` (needs Writerdeck binary deploy).
-- **Editor crash / deploy kill / SIGTERM** — ~~unsaved `query.text` buffer is lost~~ **slice 9:** 45 s autosave while editing (`autosaveTick`); explicit saves unchanged. Crash in the last interval may still lose a few seconds.
+- **Editor crash / deploy kill / SIGTERM** — **slice 9:** 45 s autosave. **Slice 11:** deploy and SIGTERM call `POST /api/flush-save` (`autosavenow` socket ack) before stopping; `deploy-rmkbd.sh` waits for graceful exit (~12 s). **Was a contract breach:** deploy used `pkill` + 0.5 s sleep — no save wait. **Still open:** SIGKILL, editor crash, or flush ack timeout before stop completes.
 
 ### Sync & GitHub
 
@@ -108,6 +108,7 @@ Stack: **content contract** + **edit lease** + **OCC** + **atomic writes** + **c
 8. ~~**Reload / conflict banner**~~ — shipped 2026-07-11 (`diskchanged` WS, drift banner, `/api/reload`; Writerdeck `reloadNote` in next binary deploy).
 9. ~~**Autosave**~~ — shipped 2026-07-11 (45 s `autosaveTimer` while editing; dirty-check via `autosaveSnapshot`).
 10. ~~**Tablet atomic saves**~~ — shipped 2026-07-11 (loopback `PUT /api/notes`; server `isLoopback` auth + skips OCC/drift for editor saves).
+11. ~~**Save before deploy/stop**~~ — shipped 2026-07-11 (`POST /api/flush-save`, `autosavenow` cmd, deploy graceful wait; SIGTERM flush + 12 s quit timeout).
 
 ### Models & further reading (terse)
 

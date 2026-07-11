@@ -2133,6 +2133,44 @@ func pendingClearHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// flushEditorSave asks the tablet editor to flush the open note buffer to disk.
+// Used before deploy/shutdown; returns false if the save ack times out.
+func flushEditorSave() bool {
+	if activeSess == nil || !activeSess.isActive() || globalEC == nil || !globalEC.ready() {
+		return true
+	}
+	currentNoteMu.Lock()
+	open := currentNote != ""
+	currentNoteMu.Unlock()
+	if !open {
+		return true
+	}
+	return globalEC.writeCmdWaitAck([]byte(`{"t":"cmd","c":"autosavenow"}`), "saved", "autosavenow", saveAckTimeout)
+}
+
+// flushSaveHandler handles POST /api/flush-save: save the open editor buffer
+// before deploy or server stop. Loopback-trusted (tablet editor path).
+func flushSaveHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		return
+	}
+	if !isLoopback(r) && !checkAuth(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !flushEditorSave() {
+		http.Error(w, "editor save ack missed", http.StatusGatewayTimeout)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 // reloadHandler handles POST /api/reload: tell the tablet editor to reload the
 // open note from disk (slice 8 — after a pull/clash changed disk under the buffer).
 func reloadHandler(w http.ResponseWriter, r *http.Request) {
@@ -2271,12 +2309,17 @@ func (s *session) quit() {
 		return
 	}
 	fmt.Fprintln(os.Stderr, "writerdeck-server: session: sending quit to editor")
-	s.ec.write([]byte(`{"t":"cmd","c":"quit"}`))
+	if s.ec != nil && s.ec.ready() {
+		flushEditorSave()
+	}
+	if s.ec != nil {
+		s.ec.write([]byte(`{"t":"cmd","c":"quit"}`))
+	}
 	select {
 	case <-doneCh:
 		fmt.Fprintln(os.Stderr, "writerdeck-server: session: editor exited cleanly")
-	case <-time.After(3 * time.Second):
-		fmt.Fprintln(os.Stderr, "writerdeck-server: session: 3s timeout -- SIGTERM to process group")
+	case <-time.After(12 * time.Second):
+		fmt.Fprintf(os.Stderr, "writerdeck-server: session: 12s timeout -- SIGTERM to process group")
 		if cmd != nil && cmd.Process != nil {
 			syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM) //nolint:errcheck
 		}
@@ -2594,6 +2637,7 @@ func main() {
 	http.HandleFunc("/api/sync/pending", pendingSyncHandler)
 	http.HandleFunc("/api/sync/pending/clear", pendingClearHandler)
 	http.HandleFunc("/api/reload", reloadHandler)
+	http.HandleFunc("/api/flush-save", flushSaveHandler)
 
 	if *editorPath != "" {
 		// Supervisor mode: rmkbd is always-on; editor sessions are on-demand.
@@ -2629,6 +2673,7 @@ func main() {
 		signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 		sig := <-sigCh
 		fmt.Fprintf(os.Stderr, "writerdeck-server: signal %v received\n", sig)
+		flushEditorSave()
 		if activeSess.isActive() {
 			fmt.Fprintln(os.Stderr, "writerdeck-server: ending active session before exit")
 			activeSess.quit()

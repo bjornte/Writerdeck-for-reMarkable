@@ -10,7 +10,7 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **`rmkw` is binary-only.** Fonts live in the Qt sysroot (~14 MB). After a font change: `RM_FORCE_SYSROOT=1 bash scripts/deploy-keywriter.sh -b`, then respawn the editor.
 
-**`deploy-rmkbd.sh` kills Writerdeck-server.** Follow with `systemctl restart writerdeck`.
+**`deploy-rmkbd.sh` flushes then waits.** `POST /api/flush-save` (loopback) runs `autosavenow` on the open note; then SIGTERM + wait up to ~12 s for Writerdeck-server to exit (save + quit). Follow with `systemctl start writerdeck`. Old behaviour (`pkill` + 0.5 s) could drop unsaved buffer — documented breach, fixed slice 11.
 
 **scp deadlocks** at a fixed offset on the Mac→Wi-Fi→tablet link. Use `rm_send_file` (gzip-over-ssh) in `_env.sh`.
 

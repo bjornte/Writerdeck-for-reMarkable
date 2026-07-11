@@ -35,9 +35,26 @@ fi
 # shellcheck source=/dev/null
 . "${DIR}/migrate-device-layout.sh"
 
+# Flush open editor buffer before stopping the server (slice 11). deploy used to
+# pkill and sleep 0.5s — not long enough for saveAndQuit / loopback PUT to finish.
+rm_graceful_stop_server() {
+  rm_ssh '
+    wget -q -O /dev/null --post-data="" http://127.0.0.1:8000/api/flush-save 2>/dev/null || true
+    for p in $(pidof Writerdeck-server 2>/dev/null); do kill -TERM "$p" 2>/dev/null; done
+    i=0
+    while pidof Writerdeck-server >/dev/null 2>&1 && [ "$i" -lt 60 ]; do
+      sleep 0.2
+      i=$((i + 1))
+    done
+    for p in $(pidof Writerdeck-server 2>/dev/null); do kill -KILL "$p" 2>/dev/null; done
+    sleep 0.3
+    true
+  ' >/dev/null
+}
+
 echo "=== Writerdeck-server: deploying to ${RM_HOST} ==="
 migrate_device_layout
-rm_ssh "pkill -f ${LEGACY_SERVER} 2>/dev/null; pkill -f ${DEVICE_SERVER} 2>/dev/null; for p in \$(pidof rmkbd Writerdeck-server 2>/dev/null); do kill \"\$p\" 2>/dev/null; done; sleep 0.5; true" >/dev/null
+rm_graceful_stop_server
 echo "  any old server stopped."
 printf '    '; with_ticker 5 rm_send_file "${BINARY}" "${DEVICE_SERVER}.new"
 rm_ssh "mv -f ${DEVICE_SERVER}.new ${DEVICE_SERVER} && chmod +x ${DEVICE_SERVER}" >/dev/null
