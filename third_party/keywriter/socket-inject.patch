@@ -187,8 +187,8 @@
 +            }
 +        }
 +        else if (cmd == "autosavenow" && g_rootObj)
-            invokeSaveCmd("autosaveTick", "autosavenow");
-        else if (cmd == "reloadnote" && g_rootObj)
++            invokeSaveCmd("autosaveTick", "autosavenow");
++        else if (cmd == "reloadnote" && g_rootObj)
 +            QMetaObject::invokeMethod(g_rootObj, "reloadNote", Qt::QueuedConnection);
 +        else if (cmd == "showlobby" && g_rootObj)
 +            invokeSaveCmd("showLobby", "showlobby");
