@@ -36,7 +36,11 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **Every save path must sync `query.text → doc` before `saveFile()`** in edit mode. A bare `saveFile()` writes stale `doc`. Guards: saveAndQuit, handleHome, showLobby, saveAndLoad, omni switcher, Ctrl-Q.
 
-**Never clear `query.text` without re-syncing on load** — assigning `query.text = ""` (e.g. returning to Lobby) breaks the `text: doc` binding. `doLoad` must set `query.text = response` after every file read, or the next Home save copies empty text and wipes the file on disk (`save -> 0` in journal).
+**Never clear `query.text` without re-syncing on load** — assigning `query.text = ""` (e.g. returning to Lobby) breaks the `text: doc` binding on the `TextEdit`. `doLoad` must set `query.text = response` after every file read (build-keywriter.sh edit 2b), or the next Home save runs `doc = query.text` → empty → `saveFile()` wipes the file on disk. Symptom in `journalctl -u writerdeck`: repeated `qml: Save foo.md` then `qml: save -> 0`. First open after boot can look fine; **second** open/Home cycle wipes. Device-verified fix 2026-07-11.
+
+**Lobby Files open regression (Jul 2026)** — shipped Lobby subpages let you open notes on tablet without the phone. Testing pattern open → Home → open another triggered the binding bug above; GitHub sync then pushed empty files and clash handling created `(tablet copy).md` junk. Recovery: `bash scripts/restore-wiped-notes.sh` (tablet + `my-notes` from pre-wipe commit). Prevention: edit 2b + sync empty-push guard in `sync.js`.
+
+**Python comments inside QML patch heredocs** — `build-keywriter.sh` embeds QML via Python string literals. A `//` JavaScript comment *outside* the string (e.g. after `'query.text = ""\n'`) is a Python `SyntaxError` and fails CI silently until you read the build log. Use `#` for Python-side comments only; QML comments must live inside the quoted string if needed.
 
 **Socket-triggered saves ack back to Writerdeck-server** — `{"t":"saved","c":"home|open|..."}` after the QML handler finishes (BlockingQueuedConnection). Writerdeck-server waits for that before `exitedit`, GitHub push, or HTTP 200 on `/api/open`. Power sleep also gets `{"t":"ready","c":"preparesleep"}` after the e-ink sleep screen paints (~800 ms). Never guess with fixed sleeps for save timing.
 
@@ -85,6 +89,10 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 ## Sync
 
 **Destructive sync ops need per-note confirmation** — `reconcileAll` maps a failed remote list to `[]`; without a 404 guard, one network blip would mass-delete the tablet.
+
+**Never push an empty tablet file over a previously-synced note** — `pushNote` refuses when `content === ""` and `ghLocalHash` was non-empty; reconcile pulls from GitHub instead. Clash handler skips `(tablet copy)` when tablet is empty and GitHub has content. Belt-and-suspenders after the Lobby Home wipe bug — a genuine "delete all text" edit still saves non-empty until the owner clears and re-syncs intentionally.
+
+**Open-file tracking is phone-biased** — `tabletOpenNote` and server `currentNote` update only on `/api/open`, not on tablet Lobby/Ctrl-K opens. Poll reconcile gates on phone `typingMode`, not tablet editor activity — USB editing while the phone browses still reconciles. Phone delete/rename or reconcile pull can change disk while the editor holds a stale buffer and **recreate** old paths on save; rename has no `noterenamed` notification (even for phone-opened notes). Stale `tabletOpenNote` after phone-back skips the wrong file in reconcile. See improvements.md § Document integrity.
 
 **Boot in edit mode, don't inject Escape** — daemon, editor, and client have independent lifetimes; a synthetic toggle desyncs on reconnect.
 

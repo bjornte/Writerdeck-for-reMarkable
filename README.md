@@ -73,7 +73,7 @@ Development on the tablet is done over SSH from a machine on the same Wi-Fi. To 
 1. [TODO.md](TODO.md), [DONE.md](DONE.md) etc. briefs on current status.
 2. Create your local credentials: copy [secrets/remarkable.local.env.example](secrets/remarkable.local.env.example) to `remarkable.local.env` and fill in the device password — see [secrets/README.md](secrets/README.md).
 3. Run `bash scripts/bootstrap.sh`, then `bash scripts/recon.sh`. Keep the tablet awake, and iterate over Wi-Fi.
-4. After keywriter changes: CI rebuild → `rmkw` → `bash scripts/test-edit-session.sh` (phone **Edit** must keep Writerdeck up — see [docs/lessons.md](docs/lessons.md) if stock UI reloads instead).
+4. After keywriter changes: `git push` → `fetch-keywriter-dist.sh` → `rmkw` → `test-edit-session.sh` (CI runs Docker; Mac does not).
 
 ## Design constraints
 

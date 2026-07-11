@@ -12,11 +12,8 @@
 // Editor-feed wire format (NDJSON to keywriter's naive C++ parser):
 //   {"t":"text","cp":<unicode-codepoint-int>}   -- single printable char
 //   {"t":"key","k":"Escape|Return|Backspace|Tab|ArrowUp|ArrowDown|ArrowLeft|ArrowRight"}
-//   {"t":"cmd","c":"home|open|..."}               -- editor commands (save paths ack back)
-// Writerdeck -> Writerdeck-server acks: {"t":"saved"|"ready","c":"<cmd>"}
-//   {"t":"open","name":"<file>.md"}             -- editor reports open file (edit lease)
-//   {"t":"rotation","degrees":<0|90|180|270>}   -- display rotation changed (USB or UI)
-// Browser <- Writerdeck-server: {"type":"openedit","name":"<file>.md"} on tablet open
+//   {"t":"cmd","c":"home|open|notedeleted|noterenamed|..."}  -- editor commands
+// Browser <- Writerdeck-server: {"type":"openedit","name":"<file>.md"} on tablet open/rename
 //
 // Integer codepoints are escaping-proof: JSON special chars in typed text
 // can never corrupt the naive C++ substring parser (see socket-inject.patch).
@@ -1459,7 +1456,7 @@ func deleteNoteFile(name string) error {
 	return nil
 }
 
-// renameNoteFile renames a note on disk.
+// renameNoteFile renames a note on disk and notifies the editor if it was open.
 func renameNoteFile(oldName, newName string) error {
 	oldP := notesSafe(oldName)
 	newP := notesSafe(newName)
@@ -1472,11 +1469,24 @@ func renameNoteFile(oldName, newName string) error {
 	if err := os.Rename(oldP, newP); err != nil {
 		return err
 	}
+	newBase := filepath.Base(newP)
 	currentNoteMu.Lock()
-	if currentNote != "" && filepath.Base(oldP) == currentNote {
-		currentNote = filepath.Base(newP)
+	wasOpen := currentNote != "" && filepath.Base(oldP) == currentNote
+	if wasOpen {
+		currentNote = newBase
 	}
 	currentNoteMu.Unlock()
+	if wasOpen && activeSess != nil && activeSess.isActive() {
+		if globalEC != nil {
+			cmd, _ := json.Marshal(struct {
+				T    string `json:"t"`
+				C    string `json:"c"`
+				Name string `json:"name"`
+			}{"cmd", "noterenamed", newBase})
+			globalEC.write(cmd)
+		}
+		broadcastOpenEdit(newBase)
+	}
 	pushLobbyInfo()
 	pushNotesList()
 	return nil

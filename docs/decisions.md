@@ -6,6 +6,24 @@ Each entry: a decision, its status, and the reasoning. Newest/most-foundational 
 
 ---
 
+## Document integrity — the product contract (foundational)
+
+Status: **active — non-negotiable.** Writerdeck is a typewriter: the owner's prose must survive editing, sync, and normal device use as plain Markdown on disk. This is not a Phase 10 nice-to-have; it gates every feature. How it works: [architecture.md](architecture.md) § Document integrity. Open violations and fix order: [improvements.md](improvements.md) § Document integrity.
+
+**The contract (summary):**
+
+1. **Content** — bytes on disk are UTF-8 Markdown; never Qt `qrichtext` / HTML (slice 2 shipped 2026-07-11).
+2. **Lifecycle** — no silent overwrite of an open note by reconcile, phone CRUD, or rename/delete; server + phone track tablet editor state (slices 1+3 shipped; full reconcile gating still open).
+3. **Durability** — defined save paths flush buffer → disk; atomic writes for notes; **unsaved buffer is not durable** across kill/deploy/crash until autosave ships (open gap — must be documented, not ignored).
+4. **Coherence** — disk change under an open session requires reload or conflict UX; buffer must not blindly win over a pull.
+5. **Sync subordination** — GitHub reconcile assists backup; it must not delete, empty-push, or fork paths against a live edit (#19, #24 guards are partial).
+
+**Feature gate:** no change to `daemon/`, `sync.js`, `build-keywriter.sh`, or note APIs ships without an integrity pass against the five points above. Incident ADRs (#24, empty-push) are patches *under* this contract, not substitutes for it.
+
+**Shipped under this contract:** #24 (Lobby wipe), edit lease / `notifyOpen` (slice 1), content-fidelity save/load (slice 2), `notedeleted` + `noterenamed` (slice 3), empty-push guard (#19). **Still violating:** no autosave, incomplete reconcile gating, no OCC, non-atomic note writes, editor unaware of disk pulls.
+
+---
+
 ## 1. Feed the editor over a local socket, not `/dev/uinput`
 Status: active (the core architecture). Keystrokes reach the editor over a local socket, not `/dev/uinput` — that driver is absent and un-addable on this kernel: `/dev/uinput` opens `ENODEV`, and the kernel's exports are trimmed (`CONFIG_TRIM_UNUSED_KSYMS` — only ~375 symbols exported vs >10,000 on a module-friendly kernel), so an out-of-tree `uinput.ko` resolves every import to `Unknown symbol (err -2)` and cannot load (only an OTA-risky kernel-image swap would change that). Don't spend time trying to make uinput work on this kernel — it was built green in CI and still wouldn't bind. A patched keywriter reads keystrokes from the socket instead. Fallbacks if keywriter itself ever fails: a self-contained `libremarkable` editor, or HWR injection into the Wacom pen node (draws ink, not clean Markdown).
 
@@ -73,6 +91,8 @@ Status: built (Phase 9 L), device-verified. A second device that arrives *after*
 ## 19. GitHub note-sync is a non-authoritative reconciler — delete/rename only from the browser
 Status: built (Phase 9), device-verified. The optional two-way GitHub sync (off by default; the PAT lives only in the phone browser's `localStorage`, never on the tablet, which holds just non-secret `syncOn`/`syncRepo`) deliberately reconciles by *unioning* the tablet's and the repo's note lists and copying any note missing from one side to the other — it never deletes on its own. That is the intended safety property: a reconciler that cannot delete cannot lose a note, which sidesteps the documented real-git-on-mobile instability (isomorphic-git crashes / packfile corruption on low-RAM devices — the reason we sync via GitHub's plain Contents API, not real git). Accepted cost: destructive ops must go through the *phone browser*, which pairs them — the UI's Delete also calls `ghDelete` (Contents API DELETE + stored `sha`) and Rename deletes the old path then pushes the new. A delete or rename made *outside* the browser — VS Code, `git`, the GitHub web UI — used to resurrect or duplicate on the next sync; the marker-aware path in [../daemon/sync.js](../daemon/sync.js) (device-verified) now treats "on the tablet + stored `sha` + pristine + gone from GitHub" as a real delete (confirmed per-note 404 before acting), covering the common GitHub-side delete and (as a side effect) external rename as delete-old + pull-new. Two safety invariants: unpushed local edit resurrects (push) rather than deletes; delete only fires after a fresh per-note `GET` returns 404 — guarding against `reconcileAll` mapping a transient remote-list failure to `[]`. Still (correctly) leaves a purely-local unpushed tablet delete alone: GitHub stays authoritative for deletes.
 
+**Empty-push guard (2026-07-11):** after a Lobby binding bug zeroed tablet files, sync pushed empties to GitHub. `pushNote` now refuses to push `content === ""` when `ghLocalHash` was non-empty; reconcile pulls from GitHub instead; clash handler restores from GitHub when tablet is empty and remote is not — no `(tablet copy)` junk. See #24.
+
 ## 20. Display rotation persists in `settings.json`
 Status: built, device-verified. Global `root.rotation` (0/90/180/270) is owner-chosen and stored in `.Writerdeck/settings.json` as `"rotation"`. Phone **Rotate tablet 90°** (`POST /api/rotate`) increments, saves, and pushes `{"t":"cmd","c":"setrotation","degrees":N}` to Writerdeck. On every editor socket connect, Writerdeck-server restores the saved angle the same way (alongside `setfont`). USB Ctrl+←/→ in preview/read still rotates in QML; `rotation_watcher` (moc'd helper in the keywriter build) relays `rotationChanged` as `{"t":"rotation","degrees":N}` so the server persists without the phone. Both binaries must be current — server-only deploy can save to disk while an old Writerdeck ignores `setrotation` and boots at 0°.
 
@@ -82,6 +102,12 @@ Status: built (2026-07-11), device-verified. Phone **Edit** (`POST /api/open`) i
 ## 22. On-device Writerdeck naming (2026-07)
 Status: built, device-verified. Binaries and paths on the tablet use Writerdeck branding (`Writerdeck`, `Writerdeck-server`, `Writerdeck-user-documents/`, `.Writerdeck/`, `/run/Writerdeck.sock`, `writerdeck.service`, `writerdeck_token`). Repo script names (`deploy-rmkbd.sh`, `third_party/keywriter/`) and the GitHub repo folder stay unchanged. `scripts/migrate-device-layout.sh` renames legacy paths and removes old binaries on deploy; see the on-device table in [architecture.md](architecture.md).
 
+## 23. Tablet file CRUD via trusted socket (Lobby Files)
+Status: built (Phase 10 partial), device-verified 2026-07-11. Extends #8 without exposing unauthenticated LAN HTTP: Writerdeck sends `{"t":"req","op":"noteslist|createnote|deletenote|renamenote",…}` over the existing Unix socket; Writerdeck-server performs the same disk ops as `/api/notes`. Six-tab Lobby (**Home · Files · Keyboard · Sync · Settings · Shortcuts**) with touch + Tab/arrows/1–6 navigation; Files page lists notes, supports New/Open/Rename/Delete (touch buttons + `n`/Enter/`r`/`d`). Open still uses `saveAndLoad` (phone path unchanged). Tablet delete/rename updates disk only — GitHub pairing still happens on the next phone reconcile (#19). Mac/tablet launch helpers: `wd` / `bash scripts/lobby.sh` / on-device `~/wd`.
+
+## 24. `doLoad` must re-sync `query.text` after Lobby clears the editor
+Status: built, device-verified 2026-07-11. Returning to Lobby (`handleHome`, `showLobby`) assigns `query.text = ""`, which breaks the QML `text: doc` one-way binding. Without `query.text = response` in `doLoad`'s XHR callback (edit 2b), the next Home save copies empty `query.text` into `doc` and `saveFile()` zeroes the file (`save -> 0` in journal). First open after boot worked; open → Home → open another wiped notes and cascaded into GitHub via sync. `showLobby` now also clears `currentFile` for a clean no-file Lobby state. Recovery script: `scripts/restore-wiped-notes.sh`. Lesson banked in [lessons.md](lessons.md).
+
 ---
 
 ## Known gaps & open risks
@@ -89,7 +115,8 @@ Status: built, device-verified. Binaries and paths on the tablet use Writerdeck 
 - Firmware update (OTA) may break the setup *(open · low)*. An OTA can wipe the systemd unit and regenerates the SSH password. Mitigation: we ship only a static binary + user files + one unit (no Toltec), so the OTA itself stays intact; recovery = re-deploy + re-`enable`, re-record the password. This is the one genuinely open operational risk — tracked in [../TODO.md](../TODO.md) open questions.
 - USB keyboard locales *(open · medium)*. Browser/Bluetooth path resolves layout in the phone OS (Norwegian works). USB path uses Qt evdev with **US QWERTY** default — Norwegian æøå and other national layouts need per-layout `.qmap` files via `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` ([remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1)); `loadkeys` / `setxkbmap` do not apply. Planned: ship qmaps + `settings.json` picker — [improvements.md](improvements.md), [../TODO.md](../TODO.md) Phase 10.
 - Per-note / subfolder encryption *(open · design)*. Global PIN gates the API; no subset protection yet. Encrypted subfolder with passphrase-derived keys is the leading option — design in [improvements.md](improvements.md); implementation not started.
-- Tablet file management *(open · design)*. Rename/delete/upload remain browser-first by ADR #8. Lobby subpages + trusted socket CRUD from Writerdeck would close the gap without exposing unauthenticated LAN HTTP — [improvements.md](improvements.md).
+- Tablet file management *(partial · shipped)*. Lobby **Files** tab + socket CRUD covers list/create/open/rename/delete on tablet (#23). Upload, download, copy, paste, and GitHub token entry remain browser-only.
+- **Document integrity contract violations** *(open · high)*. Foundational contract: § Document integrity above. Remaining gaps (not optional): autosave / kill durability, reconcile gating on all triggers, OCC, atomic note writes, buffer↔disk reload. Matrix: [improvements.md](improvements.md) § Document integrity.
 - `/dev/uinput` is unavailable and unfixable on this kernel (decision 1). Closed, not a to-do — recorded so nobody retries it.
 - Go toolchain must be on the Mac (`brew install go`) — the only device-reachable host.
 - Disk: only the tiny rootfs is tight, and nothing we ship goes there. `/` (rootfs, ~228 MB) is 96% full; everything we deploy lives on `/home/root/` (separate multi-GB partition). Don't resize rootfs (A/B OTA scheme; brick risk).

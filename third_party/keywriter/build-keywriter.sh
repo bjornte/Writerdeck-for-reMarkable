@@ -714,15 +714,20 @@ s = s.replace(old7l, new7l, 1)
 
 # 7h. noteDeleted(): go to the Lobby and CLEAR currentFile so the next save
 #     can't resurrect the just-deleted file. Called by the C++ notedeleted cmd
-#     when rmkbd tells the editor its open file was deleted from the phone.
-#     Crucially this does NOT call saveFile() -- and because saveAndLoad() saves
-#     BEFORE it switches files, clearing currentFile + the saveFile guard (7i)
-#     makes that pre-switch save a no-op, so opening another note won't recreate X.
+#     when the server deletes the open note (phone or socket). No saveFile().
 old7h = '    function initFile(name) {'
 new7h = (
     '    function noteDeleted() {\n'
     '        currentFile = ""\n'
+    '        doc = ""\n'
+    '        query.text = ""\n'
     '        isLobby = true\n'
+    '        lobbyFilesMode = ""\n'
+    '        lobbyRefreshNotes()\n'
+    '    }\n'
+    '\n'
+    '    function noteRenamed(name) {\n'
+    '        currentFile = name\n'
     '    }\n'
     '\n'
     '    function initFile(name) {'
@@ -1242,7 +1247,7 @@ assert s[hk:co].count('{') == s[hk:co].count('}'), "handleKey brace mismatch -- 
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + content-fidelity + setLobbyInfo + lobby-subpages + handleHome + doLoad-query-sync + prepareSleep + sleep-screen + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate + lobbyHandleKey).')
+print('  All QML edits applied (props + content-fidelity + setLobbyInfo + lobby-subpages + handleHome + doLoad-query-sync + prepareSleep + sleep-screen + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + noteRenamed + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate + lobbyHandleKey).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true

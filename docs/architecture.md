@@ -19,6 +19,23 @@ reMarkable 1: e-paper, Linux, micro-USB, no Bluetooth, no native keyboard suppor
 
 Keystrokes reach the editor through a local socket rather than `/dev/uinput`: this tablet's kernel can't load uinput, so Writerdeck-server feeds the patched editor instead (the reasoning is in [decisions.md](decisions.md)).
 
+## Document integrity (non-negotiable)
+
+**The product contract.** Writerdeck exists to produce durable Markdown notes. Every feature, patch, and deploy must satisfy this — not as optional hardening afterward. Why it is foundational: [decisions.md](decisions.md) § Document integrity. Risk matrix and fix order: [improvements.md](improvements.md) § Document integrity.
+
+| Obligation | Meaning |
+|---|---|
+| **Plain markdown on disk** | `.md` files are UTF-8 Markdown, never Qt RichText / HTML. Saves reject `qrichtext` payloads; loads sanitize corruption. |
+| **Explicit durability** | Disk updates only through defined save paths. Unsaved editor buffer is *not* durable — process kill, deploy, or crash loses it until autosave exists. |
+| **Single-writer awareness** | While a note is open for edit, reconcile, phone ops, and rename/delete must not silently overwrite disk or fork paths. Server and phone must know which file the tablet is editing. |
+| **Buffer ↔ disk coherence** | If disk changes under an open session (pull, clash, external edit), the editor must reload or surface conflict — not save stale buffer over fresh disk. |
+| **Atomic durable writes** | Note writes use write-temp-rename (settings already do); no in-place truncate on power loss. |
+| **Sync is subordinate** | GitHub reconcile assists backup — it must not trump a live edit or push presentation/HTML/empty over good content. |
+
+**Feature gate:** before shipping any change that touches notes, saves, opens, sync, CRUD, or editor lifecycle, ask: *can this lose text, write wrong bytes, or overwrite without the user knowing?* If yes, it does not ship until mitigated or explicitly accepted by the owner.
+
+**As built (2026-07-11):** slices 1–3 shipped (edit lease; content fidelity; `notedeleted`/`noterenamed`). Gaps remain: no autosave, reconcile not gated on all triggers, no OCC, notes not atomic, buffer unaware of disk pulls. Treat these as **open contract violations**, not nice-to-haves.
+
 ## On-device layout
 
 What you see over SSH under `/home/root/` (deploy scripts migrate legacy names and remove old binaries):
@@ -51,17 +68,17 @@ The tablet is the web server — the phone/Mac just open Safari, no app to insta
 - PIN-on-tablet auth (length owner-choosable). Writerdeck-server mints a random PIN per boot and shows it in the Lobby; the phone POSTs it (`/api/pin`) for an HttpOnly `writerdeck_token` cookie that gates the notes API and the WebSocket upgrade. The length is owner-choosable on the Preferences screen — 6 / 4 / none (none = LAN-open, UI-warned), and the PIN is runtime-mutable: changing it re-mints on the spot and re-shows it on the e-ink. A per-IP brute-force lockout (5 wrong / 60 s → 429) backs the 4- and 6-digit modes.
 - Preferences screen (phone). A **Preferences** overlay (font, PIN, display rotate, exit) and a separate **Sync** overlay (GitHub sync) in the top bar; both dismiss via Done, ×, ESC, or backdrop click. Font, PIN length, and display rotation (`"rotation": 0|90|180|270`) persist to `/home/root/.Writerdeck/settings.json`. On editor socket connect, Writerdeck-server pushes saved font (`setfont`) and rotation (`setrotation`); USB Ctrl+←/→ in preview posts `{"t":"rotation","degrees":N}` back so the server can save without the phone. When sync is on and a repo is set, the Sync panel links to `github.com/{repo}`. A missing token shows a yellow banner below the status bar.
 - Lobby-on-demand. A second device that arrives *after* the owner is already editing finds the tablet showing the note, not the PIN; a pre-auth "Show PIN on tablet" button (`POST /api/lobby`, rate-limited) saves the open note and drops the tablet to the Lobby so the PIN is readable — it reveals nothing over the wire (PIN only on the e-ink).
-- Lobby + two-level Home. Boot shows a full-screen Lobby (sectioned welcome: notes, sync status, keyboard setup, shortcuts — fed by `{"t":"info",…}` with IP, PIN, `syncOn`/`syncRepo`, note count, and formatted last sync; re-pushed when `wlan0` gets an address, after reconcile, or when notes change). Home from the editor → save + return to the Lobby; Home from the Lobby → quit (Writerdeck-server restarts xochitl but stays serving `:8000`). **Launch from stock UI** (no active session): phone **Edit** without a note, **USB Escape**, or **left+right page buttons together** → Lobby. **Tablet vs browser:** file CRUD (rename, delete, upload, export), sync engine, and most settings are browser-only; the tablet has **Ctrl-K** (open/create) and read-only Lobby info. Planned parity: Lobby subpages + local socket CRUD + USB layout qmaps — [improvements.md](improvements.md).
+- Lobby + two-level Home. Boot shows a six-tab Lobby pager (**Home · Files · Keyboard · Sync · Settings · Shortcuts** — touch or Tab/arrows/1–6), fed by `{"t":"info",…}` with IP, PIN, `syncOn`/`syncRepo`, note count, and formatted last sync; re-pushed when `wlan0` gets an address, after reconcile, or when notes change. **Files** tab: list/create/open/rename/delete via trusted socket `{"t":"req","op":…}` (#23). Home from the editor → save + return to the Lobby; Home from the Lobby → quit (Writerdeck-server restarts xochitl but stays serving `:8000`). **Launch from stock UI** (no active session): phone **Edit** without a note, **USB Escape**, **left+right page buttons together**, Mac `wd` / `bash scripts/lobby.sh`, or on-tablet `~/wd` → Lobby. **Tablet vs browser:** upload, download, copy, paste, sync engine, and GitHub token remain browser-only; tablet has **Ctrl-K**, **Files** CRUD, and read-only Lobby info. USB layout qmaps still planned — [improvements.md](improvements.md).
 - Two page modes. Browse (Lobby / note list / Read-preview — no key capture, no echo footer) vs Type (active editing — capture + echo footer). Tapping Edit on a note enters Type mode and opens that note on the e-ink via Writerdeck's `saveAndLoad(name)`.
 - Tablet → phone sync. The WebSocket also pushes server→browser: pressing Home or deleting the open note broadcasts `exitedit`, so the phone drops out of the typing view back to Browse in step with the tablet.
-- GitHub note-sync (optional, off by default). The phone browser is the sync engine — the GitHub token lives in its `localStorage`, never on the tablet (which holds only non-secret `syncOn`/`syncRepo`). It reconciles by *unioning* the tablet + repo note lists and copying whatever's missing either way; it never deletes on its own (safer: it can't lose a note, and it dodges real-git-on-mobile instability by using GitHub's plain Contents API). Caveat: delete/rename must be done *in the phone browser* (which pairs the op to GitHub); a note deleted or renamed elsewhere — VS Code, `git`, the GitHub web UI — resurrects or duplicates on the next sync. See [decisions.md](decisions.md) #19.
+- GitHub note-sync (optional, off by default). The phone browser is the sync engine — the GitHub token lives in its `localStorage`, never on the tablet (which holds only non-secret `syncOn`/`syncRepo`). It reconciles by *unioning* the tablet + repo note lists and copying whatever's missing either way; it never deletes on its own. Refuses to push zero-byte files over previously-synced notes; empty-tablet clashes restore from GitHub without `(tablet copy)` duplicates (#19, #24). **Integrity constraint:** reconcile must conform to § Document integrity above — today it can still overwrite disk under a live editor when tracking is stale; that is a known contract violation (#19, improvements matrix).
 - IP is detected dynamically (`wlan0` first, then any up interface) and re-pushed to the Lobby when it changes — survives DHCP delay on boot and lease renewals. Last sync time on the Lobby comes from `lastSyncAt` in settings, updated whenever the phone browser POSTs `/api/sync/ack` after a successful reconcile.
 
 ## Constraints (honor these)
 
 - No jailbreak; preserve OTA firmware updates ⇒ avoid Toltec (it locks the OS to a fixed range; can soft-brick on unsupported versions).
 - No on-device runtime deps ⇒ static Go binary (`CGO_ENABLED=0`, `GOOS=linux GOARCH=arm GOARM=7`). The tablet ships no Python; installing it implies Entware/Toltec + a firmware lock.
-- Markdown is the save format.
+- Markdown is the save format — see § Document integrity; HTML/qrichtext on disk is a bug, not a format option.
 - Executable / device files = ASCII-only + LF (`.sh`, `.service`, `Dockerfile`, `.go`, `.yml`): a stray non-ASCII byte or CRLF breaks the device shell / systemd. (`.md` prose may use Unicode.) `.gitattributes` normalizes line endings.
 - Keep the tablet awake — it drops Wi-Fi on suspend, which breaks the dev SSH / WebSocket connection.
 - Latency is the e-ink refresh, not the LAN — don't over-engineer the transport.
@@ -79,7 +96,7 @@ The tablet is the web server — the phone/Mac just open Safari, no app to insta
 | `/dev/uinput` | Absent & un-addable (open → `ENODEV`; kernel exports trimmed via `CONFIG_TRIM_UNUSED_KSYMS`, so no out-of-tree `uinput.ko` can bind). Gate permanently 🔴 RED. Don't retry — the editor is fed over a socket instead; see [decisions.md](decisions.md). |
 | SSH path | `ssh root@<tablet-ip>` over Wi-Fi (key login works) — the working path. USB (`10.11.99.1`) is dead on the Mac (no DHCP lease). Wi-Fi IP is DHCP; set `RM_HOST_WIFI` in `secrets/remarkable.local.env` (currently `192.168.1.8`). Reserve the tablet's MAC on the router so the IP stays put for the iPhone. **Lobby:** Mac `wd` / `bash scripts/lobby.sh`; on tablet SSH `~/wd` (`/home/root/wd`). |
 | SSH password | gitignored in [../secrets/remarkable.local.env](../secrets/remarkable.local.env). Source: device `Settings → Help → Copyrights and licenses → General information`. Regenerates after every firmware update — re-record then. |
-| Notes dir | `/home/root/Writerdeck-user-documents/` (Writerdeck boots to the Lobby; files are opened from the phone via the companion page). Deploy the binary to `/home/root/Writerdeck` — not `/home/root/Writerdeck-user-documents` (that's the notes *directory*). |
+| Notes dir | `/home/root/Writerdeck-user-documents/` (Writerdeck boots to the Lobby; open from phone **Edit**, Lobby **Files** tab, or **Ctrl-K**). Deploy the binary to `/home/root/Writerdeck` — not `/home/root/Writerdeck-user-documents` (that's the notes *directory*). |
 | Buttons | On `/dev/input/event1` (value 1 = press): middle/Home = `KEY_HOME` 102, left 105, right 106, power 116. Readable with xochitl up (Qt doesn't `EVIOCGRAB`). Writerdeck-server watches: **left+right together** → launch Lobby when idle; Home → relay while editing; Power → sleep/wake; USB keyboard evdev (name contains `keyboard`) → **Escape** launch when idle. |
 | Disk | `/` rootfs (~228 MB) is 96% full — but nothing we ship goes there. The binary + Qt5 sysroot (~14 MB) + notes live on `/home/root/`, a separate multi-GB partition. Don't resize rootfs (A/B OTA scheme; brick risk). |
 
@@ -100,6 +117,12 @@ Cross-compile + deploy Writerdeck-server from a host that can reach the tablet o
 
 ```bash
 bash scripts/deploy-rmkbd.sh    # builds Writerdeck-server → /home/root/Writerdeck-server
+```
+
+Writerdeck (CI-built — **no local `docker build` on Mac**):
+
+```bash
+git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywriter.sh -b
 ```
 
 Requires Go (`brew install go` on macOS). `deploy-rmkbd.sh` cross-builds and deploys; `build-rmkbd.ps1` cross-builds only (no device step). Writerdeck is cross-built in CI (`third_party/keywriter/`, toltec Qt sysroot), not on a host toolchain.

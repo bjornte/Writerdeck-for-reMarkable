@@ -15,8 +15,8 @@
 #   /out/qt5/qml/           -- QML import modules (QtQuick, folderlistmodel, ...)
 #   /out/qt5/plugins/       -- platform + imageformat plugins
 #
-# Usage: see third_party/keywriter/build.sh (Linux/macOS) or
-#        .github/workflows/build-keywriter.yml (CI).
+# Usage: CI only (.github/workflows/build-keywriter.yml). Docker runs in GHA, not on Mac.
+# Mac deploy: git push → scripts/fetch-keywriter-dist.sh → deploy-keywriter.sh -b
 # The caller mounts a host directory to /out.
 FROM ghcr.io/toltec-dev/qt:v3.3
 

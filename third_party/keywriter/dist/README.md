@@ -10,6 +10,7 @@ CI-built artifacts, produced by `.github/workflows/build-keywriter.yml`.
 Deployed to `/home/root/Writerdeck` on the tablet.
 
 ```bash
-bash scripts/fetch-keywriter-dist.sh   # if not built locally
+git push                               # CI builds via Docker in GHA
+bash scripts/fetch-keywriter-dist.sh   # pull artifact to dist/
 bash scripts/deploy-keywriter.sh -b
 ```

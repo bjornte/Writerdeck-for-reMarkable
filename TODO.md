@@ -23,7 +23,7 @@ Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md
 
 ## Phase 10 — Tablet parity, locales, protection (planned)
 
-Research and design: [docs/improvements.md](docs/improvements.md) (2026-07-11). No code yet.
+Research and design: [docs/improvements.md](docs/improvements.md) (2026-07-11). Lobby subpages + Files CRUD shipped; USB locales and encrypted notes remain.
 
 ### USB keyboard locales (Norwegian first)
 
@@ -41,7 +41,7 @@ Ref: [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues
 - [x] Tab bar: touch + keyboard (Tab, arrows, 1–6).
 - [x] **Files** subpage: list notes from server (socket `req` API), open/create/rename/delete with USB keys + touch buttons.
 - [x] Trusted local CRUD channel: socket `{"t":"req","op":...}` from Writerdeck → Writerdeck-server.
-- [ ] **Device verify** lobby subpages + Files CRUD on tablet.
+- [x] **Device verify** lobby subpages + Files CRUD on tablet (2026-07-11; open/Home wipe bug fixed in `cacfd70`).
 
 ### Encrypted / password-protected note subset
 
@@ -97,7 +97,7 @@ Power again after wake → restart editor session and reopen the note that was o
 ## Resume prompt (paste into a fresh chat)
 
 > Project Writerdeck for reMarkable 1 — a reMarkable 1 as a Wi-Fi Markdown typewriter. Writerdeck-server (`/home/root/Writerdeck-server`, built from `daemon/`) serves a WebSocket + HTML capture page and feeds a patched Writerdeck editor over `/run/Writerdeck.sock` (this kernel can't load `/dev/uinput`); Writerdeck saves `.md` to `Writerdeck-user-documents/`. The client is the Mac in dev, the iPhone in use.
-> State: Phases 0–8 and most of Phase 9 polish are done & device-verified (see [DONE.md](DONE.md)). **Next:** power button device test; Lobby Ctrl-K verify on USB keyboard. **Planned (Phase 10):** USB locale qmaps (Norwegian), Lobby subpages + tablet file CRUD, encrypted subfolder — see [improvements.md](docs/improvements.md) + Phase 10 in this file. After Writerdeck/QML edits, run `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) #21).
+> State: Phases 0–8 and most of Phase 9 polish are done & device-verified (see [DONE.md](DONE.md)). **Next:** power button device test; Lobby Ctrl-K verify on USB keyboard. **Phase 10 (partial):** Lobby subpages + tablet Files CRUD shipped and verified; USB locale qmaps and encrypted subfolder remain — see [improvements.md](docs/improvements.md). After Writerdeck/QML edits, run `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) #21).
 > Read first: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [DONE](DONE.md), [lessons](docs/lessons.md), [improvements](docs/improvements.md). Power-button notes in **Next up** above.
 > Dev: device SSH/deploy over Wi-Fi; IP in `secrets/remarkable.local.env` (`RM_HOST_WIFI`, currently `192.168.1.8`).
 > Constraints: no jailbreak; preserve OTA; no Toltec; static Go binary (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). SSH password gitignored in `secrets/remarkable.local.env`. Iterate over Wi-Fi; keep the tablet awake.

@@ -173,6 +173,19 @@
 +        else if (cmd == "notedeleted" && g_rootObj)
 +            // Go to the Lobby WITHOUT saveFile() -- the file is gone, no resurrection.
 +            QMetaObject::invokeMethod(g_rootObj, "noteDeleted", Qt::QueuedConnection);
++        else if (cmd == "noterenamed" && g_rootObj) {
++            // {"t":"cmd","c":"noterenamed","name":"new.md"} -> noteRenamed(name) in QML.
++            auto np = line.find("\"name\":\"");
++            if (np != std::string::npos) {
++                np += 8;
++                auto nq = line.find('"', np);
++                std::string newName = (nq != std::string::npos) ? line.substr(np, nq - np) : "";
++                if (!newName.empty())
++                    QMetaObject::invokeMethod(g_rootObj, "noteRenamed",
++                        Qt::QueuedConnection,
++                        Q_ARG(QVariant, QString::fromStdString(newName)));
++            }
++        }
 +        else if (cmd == "showlobby" && g_rootObj)
 +            invokeSaveCmd("showLobby", "showlobby");
 +        else if (cmd == "setfont" && g_rootObj) {

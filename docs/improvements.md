@@ -2,6 +2,8 @@
 
 Owner wish-list and design notes — not tracked work. Shipped features live in [../DONE.md](../DONE.md); actionable items derived here land in [../TODO.md](../TODO.md). How it works: [architecture.md](architecture.md). Why: [decisions.md](decisions.md).
 
+**Document integrity:** the non-negotiable product contract lives in [architecture.md](architecture.md) § Document integrity and [decisions.md](decisions.md) § Document integrity. This file's § Document integrity below is the **risk matrix and implementation backlog** for that contract — not a downgrade to "wish-list".
+
 ---
 
 ## Browser vs tablet — what exists today
@@ -33,9 +35,9 @@ The phone/Mac companion (`daemon/index.html` + `app.js` + `sync.js`) is the full
 
 ---
 
-## Document integrity — lifecycle risks & hardening (2026-07-11)
+## Document integrity — risk matrix & fix backlog (2026-07-11)
 
-Second-pass review after the Lobby Home wipe fix (#24). The acute `query.text` binding bug is fixed; structural gaps remain.
+Implementation backlog for the product contract in [architecture.md](architecture.md) § Document integrity and [decisions.md](decisions.md) § Document integrity. Second-pass review after the Lobby Home wipe fix (#24).
 
 **As built** ([architecture.md](architecture.md)): tablet-primary `.md` on disk via Go `/api/notes`; phone `sync.js` reconcile + `ghSha_*`/`ghLocalHash_*`; open tracking via editor `notifyOpen` + server `openedit` (slice 1, 2026-07-11); poll gated on `tabletOpenNote`; tablet Files CRUD over socket `req`; WebSocket `exitedit` on Home/delete; `settings.json` already write-temp-rename.
 
@@ -63,7 +65,7 @@ Today only **phone** `POST /api/open` sets server `currentNote` and browser `tab
 
 **Mitigation already in place (tablet CRUD):** Lobby **Files** delete/rename requires being in the Lobby first; `handleHome` / `showLobby` save and clear `currentFile`, so tablet-initiated destructive ops from Files do not hit the “stale buffer resurrects path” trap. The gap is **concurrent phone ops** (or reconcile pulls) while the tablet editor still holds a buffer.
 
-**Improvement:** ~~Editor should report open file…~~ **Shipped slice 1 (2026-07-11).** Remaining: `noterenamed`; gate all reconcile triggers on `tabletOpenNote` (not only poll).
+**Improvement:** ~~Editor should report open file…~~ **Shipped slice 1 (2026-07-11).** ~~`notedeleted` + `noterenamed`~~ **Shipped slice 3 (2026-07-11).** Remaining: gate all reconcile triggers on `tabletOpenNote` (not only poll).
 
 ### Save & load edge cases
 
@@ -97,8 +99,8 @@ Today only **phone** `POST /api/open` sets server `currentNote` and browser `tab
 Stack: **content contract** + **edit lease** + **OCC** + **atomic writes** + **conflict copies**.
 
 1. ~~**Edit lease**~~ — shipped 2026-07-11.
-2. **Content fidelity** — save contract + load sanitizer + `toggleMode` fix (blocks HTML-on-disk class).
-3. **`notedeleted` + `noterenamed`** when editor had file open.
+2. ~~**Content fidelity**~~ — shipped 2026-07-11 (`39cbdd3`: save contract, load sanitizer, `toggleMode` fix, server HTML guard).
+3. ~~**`notedeleted` + `noterenamed`**~~ — shipped 2026-07-11 (editor notified on phone rename/delete of open file; `noteDeleted` clears buffer).
 4. **Reconcile policy** — skip pull/overwrite for server-known open file on all triggers.
 5. **OCC on disk** — `PUT /api/notes` requires base revision / `If-Match`.
 6. **Atomic note writes** on server (same pattern as `settings.json`).

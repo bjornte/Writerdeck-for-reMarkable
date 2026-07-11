@@ -1,12 +1,7 @@
 #!/usr/bin/env bash
-# scripts/fetch-keywriter-dist.sh -- pull the CI-built keywriter artifacts
-# (keywriter binary + qt5.tar.gz) into third_party/keywriter/dist/ on the Mac.
-#
-# Why this exists: the public mirror ships source-only -- dist/Writerdeck and
-# dist/qt5.tar.gz are gitignored, so `git pull` never brings them. CI builds
-# them and uploads them as the "keywriter-dist" artifact instead. This script
-# downloads that artifact so deploy-keywriter.sh can find it. Requires gh
-# (brew install gh) authenticated as bjornte.
+# scripts/fetch-keywriter-dist.sh -- pull CI-built keywriter artifacts into dist/.
+# Mac deploy path after third_party/keywriter/ changes (Docker runs in GHA, not locally).
+# Requires gh (brew install gh && gh auth login).
 #
 # Usage (run from repo root on the Mac):
 #   bash scripts/fetch-keywriter-dist.sh            # latest successful run

@@ -23,6 +23,17 @@ Deploy scripts push binaries with Writerdeck-branded names on the tablet. Repo s
 
 `migrate-device-layout.sh` runs automatically from deploy/install scripts: renames legacy paths (`rmkbd`, `keywriter`, `edit/`, `.rmkbd/`, etc.) and removes old binaries.
 
+## Writerdeck deploy
+
+After `third_party/keywriter/` changes — **Mac does not run `docker build`**; CI does (`.github/workflows/build-keywriter.yml`):
+
+```bash
+git push
+bash scripts/fetch-keywriter-dist.sh [run-id]
+bash scripts/deploy-keywriter.sh -b    # rmkw
+bash scripts/test-edit-session.sh
+```
+
 ## Scripts
 
 | Script | Does |
@@ -32,6 +43,7 @@ Deploy scripts push binaries with Writerdeck-branded names on the tablet. Repo s
 | `migrate-device-layout.sh` | One-time rename of legacy on-device paths + removal of old binaries. Auto-run from deploy/install scripts. |
 | `bootstrap.sh` | Generate an SSH keypair if absent; install the pubkey on the device (one password prompt); enable Wi-Fi SSH (`rm-ssh-over-wlan on`); verify key login. |
 | `recon.sh` | Snapshot device facts: OS version, `ip addr`, input devices, disk. Self-logs to `../docs/recon/`. Re-run after a firmware update to refresh the facts. |
+| `fetch-keywriter-dist.sh` | Pull CI-built `dist/Writerdeck` + `qt5.tar.gz` from GitHub Actions (`gh` required). Run after `git push` triggers `build-keywriter.yml`. |
 | `deploy-keywriter.sh` | (Mac) Ship CI-built `Writerdeck` binary + `qt5/` sysroot to `/home/root/`, launch via `Writerdeck-launcher.sh`, print a verdict, trap-restore xochitl. Self-logs to `../docs/recon/`. |
 | `build-rmkbd.ps1` / `deploy-rmkbd.sh` | Cross-build Writerdeck-server (ARMv7 static, `CGO_ENABLED=0`). `deploy-rmkbd.sh` (Mac) also ships to `/home/root/Writerdeck-server` and kills any running instance. `build-rmkbd.ps1` (ThinkPad) builds only — device steps require the Mac. |
 | `Writerdeck-launcher.sh` | The proven linuxfb launch env (panel geometry/DPI + epaper scene graph) in one place — sourced by `deploy-keywriter.sh` and by Writerdeck-server to spawn Writerdeck as its child. |

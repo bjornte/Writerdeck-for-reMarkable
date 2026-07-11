@@ -20,9 +20,11 @@ Home from the editor saves and returns to the Lobby. Home from the Lobby quits t
 
 ## Lobby
 
-Full-screen welcome on e-ink, vertically centered when it fits (scrolls if taller than the viewport). Sections: title and tagline; **Notes** (count + Ctrl-K); **Syncing** (relative last-sync time when known, repo URL, or a setup hint); **Keyboard connection** (USB OTG, Bluetooth/phone URL, PIN); **Shortcuts** (Esc or left+right page buttons from stock UI, Ctrl-K/R/Q, Home); open-source footer.
+Six-tab pager on e-ink: **Home · Files · Keyboard · Sync · Settings · Shortcuts** (touch tabs or keyboard Tab / arrows / digits 1–6). Fed by `pushLobbyInfo` → `{"t":"info",…}` on socket connect — IP, PIN, `syncOn`/`syncRepo`, note count, formatted last sync — and re-pushed when `wlan0` gets an address, a reconcile finishes, or notes change.
 
-Fed by `pushLobbyInfo` → `{"t":"info",…}` on socket connect — IP, PIN, `syncOn`/`syncRepo`, note count, formatted last sync — and re-pushed when `wlan0` gets an address, a reconcile finishes, or notes are created/deleted. Ctrl-K opens the note picker from the Lobby. **Show PIN on tablet** on the phone drops back to the Lobby when a second device needs the PIN.
+**Files tab (tablet-side CRUD, device-verified 2026-07-11):** list notes from Writerdeck-server over a trusted socket `{"t":"req","op":…}`; touch or USB keys to select; **New / Open / Rename / Delete** buttons; `n` / Enter / `r` / `d` shortcuts; double-tap or Enter to open. Opens via `saveAndLoad` (same path as phone **Edit**). Ctrl-K still opens the omni picker from any Lobby page. **Show PIN on tablet** on the phone drops back to the Lobby when a second device needs the PIN.
+
+**Launch from stock UI:** Mac `wd` / `bash scripts/lobby.sh`; on tablet SSH `~/wd`. USB **Esc** or **left+right page buttons** together also open the Lobby when idle.
 
 ## Phone companion
 
@@ -62,7 +64,7 @@ Built from source (upstream remarkable-keywriter), deployed as Writerdeck and pa
 
 ## GitHub sync
 
-Optional, off by default. The phone reconciles tablet notes with a private repo — pull what's missing either way, push local-only notes, handle clashes by keeping both copies with clear names.
+Optional, off by default. The phone reconciles tablet notes with a private repo — pull what's missing either way, push local-only notes, handle clashes by keeping both copies with clear names. **Safety nets (2026-07-11):** refuses to push a zero-byte file over a previously-synced note; empty-tablet vs non-empty-GitHub clash restores from GitHub without creating `(tablet copy)` duplicates.
 
 **Marker-aware delete** — a note deleted on GitHub (VS Code, web UI, git) propagates to the tablet when the local copy is pristine and carries a stored `sha`. Unpushed local edits resurrect instead of deleting. External renames reconcile as delete-old + pull-new. Tablet-only deletes still don't propagate to GitHub by design.
 
