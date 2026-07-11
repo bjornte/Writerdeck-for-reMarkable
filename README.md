@@ -2,7 +2,7 @@
 
 A distraction-free word processor for the reMarkable 1, with support for hardware keyboards (USB & Bluetooth), optional syncing of notes, and Markdown.
 
-* Bluetooth keyboards: Pair to your phone, then bridge to reMarkable over Wi-Fi.
+* Bluetooth keyboards: Pair to your phone, then bridge to reMarkable over Wi-Fi
 * USB keyboards: Use an [OTG cable](https://en.wikipedia.org/wiki/USB_On-The-Go#OTG_micro_cables)
 
 ![Writerdeck for reMarkable 1](docs/Writerdeck-for-reMarkable.jpg)
