@@ -186,6 +186,8 @@
 +                        Q_ARG(QVariant, QString::fromStdString(newName)));
 +            }
 +        }
++        else if (cmd == "reloadnote" && g_rootObj)
++            QMetaObject::invokeMethod(g_rootObj, "reloadNote", Qt::QueuedConnection);
 +        else if (cmd == "showlobby" && g_rootObj)
 +            invokeSaveCmd("showLobby", "showlobby");
 +        else if (cmd == "setfont" && g_rootObj) {

@@ -8,6 +8,9 @@
 #
 # Exit 0 = pass, 1 = fail. Logs to docs/recon/test-edit-session-<ts>.txt
 #
+# When to run: after Writerdeck/QML deploy (rmkw) only — not after deploy-rmkbd.sh
+# (server-only). See docs/decisions.md #21.
+#
 # Usage (repo root):
 #   bash scripts/test-edit-session.sh
 #   bash scripts/test-edit-session.sh 192.168.1.8

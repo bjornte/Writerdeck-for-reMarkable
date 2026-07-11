@@ -26,7 +26,7 @@ Keystrokes reach the editor through a local socket rather than `/dev/uinput`: th
 | Obligation | Meaning |
 |---|---|
 | **Plain markdown on disk** | `.md` files are UTF-8 Markdown, never Qt RichText / HTML. Saves reject `qrichtext` payloads; loads sanitize corruption. |
-| **Explicit durability** | Disk updates only through defined save paths. Unsaved editor buffer is *not* durable — process kill, deploy, or crash loses it until autosave exists. |
+| **Explicit durability** | Disk updates through defined save paths **and** periodic autosave while editing (45 s). Residual risk: text typed in the last interval before kill/deploy. |
 | **Single-writer awareness** | While a note is open for edit, reconcile, phone ops, and rename/delete must not silently overwrite disk or fork paths. Server and phone must know which file the tablet is editing. |
 | **Buffer ↔ disk coherence** | If disk changes under an open session (pull, clash, external edit), the editor must reload or surface conflict — not save stale buffer over fresh disk. |
 | **Atomic durable writes** | Note writes use write-temp-rename (settings already do); no in-place truncate on power loss. |
@@ -34,7 +34,7 @@ Keystrokes reach the editor through a local socket rather than `/dev/uinput`: th
 
 **Feature gate:** before shipping any change that touches notes, saves, opens, sync, CRUD, or editor lifecycle, ask: *can this lose text, write wrong bytes, or overwrite without the user knowing?* If yes, it does not ship until mitigated or explicitly accepted by the owner.
 
-**As built (2026-07-11):** slices 1–5 shipped (through OCC on `PUT /api/notes`). Gaps remain: no autosave, notes not atomic, buffer unaware of disk pulls. Treat these as **open contract violations**, not nice-to-haves.
+**As built (2026-07-11):** slices 1–10 shipped (through autosave + tablet atomic saves via loopback HTTP). Residual: sub-interval buffer loss on hard kill; deploy both server and Writerdeck for full slice 9–10 on device.
 
 ## On-device layout
 
@@ -127,11 +127,13 @@ git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywrite
 
 Requires Go (`brew install go` on macOS). `deploy-rmkbd.sh` cross-builds and deploys; `build-rmkbd.ps1` cross-builds only (no device step). Writerdeck is cross-built in CI (`third_party/keywriter/`, toltec Qt sysroot), not on a host toolchain.
 
+> **After `deploy-rmkbd.sh`:** the script stops the running server — run `systemctl start writerdeck` on the tablet (or `~/wd` / `bash scripts/wd` for Lobby). It does **not** require `test-edit-session.sh` (server-only; see [decisions.md](decisions.md) #21).
+
 ## Dev-loop shortcuts (aliases via `bash scripts/install-alias.sh`)
 
-- `rmkw` (= `deploy-keywriter.sh -b`) — binary-only Writerdeck redeploy (~1 s): pushes just the ~219 K binary, skips re-throwing the 14 MB Qt5 sysroot (static; only changes on a Qt rebuild — then pass `RM_FORCE_SYSROOT=1`). Use after any `socket-inject.patch` / `build-keywriter.sh` change once CI has rebuilt.
+- `rmkw` (= `deploy-keywriter.sh -b`) — binary-only Writerdeck redeploy (~1 s): pushes just the ~219 K binary, skips re-throwing the 14 MB Qt5 sysroot (static; only changes on a Qt rebuild — then pass `RM_FORCE_SYSROOT=1`). Use after any `socket-inject.patch` / `build-keywriter.sh` change once CI has rebuilt. **Then:** `bash scripts/test-edit-session.sh`.
 - `bash scripts/test-e2e.sh -s` — full browser→e-ink pipeline test, skipping the Writerdeck-server build+scp (~2 s; server already on device). Drop `-s` to rebuild+redeploy first.
-- `bash scripts/test-edit-session.sh` — regression: phone **Edit** (`POST /api/open`) must keep Writerdeck up and xochitl down; exits 0/1, logs to `docs/recon/`.
+- `bash scripts/test-edit-session.sh` — **Writerdeck/QML only** ([decisions.md](decisions.md) #21): phone **Edit** must keep Writerdeck up; not for `deploy-rmkbd.sh`-only changes.
 - `rmpush "msg"` (= `push.sh`/`push.ps1`) — commit+push under the personal identity.
 - `/home/root/Writerdeck-server -v` — per-key inject logging for keymap debugging; default is terse (connects + a count every 25 keys).
 - SSH preflight pings first, so the scripts tell *tablet asleep* from *missing key*.
@@ -140,4 +142,12 @@ Requires Go (`brew install go` on macOS). `deploy-rmkbd.sh` cross-builds and dep
 
 ## Testing — the inner loop
 
-Iterate over Wi-Fi SSH — set `RM_HOST_WIFI` in `secrets/remarkable.local.env`. Keep the tablet awake (it drops Wi-Fi on suspend). With `writerdeck.service`: logs in `journalctl -u writerdeck.service`. Manual ad-hoc: `systemctl stop xochitl` → run Writerdeck + Writerdeck-server → test → restore xochitl. Verify characters land *in Writerdeck*, not just that Writerdeck-server forwarded them.
+Iterate over Wi-Fi SSH — set `RM_HOST_WIFI` in `secrets/remarkable.local.env`. Keep the tablet awake (it drops Wi-Fi on suspend). With `writerdeck.service`: logs in `journalctl -u writerdeck.service`.
+
+| What you changed | Device verification |
+|---|---|
+| Writerdeck binary / QML patches | `bash scripts/test-edit-session.sh` |
+| Writerdeck-server / `sync.js` / `app.js` only | Restart server (`systemctl start writerdeck`); API or browser smoke — **not** test-edit-session |
+| Both binaries | test-edit-session **and** server smoke |
+
+Manual ad-hoc: `systemctl stop xochitl` → run Writerdeck + Writerdeck-server → test → restore xochitl. Verify characters land *in Writerdeck*, not just that Writerdeck-server forwarded them.

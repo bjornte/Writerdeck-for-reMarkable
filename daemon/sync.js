@@ -95,6 +95,73 @@ function showClashBanner(noteName, copyName) {
   _onBannerChange();
 }
 
+// recordEditorDiskBaseline: snapshot disk hash when the editor opens a note (slice 8).
+export function recordEditorDiskBaseline(filename) {
+  if (!filename) {
+    state.editorDiskHash = '';
+    return Promise.resolve();
+  }
+  return fetch('/api/notes/' + encodeURIComponent(filename), { credentials: 'same-origin' })
+    .then(function(r) { return r.ok ? r.text() : null; })
+    .then(function(t) {
+      state.editorDiskHash = t !== null ? strHash(t) : '';
+    })
+    .catch(function() {});
+}
+
+function hideDriftBanner() {
+  var el = document.getElementById('drift-banner');
+  if (el) el.style.display = 'none';
+  _onBannerChange();
+}
+
+function showDriftBanner(filename) {
+  var el = document.getElementById('drift-banner');
+  if (!el) return;
+  var label = filename.replace(/\.md$/, '');
+  el.innerHTML = '<strong>Disk changed:</strong> \u201c' + label +
+    '\u201d was updated on disk while open on the tablet. ' +
+    '<button type="button" id="drift-reload-btn">Reload on tablet</button> ' +
+    'or keep editing (unsaved buffer wins on save).';
+  el.style.display = 'block';
+  var btn = document.getElementById('drift-reload-btn');
+  if (btn) {
+    btn.onclick = function(e) {
+      e.stopPropagation();
+      fetch('/api/reload', { method: 'POST', credentials: 'same-origin' })
+        .then(function(r) {
+          if (!r.ok) {
+            alert('Could not reload \u2014 is the note still open on the tablet?');
+            return;
+          }
+          hideDriftBanner();
+          return recordEditorDiskBaseline(filename);
+        })
+        .catch(function() { alert('Could not reach server.'); });
+    };
+  }
+  _onBannerChange();
+}
+
+// checkDiskDrift: compare live disk to the baseline captured at editor open.
+export function checkDiskDrift(filename) {
+  if (!filename || !state.editorDiskHash) return Promise.resolve();
+  return fetch('/api/notes/' + encodeURIComponent(filename), { credentials: 'same-origin' })
+    .then(function(r) { return r.ok ? r.text() : null; })
+    .then(function(t) {
+      if (t === null) return;
+      if (strHash(t) !== state.editorDiskHash) showDriftBanner(filename);
+    })
+    .catch(function() {});
+}
+
+// notifyDiskChanged: server broadcast after a disk write under the open editor.
+export function notifyDiskChanged(filename) {
+  if (!filename) return;
+  if (state.tabletOpenNote && filename !== state.tabletOpenNote) return;
+  checkDiskDrift(filename);
+}
+
 // handleClash: on a 409/422 push clash --
 //   1. save current tablet content as "{name} (tablet copy).md"
 //   2. fetch GitHub version, write it to "{name}.md" on the tablet
@@ -121,6 +188,7 @@ function handleClash(filename, tabletContent) {
             if (r && r.ok) {
               localStorage.setItem('ghSha_' + filename, ghData.sha);
               localStorage.setItem('ghLocalHash_' + filename, strHash(ghContent));
+              notifyDiskChanged(filename);
             }
             localStorage.removeItem('ghPushFailed_' + filename);
             _onNotesChanged();
@@ -141,6 +209,7 @@ function handleClash(filename, tabletContent) {
         if (r && r.ok) {
           localStorage.setItem('ghSha_' + filename, ghData.sha);
           localStorage.setItem('ghLocalHash_' + filename, strHash(ghContent));
+          notifyDiskChanged(filename);
         }
         localStorage.removeItem('ghPushFailed_' + filename);
         showClashBanner(filename.replace(/\.md$/, ''), copyBase);
@@ -230,6 +299,7 @@ export function pullNoteAndUpdate(filename) {
           if (r && r.ok) {
             localStorage.setItem('ghSha_' + filename, data.sha);
             localStorage.setItem('ghLocalHash_' + filename, strHash(ghContent));
+            notifyDiskChanged(filename);
           }
         });
       });
@@ -250,7 +320,39 @@ export function ghDelete(filename) {
     localStorage.removeItem('ghSha_' + filename);
     localStorage.removeItem('ghLocalHash_' + filename);
     localStorage.removeItem('ghPushFailed_' + filename);
-  }).catch(function() {});
+  })    .catch(function() {});
+}
+
+// applyTabletCrud: mirror a tablet Lobby Files op on GitHub (slice 7).
+export function applyTabletCrud(op, name, oldName) {
+  if (!syncReady()) return Promise.resolve();
+  if (op === 'createnote') return pushNote(name);
+  if (op === 'deletenote') return ghDelete(name);
+  if (op === 'renamenote') {
+    return ghDelete(oldName || '').then(function() { return pushNote(name); });
+  }
+  return Promise.resolve();
+}
+
+// clearPendingSync: tell the server the queued tablet ops are paired on GitHub.
+export function clearPendingSync() {
+  return fetch('/api/sync/pending/clear', { method: 'POST', credentials: 'same-origin' }).catch(function() {});
+}
+
+// drainPendingSync: process all queued tablet CRUD ops, then clear the queue.
+export function drainPendingSync() {
+  if (!syncReady()) return Promise.resolve();
+  return fetch('/api/sync/pending', { credentials: 'same-origin' })
+    .then(function(r) { return r.ok ? r.json() : []; })
+    .then(function(ops) {
+      if (!ops || !ops.length) return;
+      return ops.reduce(function(chain, item) {
+        return chain.then(function() {
+          return applyTabletCrud(item.op, item.name, item.oldName);
+        });
+      }, Promise.resolve()).then(clearPendingSync);
+    })
+    .catch(function() {});
 }
 
 // applyRemoteDelete: a previously-synced, locally-unchanged note has vanished from
@@ -317,9 +419,10 @@ export function reconcileAll(reason, opts) {
     }
     return Promise.resolve(0);
   }
-  return refreshTabletOpenNote().then(function() {
-    if (state.tabletOpenNote) return 0;
-    syncing = true;
+  return drainPendingSync().then(function() {
+    return refreshTabletOpenNote().then(function() {
+      if (state.tabletOpenNote) return 0;
+      syncing = true;
     var statusEls = document.querySelectorAll('.sync-status-line');
     for (var s = 0; s < statusEls.length; s++) statusEls[s].textContent = 'Syncing\u2026';
     var remoteList = fetch('https://api.github.com/repos/' + state.syncRepo + '/contents/', { headers: ghHdrs() })
@@ -367,6 +470,7 @@ export function reconcileAll(reason, opts) {
       }
       syncing = false;
       return 0;
+    });
     });
   });
 }

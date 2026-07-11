@@ -5,7 +5,9 @@ import {
   reconcileAll, pushNote, pullNoteAndUpdate, ghDelete,
   updateSyncBannerFromState, verifyGitHubRepo,
   syncReady, ghToken, startSyncPoll, initSync,
-  setSyncToken, clearSyncStorage
+  setSyncToken, clearSyncStorage,
+  applyTabletCrud, clearPendingSync,
+  recordEditorDiskBaseline, checkDiskDrift, notifyDiskChanged
 } from './sync.js';
 
 (function () {
@@ -93,6 +95,15 @@ import {
         if (!data) { markTabletOffline(); return; }
         tabletReachable = true;
         tabletInfo = data;
+        if (data.editorActive && data.openNote) {
+          if (state.tabletOpenNote !== data.openNote) {
+            state.tabletOpenNote = data.openNote;
+            recordEditorDiskBaseline(data.openNote);
+          } else if (!state.editorDiskHash) {
+            recordEditorDiskBaseline(data.openNote);
+          }
+          checkDiskDrift(data.openNote);
+        }
         updateConnectionBar();
       })
       .catch(function() {
@@ -227,9 +238,11 @@ import {
         var data = JSON.parse(event.data);
         if (data.type === 'openedit') {
           state.tabletOpenNote = data.name || '';
+          recordEditorDiskBaseline(state.tabletOpenNote);
         } else if (data.type === 'exitedit') {
           var saved = state.tabletOpenNote;
           state.tabletOpenNote = '';
+          state.editorDiskHash = '';
           if (state.typingMode) { hideTypingView(); }
           var awaitAck = !!data.awaitSync;
           function ackSync() {
@@ -248,6 +261,18 @@ import {
           } else if (saved) {
             pushNote(saved);
           }
+        } else if (data.type === 'tabletcrud') {
+          if (data.op === 'deletenote' && state.tabletOpenNote === data.name) {
+            state.tabletOpenNote = '';
+          } else if (data.op === 'renamenote' && data.oldName && state.tabletOpenNote === data.oldName) {
+            state.tabletOpenNote = data.name || '';
+          }
+          loadNotes();
+          if (syncReady()) {
+            applyTabletCrud(data.op, data.name, data.oldName).then(clearPendingSync);
+          }
+        } else if (data.type === 'diskchanged') {
+          notifyDiskChanged(data.name || '');
         }
         // Unknown types are silently ignored -- forward-compatible.
       } catch (e) {}
@@ -619,7 +644,7 @@ import {
     var h = 40;
     if (stack) {
       var visible = 0;
-      ['sync-banner', 'clash-banner'].forEach(function(id) {
+      ['sync-banner', 'clash-banner', 'drift-banner'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el && el.style.display !== 'none') visible += el.offsetHeight;
       });

@@ -14,13 +14,13 @@ Status: **active — non-negotiable.** Writerdeck is a typewriter: the owner's p
 
 1. **Content** — bytes on disk are UTF-8 Markdown; never Qt `qrichtext` / HTML (slice 2 shipped 2026-07-11).
 2. **Lifecycle** — no silent overwrite of an open note by reconcile, phone CRUD, or rename/delete; server + phone track tablet editor state (slices 1+3+4 shipped).
-3. **Durability** — defined save paths flush buffer → disk; atomic writes for notes; **unsaved buffer is not durable** across kill/deploy/crash until autosave ships (open gap — must be documented, not ignored).
+3. **Durability** — defined save paths + **45 s autosave** while editing (slice 9); atomic note writes server + tablet loopback PUT (slice 10). Sub-interval buffer still not durable on instant kill.
 4. **Coherence** — disk change under an open session requires reload or conflict UX; buffer must not blindly win over a pull.
 5. **Sync subordination** — GitHub reconcile assists backup; it must not delete, empty-push, or fork paths against a live edit (#19, #24 guards are partial).
 
 **Feature gate:** no change to `daemon/`, `sync.js`, `build-keywriter.sh`, or note APIs ships without an integrity pass against the five points above. Incident ADRs (#24, empty-push) are patches *under* this contract, not substitutes for it.
 
-**Shipped under this contract:** #24, slices 1–5, empty-push guard (#19). **Still violating:** no autosave, non-atomic note writes, editor unaware of disk pulls.
+**Shipped under this contract:** #24, slices 1–10, empty-push guard (#19). **Residual:** sub-45s buffer on instant kill; deploy Writerdeck for loopback save + autosave on device.
 
 ---
 
@@ -97,13 +97,25 @@ Status: built (Phase 9), device-verified. The optional two-way GitHub sync (off 
 Status: built, device-verified. Global `root.rotation` (0/90/180/270) is owner-chosen and stored in `.Writerdeck/settings.json` as `"rotation"`. Phone **Rotate tablet 90°** (`POST /api/rotate`) increments, saves, and pushes `{"t":"cmd","c":"setrotation","degrees":N}` to Writerdeck. On every editor socket connect, Writerdeck-server restores the saved angle the same way (alongside `setfont`). USB Ctrl+←/→ in preview/read still rotates in QML; `rotation_watcher` (moc'd helper in the keywriter build) relays `rotationChanged` as `{"t":"rotation","degrees":N}` so the server persists without the phone. Both binaries must be current — server-only deploy can save to disk while an old Writerdeck ignores `setrotation` and boots at 0°.
 
 ## 21. Edit-from-browser regression test (`test-edit-session.sh`)
-Status: built (2026-07-11), device-verified. Phone **Edit** (`POST /api/open`) is the primary companion launch path — if Writerdeck exits immediately, `session.end()` restarts `xochitl` and looks like the stock UI "reloading." That failure mode is almost always a broken `main.qml` patch (QML parse error), not Writerdeck-server or the USB Escape watcher. `scripts/test-edit-session.sh` automates the check: from stock UI, POST `/api/open`, assert `Writerdeck` stays up ~8 s, `xochitl` stays down, and `/api/status` reports `editorActive: true`. Run after any Writerdeck/QML patch change (CI build + `rmkw`). Build-time guard: `build-keywriter.sh` asserts `{`/`}` balance in `handleKey()` before write (patch 7p once regressed here). Logs to `docs/recon/`.
+Status: built (2026-07-11), device-verified. Phone **Edit** (`POST /api/open`) is the primary companion launch path — if Writerdeck exits immediately, `session.end()` restarts `xochitl` and looks like the stock UI "reloading." That failure mode is almost always a broken `main.qml` patch (QML parse error), **not** Writerdeck-server, `sync.js`, or the USB Escape watcher.
+
+`scripts/test-edit-session.sh` automates the check: from stock UI, POST `/api/open`, assert `Writerdeck` stays up ~8 s, `xochitl` stays down, and `/api/status` reports `editorActive: true`.
+
+**When to run (device):**
+
+| Change | Run `test-edit-session.sh`? | Instead |
+|---|---|---|
+| `build-keywriter.sh`, `socket-inject.patch`, `lobby_bridge.*` → Writerdeck deploy (`rmkw`) | **Yes** | — |
+| `daemon/` only → `deploy-rmkbd.sh` (Go, embedded `app.js`/`sync.js`) | **No** | `systemctl start writerdeck` (deploy stops the server); spot-check the changed API (`curl /api/status`, browser smoke) |
+| Docs / scripts with no binary change | **No** | — |
+
+Build-time guard: `build-keywriter.sh` asserts `{`/`}` balance in `handleKey()` before write (patch 7p once regressed here). Logs to `docs/recon/`.
 
 ## 22. On-device Writerdeck naming (2026-07)
 Status: built, device-verified. Binaries and paths on the tablet use Writerdeck branding (`Writerdeck`, `Writerdeck-server`, `Writerdeck-user-documents/`, `.Writerdeck/`, `/run/Writerdeck.sock`, `writerdeck.service`, `writerdeck_token`). Repo script names (`deploy-rmkbd.sh`, `third_party/keywriter/`) and the GitHub repo folder stay unchanged. `scripts/migrate-device-layout.sh` renames legacy paths and removes old binaries on deploy; see the on-device table in [architecture.md](architecture.md).
 
 ## 23. Tablet file CRUD via trusted socket (Lobby Files)
-Status: built (Phase 10 partial), device-verified 2026-07-11. Extends #8 without exposing unauthenticated LAN HTTP: Writerdeck sends `{"t":"req","op":"noteslist|createnote|deletenote|renamenote",…}` over the existing Unix socket; Writerdeck-server performs the same disk ops as `/api/notes`. Six-tab Lobby (**Home · Files · Keyboard · Sync · Settings · Shortcuts**) with touch + Tab/arrows/1–6 navigation; Files page lists notes, supports New/Open/Rename/Delete (touch buttons + `n`/Enter/`r`/`d`). Open still uses `saveAndLoad` (phone path unchanged). Tablet delete/rename updates disk only — GitHub pairing still happens on the next phone reconcile (#19). Mac/tablet launch helpers: `wd` / `bash scripts/lobby.sh` / on-device `~/wd`.
+Status: built (Phase 10 partial), device-verified 2026-07-11. Extends #8 without exposing unauthenticated LAN HTTP: Writerdeck sends `{"t":"req","op":"noteslist|createnote|deletenote|renamenote",…}` over the existing Unix socket; Writerdeck-server performs the same disk ops as `/api/notes`. Six-tab Lobby (**Home · Files · Keyboard · Sync · Settings · Shortcuts**) with touch + Tab/arrows/1–6 navigation; Files page lists notes, supports New/Open/Rename/Delete (touch buttons + `n`/Enter/`r`/`d`). Open still uses `saveAndLoad` (phone path unchanged). Tablet delete/rename/create queues `pendingSync` and notifies the phone via `tabletcrud` WebSocket — GitHub pairs immediately when the browser is connected, or on next connect/reconcile (slice 7; was next-reconcile-only in #19). Mac/tablet launch helpers: `wd` / `bash scripts/lobby.sh` / on-device `~/wd`.
 
 ## 24. `doLoad` must re-sync `query.text` after Lobby clears the editor
 Status: built, device-verified 2026-07-11. Returning to Lobby (`handleHome`, `showLobby`) assigns `query.text = ""`, which breaks the QML `text: doc` one-way binding. Without `query.text = response` in `doLoad`'s XHR callback (edit 2b), the next Home save copies empty `query.text` into `doc` and `saveFile()` zeroes the file (`save -> 0` in journal). First open after boot worked; open → Home → open another wiped notes and cascaded into GitHub via sync. `showLobby` now also clears `currentFile` for a clean no-file Lobby state. Recovery script: `scripts/restore-wiped-notes.sh`. Lesson banked in [lessons.md](lessons.md).
@@ -116,7 +128,7 @@ Status: built, device-verified 2026-07-11. Returning to Lobby (`handleHome`, `sh
 - USB keyboard locales *(open · medium)*. Browser/Bluetooth path resolves layout in the phone OS (Norwegian works). USB path uses Qt evdev with **US QWERTY** default — Norwegian æøå and other national layouts need per-layout `.qmap` files via `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` ([remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1)); `loadkeys` / `setxkbmap` do not apply. Planned: ship qmaps + `settings.json` picker — [improvements.md](improvements.md), [../TODO.md](../TODO.md) Phase 10.
 - Per-note / subfolder encryption *(open · design)*. Global PIN gates the API; no subset protection yet. Encrypted subfolder with passphrase-derived keys is the leading option — design in [improvements.md](improvements.md); implementation not started.
 - Tablet file management *(partial · shipped)*. Lobby **Files** tab + socket CRUD covers list/create/open/rename/delete on tablet (#23). Upload, download, copy, paste, and GitHub token entry remain browser-only.
-- **Document integrity contract violations** *(open · high)*. Remaining: autosave / kill durability, atomic note writes, buffer↔disk reload. Matrix: [improvements.md](improvements.md) § Document integrity.
+- **Document integrity contract violations** *(residual · low)*. Sub-45s buffer on instant kill; ensure Writerdeck binary matches server (loopback save, autosave, reloadNote). Matrix: [improvements.md](improvements.md) § Document integrity.
 - `/dev/uinput` is unavailable and unfixable on this kernel (decision 1). Closed, not a to-do — recorded so nobody retries it.
 - Go toolchain must be on the Mac (`brew install go`) — the only device-reachable host.
 - Disk: only the tiny rootfs is tight, and nothing we ship goes there. `/` (rootfs, ~228 MB) is 96% full; everything we deploy lives on `/home/root/` (separate multi-GB partition). Don't resize rootfs (A/B OTA scheme; brick risk).

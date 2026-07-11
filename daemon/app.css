@@ -229,11 +229,16 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
 /* Warning label inside a PIN row */
 .row-warn { font-size: 11px; color: #e57373; margin-top: 4px; }
 /* GitHub sync banners and token input */
-#sync-banner, #clash-banner {
+#sync-banner, #clash-banner, #drift-banner {
   padding: 10px 14px; font-size: 13px; line-height: 1.5;
 }
 #sync-banner  { background: #2a2000; color: #ffcc44; border-bottom: 1px solid #554400; }
 #clash-banner { background: #2a0000; color: #ff8888; border-bottom: 1px solid #550000; }
+#drift-banner { background: #1a2233; color: #a8c8ff; border-bottom: 1px solid #334466; }
+#drift-banner button {
+  margin-left: 8px; background: #334466; color: #e8f0ff; border: none;
+  border-radius: 6px; padding: 4px 10px; font-size: 13px; cursor: pointer;
+}
 .repo-link {
   font-size: 13px; padding: 4px 2px 0;
 }

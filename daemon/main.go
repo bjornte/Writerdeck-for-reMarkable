@@ -14,6 +14,9 @@
 //   {"t":"key","k":"Escape|Return|Backspace|Tab|ArrowUp|ArrowDown|ArrowLeft|ArrowRight"}
 //   {"t":"cmd","c":"home|open|notedeleted|noterenamed|..."}  -- editor commands
 // Browser <- Writerdeck-server: {"type":"openedit","name":"<file>.md"} on tablet open/rename
+//   {"type":"tabletcrud","op":"createnote|deletenote|renamenote","name":"...","oldName":"..."}
+//     on tablet Lobby Files CRUD — phone pairs ghDelete/pushNote; queue drains on connect.
+//   {"type":"diskchanged","name":"<file>.md"} when disk is written under an open editor (slice 8).
 //
 // Integer codepoints are escaping-proof: JSON special chars in typed text
 // can never corrupt the naive C++ substring parser (see socket-inject.patch).
@@ -743,6 +746,66 @@ func broadcast(msg []byte) {
 	}
 }
 
+// enqueuePendingSync records a tablet file op for the phone to pair on GitHub.
+func enqueuePendingSync(op, name, oldName string) {
+	settingsMu.Lock()
+	curSettings.PendingSync = append(curSettings.PendingSync, pendingSyncOp{Op: op, Name: name, OldName: oldName})
+	saveSettingsLocked()
+	settingsMu.Unlock()
+}
+
+// clearPendingSync removes all queued tablet sync ops (after phone has paired them).
+func clearPendingSync() {
+	settingsMu.Lock()
+	if len(curSettings.PendingSync) == 0 {
+		settingsMu.Unlock()
+		return
+	}
+	curSettings.PendingSync = nil
+	saveSettingsLocked()
+	settingsMu.Unlock()
+	pushLobbyInfo()
+}
+
+// notifyTabletCrud queues the op and tells connected phone browsers to pair it on GitHub.
+func notifyTabletCrud(op, name, oldName string) {
+	if name != "" {
+		if p := notesSafe(name); p != "" {
+			name = filepath.Base(p)
+		}
+	}
+	if oldName != "" {
+		if p := notesSafe(oldName); p != "" {
+			oldName = filepath.Base(p)
+		}
+	}
+	enqueuePendingSync(op, name, oldName)
+	msg, _ := json.Marshal(struct {
+		Type    string `json:"type"`
+		Op      string `json:"op"`
+		Name    string `json:"name"`
+		OldName string `json:"oldName,omitempty"`
+	}{"tabletcrud", op, name, oldName})
+	broadcast(msg)
+	pushLobbyInfo()
+}
+
+// maybeBroadcastDiskChanged notifies phone browsers when disk was written for the open note.
+func maybeBroadcastDiskChanged(name string) {
+	base := filepath.Base(name)
+	currentNoteMu.Lock()
+	open := currentNote != "" && currentNote == base
+	currentNoteMu.Unlock()
+	if !open {
+		return
+	}
+	msg, _ := json.Marshal(struct {
+		Type string `json:"type"`
+		Name string `json:"name"`
+	}{"diskchanged", base})
+	broadcast(msg)
+}
+
 // currentNote is the basename (.md) of the note the editor currently has open.
 // Protected by currentNoteMu. Set by openHandler and editor {"t":"open"} reports;
 // cleared by watchHomeButton, session.end(), and the DELETE handler on a match.
@@ -893,6 +956,18 @@ func ifMatchOK(ifMatch, etag string) bool {
 	return false
 }
 
+// writeNoteFile atomically writes note bytes (write-temp-then-rename, like settings.json).
+func writeNoteFile(path string, content []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, content, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
+}
+
 // notesListHandler serves GET /api/notes (list) and POST /api/notes (create).
 func notesListHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
@@ -974,11 +1049,7 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "refusing HTML/qrichtext payload", http.StatusUnsupportedMediaType)
 			return
 		}
-		if err := os.MkdirAll(notesDirPath, 0755); err != nil {
-			http.Error(w, "cannot create notes dir", http.StatusInternalServerError)
-			return
-		}
-		if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+		if err := writeNoteFile(p, []byte(content)); err != nil {
 			http.Error(w, "write failed", http.StatusInternalServerError)
 			return
 		}
@@ -1059,26 +1130,28 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "refusing HTML/qrichtext payload", http.StatusUnsupportedMediaType)
 			return
 		}
-		if err := os.MkdirAll(notesDirPath, 0755); err != nil {
-			http.Error(w, "cannot create notes dir", http.StatusInternalServerError)
-			return
-		}
 		existing, err := os.ReadFile(p)
+		editorLocal := isLoopback(r)
 		if err == nil {
-			etag := noteETag(existing)
-			ifMatch := r.Header.Get("If-Match")
-			if !ifMatchOK(ifMatch, etag) {
-				w.Header().Set("ETag", etag)
-				http.Error(w, "If-Match required or revision mismatch", http.StatusPreconditionFailed)
-				return
+			if !editorLocal {
+				etag := noteETag(existing)
+				ifMatch := r.Header.Get("If-Match")
+				if !ifMatchOK(ifMatch, etag) {
+					w.Header().Set("ETag", etag)
+					http.Error(w, "If-Match required or revision mismatch", http.StatusPreconditionFailed)
+					return
+				}
 			}
 		} else if !os.IsNotExist(err) {
 			http.Error(w, "read failed", http.StatusInternalServerError)
 			return
 		}
-		if err := os.WriteFile(p, []byte(putReq.Content), 0644); err != nil {
+		if err := writeNoteFile(p, []byte(putReq.Content)); err != nil {
 			http.Error(w, "write failed", http.StatusInternalServerError)
 			return
+		}
+		if !editorLocal {
+			maybeBroadcastDiskChanged(filepath.Base(p))
 		}
 		w.Header().Set("ETag", noteETag([]byte(putReq.Content)))
 		w.WriteHeader(http.StatusOK)
@@ -1125,6 +1198,14 @@ type settingsData struct {
 	SyncOn     bool  `json:"syncOn"`               // GitHub two-way sync enabled
 	SyncRepo   string `json:"syncRepo"`          // "owner/repo" of the notes repo; token never stored here
 	LastSyncAt int64  `json:"lastSyncAt,omitempty"` // unix seconds of last browser reconcile ack
+	PendingSync []pendingSyncOp `json:"pendingSync,omitempty"` // tablet CRUD awaiting phone GitHub pairing
+}
+
+// pendingSyncOp is one queued tablet file op for the phone browser to mirror on GitHub.
+type pendingSyncOp struct {
+	Op      string `json:"op"`                // createnote, deletenote, renamenote
+	Name    string `json:"name"`              // target .md basename
+	OldName string `json:"oldName,omitempty"` // renamenote source basename
 }
 
 // normalizeRotation maps any integer to a 0-359 degree value.
@@ -1459,10 +1540,7 @@ func createNoteFile(name, content string) error {
 	if rejectsHtmlNoteContent(content) {
 		return fmt.Errorf("refusing HTML/qrichtext payload")
 	}
-	if err := os.MkdirAll(notesDirPath, 0755); err != nil {
-		return err
-	}
-	if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+	if err := writeNoteFile(p, []byte(content)); err != nil {
 		return err
 	}
 	pushLobbyInfo()
@@ -1540,14 +1618,20 @@ func handleEditorReq(op, name, oldName string) {
 	case "createnote":
 		if err := createNoteFile(name, ""); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: editor createnote: %v\n", err)
+		} else {
+			notifyTabletCrud("createnote", name, "")
 		}
 	case "deletenote":
 		if err := deleteNoteFile(name); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: editor deletenote: %v\n", err)
+		} else {
+			notifyTabletCrud("deletenote", name, "")
 		}
 	case "renamenote":
 		if err := renameNoteFile(oldName, name); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: editor renamenote: %v\n", err)
+		} else {
+			notifyTabletCrud("renamenote", name, oldName)
 		}
 	default:
 		fmt.Fprintf(os.Stderr, "writerdeck-server: unknown editor req op %q\n", op)
@@ -1610,6 +1694,17 @@ func pushLobbyInfo() {
 	syncOn := curSettings.SyncOn
 	syncRepo := curSettings.SyncRepo
 	lastSync := formatLastSyncAgo(curSettings.LastSyncAt)
+	if n := len(curSettings.PendingSync); n > 0 {
+		pending := "sync pending"
+		if n > 1 {
+			pending = fmt.Sprintf("%d sync ops pending", n)
+		}
+		if lastSync == "" {
+			lastSync = pending + " — open phone browser"
+		} else {
+			lastSync = lastSync + " (" + pending + ")"
+		}
+	}
 	settingsMu.Unlock()
 	infoMsg, _ := json.Marshal(struct {
 		T         string `json:"t"`
@@ -1650,9 +1745,13 @@ func watchLobbyIP() {
 
 // checkAuth returns true if the request is authorized.
 // Always returns true for OPTIONS (preflight) or when PIN auth is disabled.
+// Loopback requests are trusted (tablet editor HTTP saves — slice 10).
 // When PIN auth is enabled, checks the writerdeck_token session cookie.
 func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 	if r.Method == http.MethodOptions {
+		return true
+	}
+	if isLoopback(r) {
 		return true
 	}
 	authMu.Lock()
@@ -1668,6 +1767,15 @@ func checkAuth(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 	return true
+}
+
+// isLoopback reports whether r came from the tablet editor on localhost.
+func isLoopback(r *http.Request) bool {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return false
+	}
+	return host == "127.0.0.1" || host == "::1"
 }
 
 // nextMorningCutoff returns the next local 04:00. If it is currently before
@@ -1977,6 +2085,82 @@ func syncAckHandler(w http.ResponseWriter, r *http.Request) {
 	saveSettingsLocked()
 	settingsMu.Unlock()
 	pushLobbyInfo()
+	w.WriteHeader(http.StatusOK)
+}
+
+// pendingSyncHandler serves GET /api/sync/pending (queued tablet CRUD ops).
+func pendingSyncHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		return
+	}
+	if !checkAuth(w, r) {
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	settingsMu.Lock()
+	ops := curSettings.PendingSync
+	if ops == nil {
+		ops = []pendingSyncOp{}
+	}
+	settingsMu.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ops) //nolint:errcheck
+}
+
+// pendingClearHandler handles POST /api/sync/pending/clear after the phone pairs
+// queued tablet ops on GitHub.
+func pendingClearHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		return
+	}
+	if !checkAuth(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	clearPendingSync()
+	w.WriteHeader(http.StatusOK)
+}
+
+// reloadHandler handles POST /api/reload: tell the tablet editor to reload the
+// open note from disk (slice 8 — after a pull/clash changed disk under the buffer).
+func reloadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		return
+	}
+	if !checkAuth(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if activeSess == nil || !activeSess.isActive() || globalEC == nil {
+		http.Error(w, "editor not active", http.StatusServiceUnavailable)
+		return
+	}
+	currentNoteMu.Lock()
+	name := currentNote
+	currentNoteMu.Unlock()
+	if name == "" {
+		http.Error(w, "no open note", http.StatusConflict)
+		return
+	}
+	globalEC.write([]byte(`{"t":"cmd","c":"reloadnote"}`))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -2407,6 +2591,9 @@ func main() {
 	http.HandleFunc("/api/status", statusHandler)
 	http.HandleFunc("/api/shutdown", shutdownHandler)
 	http.HandleFunc("/api/sync/ack", syncAckHandler)
+	http.HandleFunc("/api/sync/pending", pendingSyncHandler)
+	http.HandleFunc("/api/sync/pending/clear", pendingClearHandler)
+	http.HandleFunc("/api/reload", reloadHandler)
 
 	if *editorPath != "" {
 		// Supervisor mode: rmkbd is always-on; editor sessions are on-demand.

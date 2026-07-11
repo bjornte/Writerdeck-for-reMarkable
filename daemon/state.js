@@ -9,5 +9,6 @@ export var state = {
   syncRepo: '',         // mirrors /api/settings syncRepo
   tabletOpenNote: '',   // .md filename the tablet editor holds open; set by server
                         // openedit (phone /api/open or tablet doLoad); clears on exitedit
+  editorDiskHash: '',   // disk fingerprint at editor open — drift banner when disk changes (slice 8)
   typingMode: false     // false=Browse (list/read), true=Type (capture + echo)
 };

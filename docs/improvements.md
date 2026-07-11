@@ -71,13 +71,13 @@ Today only **phone** `POST /api/open` sets server `currentNote` and browser `tab
 
 - **`doLoad` is async;** Home or `saveAndLoad` before XHR completes can save the wrong file or skip save when `currentFile` is still empty (softer now with edit 2b, but timing remains). Rapid note switching (Ctrl-K / Lobby Files) can interleave saves and loads.
 - **`/api/open` continues on save-ack timeout** — switch may proceed before the previous note is flushed to disk.
-- **Disk↔buffer drift** — reconcile `pullNoteAndUpdate`, clash resolution, and phone-side `PUT /api/notes` write disk only; the editor is never told to reload. The buffer stays stale until the user opens another note or saves (then the buffer wins and may undo the pull).
-- **No atomic write** for notes — QML synchronous `PUT` and Go `os.WriteFile` write in place; power loss mid-save could truncate (unobserved but possible). `settings.json` on tablet already uses write-temp-then-rename ([architecture.md](architecture.md) Preferences bullet); notes should match server-side.
-- **Editor crash / deploy kill / SIGTERM** — unsaved `query.text` buffer is lost; disk has last explicit save only.
+- **Disk↔buffer drift** — ~~reconcile pull / clash overwrite disk without editor reload~~ **Slice 8:** server `diskchanged` WS + phone drift banner; `POST /api/reload` → `reloadnote` on tablet (needs current Writerdeck for reload button).
+- ~~**No atomic write** for notes (server)~~ — **Shipped slice 6** (`writeNoteFile` temp+rename on POST/PUT/create). ~~**Tablet `file://` in-place**~~ — **slice 10:** `saveFile()` → loopback `PUT /api/notes` → `writeNoteFile` (needs Writerdeck binary deploy).
+- **Editor crash / deploy kill / SIGTERM** — ~~unsaved `query.text` buffer is lost~~ **slice 9:** 45 s autosave while editing (`autosaveTick`); explicit saves unchanged. Crash in the last interval may still lose a few seconds.
 
 ### Sync & GitHub
 
-- **Tablet delete/rename** updates disk only; GitHub learns on next phone reconcile — delete can **resurrect** from remote; rename can leave **two paths** until paired.
+- **Tablet delete/rename** ~~updates disk only~~ — **slice 7:** tablet socket CRUD queues `pendingSync` and broadcasts `tabletcrud`; phone pairs `ghDelete`/`pushNote` immediately or on connect (Lobby shows “sync pending”).
 - **Real edit clashes** (both sides changed) still create `(tablet copy)` duplicates — only empty-tablet vs non-empty-remote is special-cased. Clash resolution overwrites disk without reloading the editor (same drift class as pull).
 - **External GitHub edits** (VS Code, web, git) — marker-aware delete/rename helps but duplicates/resurrections remain (#19).
 - **Empty-push guard** blocks accidental wipe to GitHub when phone remembers prior hash — intentional full clear may need manual re-push or hash reset.
@@ -92,7 +92,7 @@ Today only **phone** `POST /api/open` sets server `currentNote` and browser `tab
 ### Recovery & ops
 
 - **`scripts/restore-wiped-notes.sh`** — recovers zero-byte files from Git history; does not cover partial truncation or duplicate cleanup beyond `(tablet copy)` names.
-- **No editor↔server version/fingerprint** — cannot detect silent disk↔buffer drift without full text compare at save time.
+- **No editor↔server version/fingerprint** — ~~cannot detect silent disk↔buffer drift~~ **slice 8:** disk baseline at open + `diskchanged` when PUT hits open note.
 
 ### Suggested implementation order
 
@@ -103,9 +103,11 @@ Stack: **content contract** + **edit lease** + **OCC** + **atomic writes** + **c
 3. ~~**`notedeleted` + `noterenamed`**~~ — shipped 2026-07-11 (editor notified on phone rename/delete of open file; `noteDeleted` clears buffer).
 4. ~~**Reconcile policy**~~ — shipped 2026-07-11 (`openNote` in `/api/status`; reconcileAll gated on edit lease for all triggers).
 5. ~~**OCC on disk**~~ — shipped 2026-07-11 (GET ETag; PUT overwrite requires `If-Match`; sync sends revision).
-6. **Atomic note writes** on server (same pattern as `settings.json`).
-7. Tablet CRUD → queued GitHub ops or Lobby “sync pending”.
-8. Optional: reload or conflict banner when disk hash ≠ editor buffer.
+6. ~~**Atomic note writes**~~ — shipped 2026-07-11 (server `writeNoteFile` temp+rename; QML `file://` still direct).
+7. ~~**Tablet CRUD → queued GitHub ops**~~ — shipped 2026-07-11 (`tabletcrud` WS + `pendingSync` queue; Lobby lastSync shows pending).
+8. ~~**Reload / conflict banner**~~ — shipped 2026-07-11 (`diskchanged` WS, drift banner, `/api/reload`; Writerdeck `reloadNote` in next binary deploy).
+9. ~~**Autosave**~~ — shipped 2026-07-11 (45 s `autosaveTimer` while editing; dirty-check via `autosaveSnapshot`).
+10. ~~**Tablet atomic saves**~~ — shipped 2026-07-11 (loopback `PUT /api/notes`; server `isLoopback` auth + skips OCC/drift for editor saves).
 
 ### Models & further reading (terse)
 
@@ -151,7 +153,7 @@ Operations map to Writerdeck-server via trusted socket — no cookie, no LAN HTT
 
 **Auth:** browser uses `writerdeck_token` cookie; tablet uses Unix socket `req` ops (editor is trusted — #23).
 
-**Sync pairing:** tablet delete/rename updates disk only; GitHub catches up on next phone reconcile (#19). If sync pushes an accidental empty file, `pushNote` refuses when `ghLocalHash` was non-empty (#24).
+**Sync pairing:** tablet socket CRUD queues `pendingSync` + `tabletcrud` WS (slice 7); phone pairs `ghDelete`/`pushNote` immediately or on connect. Phone HTTP CRUD still pairs inline. If sync pushes an accidental empty file, `pushNote` refuses when `ghLocalHash` was non-empty (#24).
 
 **Not worth porting to tablet:** Upload, Download, Copy, GitHub token entry — need a file picker or clipboard; phone is the right surface.
 

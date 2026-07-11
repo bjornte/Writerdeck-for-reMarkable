@@ -204,6 +204,7 @@ new2b = (
     '                currentFile = name\n'
     '                doc = response\n'
     '                query.text = response\n'
+    '                autosaveSnapshot = response\n'
     '                writerdeck.notifyOpen(name)\n'
 )
 assert old2b in s, "doLoad doc=response block not found (edit 2b)"
@@ -549,6 +550,7 @@ new7 = (
     '            currentFile = ""\n'
     '            doc = ""\n'
     '            query.text = ""\n'
+    '            autosaveSnapshot = ""\n'
     '            lobbyFilesMode = ""\n'
     '            lobbyRefreshNotes()\n'
     '        }\n'
@@ -701,6 +703,7 @@ new7l = (
     '            currentFile = ""\n'
     '            doc = ""\n'
     '            query.text = ""\n'
+    '            autosaveSnapshot = ""\n'
     '        }\n'
     '        isLobby = true\n'
     '        lobbyFilesMode = ""\n'
@@ -721,6 +724,7 @@ new7h = (
     '        currentFile = ""\n'
     '        doc = ""\n'
     '        query.text = ""\n'
+    '        autosaveSnapshot = ""\n'
     '        isLobby = true\n'
     '        lobbyFilesMode = ""\n'
     '        lobbyRefreshNotes()\n'
@@ -728,6 +732,10 @@ new7h = (
     '\n'
     '    function noteRenamed(name) {\n'
     '        currentFile = name\n'
+    '    }\n'
+    '\n'
+    '    function reloadNote() {\n'
+    '        if (currentFile !== "") doLoad(currentFile)\n'
     '    }\n'
     '\n'
     '    function initFile(name) {'
@@ -760,17 +768,41 @@ new7i = (
     '        }\n'
     '        if (mode == 1) doc = content\n'
     '        console.log("Save " + currentFile)\n'
-    '        var fileUrl = folder + currentFile\n'
-    '        console.log(fileUrl)\n'
+    '        var url = "http://127.0.0.1:8000/api/notes/" + encodeURIComponent(currentFile)\n'
+    '        console.log(url)\n'
     '        var request = new XMLHttpRequest()\n'
-    '        request.open("PUT", fileUrl, false)\n'
-    '        request.send(content)\n'
+    '        request.open("PUT", url, false)\n'
+    '        request.setRequestHeader("Content-Type", "application/json")\n'
+    '        request.send(JSON.stringify({ content: content }))\n'
     '        console.log("save -> " + request.status + " " + request.statusText)\n'
     '        return request.status\n'
     '    }'
 )
 assert old7i in s, "saveFile body not found (edit 7i)"
 s = s.replace(old7i, new7i, 1)
+
+# 7t. Autosave: periodic flush of query.text -> disk while editing (slice 9).
+#     Uses saveFile() (loopback HTTP -> atomic writeNoteFile on server).
+assert '    property bool cursorStrong: true' in s, "cursorStrong not found (edit 7t)"
+s = s.replace(
+    '    property bool cursorStrong: true',
+    '    property bool cursorStrong: true\n'
+    '    property string autosaveSnapshot: ""',
+    1
+)
+old7t = '    function reloadNote() {'
+new7t = (
+    '    function autosaveTick() {\n'
+    '        if (isLobby || currentFile === "" || mode != 1) return\n'
+    '        if (query.text === autosaveSnapshot) return\n'
+    '        saveFile()\n'
+    '        if (currentFile !== "" && !isHtmlPayload(query.text)) autosaveSnapshot = query.text\n'
+    '    }\n'
+    '\n'
+    '    function reloadNote() {'
+)
+assert old7t in s, "reloadNote not found (edit 7t)"
+s = s.replace(old7t, new7t, 1)
 
 # 7j. Demote scratch to an ordinary note: clear the currentFile default so boot
 #     starts in a clean no-file state. Combined with the 7i saveFile guard and
@@ -1209,6 +1241,13 @@ assert body_end in s, "body+Window end not found (8b)"
 last_body_pos = s.rfind(body_end)
 cursor_state_block = (
     '        Timer {\n'
+    '            id: autosaveTimer\n'
+    '            interval: 45000\n'
+    '            repeat: true\n'
+    '            running: !isLobby && currentFile !== "" && mode == 1\n'
+    '            onTriggered: autosaveTick()\n'
+    '        }\n'
+    '        Timer {\n'
     '            id: cursorTimer\n'
     '            interval: 500\n'
     '            repeat: false\n'
@@ -1247,7 +1286,7 @@ assert s[hk:co].count('{') == s[hk:co].count('}'), "handleKey brace mismatch -- 
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + content-fidelity + setLobbyInfo + lobby-subpages + handleHome + doLoad-query-sync + prepareSleep + sleep-screen + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + noteRenamed + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate + lobbyHandleKey).')
+print('  All QML edits applied (props + content-fidelity + setLobbyInfo + lobby-subpages + handleHome + doLoad-query-sync + prepareSleep + sleep-screen + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + noteRenamed + reloadNote + autosave + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate + lobbyHandleKey).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true
