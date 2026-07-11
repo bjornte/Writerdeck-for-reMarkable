@@ -175,6 +175,8 @@ echo "--- Deploying Writerdeck-launcher.sh -> /home/root/Writerdeck-launcher.sh 
 rm_send_file "$DIR/Writerdeck-launcher.sh" "/home/root/Writerdeck-launcher.sh" "$TARGET"
 rm_ssh 'chmod +x /home/root/Writerdeck-launcher.sh' "$TARGET"
 echo "  OK"
+rm_deploy_wd "$TARGET"
+echo "  ${DEVICE_WD} OK"
 echo
 
 # Push the Qt5 sysroot tarball UNLESS RM_BINARY_ONLY=1 and the sysroot already

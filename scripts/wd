@@ -1,0 +1,33 @@
+#!/bin/sh
+# On-device: ensure Writerdeck-server is up, then POST /api/lobby (Lobby on e-ink).
+# Deployed to /home/root/wd by deploy-rmkbd.sh and deploy-keywriter.sh.
+# Usage (SSH on the tablet):  ~/wd
+
+set -e
+
+if ! pidof Writerdeck-server >/dev/null 2>&1; then
+  if systemctl cat writerdeck >/dev/null 2>&1; then
+    systemctl start writerdeck
+  else
+    nohup /home/root/Writerdeck-server --editor /home/root/Writerdeck-launcher.sh \
+      >/tmp/writerdeck-server.log 2>&1 &
+  fi
+  i=0
+  while [ "$i" -lt 10 ]; do
+    wget -qO- --timeout=2 http://127.0.0.1:8000/ >/dev/null 2>&1 && break
+    i=$((i + 1))
+    sleep 1
+  done
+fi
+
+if ! wget -qO- --timeout=3 http://127.0.0.1:8000/ >/dev/null 2>&1; then
+  echo "Writerdeck-server not responding on :8000" >&2
+  exit 1
+fi
+
+if ! wget -qO- --timeout=10 --post-data="" http://127.0.0.1:8000/api/lobby >/dev/null 2>&1; then
+  sleep 4
+  wget -qO- --timeout=10 --post-data="" http://127.0.0.1:8000/api/lobby >/dev/null
+fi
+
+echo Lobby

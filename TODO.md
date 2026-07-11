@@ -78,6 +78,7 @@ Power again after wake → restart editor session and reopen the note that was o
 - [x] Browser: connection status in top bar — single indicator: **Tablet offline** / **Connecting…** / **Connected · 85%** (`GET /api/status`, polled every 5 s; HTTP is source of truth).
 - [x] Browser: exit Writerdeck from Preferences — `POST /api/shutdown` stops editor, restores xochitl, exits Writerdeck-server.
 - [x] USB Escape launch — from stock UI (no session), Esc on USB keyboard → Lobby (`watchUSBKeyboardForLaunch` in `daemon/main.go`). Not Esc-to-wake (power button only).
+- [x] Page-button chord launch — left+right page buttons together from stock UI → Lobby (`watchPhysicalButtons` in `daemon/main.go`).
 - [x] Edit from browser — regression fixed (2026-07-11): patch 7p missing `}` in `handleKey()` broke QML load; `scripts/test-edit-session.sh` guards it.
 - [ ] Lobby: Ctrl-K note picker from Lobby — shipped; **verify on USB keyboard**.
 

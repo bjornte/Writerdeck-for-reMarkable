@@ -49,9 +49,18 @@ To set up the repo and enable syncing:
 3. Pair a physical keyboard to your phone.
 4. Tap a note to read it, or Edit to type — keystrokes land on the e-ink and save as `.md`. New makes a note; Rename / Delete / Download / Copy live in the read view; **Preferences** picks the reading font, PIN length, and display rotation (6 / 4 / off for PIN).
 
+**Show the Lobby**
+
+| Where | Command |
+|-------|---------|
+| Mac (same Wi-Fi) | `wd` after `bash scripts/install-alias.sh`, or `bash scripts/lobby.sh` |
+| SSH on the tablet | `~/wd` |
+
+Both invoke `/home/root/wd`: start Writerdeck if needed, then open the Lobby. No PIN required. (`wd` is not on `$PATH`; use `~/wd` or the full path.)
+
 Shortcuts:
 
-- Esc — in Writerdeck: toggles edit / preview (or closes the note picker). From **stock reMarkable UI** with a USB keyboard: launches Writerdeck to the Lobby.
+- Esc — in Writerdeck: toggles edit / preview (or closes the note picker). From **stock reMarkable UI** with a USB keyboard: launches Writerdeck to the Lobby. **Left + right page buttons together** (no USB): same launch from stock UI.
 - Ctrl-K — switch note from within edit view; from the Lobby, opens the note picker.
 - Ctrl-R — rotate 90° clockwise in the Lobby (USB keyboard). Ctrl + side arrows rotate in preview/read mode and in the Lobby (angle is remembered across sessions).
 - Ctrl-Q — quit Writerdeck from the Lobby.

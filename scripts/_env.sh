@@ -132,3 +132,10 @@ with_ticker() {
   printf ' %ds\n' "$(( $(date +%s) - _t0 ))"
   return "$rc"
 }
+
+# Ship the on-device wd helper (Lobby one-liner). Usage: rm_deploy_wd [target]
+rm_deploy_wd() {
+  local target="${1:-$RM_HOST}"
+  rm_send_file "${_THIS_DIR}/wd" "$DEVICE_WD" "$target"
+  rm_ssh "chmod +x $DEVICE_WD" "$target"
+}

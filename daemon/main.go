@@ -99,6 +99,8 @@ const (
 	evKey     = 1   // EV_KEY
 	keyEsc    = 1   // KEY_ESC -- USB keyboard launch from stock UI
 	keyHome   = 102 // KEY_HOME -- middle (home) button, confirmed on /dev/input/event1
+	keyLeft   = 105 // KEY_LEFT -- physical page-left button
+	keyRight  = 106 // KEY_RIGHT -- physical page-right button
 	keyPower  = 116 // KEY_POWER -- top power button
 	keyWake   = 143 // KEY_WAKEUP -- fires on some wake paths
 	buttonDev = "/dev/input/event1"
@@ -385,16 +387,33 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 	defer f.Close()
 	fmt.Fprintln(os.Stderr, "writerdeck-server: watching physical buttons on "+buttonDev)
 	var debounce time.Time
+	var leftDown, rightDown bool
+	var chordDebounce time.Time
 	for {
 		var ev inputEvent
 		if err := binary.Read(f, binary.LittleEndian, &ev); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: button read error: %v\n", err)
 			return
 		}
-		if ev.Type != evKey || ev.Value != 1 {
+		if ev.Type != evKey {
 			continue
 		}
-		if ev.Code != keyHome && ev.Code != keyPower && ev.Code != keyWake {
+
+		// Page-button chord: hold left+right together to launch Writerdeck from stock UI.
+		if ev.Code == keyLeft || ev.Code == keyRight {
+			if ev.Code == keyLeft {
+				leftDown = ev.Value == 1
+			} else {
+				rightDown = ev.Value == 1
+			}
+			if leftDown && rightDown && ev.Value == 1 && time.Since(chordDebounce) >= keyboardDebounceMs {
+				chordDebounce = time.Now()
+				handleIdleLaunch(s, "page buttons (left+right)")
+			}
+			continue
+		}
+
+		if ev.Value != 1 {
 			continue
 		}
 		if time.Since(debounce) < 800*time.Millisecond {
@@ -476,19 +495,26 @@ func findKeyboardInputDevices() []string {
 	return out
 }
 
+// handleIdleLaunch starts an editor session (Lobby) from the stock UI when no session
+// is active and the device is not in power sleep. Used by USB Escape and the
+// physical left+right page-button chord.
+func handleIdleLaunch(s *session, source string) {
+	if s == nil || s.isActive() || s.isSleeping() {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "writerdeck-server: %s -- launching editor to Lobby\n", source)
+	go func() {
+		if err := s.start(); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: %s launch failed: %v\n", source, err)
+		}
+	}()
+}
+
 // handleEscapeLaunch starts an editor session (Lobby) when Escape is pressed on a
 // USB keyboard while the stock UI is up. Ignored during active sessions and
 // power sleep -- keywriter handles Esc while editing; power button handles wake.
 func handleEscapeLaunch(s *session) {
-	if s == nil || s.isActive() || s.isSleeping() {
-		return
-	}
-	fmt.Fprintln(os.Stderr, "writerdeck-server: Escape -- launching editor to Lobby")
-	go func() {
-		if err := s.start(); err != nil {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: Escape launch failed: %v\n", err)
-		}
-	}()
+	handleIdleLaunch(s, "Escape")
 }
 
 func readUSBKeyboardEvents(dev string, s *session, debounce *struct {

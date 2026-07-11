@@ -42,6 +42,8 @@ echo "  any old server stopped."
 printf '    '; with_ticker 5 rm_send_file "${BINARY}" "${DEVICE_SERVER}.new"
 rm_ssh "mv -f ${DEVICE_SERVER}.new ${DEVICE_SERVER} && chmod +x ${DEVICE_SERVER}" >/dev/null
 echo "  ${DEVICE_SERVER} updated."
+rm_deploy_wd
+echo "  ${DEVICE_WD} updated."
 echo
 
 echo "======================================"

@@ -32,6 +32,9 @@ Status: built (Phase 8 slice 8c), device-verified. Writerdeck-server is its own 
 ## 7b. USB Escape launches Writerdeck from stock UI (not wake)
 Status: built. `Writerdeck-server` watches USB keyboard evdev nodes (hotplug rescan). **Escape while idle** (stock `xochitl` up, no editor session, not sleeping) → `session.start()` → Lobby — the keyboard counterpart to phone **Edit** without pre-selecting a note. **Not** Esc-to-wake after power sleep (that path didn't work on device; power button only). While a session is active, Esc is ignored here so Writerdeck keeps normal edit/preview/omni behaviour.
 
+## 7c. Left+right page buttons launch Writerdeck from stock UI
+Status: built. Physical page buttons (`KEY_LEFT` 105 / `KEY_RIGHT` 106 on `/dev/input/event1`) are readable alongside `xochitl` (no `EVIOCGRAB`). **Both pressed while idle** → same `handleIdleLaunch` path as USB Escape → Lobby. Debounced 800 ms; ignored during an active session or power sleep. Gives a tablet-only launch gesture without USB or the phone. `xochitl` still receives the individual button events in parallel — acceptable on the home screen; in a document the chord may briefly page.
+
 ## 8. Phase 8 Companion — phone owns files, tablet owns editing — with PIN-on-tablet auth
 Status: built (slices 8a–8e), device-verified. The owner wanted a boot Lobby (IP + connect how-to + Home-to-exit + GitHub line) and full note management from the phone. De-risked by inspection: the tablet *is* the web server (Writerdeck-server), so no phone app; Writerdeck-server (Go) does all file ops on `/home/root/Writerdeck-user-documents/*.md` natively; the only Writerdeck changes are a Lobby overlay (mirroring the existing `isOmni` Rectangle) and "open note X" = `saveAndLoad(name)`. PIN shown on the tablet per boot (no stored secret; you must hold the device to read it). Two-level Home (edit → Lobby, Lobby → quit) is the nice consequence: it removes the "reboot to write again" limit.
 

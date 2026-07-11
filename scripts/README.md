@@ -15,6 +15,7 @@ Deploy scripts push binaries with Writerdeck-branded names on the tablet. Repo s
 | `/home/root/Writerdeck-server` | `daemon/` via `deploy-rmkbd.sh` |
 | `/home/root/Writerdeck` | `third_party/keywriter/` (CI) via `deploy-keywriter.sh` |
 | `/home/root/Writerdeck-launcher.sh` | `scripts/Writerdeck-launcher.sh` |
+| `/home/root/wd` | `scripts/wd` — show Lobby (`~/wd` on tablet SSH) |
 | `/home/root/Writerdeck-user-documents/` | notes directory |
 | `/home/root/.Writerdeck/settings.json` | persisted prefs |
 | `/run/Writerdeck.sock` | daemon ↔ editor socket |
@@ -37,7 +38,9 @@ Deploy scripts push binaries with Writerdeck-branded names on the tablet. Repo s
 | `test-e2e.sh` | (Mac) Full browser→e-ink pipeline test: build+deploy Writerdeck-server → stop xochitl → launch Writerdeck + server → print the browser URL → hold for a human to type → show daemon log + `scratch.md` → restore xochitl. `-s` skips the server build+scp. Self-logs to `../docs/recon/`. |
 | `test-edit-session.sh` | (Mac) Regression: `POST /api/open` (phone **Edit**) from stock UI must keep Writerdeck running, xochitl stopped, and `editorActive: true` for ~8 s. Prep starts server if needed; cleanup returns to stock UI without killing the daemon. Self-logs to `../docs/recon/`. |
 | `push.ps1` / `push.sh` | One-line stage+commit+push. `push.ps1` bakes in the personal git identity to prevent the work-email-leak footgun. On the Mac, `rmpush` is the alias. |
-| `install-alias.sh` | One-time Mac setup: adds the `rmpush` alias to `~/.zshrc`. |
+| `install-alias.sh` | One-time Mac setup: adds `rmpush`, `rmkw`, and `wd` aliases to `~/.zshrc`. |
+| `lobby.sh` | (Mac) SSH to the tablet and run `~/wd` → Lobby on e-ink. Mac alias: `wd`. |
+| `wd` | On-device script (deployed to `/home/root/wd`). From an SSH session on the tablet: `~/wd`. |
 | `watch-mac.sh` | Git-bridge auto-sync (Mac side). Pulls everything; auto commits+pushes only new outputs under `docs/recon/` (scoped for safety — edits elsewhere are reported, not committed). macOS GUI banners on arm / each sync / stop. |
 | `watch-pc.ps1` | Git-bridge auto-sync (PC side). Loops `git pull`; pops a Windows toast when a pull brings in new commits. Banners on arm / each pull / stop. No admin, no modules. |
 | `install-service.sh` | (Mac) Install `writerdeck.service` on the device: scp unit → `/etc/systemd/system/`, `daemon-reload`. Migrates off legacy unit names if present. Does not enable (boot-loop guard); prints the manual-start → enable → recovery steps. |

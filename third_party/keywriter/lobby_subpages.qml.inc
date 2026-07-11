@@ -403,7 +403,7 @@
                                     width: parent.width
                                 }
                                 Text {
-                                    text: "Lobby: Tab / arrows / 1-6 switch pages\nFiles: Up/Down select  Enter open  n d r\nEsc: launch from stock UI (USB only)\nCtrl-K: quick file picker\nCtrl-R: rotate  Ctrl-Q: quit\nHome: exit to reMarkable UI"
+                                    text: "Lobby: Tab / arrows / 1-6 switch pages\nFiles: Up/Down select  Enter open  n d r\nStock UI: Esc (USB) or L+R page buttons → Lobby\nCtrl-K: quick file picker\nCtrl-R: rotate  Ctrl-Q: quit\nHome: exit to reMarkable UI"
                                     font.pointSize: 10
                                     font.family: "Noto Mono"
                                     color: "#555555"
