@@ -13,14 +13,14 @@ Status: **active — non-negotiable.** Writerdeck is a typewriter: the owner's p
 **The contract (summary):**
 
 1. **Content** — bytes on disk are UTF-8 Markdown; never Qt `qrichtext` / HTML (slice 2 shipped 2026-07-11).
-2. **Lifecycle** — no silent overwrite of an open note by reconcile, phone CRUD, or rename/delete; server + phone track tablet editor state (slices 1+3 shipped; full reconcile gating still open).
+2. **Lifecycle** — no silent overwrite of an open note by reconcile, phone CRUD, or rename/delete; server + phone track tablet editor state (slices 1+3+4 shipped).
 3. **Durability** — defined save paths flush buffer → disk; atomic writes for notes; **unsaved buffer is not durable** across kill/deploy/crash until autosave ships (open gap — must be documented, not ignored).
 4. **Coherence** — disk change under an open session requires reload or conflict UX; buffer must not blindly win over a pull.
 5. **Sync subordination** — GitHub reconcile assists backup; it must not delete, empty-push, or fork paths against a live edit (#19, #24 guards are partial).
 
 **Feature gate:** no change to `daemon/`, `sync.js`, `build-keywriter.sh`, or note APIs ships without an integrity pass against the five points above. Incident ADRs (#24, empty-push) are patches *under* this contract, not substitutes for it.
 
-**Shipped under this contract:** #24 (Lobby wipe), edit lease / `notifyOpen` (slice 1), content-fidelity save/load (slice 2), `notedeleted` + `noterenamed` (slice 3), empty-push guard (#19). **Still violating:** no autosave, incomplete reconcile gating, no OCC, non-atomic note writes, editor unaware of disk pulls.
+**Shipped under this contract:** #24, edit lease (slice 1), content fidelity (slice 2), `notedeleted`/`noterenamed` (slice 3), reconcile policy (slice 4), empty-push guard (#19). **Still violating:** no autosave, no OCC, non-atomic note writes, editor unaware of disk pulls.
 
 ---
 
@@ -116,7 +116,7 @@ Status: built, device-verified 2026-07-11. Returning to Lobby (`handleHome`, `sh
 - USB keyboard locales *(open · medium)*. Browser/Bluetooth path resolves layout in the phone OS (Norwegian works). USB path uses Qt evdev with **US QWERTY** default — Norwegian æøå and other national layouts need per-layout `.qmap` files via `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` ([remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1)); `loadkeys` / `setxkbmap` do not apply. Planned: ship qmaps + `settings.json` picker — [improvements.md](improvements.md), [../TODO.md](../TODO.md) Phase 10.
 - Per-note / subfolder encryption *(open · design)*. Global PIN gates the API; no subset protection yet. Encrypted subfolder with passphrase-derived keys is the leading option — design in [improvements.md](improvements.md); implementation not started.
 - Tablet file management *(partial · shipped)*. Lobby **Files** tab + socket CRUD covers list/create/open/rename/delete on tablet (#23). Upload, download, copy, paste, and GitHub token entry remain browser-only.
-- **Document integrity contract violations** *(open · high)*. Foundational contract: § Document integrity above. Remaining gaps (not optional): autosave / kill durability, reconcile gating on all triggers, OCC, atomic note writes, buffer↔disk reload. Matrix: [improvements.md](improvements.md) § Document integrity.
+- **Document integrity contract violations** *(open · high)*. Foundational contract: § Document integrity above. Remaining gaps (not optional): autosave / kill durability, OCC, atomic note writes, buffer↔disk reload. Matrix: [improvements.md](improvements.md) § Document integrity.
 - `/dev/uinput` is unavailable and unfixable on this kernel (decision 1). Closed, not a to-do — recorded so nobody retries it.
 - Go toolchain must be on the Mac (`brew install go`) — the only device-reachable host.
 - Disk: only the tiny rootfs is tight, and nothing we ship goes there. `/` (rootfs, ~228 MB) is 96% full; everything we deploy lives on `/home/root/` (separate multi-GB partition). Don't resize rootfs (A/B OTA scheme; brick risk).

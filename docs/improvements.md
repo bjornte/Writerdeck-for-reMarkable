@@ -65,7 +65,7 @@ Today only **phone** `POST /api/open` sets server `currentNote` and browser `tab
 
 **Mitigation already in place (tablet CRUD):** Lobby **Files** delete/rename requires being in the Lobby first; `handleHome` / `showLobby` save and clear `currentFile`, so tablet-initiated destructive ops from Files do not hit the “stale buffer resurrects path” trap. The gap is **concurrent phone ops** (or reconcile pulls) while the tablet editor still holds a buffer.
 
-**Improvement:** ~~Editor should report open file…~~ **Shipped slice 1 (2026-07-11).** ~~`notedeleted` + `noterenamed`~~ **Shipped slice 3 (2026-07-11).** Remaining: gate all reconcile triggers on `tabletOpenNote` (not only poll).
+**Improvement:** ~~Editor should report open file…~~ **Shipped slice 1.** ~~`notedeleted` + `noterenamed`~~ **Shipped slice 3.** ~~Reconcile gating on all triggers~~ **Shipped slice 4.**
 
 ### Save & load edge cases
 
@@ -101,7 +101,7 @@ Stack: **content contract** + **edit lease** + **OCC** + **atomic writes** + **c
 1. ~~**Edit lease**~~ — shipped 2026-07-11.
 2. ~~**Content fidelity**~~ — shipped 2026-07-11 (`39cbdd3`: save contract, load sanitizer, `toggleMode` fix, server HTML guard).
 3. ~~**`notedeleted` + `noterenamed`**~~ — shipped 2026-07-11 (editor notified on phone rename/delete of open file; `noteDeleted` clears buffer).
-4. **Reconcile policy** — skip pull/overwrite for server-known open file on all triggers.
+4. ~~**Reconcile policy**~~ — shipped 2026-07-11 (`openNote` in `/api/status`; reconcileAll gated on edit lease for all triggers).
 5. **OCC on disk** — `PUT /api/notes` requires base revision / `If-Match`.
 6. **Atomic note writes** on server (same pattern as `settings.json`).
 7. Tablet CRUD → queued GitHub ops or Lobby “sync pending”.

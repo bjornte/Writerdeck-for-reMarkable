@@ -1844,7 +1844,7 @@ func lobbyHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// statusHandler serves GET /api/status: tablet battery, Wi-Fi, and editor state.
+// statusHandler serves GET /api/status: tablet battery, Wi-Fi, editor state, open note.
 func statusHandler(w http.ResponseWriter, r *http.Request) {
 	if !checkAuth(w, r) {
 		return
@@ -1872,6 +1872,9 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	if activeSess != nil {
 		editorActive = activeSess.isActive()
 	}
+	currentNoteMu.Lock()
+	openNote := currentNote
+	currentNoteMu.Unlock()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(struct { //nolint:errcheck
 		Battery      int    `json:"battery"`
@@ -1879,7 +1882,8 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 		Wifi         bool   `json:"wifi"`
 		IP           string `json:"ip"`
 		EditorActive bool   `json:"editorActive"`
-	}{battery, charging, wifi, getLocalIP(), editorActive})
+		OpenNote     string `json:"openNote"`
+	}{battery, charging, wifi, getLocalIP(), editorActive, openNote})
 }
 
 // shutdownHandler handles POST /api/shutdown: end the editor session, restore

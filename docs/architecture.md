@@ -34,7 +34,7 @@ Keystrokes reach the editor through a local socket rather than `/dev/uinput`: th
 
 **Feature gate:** before shipping any change that touches notes, saves, opens, sync, CRUD, or editor lifecycle, ask: *can this lose text, write wrong bytes, or overwrite without the user knowing?* If yes, it does not ship until mitigated or explicitly accepted by the owner.
 
-**As built (2026-07-11):** slices 1–3 shipped (edit lease; content fidelity; `notedeleted`/`noterenamed`). Gaps remain: no autosave, reconcile not gated on all triggers, no OCC, notes not atomic, buffer unaware of disk pulls. Treat these as **open contract violations**, not nice-to-haves.
+**As built (2026-07-11):** slices 1–4 shipped (edit lease; content fidelity; `notedeleted`/`noterenamed`; reconcile gated on open file for all triggers). Gaps remain: no autosave, no OCC, notes not atomic, buffer unaware of disk pulls. Treat these as **open contract violations**, not nice-to-haves.
 
 ## On-device layout
 

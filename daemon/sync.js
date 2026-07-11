@@ -138,6 +138,7 @@ function handleClash(filename, tabletContent) {
 // which is exactly the "one file synced per attempt" failure this return fixes.
 export function pushNote(filename) {
   if (!syncReady()) return Promise.resolve();
+  if (filename === state.tabletOpenNote) return Promise.resolve();
   return fetch('/api/notes/' + encodeURIComponent(filename))
     .then(function(r) { return r.ok ? r.text() : null; })
     .then(function(content) {
@@ -187,6 +188,7 @@ export function pushNote(filename) {
 // If SHA matches stored SHA, nothing is fetched. Returns a promise.
 export function pullNoteAndUpdate(filename) {
   if (!syncReady()) return Promise.resolve();
+  if (filename === state.tabletOpenNote) return Promise.resolve();
   return fetch(ghUrl(filename), { headers: ghHdrs() })
     .then(function(r) {
       if (r.status === 404) return null; // not on GitHub yet
@@ -266,12 +268,23 @@ function strHash(s) {
   return String(h >>> 0);
 }
 
+// refreshTabletOpenNote: server-authoritative edit lease before reconcile.
+// Fixes the startup/connect race where reconcile ran before WS openedit arrived.
+function refreshTabletOpenNote() {
+  return fetch('/api/status', { credentials: 'same-origin' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(s) {
+      if (s && 'openNote' in s) { state.tabletOpenNote = s.openNote || ''; }
+    })
+    .catch(function() {});
+}
+
 // reconcileAll: full two-way sync of every note -- the trigger the event-only
 // model was missing. Runs on first connect/verify, on reconnect, on a periodic
-// poll, and from "Sync now". Per note it delegates to the same safe primitives
-// used elsewhere: remote-only -> pull; local-only -> push; both -> compare
-// fingerprints and push / pull / keep-both. The actively-open note is skipped
-// (its own open-pull + Home-push own it). Resolves to the note count.
+// poll, and from "Sync now". Skipped entirely while the tablet editor holds a
+// file open (server-known edit lease via /api/status openNote + openedit WS).
+// Per-note reconcile also excludes tabletOpenNote as belt-and-suspenders.
+// Resolves to the note count.
 var syncing = false;
 export function reconcileAll(reason, opts) {
   opts = opts || {};
@@ -287,54 +300,57 @@ export function reconcileAll(reason, opts) {
     }
     return Promise.resolve(0);
   }
-  syncing = true;
-  var statusEls = document.querySelectorAll('.sync-status-line');
-  for (var s = 0; s < statusEls.length; s++) statusEls[s].textContent = 'Syncing\u2026';
-  var remoteList = fetch('https://api.github.com/repos/' + state.syncRepo + '/contents/', { headers: ghHdrs() })
-    .then(function(r) {
-      if (r.status === 404) return []; // empty repo
-      if (r.status === 401 || r.status === 403) {
-        var b = document.getElementById('sync-banner');
-        if (b) { b.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>Sync</strong>.'; b.style.display = 'block'; _onBannerChange(); }
-        return null; // auth failure sentinel
+  return refreshTabletOpenNote().then(function() {
+    if (state.tabletOpenNote) return 0;
+    syncing = true;
+    var statusEls = document.querySelectorAll('.sync-status-line');
+    for (var s = 0; s < statusEls.length; s++) statusEls[s].textContent = 'Syncing\u2026';
+    var remoteList = fetch('https://api.github.com/repos/' + state.syncRepo + '/contents/', { headers: ghHdrs() })
+      .then(function(r) {
+        if (r.status === 404) return []; // empty repo
+        if (r.status === 401 || r.status === 403) {
+          var b = document.getElementById('sync-banner');
+          if (b) { b.innerHTML = '\u26a0 GitHub token rejected \u2014 renew it in <strong>Sync</strong>.'; b.style.display = 'block'; _onBannerChange(); }
+          return null; // auth failure sentinel
+        }
+        return r.ok ? r.json() : [];
+      }).catch(function() { return []; });
+    var localList = fetch('/api/notes').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
+    return Promise.all([remoteList, localList]).then(function(res) {
+      var remote = res[0], local = res[1];
+      if (remote === null) throw new Error('auth'); // banner already shown; skip success line
+      var remoteMap = {};
+      remote.forEach(function(e) {
+        if (e && e.type === 'file' && /\.md$/.test(e.name)) remoteMap[e.name] = e.sha;
+      });
+      var names = {};
+      Object.keys(remoteMap).forEach(function(n) { names[n] = true; });
+      (local || []).forEach(function(e) { if (e && e.name) names[e.name] = true; });
+      var list = Object.keys(names).filter(function(n) { return n !== state.tabletOpenNote; });
+      // Sequential: gentle on the rate limit, no concurrent tablet writes.
+      return list.reduce(function(chain, name) {
+        return chain.then(function() { return reconcileOne(name, remoteMap[name]); });
+      }, Promise.resolve()).then(function() { return list.length; });
+    }).then(function(count) {
+      var ts = new Date().toLocaleString();
+      localStorage.setItem('ghLastSync', ts);
+      var els = document.querySelectorAll('.sync-status-line');
+      for (var i = 0; i < els.length; i++) els[i].textContent = 'Last synced: ' + ts;
+      _onNotesChanged();
+      // Tell the daemon so Lobby can show "Last sync was …" and power-sleep can proceed.
+      fetch('/api/sync/ack', { method: 'POST', credentials: 'same-origin' }).catch(function() {});
+      syncing = false;
+      return count;
+    }).catch(function() {
+      // Failed or auth-rejected: don't claim a sync happened. Restore the line.
+      var ls = localStorage.getItem('ghLastSync');
+      var els = document.querySelectorAll('.sync-status-line');
+      for (var j = 0; j < els.length; j++) {
+        els[j].textContent = ls ? 'Last synced: ' + ls : 'Never synced on this device';
       }
-      return r.ok ? r.json() : [];
-    }).catch(function() { return []; });
-  var localList = fetch('/api/notes').then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
-  return Promise.all([remoteList, localList]).then(function(res) {
-    var remote = res[0], local = res[1];
-    if (remote === null) throw new Error('auth'); // banner already shown; skip success line
-    var remoteMap = {};
-    remote.forEach(function(e) {
-      if (e && e.type === 'file' && /\.md$/.test(e.name)) remoteMap[e.name] = e.sha;
+      syncing = false;
+      return 0;
     });
-    var names = {};
-    Object.keys(remoteMap).forEach(function(n) { names[n] = true; });
-    (local || []).forEach(function(e) { if (e && e.name) names[e.name] = true; });
-    var list = Object.keys(names).filter(function(n) { return n !== state.tabletOpenNote; });
-    // Sequential: gentle on the rate limit, no concurrent tablet writes.
-    return list.reduce(function(chain, name) {
-      return chain.then(function() { return reconcileOne(name, remoteMap[name]); });
-    }, Promise.resolve()).then(function() { return list.length; });
-  }).then(function(count) {
-    var ts = new Date().toLocaleString();
-    localStorage.setItem('ghLastSync', ts);
-    var els = document.querySelectorAll('.sync-status-line');
-    for (var i = 0; i < els.length; i++) els[i].textContent = 'Last synced: ' + ts;
-    _onNotesChanged();
-    // Tell the daemon so Lobby can show "Last sync was …" and power-sleep can proceed.
-    fetch('/api/sync/ack', { method: 'POST', credentials: 'same-origin' }).catch(function() {});
-    syncing = false;
-    return count;
-  }).catch(function() {
-    // Failed or auth-rejected: don't claim a sync happened. Restore the line.
-    var ls = localStorage.getItem('ghLastSync');
-    var els = document.querySelectorAll('.sync-status-line');
-    for (var j = 0; j < els.length; j++) {
-      els[j].textContent = ls ? 'Last synced: ' + ls : 'Never synced on this device';
-    }
-    syncing = false;
-    return 0;
   });
 }
 
@@ -374,14 +390,12 @@ function reconcileOne(name, remoteSha) {
     .catch(function() {});
 }
 
-// startSyncPoll: periodic safety-net reconcile so notes edited on the laptop
-// land without any user action. Skipped while the tablet editor holds a file
-// open (server-known edit lease via openedit, not phone typingMode).
+// startSyncPoll: periodic safety-net reconcile. reconcileAll gates on edit lease.
 var syncPollTimer = null;
 export function startSyncPoll() {
   if (syncPollTimer) return;
   syncPollTimer = setInterval(function() {
-    if (syncReady() && !state.tabletOpenNote) { reconcileAll('poll'); }
+    if (syncReady()) { reconcileAll('poll'); }
   }, SYNC_POLL_MS);
 }
 
