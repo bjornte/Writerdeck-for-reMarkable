@@ -2,7 +2,7 @@
 
 Owner wish-list and design notes — not tracked work. Shipped features live in [../DONE.md](../DONE.md); actionable items derived here land in [../TODO.md](../TODO.md). How it works: [architecture.md](architecture.md). Why: [decisions.md](decisions.md).
 
-**Document integrity:** the non-negotiable product contract lives in [architecture.md](architecture.md) § Document integrity and [decisions.md](decisions.md) § Document integrity. This file's § Document integrity below is the **risk matrix and implementation backlog** for that contract — not a downgrade to "wish-list".
+**Document integrity:** the non-negotiable product contract lives in [architecture.md](architecture.md) § Document integrity and [decisions.md](decisions.md) § Document integrity. This file's § Document integrity below is the **audit** — what is fixed, what is known-open, and what is unknown — not a wish-list.
 
 ---
 
@@ -35,92 +35,73 @@ The phone/Mac companion (`daemon/index.html` + `app.js` + `sync.js`) is the full
 
 ---
 
-## Document integrity — risk matrix & fix backlog (2026-07-11)
+## Document integrity — audit (2026-07-11)
 
-Implementation backlog for the product contract in [architecture.md](architecture.md) § Document integrity and [decisions.md](decisions.md) § Document integrity. Second-pass review after the Lobby Home wipe fix (#24).
+Living audit for [architecture.md](architecture.md) § Document integrity. **Slices 1–11 are shipped** (`b1ce2bc`…`f72282d`, device-verified). This section is not a backlog — open items stay open until closed or accepted.
 
-**As built** ([architecture.md](architecture.md)): tablet-primary `.md` on disk via Go `/api/notes`; phone `sync.js` reconcile + `ghSha_*`/`ghLocalHash_*`; open tracking via editor `notifyOpen` + server `openedit` (slice 1, 2026-07-11); poll gated on `tabletOpenNote`; tablet Files CRUD over socket `req`; WebSocket `exitedit` on Home/delete; `settings.json` already write-temp-rename.
+### Fixed (slices 1–11)
 
-### Content fidelity — save format (separate from lifecycle)
+| Slice | What |
+|---|---|
+| 1 | Edit lease — `notifyOpen` + `openedit` WS; reconcile skips `tabletOpenNote` |
+| 2 | Content fidelity — plain-markdown save contract, load sanitizer, `toggleMode` fix, server HTML guard |
+| 3 | `notedeleted` / `noterenamed` — editor notified on phone rename/delete of open file |
+| 4 | Reconcile policy — `openNote` in `/api/status`; `reconcileAll` gated on edit lease |
+| 5 | OCC — GET `ETag`; PUT overwrite requires `If-Match`; sync sends revision |
+| 6 | Atomic server writes — `writeNoteFile` temp+rename |
+| 7 | Tablet CRUD → GitHub — `tabletcrud` WS + `pendingSync` queue |
+| 8 | Disk↔buffer drift — `diskchanged` WS, phone drift banner, `POST /api/reload` |
+| 9 | Autosave — 45 s `autosaveTimer` while editing |
+| 10 | Tablet atomic saves — loopback `PUT /api/notes` → `writeNoteFile` |
+| 11 | Save before deploy/stop — `POST /api/flush-save`, deploy graceful wait, SIGTERM flush |
 
-Lifecycle hardening guards *when* writes happen; it does **not** guarantee *what* bytes land on disk. Upstream keywriter `saveFile()` writes `doc` verbatim — no plain-markdown contract.
+Also under contract: empty-push guard (#19), Lobby Home wipe fix (#24). Details: [DONE.md](../DONE.md) § Document integrity.
 
-**Observed (2026-07-11):** `likelønnsdrodling.md` saved as Qt `qrichtext` HTML (`<!DOCTYPE…`, single `<p>`), newlines collapsed, then synced to GitHub. Good markdown still in Git history (`909ff1a`). Root: `toggleMode()` (Esc) does `doc = query.text` + `saveFile()` across PlainText/RichText boundary; presentation state treated as storage format.
+### Known open (residual risks)
 
-**Improvement:**
-- **Save contract** — `saveFile()` writes plain UTF-8 from `query.text` in edit mode only; reject `qrichtext` / `<!DOCTYPE HTML` on write.
-- **Load sanitizer** — `doLoad` detects HTML wrapper, strip to plain text (or refuse + log).
-- **Fix `toggleMode`** — no blind `saveFile()` on every Esc; no `doc = query.text` while RichText active.
-- **Server guard** — `PUT /api/notes` rejects non-markdown/HTML payloads (optional fingerprint).
+Mitigated or bounded — not eliminated. Revisit before calling integrity “closed.”
 
-### Open-file visibility
+**Durability**
+- SIGKILL, editor segfault, or power loss between autosave ticks (up to ~45 s of typing).
+- `POST /api/flush-save` / SIGTERM path fails if editor socket down, `autosavenow` ack times out, or mismatched Writerdeck binary (no loopback save).
 
-Today only **phone** `POST /api/open` sets server `currentNote` and browser `tabletOpenNote`. **Tablet** opens (Lobby Files, Ctrl-K omni) update neither. Consequences:
+**Save / load timing**
+- `doLoad` is async — rapid note switch (Ctrl-K, Lobby Files) can interleave saves and loads.
+- `/api/open` continues on save-ack timeout — previous note may not be flushed before switch.
 
-- **`typingMode` is phone-only, not “tablet is editing”.** Poll reconcile is skipped when the phone is in Type mode (`typingMode` true), not when the tablet has an active editor session. USB-only editing with the phone on the note list still runs the **3-minute poll** — and the same overwrite risk applies to **connect**, **reconnect**, **startup**, **Sync now**, and **sync toggle** reconciles, which also ignore tablet editor state.
-- **Sync reconcile** skips only `tabletOpenNote` on the phone — not the file actually being edited on tablet. A phone on the note list (`typingMode` false) can `PUT` GitHub content over the live file on disk while the editor holds a different buffer; the next save writes the buffer back (fork or undo the pull).
-- **Stale `tabletOpenNote`:** phone-back from Type mode deliberately keeps `tabletOpenNote` (so push waits for `exitedit`). If the user then opens a *different* note on the tablet, reconcile keeps skipping the *old* name and may overwrite the *current* one.
-- **Phone delete/rename while the tablet is editing:** `notedeleted` / `currentNote` guards only match **phone-initiated** opens (`currentNote` set by `/api/open`). Delete from phone preview removes the file on disk; the next tablet Home/save **recreates** the old path from the in-memory buffer. **Rename has no editor notification at all** — server `currentNote` and phone `tabletOpenNote` update, but editor `currentFile` stays on the old basename, so the next save can **resurrect the old filename** even for a phone-opened note.
-- **Power wake** reopens `currentNote` captured before suspend — empty after tablet-only open, so wake may land in Lobby with no note restored.
+**Concurrency / sync**
+- Real edit clashes create `(tablet copy)` duplicates; clash overwrites disk without auto-reloading the editor (drift banner is manual).
+- Stale `tabletOpenNote` after phone-back can skip the wrong file in reconcile until status poll refreshes.
+- External GitHub edits (VS Code, web, git) — marker-aware delete helps; duplicates/resurrections still possible (#19).
+- `localStorage` loss (new browser, cleared site data) — surprise push/pull/clash on next reconcile.
+- Multiple browser tabs share one sync state — serialized but confusing.
+- Power sleep: up to 45 s wait for phone reconcile ack; GitHub may lag if phone offline.
 
-**Mitigation already in place (tablet CRUD):** Lobby **Files** delete/rename requires being in the Lobby first; `handleHome` / `showLobby` save and clear `currentFile`, so tablet-initiated destructive ops from Files do not hit the “stale buffer resurrects path” trap. The gap is **concurrent phone ops** (or reconcile pulls) while the tablet editor still holds a buffer.
+**Auth / ops**
+- PIN `none` — anyone on LAN can mutate notes (integrity + confidentiality on untrusted Wi-Fi).
+- `restore-wiped-notes.sh` — Git history only; no partial-truncation or duplicate cleanup beyond `(tablet copy)` names.
 
-**Improvement:** ~~Editor should report open file…~~ **Shipped slice 1.** ~~`notedeleted` + `noterenamed`~~ **Shipped slice 3.** ~~Reconcile gating on all triggers~~ **Shipped slice 4.**
+### Unknown (unbounded)
 
-### Save & load edge cases
+No claim that the threat surface is complete.
 
-- **`doLoad` is async;** Home or `saveAndLoad` before XHR completes can save the wrong file or skip save when `currentFile` is still empty (softer now with edit 2b, but timing remains). Rapid note switching (Ctrl-K / Lobby Files) can interleave saves and loads.
-- **`/api/open` continues on save-ack timeout** — switch may proceed before the previous note is flushed to disk.
-- **Disk↔buffer drift** — ~~reconcile pull / clash overwrite disk without editor reload~~ **Slice 8:** server `diskchanged` WS + phone drift banner; `POST /api/reload` → `reloadnote` on tablet (needs current Writerdeck for reload button).
-- ~~**No atomic write** for notes (server)~~ — **Shipped slice 6** (`writeNoteFile` temp+rename on POST/PUT/create). ~~**Tablet `file://` in-place**~~ — **slice 10:** `saveFile()` → loopback `PUT /api/notes` → `writeNoteFile` (needs Writerdeck binary deploy).
-- **Editor crash / deploy kill / SIGTERM** — **slice 9:** 45 s autosave. **Slice 11:** deploy and SIGTERM call `POST /api/flush-save` (`autosavenow` socket ack) before stopping; `deploy-rmkbd.sh` waits for graceful exit (~12 s). **Was a contract breach:** deploy used `pkill` + 0.5 s sleep — no save wait. **Still open:** SIGKILL, editor crash, or flush ack timeout before stop completes.
+- Bugs in paths not stress-tested (rapid switching, multi-device, sleep/wake edge cases, first boot with sync on).
+- Firmware OTA side effects on deployed binaries or unit file.
+- Qt / QML regressions not caught by `test-edit-session.sh` (save paths, autosave, loopback PUT).
+- Novel failure modes (network partition mid-save, partial HTTP write despite atomic rename, future feature regressions).
 
-### Sync & GitHub
+**Process:** before shipping note/save/sync/lifecycle changes, ask: *can this lose text, write wrong bytes, or overwrite without the user knowing?* If yes, it does not ship until mitigated or **explicitly accepted** by the owner and logged here.
 
-- **Tablet delete/rename** ~~updates disk only~~ — **slice 7:** tablet socket CRUD queues `pendingSync` and broadcasts `tabletcrud`; phone pairs `ghDelete`/`pushNote` immediately or on connect (Lobby shows “sync pending”).
-- **Real edit clashes** (both sides changed) still create `(tablet copy)` duplicates — only empty-tablet vs non-empty-remote is special-cased. Clash resolution overwrites disk without reloading the editor (same drift class as pull).
-- **External GitHub edits** (VS Code, web, git) — marker-aware delete/rename helps but duplicates/resurrections remain (#19).
-- **Empty-push guard** blocks accidental wipe to GitHub when phone remembers prior hash — intentional full clear may need manual re-push or hash reset.
-- **`localStorage` loss** (new phone browser, cleared site data) — loses per-note `sha`/fingerprints; next reconcile may surprise-push, surprise-pull, or clash-copy.
-- **Multiple browser tabs** on same origin share one sync state — concurrent reconciles are serialized but UX can confuse.
-- **Power sleep** waits up to 45 s for phone reconcile ack (`/api/sync/ack`); if the phone is disconnected or reconcile fails, sleep proceeds with disk saved but GitHub may lag.
+### Reference patterns
 
-### Auth & LAN
-
-- **PIN `none`** — anyone on Wi-Fi can `PUT`/`DELETE` notes via HTTP; integrity and confidentiality risk on untrusted LANs.
-
-### Recovery & ops
-
-- **`scripts/restore-wiped-notes.sh`** — recovers zero-byte files from Git history; does not cover partial truncation or duplicate cleanup beyond `(tablet copy)` names.
-- **No editor↔server version/fingerprint** — ~~cannot detect silent disk↔buffer drift~~ **slice 8:** disk baseline at open + `diskchanged` when PUT hits open note.
-
-### Suggested implementation order
-
-Stack: **content contract** + **edit lease** + **OCC** + **atomic writes** + **conflict copies**.
-
-1. ~~**Edit lease**~~ — shipped 2026-07-11.
-2. ~~**Content fidelity**~~ — shipped 2026-07-11 (`39cbdd3`: save contract, load sanitizer, `toggleMode` fix, server HTML guard).
-3. ~~**`notedeleted` + `noterenamed`**~~ — shipped 2026-07-11 (editor notified on phone rename/delete of open file; `noteDeleted` clears buffer).
-4. ~~**Reconcile policy**~~ — shipped 2026-07-11 (`openNote` in `/api/status`; reconcileAll gated on edit lease for all triggers).
-5. ~~**OCC on disk**~~ — shipped 2026-07-11 (GET ETag; PUT overwrite requires `If-Match`; sync sends revision).
-6. ~~**Atomic note writes**~~ — shipped 2026-07-11 (server `writeNoteFile` temp+rename; QML `file://` still direct).
-7. ~~**Tablet CRUD → queued GitHub ops**~~ — shipped 2026-07-11 (`tabletcrud` WS + `pendingSync` queue; Lobby lastSync shows pending).
-8. ~~**Reload / conflict banner**~~ — shipped 2026-07-11 (`diskchanged` WS, drift banner, `/api/reload`; Writerdeck `reloadNote` in next binary deploy).
-9. ~~**Autosave**~~ — shipped 2026-07-11 (45 s `autosaveTimer` while editing; dirty-check via `autosaveSnapshot`).
-10. ~~**Tablet atomic saves**~~ — shipped 2026-07-11 (loopback `PUT /api/notes`; server `isLoopback` auth + skips OCC/drift for editor saves).
-11. ~~**Save before deploy/stop**~~ — shipped 2026-07-11 (`POST /api/flush-save`, `autosavenow` cmd, deploy graceful wait; SIGTERM flush + 12 s quit timeout).
-
-### Models & further reading (terse)
-
-| Pattern | Fits Writerdeck | Pointer |
+| Pattern | Status | Pointer |
 |---|---|---|
-| Edit lease / single writer | Shipped slice 1 | [Ink & Switch local-first](https://www.inkandswitch.com/essay/local-first/) |
-| Plain-text save contract | Blocks qrichtext/HTML saves | — |
-| Optimistic concurrency (`If-Match`, 412) | `ghSha` on push; extend to tablet `PUT` | [RFC 7232](https://httpwg.org/specs/rfc7232.html), [CouchDB `_rev`](https://docs.couchdb.org/en/stable/replication/conflicts.html) |
-| Conflict copies + versioning | `(tablet copy).md` today; optional `.stversions` archive | [Syncthing conflicts](https://docs.syncthing.net/users/syncing.html) |
-| Atomic durable write | Notes `PUT` — settings already do this | [google/renameio](https://github.com/google/renameio) |
-| Remote CAS + serialize | Sequential `reconcileAll`; 409 → clash handler | [GitHub Contents API](https://docs.github.com/en/rest/repos/contents) |
-| CRDT / OT | Overkill for current whole-file markdown model | [Automerge](https://automerge.org/) |
+| Edit lease | Shipped | [Ink & Switch local-first](https://www.inkandswitch.com/essay/local-first/) |
+| Plain-text save contract | Shipped | — |
+| Optimistic concurrency | Shipped (HTTP) | [RFC 7232](https://httpwg.org/specs/rfc7232.html) |
+| Conflict copies | Partial (`(tablet copy)`) | [Syncthing conflicts](https://docs.syncthing.net/users/syncing.html) |
+| Atomic durable write | Shipped | [google/renameio](https://github.com/google/renameio) |
+| CRDT / OT | Not planned | [Automerge](https://automerge.org/) |
 
 ---
 

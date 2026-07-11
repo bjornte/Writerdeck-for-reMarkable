@@ -66,9 +66,29 @@ Built from source (upstream remarkable-keywriter), deployed as Writerdeck and pa
 
 Optional, off by default. The phone reconciles tablet notes with a private repo — pull what's missing either way, push local-only notes, handle clashes by keeping both copies with clear names. **Safety nets (2026-07-11):** refuses to push a zero-byte file over a previously-synced note; empty-tablet vs non-empty-GitHub clash restores from GitHub without creating `(tablet copy)` duplicates.
 
-**Marker-aware delete** — a note deleted on GitHub (VS Code, web UI, git) propagates to the tablet when the local copy is pristine and carries a stored `sha`. Unpushed local edits resurrect instead of deleting. External renames reconcile as delete-old + pull-new. Tablet-only deletes still don't propagate to GitHub by design.
+**Marker-aware delete** — a note deleted on GitHub (VS Code, web UI, git) propagates to the tablet when the local copy is pristine and carries a stored `sha`. Unpushed local edits resurrect instead of deleting. External renames reconcile as delete-old + pull-new. **Tablet delete/rename** queues `pendingSync` and pairs to GitHub when the phone browser is connected (slice 7); otherwise on next connect/reconcile.
 
-Triggers: connect, toggle on, three-minute poll, manual Sync now, **tablet Home or Power** (full reconcile via phone browser). Each successful reconcile POSTs `/api/sync/ack`, which stores `lastSyncAt` in settings and refreshes the Lobby. Skips the note currently open on the tablet during reconcile — `tabletOpenNote` is cleared before sync runs.
+Triggers: connect, toggle on, three-minute poll, manual Sync now, **tablet Home or Power** (full reconcile via phone browser). Each successful reconcile POSTs `/api/sync/ack`, which stores `lastSyncAt` in settings and refreshes the Lobby. Skips the note the tablet is editing — `openNote` from `/api/status` (edit lease, slices 1+4).
+
+## Document integrity (slices 1–11, 2026-07-11)
+
+Non-negotiable contract: plain Markdown on disk, no silent overwrite of live edits, durable saves. Device-verified after `b1ce2bc`…`f72282d`.
+
+| Slice | What |
+|---|---|
+| 1 | Edit lease — `notifyOpen`, `openedit` WS; reconcile skips open note |
+| 2 | Content fidelity — markdown save contract, HTML guard, `toggleMode` fix |
+| 3 | `notedeleted` / `noterenamed` on phone ops against open file |
+| 4 | Reconcile gated on `openNote` in `/api/status` |
+| 5 | OCC — ETag / `If-Match` on PUT |
+| 6 | Atomic server writes — `writeNoteFile` temp+rename |
+| 7 | Tablet CRUD → GitHub — `tabletcrud` WS + `pendingSync` |
+| 8 | Disk drift — `diskchanged` WS, phone banner, `/api/reload` |
+| 9 | 45 s autosave while editing |
+| 10 | Tablet saves via loopback `PUT /api/notes` |
+| 11 | Save before deploy/stop — `POST /api/flush-save`, graceful shutdown |
+
+Residual risks and unknowns: [docs/improvements.md](docs/improvements.md) § Document integrity.
 
 ## Infrastructure
 

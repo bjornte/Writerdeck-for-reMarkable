@@ -8,7 +8,7 @@ Each entry: a decision, its status, and the reasoning. Newest/most-foundational 
 
 ## Document integrity — the product contract (foundational)
 
-Status: **active — non-negotiable.** Writerdeck is a typewriter: the owner's prose must survive editing, sync, and normal device use as plain Markdown on disk. This is not a Phase 10 nice-to-have; it gates every feature. How it works: [architecture.md](architecture.md) § Document integrity. Open violations and fix order: [improvements.md](improvements.md) § Document integrity.
+Status: **active — non-negotiable.** Writerdeck is a typewriter: the owner's prose must survive editing, sync, and normal device use as plain Markdown on disk. This is not a Phase 10 nice-to-have; it gates every feature. How it works: [architecture.md](architecture.md) § Document integrity. Audit (fixed / known open / unknown): [improvements.md](improvements.md) § Document integrity.
 
 **The contract (summary):**
 
@@ -128,7 +128,7 @@ Status: built, device-verified 2026-07-11. Returning to Lobby (`handleHome`, `sh
 - USB keyboard locales *(open · medium)*. Browser/Bluetooth path resolves layout in the phone OS (Norwegian works). USB path uses Qt evdev with **US QWERTY** default — Norwegian æøå and other national layouts need per-layout `.qmap` files via `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` ([remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1)); `loadkeys` / `setxkbmap` do not apply. Planned: ship qmaps + `settings.json` picker — [improvements.md](improvements.md), [../TODO.md](../TODO.md) Phase 10.
 - Per-note / subfolder encryption *(open · design)*. Global PIN gates the API; no subset protection yet. Encrypted subfolder with passphrase-derived keys is the leading option — design in [improvements.md](improvements.md); implementation not started.
 - Tablet file management *(partial · shipped)*. Lobby **Files** tab + socket CRUD covers list/create/open/rename/delete on tablet (#23). Upload, download, copy, paste, and GitHub token entry remain browser-only.
-- **Document integrity contract violations** *(residual · low)*. SIGKILL/crash before autosave or flush hook; binary mismatch (old Writerdeck without `autosavenow`/loopback save). Matrix: [improvements.md](improvements.md) § Document integrity.
+- **Document integrity — residual risks** *(low)*. Slices 1–11 shipped; SIGKILL/crash before autosave or flush hook; binary mismatch (old Writerdeck without `autosavenow`/loopback save). Known open + unknown: [improvements.md](improvements.md) § Document integrity.
 - `/dev/uinput` is unavailable and unfixable on this kernel (decision 1). Closed, not a to-do — recorded so nobody retries it.
 - Go toolchain must be on the Mac (`brew install go`) — the only device-reachable host.
 - Disk: only the tiny rootfs is tight, and nothing we ship goes there. `/` (rootfs, ~228 MB) is 96% full; everything we deploy lives on `/home/root/` (separate multi-GB partition). Don't resize rootfs (A/B OTA scheme; brick risk).

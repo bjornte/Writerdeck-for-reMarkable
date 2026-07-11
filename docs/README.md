@@ -6,7 +6,7 @@ Reference material and generated artifacts.
 - `architecture.md` — how the system works; **§ Document integrity** is the non-negotiable product contract every feature must satisfy.
 - `decisions.md` — ADR: the *why* behind every choice; **§ Document integrity** states the same contract as foundational policy.
 - `lessons.md` — operational gotchas (deploy staleness, QML patch regressions, journald logs, sync footguns).
-- `improvements.md` — owner wish-list plus **document integrity risk matrix & fix backlog** (implementation under the architecture/decisions contract).
+- `improvements.md` — owner wish-list plus **document integrity audit** (fixed slices 1–11, known open, unknown).
 - `recon/` — regenerable device output, self-logged via `tee` by `scripts/*`. Timestamped `recon-*.txt` logs are committed, then pruned once their lesson lands in TODO/DONE — the folder persists via `.gitkeep`. Large `*.tar.gz` backups are gitignored. Includes `test-edit-session-*.txt` from the Edit-from-browser regression script.
 
 ## External references
