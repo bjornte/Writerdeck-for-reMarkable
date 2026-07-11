@@ -88,7 +88,7 @@ Non-negotiable contract: plain Markdown on disk, no silent overwrite of live edi
 | 10 | Tablet saves via loopback `PUT /api/notes` |
 | 11 | Save before deploy/stop — `POST /api/flush-save`, graceful shutdown |
 
-Residual risks and unknowns: [docs/improvements.md](docs/improvements.md) § Document integrity.
+Residual risks and unknowns: [docs/integrity-audit.md](docs/integrity-audit.md).
 
 ## Infrastructure
 

@@ -92,7 +92,7 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **Never push an empty tablet file over a previously-synced note** — `pushNote` refuses when `content === ""` and `ghLocalHash` was non-empty; reconcile pulls from GitHub instead. Clash handler skips `(tablet copy)` when tablet is empty and GitHub has content. Belt-and-suspenders after the Lobby Home wipe bug — a genuine "delete all text" edit still saves non-empty until the owner clears and re-syncs intentionally.
 
-**Open-file tracking — slices 1+3+4 shipped, residuals remain** — tablet opens report via `notifyOpen` → server `openNote` / `openedit` WS (slice 1). Phone rename/delete of the open file notifies the editor (`noterenamed` / `notedeleted`, slice 3). Reconcile skips `openNote` from `/api/status` (slice 4), not phone `typingMode` alone. **Still open:** stale `tabletOpenNote` after phone-back; `doLoad` async races on rapid switch; clash/pull overwrites disk without auto-reload (drift banner is manual). See [improvements.md](improvements.md) § Document integrity.
+**Open-file tracking — slices 1+3+4 shipped, residuals remain** — tablet opens report via `notifyOpen` → server `openNote` / `openedit` WS (slice 1). Phone rename/delete of the open file notifies the editor (`noterenamed` / `notedeleted`, slice 3). Reconcile skips `openNote` from `/api/status` (slice 4), not phone `typingMode` alone. **Still open:** stale `tabletOpenNote` after phone-back; `doLoad` async races on rapid switch; clash/pull overwrites disk without auto-reload (drift banner is manual). See [integrity-audit.md](integrity-audit.md).
 
 **Boot in edit mode, don't inject Escape** — daemon, editor, and client have independent lifetimes; a synthetic toggle desyncs on reconnect.
 

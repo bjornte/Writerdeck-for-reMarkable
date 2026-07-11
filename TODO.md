@@ -16,14 +16,14 @@ Phases 0–8 and document integrity slices 1–11 are done — the Companion app
 
 ## Next up
 
-1. **Power button** — implemented (Option A): save → sleep screen → suspend; power again to wake. **Needs device test.**
-2. **Lobby Ctrl-K on USB keyboard** — shipped; **verify on device** (only remaining Phase 9 checkbox).
+1. **Power button** — needs device test (implementation in [DONE.md](DONE.md) § Editor).
+2. **Lobby Ctrl-K on USB keyboard** — needs device verify.
 
 ---
 
-## Phase 10 — Tablet parity, locales, protection (planned)
+## Phase 10 — locales & protection
 
-Research and design: [docs/improvements.md](docs/improvements.md). Lobby subpages + Files CRUD shipped (see [DONE.md](DONE.md)); USB locales and encrypted notes remain.
+Design notes: [docs/improvements.md](docs/improvements.md).
 
 ### USB keyboard locales (Norwegian first)
 
@@ -42,22 +42,6 @@ Ref: [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues
 
 ---
 
-## Power button — investigation (2026-07-10)
-
-**Shipped (pending device test):** Short power press while editing → `prepareSleep()` (save + on-screen message) → stop Writerdeck → `systemctl suspend`. Message:
-
-> Writerdeck is sleeping.
->
-> Press power to wake.
-
-Power again after wake → restart editor session and reopen the note that was open.
-
-**Hardware:** `KEY_POWER` (116) on `/dev/input/event1` (`gpio-keys`), alongside Home (102), page buttons (105/106), and `KEY_WAKEUP` (143).
-
-**Stock OS:** `systemd-logind` has `HandlePowerKey=ignore`. With xochitl running, xochitl handles sleep/wake. During Writerdeck sessions xochitl is stopped; Writerdeck-server watches Power/Wakeup via `watchPhysicalButtons`.
-
----
-
 ## Open questions
 
 1. Stay firmware-update-current? Each OTA resets the SSH password and may wipe the systemd unit ⇒ a re-deploy + re-`enable` cadence (low-risk; recovery documented in [docs/decisions.md](docs/decisions.md)).
@@ -67,8 +51,8 @@ Power again after wake → restart editor session and reopen the note that was o
 ## Resume prompt (paste into a fresh chat)
 
 > Project Writerdeck for reMarkable 1 — a reMarkable 1 as a Wi-Fi Markdown typewriter. Writerdeck-server (`/home/root/Writerdeck-server`, built from `daemon/`) serves a WebSocket + HTML capture page and feeds a patched Writerdeck editor over `/run/Writerdeck.sock` (this kernel can't load `/dev/uinput`); Writerdeck saves `.md` to `Writerdeck-user-documents/`. The client is the Mac in dev, the iPhone in use.
-> State: Phases 0–8, document integrity slices 1–11, and most Phase 9 polish are done & device-verified (see [DONE.md](DONE.md)). **Next:** power button device test; Lobby Ctrl-K verify on USB keyboard. **Phase 10:** USB locale qmaps and encrypted subfolder — see [improvements.md](docs/improvements.md). Integrity audit (known open / unknown): improvements § Document integrity. After Writerdeck/QML edits, run `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) #21).
-> Read first: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [DONE](DONE.md), [lessons](docs/lessons.md), [improvements](docs/improvements.md). Power-button notes in **Next up** above.
+> State: Phases 0–8, integrity slices 1–11, and Phase 9 polish are done (see [DONE.md](DONE.md)). **Next:** power button device test; Lobby Ctrl-K USB verify. **Phase 10:** USB locale qmaps and encrypted subfolder — [improvements.md](docs/improvements.md), [TODO.md](TODO.md). Integrity audit: [integrity-audit.md](docs/integrity-audit.md). After Writerdeck/QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) #21).
+> Read first: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [DONE](DONE.md), [lessons](docs/lessons.md), [browser-vs-tablet](docs/browser-vs-tablet.md), [integrity-audit](docs/integrity-audit.md), [improvements](docs/improvements.md). Power-button notes in **Next up** above.
 > Dev: device SSH/deploy over Wi-Fi; IP in `secrets/remarkable.local.env` (`RM_HOST_WIFI`, currently `192.168.1.8`).
 > Constraints: no jailbreak; preserve OTA; no Toltec; static Go binary (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). SSH password gitignored in `secrets/remarkable.local.env`. Iterate over Wi-Fi; keep the tablet awake.
 > Refs: editor https://github.com/dps/remarkable-keywriter · keyboard layouts https://github.com/dps/remarkable-keywriter/issues/1 · input docs https://remarkable.guide/devel/device/input.html.
