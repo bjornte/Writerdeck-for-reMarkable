@@ -17,6 +17,36 @@ Phases 0–8 are done — the Companion appliance works end-to-end (see [DONE.md
 ## Next up
 
 1. **Power button** — implemented (Option A): save → sleep screen → suspend; power again to wake. **Needs device test.**
+2. **Lobby Ctrl-K on USB keyboard** — shipped; **verify on device** (only remaining Phase 9 checkbox).
+
+---
+
+## Phase 10 — Tablet parity, locales, protection (planned)
+
+Research and design: [docs/improvements.md](docs/improvements.md) (2026-07-11). No code yet.
+
+### USB keyboard locales (Norwegian first)
+
+- [ ] Generate `no.qmap` (and `us.qmap` baseline) via `ckbcomp` + `kmap2qmap`; ship in `keymaps/`, deploy to `/home/root/keymaps/`.
+- [ ] Extend `Writerdeck-launcher.sh` to set `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` from `settings.json` → `keyboardLayout` (default `us`).
+- [ ] Hotplug-safe device path — rescan or match Writerdeck-server’s keyboard discovery; document event-node variance.
+- [ ] Lobby / Preferences: layout picker (browser + optional tablet Keyboard subpage).
+- [ ] Device test: æ ø å Æ Ø Å, AltGr, `@`, `{` `}` on Norwegian USB keyboard.
+
+Ref: [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1) — `loadkeys` / `setxkbmap` do **not** work for Qt apps on rM.
+
+### Lobby subpages
+
+- [x] Design: `lobbyPage` pager (Home · Files · Keyboard · Sync · Settings · Shortcuts) — see improvements.md.
+- [x] Tab bar: touch + keyboard (Tab, arrows, 1–6).
+- [x] **Files** subpage: list notes from server (socket `req` API), open/create/rename/delete with USB keys + touch buttons.
+- [x] Trusted local CRUD channel: socket `{"t":"req","op":...}` from Writerdeck → Writerdeck-server.
+- [ ] **Device verify** lobby subpages + Files CRUD on tablet.
+
+### Encrypted / password-protected note subset
+
+- [ ] Design ADR: encrypted subfolder (e.g. `private/`), passphrase-derived key, session unlock, sync exclusion.
+- [ ] Implement only after design sign-off — Go `crypto/*`, rate-limited unlock, locked entries in list API.
 
 ---
 
@@ -66,8 +96,8 @@ Power again after wake → restart editor session and reopen the note that was o
 ## Resume prompt (paste into a fresh chat)
 
 > Project Writerdeck for reMarkable 1 — a reMarkable 1 as a Wi-Fi Markdown typewriter. Writerdeck-server (`/home/root/Writerdeck-server`, built from `daemon/`) serves a WebSocket + HTML capture page and feeds a patched Writerdeck editor over `/run/Writerdeck.sock` (this kernel can't load `/dev/uinput`); Writerdeck saves `.md` to `Writerdeck-user-documents/`. The client is the Mac in dev, the iPhone in use.
-> State: Phases 0–8 and most of Phase 9 polish are done & device-verified (see [DONE.md](DONE.md)). **Next:** power button device test; Lobby Ctrl-K verify on USB keyboard. After Writerdeck/QML edits, run `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) #21).
-> Read first: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [DONE](DONE.md), [lessons](docs/lessons.md). Power-button notes in **Next up** above.
+> State: Phases 0–8 and most of Phase 9 polish are done & device-verified (see [DONE.md](DONE.md)). **Next:** power button device test; Lobby Ctrl-K verify on USB keyboard. **Planned (Phase 10):** USB locale qmaps (Norwegian), Lobby subpages + tablet file CRUD, encrypted subfolder — see [improvements.md](docs/improvements.md) + Phase 10 in this file. After Writerdeck/QML edits, run `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) #21).
+> Read first: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [DONE](DONE.md), [lessons](docs/lessons.md), [improvements](docs/improvements.md). Power-button notes in **Next up** above.
 > Dev: device SSH/deploy over Wi-Fi; IP in `secrets/remarkable.local.env` (`RM_HOST_WIFI`, currently `192.168.1.8`).
 > Constraints: no jailbreak; preserve OTA; no Toltec; static Go binary (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). SSH password gitignored in `secrets/remarkable.local.env`. Iterate over Wi-Fi; keep the tablet awake.
-> Refs: editor https://github.com/dps/remarkable-keywriter · input docs https://remarkable.guide/devel/device/input.html.
+> Refs: editor https://github.com/dps/remarkable-keywriter · keyboard layouts https://github.com/dps/remarkable-keywriter/issues/1 · input docs https://remarkable.guide/devel/device/input.html.

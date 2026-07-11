@@ -84,6 +84,9 @@ Status: built, device-verified. Binaries and paths on the tablet use Writerdeck 
 ## Known gaps & open risks
 
 - Firmware update (OTA) may break the setup *(open · low)*. An OTA can wipe the systemd unit and regenerates the SSH password. Mitigation: we ship only a static binary + user files + one unit (no Toltec), so the OTA itself stays intact; recovery = re-deploy + re-`enable`, re-record the password. This is the one genuinely open operational risk — tracked in [../TODO.md](../TODO.md) open questions.
+- USB keyboard locales *(open · medium)*. Browser/Bluetooth path resolves layout in the phone OS (Norwegian works). USB path uses Qt evdev with **US QWERTY** default — Norwegian æøå and other national layouts need per-layout `.qmap` files via `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` ([remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1)); `loadkeys` / `setxkbmap` do not apply. Planned: ship qmaps + `settings.json` picker — [improvements.md](improvements.md), [../TODO.md](../TODO.md) Phase 10.
+- Per-note / subfolder encryption *(open · design)*. Global PIN gates the API; no subset protection yet. Encrypted subfolder with passphrase-derived keys is the leading option — design in [improvements.md](improvements.md); implementation not started.
+- Tablet file management *(open · design)*. Rename/delete/upload remain browser-first by ADR #8. Lobby subpages + trusted socket CRUD from Writerdeck would close the gap without exposing unauthenticated LAN HTTP — [improvements.md](improvements.md).
 - `/dev/uinput` is unavailable and unfixable on this kernel (decision 1). Closed, not a to-do — recorded so nobody retries it.
 - Go toolchain must be on the Mac (`brew install go`) — the only device-reachable host.
 - Disk: only the tiny rootfs is tight, and nothing we ship goes there. `/` (rootfs, ~228 MB) is 96% full; everything we deploy lives on `/home/root/` (separate multi-GB partition). Don't resize rootfs (A/B OTA scheme; brick risk).

@@ -220,12 +220,17 @@ func (e *editorConn) handleEditorLine(line []byte) {
 	var msg struct {
 		T       string `json:"t"`
 		C       string `json:"c"`
+		Op      string `json:"op"`
+		Name    string `json:"name"`
+		Old     string `json:"old"`
 		Degrees int    `json:"degrees"`
 	}
 	if json.Unmarshal(line, &msg) != nil {
 		return
 	}
 	switch msg.T {
+	case "req":
+		handleEditorReq(msg.Op, msg.Name, msg.Old)
 	case "saved", "ready":
 		e.signalAck(msg.T, msg.C)
 	case "rotation":
@@ -335,6 +340,7 @@ func dialLoop(ec *editorConn) {
 		// no-PIN text when pin is ""). Always send even in no-PIN mode so the
 		// QML conditional can render the appropriate Lobby line.
 		pushLobbyInfo()
+		pushNotesList()
 		// Push persisted font so a freshly-spawned editor reflects the saved choice.
 		settingsMu.Lock()
 		fontFamily := curSettings.ReadFont
@@ -876,6 +882,7 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusCreated)
 		pushLobbyInfo()
+		pushNotesList()
 
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -923,7 +930,7 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data) //nolint:errcheck
 
 	case http.MethodDelete:
-		if err := os.Remove(p); err != nil {
+		if err := deleteNoteFile(filepath.Base(p)); err != nil {
 			if os.IsNotExist(err) {
 				http.NotFound(w, r)
 				return
@@ -931,22 +938,7 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "delete failed", http.StatusInternalServerError)
 			return
 		}
-		// If this was the note the editor has open, send a no-save exit cmd
-		// and broadcast exitedit so every browser typing it returns to Browse.
-		currentNoteMu.Lock()
-		wasOpen := currentNote != "" && filepath.Base(p) == currentNote
-		if wasOpen {
-			currentNote = ""
-		}
-		currentNoteMu.Unlock()
-		if wasOpen && activeSess != nil && activeSess.isActive() {
-			if globalEC != nil {
-				globalEC.write([]byte(`{"t":"cmd","c":"notedeleted"}`))
-			}
-			broadcast([]byte(`{"type":"exitedit"}`))
-		}
 		w.WriteHeader(http.StatusNoContent)
-		pushLobbyInfo()
 
 	case http.MethodPut:
 		// Upsert: write or overwrite content. Used by the sync engine to apply a
@@ -978,16 +970,15 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "bad request: need {name}", http.StatusBadRequest)
 			return
 		}
-		newP := notesSafe(req.Name)
-		if newP == "" {
-			http.Error(w, "invalid name", http.StatusBadRequest)
-			return
-		}
-		if _, err := os.Stat(newP); err == nil {
-			http.Error(w, "name already taken", http.StatusConflict)
-			return
-		}
-		if err := os.Rename(p, newP); err != nil {
+		if err := renameNoteFile(filepath.Base(p), req.Name); err != nil {
+			if strings.Contains(err.Error(), "already taken") {
+				http.Error(w, "name already taken", http.StatusConflict)
+				return
+			}
+			if strings.Contains(err.Error(), "invalid") {
+				http.Error(w, "invalid name", http.StatusBadRequest)
+				return
+			}
 			http.Error(w, "rename failed", http.StatusInternalServerError)
 			return
 		}
@@ -1202,6 +1193,7 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 			// Push new Lobby info to editor so the tablet shows the updated PIN at once.
 			// (No-PIN mode sends pin="" so the QML conditional renders the friendly line.)
 			pushLobbyInfo()
+			pushNotesList()
 			// Issue a fresh cookie so the changer stays authed after the change.
 			// Without this, switching from no-PIN to 6-digit would instantly 401 the changer.
 			exp := nextMorningCutoff(time.Now())
@@ -1226,6 +1218,7 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 			saveSettingsLocked()
 			settingsMu.Unlock()
 			pushLobbyInfo()
+			pushNotesList()
 		}
 		if req.SyncOn != nil {
 			settingsMu.Lock()
@@ -1233,6 +1226,7 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 			saveSettingsLocked()
 			settingsMu.Unlock()
 			pushLobbyInfo()
+			pushNotesList()
 		}
 		w.WriteHeader(http.StatusOK)
 
@@ -1285,6 +1279,142 @@ var (
 	lobbyIPMu         sync.Mutex
 	lastPushedLobbyIP string
 )
+
+// readAllNotes returns metadata for every .md file in the notes directory.
+func readAllNotes() []noteInfo {
+	entries, err := os.ReadDir(notesDirPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []noteInfo{}
+		}
+		return nil
+	}
+	var notes []noteInfo
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		notes = append(notes, noteInfo{
+			Name:     e.Name(),
+			Size:     info.Size(),
+			Modified: info.ModTime().Format(time.RFC3339),
+		})
+	}
+	if notes == nil {
+		notes = []noteInfo{}
+	}
+	return notes
+}
+
+// pushNotesList sends the full note list to the editor for the Lobby Files page.
+func pushNotesList() {
+	notes := readAllNotes()
+	msg, _ := json.Marshal(struct {
+		T     string     `json:"t"`
+		Items []noteInfo `json:"items"`
+	}{"notes", notes})
+	if globalEC != nil {
+		globalEC.write(msg)
+	}
+}
+
+// createNoteFile writes a new note; name is validated via notesSafe.
+func createNoteFile(name, content string) error {
+	p := notesSafe(name)
+	if p == "" {
+		return fmt.Errorf("invalid name")
+	}
+	if _, err := os.Stat(p); err == nil {
+		return fmt.Errorf("already exists")
+	}
+	if content == "" {
+		content = "# " + strings.TrimSuffix(filepath.Base(p), ".md") + "\n"
+	}
+	if err := os.MkdirAll(notesDirPath, 0755); err != nil {
+		return err
+	}
+	if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+		return err
+	}
+	pushLobbyInfo()
+	pushNotesList()
+	return nil
+}
+
+// deleteNoteFile removes a note and notifies the editor if it was open.
+func deleteNoteFile(name string) error {
+	p := notesSafe(name)
+	if p == "" {
+		return fmt.Errorf("invalid name")
+	}
+	if err := os.Remove(p); err != nil {
+		return err
+	}
+	currentNoteMu.Lock()
+	wasOpen := currentNote != "" && filepath.Base(p) == currentNote
+	if wasOpen {
+		currentNote = ""
+	}
+	currentNoteMu.Unlock()
+	if wasOpen && activeSess != nil && activeSess.isActive() {
+		if globalEC != nil {
+			globalEC.write([]byte(`{"t":"cmd","c":"notedeleted"}`))
+		}
+		broadcast([]byte(`{"type":"exitedit"}`))
+	}
+	pushLobbyInfo()
+	pushNotesList()
+	return nil
+}
+
+// renameNoteFile renames a note on disk.
+func renameNoteFile(oldName, newName string) error {
+	oldP := notesSafe(oldName)
+	newP := notesSafe(newName)
+	if oldP == "" || newP == "" {
+		return fmt.Errorf("invalid name")
+	}
+	if _, err := os.Stat(newP); err == nil {
+		return fmt.Errorf("name already taken")
+	}
+	if err := os.Rename(oldP, newP); err != nil {
+		return err
+	}
+	currentNoteMu.Lock()
+	if currentNote != "" && filepath.Base(oldP) == currentNote {
+		currentNote = filepath.Base(newP)
+	}
+	currentNoteMu.Unlock()
+	pushLobbyInfo()
+	pushNotesList()
+	return nil
+}
+
+// handleEditorReq serves trusted file ops from the local editor over the socket.
+func handleEditorReq(op, name, oldName string) {
+	switch op {
+	case "noteslist":
+		pushNotesList()
+	case "createnote":
+		if err := createNoteFile(name, ""); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: editor createnote: %v\n", err)
+		}
+	case "deletenote":
+		if err := deleteNoteFile(name); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: editor deletenote: %v\n", err)
+		}
+	case "renamenote":
+		if err := renameNoteFile(oldName, name); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: editor renamenote: %v\n", err)
+		}
+	default:
+		fmt.Fprintf(os.Stderr, "writerdeck-server: unknown editor req op %q\n", op)
+	}
+}
 
 // countNotes returns the number of .md files in the notes directory.
 func countNotes() int {
@@ -1376,6 +1506,7 @@ func watchLobbyIP() {
 			continue
 		}
 		pushLobbyInfo()
+		pushNotesList()
 	}
 }
 

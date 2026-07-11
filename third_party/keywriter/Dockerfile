@@ -88,6 +88,9 @@ RUN set -eux; \
 COPY socket-inject.patch /socket-inject.patch
 COPY rotation_watcher.h /rotation_watcher.h
 COPY rotation_watcher.cpp /rotation_watcher.cpp
+COPY lobby_bridge.h /lobby_bridge.h
+COPY lobby_bridge.cpp /lobby_bridge.cpp
+COPY lobby_subpages.qml.inc /lobby_subpages.qml.inc
 COPY build-keywriter.sh /build-keywriter.sh
 RUN chmod +x /build-keywriter.sh
 

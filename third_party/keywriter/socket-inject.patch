@@ -18,30 +18,37 @@
 +#include <QWindow>
 +#include <QVariant>
 +#include <QTimer>
++#include <QJsonDocument>
++#include <QJsonArray>
++#include <QJsonObject>
 +#include <mutex>
++#include "lobby_bridge.h"
 +
 +static const char *WRITERDECK_SOCK = "/run/Writerdeck.sock";
++static LobbyBridge g_lobbyBridge;
 +static QObject *g_rootObj = nullptr; // stashed after QML load; used by cmd handler
 +static int g_clientFd = -1;
 +static std::mutex g_clientMu;
 +static bool g_applyingRotation = false;
 +
-+// Write one NDJSON ack line back to rmkbd (saved / ready).
-+static void rmkbdSendAck(const std::string &kind, const std::string &cmd)
++// Write one NDJSON line to Writerdeck-server (editor -> daemon).
++void rmkbdWriteLine(const std::string &line)
 +{
 +    std::lock_guard<std::mutex> lock(g_clientMu);
 +    if (g_clientFd < 0) return;
-+    std::string line = "{\"t\":\"" + kind + "\",\"c\":\"" + cmd + "\"}\n";
 +    ::write(g_clientFd, line.data(), line.size());
++}
++
++// Write one NDJSON ack line back to rmkbd (saved / ready).
++static void rmkbdSendAck(const std::string &kind, const std::string &cmd)
++{
++    rmkbdWriteLine("{\"t\":\"" + kind + "\",\"c\":\"" + cmd + "\"}\n");
 +}
 +
 +// Notify Writerdeck-server when the user rotates via USB keyboard.
 +static void rmkbdSendRotation(int deg)
 +{
-+    std::lock_guard<std::mutex> lock(g_clientMu);
-+    if (g_clientFd < 0) return;
-+    std::string line = "{\"t\":\"rotation\",\"degrees\":" + std::to_string(deg) + "}\n";
-+    ::write(g_clientFd, line.data(), line.size());
++    rmkbdWriteLine("{\"t\":\"rotation\",\"degrees\":" + std::to_string(deg) + "}\n");
 +}
 +
 +// Run a QML save handler on the GUI thread; block until done, then ack.
@@ -248,6 +255,21 @@
 +                    Q_ARG(QVariant, QString::fromStdString(lastSync)));
 +            }
 +        }
++    } else if (line.find("\"t\":\"notes\"") != std::string::npos) {
++        // {"t":"notes","items":[{"name":"a.md","size":N,"modified":"..."},...]}
++        QJsonDocument doc = QJsonDocument::fromJson(QByteArray::fromStdString(line));
++        if (!doc.isObject()) return;
++        QJsonArray arr = doc.object().value(QStringLiteral("items")).toArray();
++        QVariantList items;
++        for (const QJsonValue &v : arr) {
++            QJsonObject o = v.toObject();
++            QVariantMap m;
++            m[QStringLiteral("name")] = o.value(QStringLiteral("name")).toString();
++            m[QStringLiteral("size")] = o.value(QStringLiteral("size")).toInt();
++            m[QStringLiteral("modified")] = o.value(QStringLiteral("modified")).toString();
++            items.append(m);
++        }
++        g_lobbyBridge.deliverNotesList(items);
 +    }
 +}
 +
@@ -303,6 +325,8 @@
      if (engine.rootObjects().isEmpty())
          return -1;
 +    g_rootObj = engine.rootObjects().first(); // stash for cmd handler thread
++    g_lobbyBridge.setRoot(g_rootObj);
++    engine.rootContext()->setContextProperty("writerdeck", &g_lobbyBridge);
 +    static RotationWatcher rotWatcher;
 +    rotWatcher.setRoot(g_rootObj);
 +    rotWatcher.setApplying(&g_applyingRotation);

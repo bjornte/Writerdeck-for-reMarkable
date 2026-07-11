@@ -9,6 +9,9 @@ on:
       - 'third_party/keywriter/socket-inject.patch'
       - 'third_party/keywriter/rotation_watcher.h'
       - 'third_party/keywriter/rotation_watcher.cpp'
+      - 'third_party/keywriter/lobby_bridge.h'
+      - 'third_party/keywriter/lobby_bridge.cpp'
+      - 'third_party/keywriter/lobby_subpages.qml.inc'
       - '.github/workflows/build-keywriter.yml'
 
 permissions:

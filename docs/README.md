@@ -6,7 +6,7 @@ Reference material and generated artifacts.
 - `architecture.md` — how the system works: architecture, environment facts, the dev/deploy loop.
 - `decisions.md` — the Architecture Decision Record (ADR): the *why* behind every choice.
 - `lessons.md` — operational gotchas (deploy staleness, QML patch regressions, journald logs, sync footguns).
-- `improvements.md` — owner wish-list, not tracked work.
+- `improvements.md` — owner wish-list and design notes (browser vs tablet parity, Lobby subpages, USB locales, encrypted notes); actionable items land in [../TODO.md](../TODO.md).
 - `recon/` — regenerable device output, self-logged via `tee` by `scripts/*`. Timestamped `recon-*.txt` logs are committed, then pruned once their lesson lands in TODO/DONE — the folder persists via `.gitkeep`. Large `*.tar.gz` backups are gitignored. Includes `test-edit-session-*.txt` from the Edit-from-browser regression script.
 
 ## External references
