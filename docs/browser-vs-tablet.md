@@ -17,12 +17,12 @@ The phone/Mac companion (`daemon/index.html` + `app.js` + `sync.js`) is the full
 | Font (read view) | Preferences → pick Inter / Literata / EB Garamond / DejaVu | Phone pushes `setfont`; Settings tab shows current font |
 | PIN length | Preferences → 6 / 4 / none | Display only (Lobby shows PIN; no change on device) |
 | Display rotation | Preferences → **Rotate tablet 90°** | **Ctrl-R** / Ctrl+←/→; Settings tab **Rotate 90** button |
-| Sync config | **Sync** panel — on/off, repo, token (`localStorage`) | Read-only **Sync** tab |
-| Sync run | Auto on connect/poll/Home/Power; **Sync now** | Triggers only if a phone browser is connected |
+| Sync config | **Setup** panel — on/off, repo, token (`POST /api/sync/token` → tablet RAM) | Read-only status on **Sync** tab |
+| Sync run | — (use tablet Lobby **Sync now**) | **Sync now** button + automatic triggers |
 | Connection status | Top bar — offline / connecting / connected + battery | Not shown on e-ink |
 | Show PIN on tablet | **Show PIN on tablet** (`POST /api/lobby`, pre-auth) | N/A — you are looking at the PIN |
 | Exit Writerdeck | Preferences → **Exit Writerdeck** (`POST /api/shutdown`) | **Ctrl-Q** or Home from Lobby |
 | Launch Lobby | **Edit** without note (starts session) | **Esc** / L+R page buttons; Mac `wd`; tablet `~/wd` |
 | Keystrokes | WebSocket — layout resolved by phone OS | USB — Qt evdev, **US QWERTY default**; BT — same as browser path |
 
-**Takeaway:** upload, download, copy, paste, GitHub token entry, and the sync engine remain browser-only. Tablet has **Files** CRUD via trusted socket — shipped and device-verified 2026-07-11 ([decisions.md](decisions.md) #23).
+**Takeaway:** upload, download, copy, paste, and GitHub **setup** (toggle, repo, token) remain browser-only. **Sync now** lives on the tablet Lobby Sync tab; the engine runs on the tablet. Tablet **Files** CRUD via trusted socket — shipped and device-verified 2026-07-11 ([decisions.md](decisions.md) #23).

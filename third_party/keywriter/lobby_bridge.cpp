@@ -57,6 +57,11 @@ void LobbyBridge::notifyOpen(const QString &name)
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
 }
 
+void LobbyBridge::syncNow()
+{
+    sendReq(QStringLiteral("{\"t\":\"req\",\"op\":\"syncnow\"}"));
+}
+
 void LobbyBridge::deliverNotesList(const QVariantList &items)
 {
     if (!m_root)

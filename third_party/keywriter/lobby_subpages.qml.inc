@@ -305,7 +305,7 @@
                                         ? (lobbyLastSync !== ""
                                             ? "Last sync was " + lobbyLastSync + ".\nNotes sync to github.com/" + lobbySyncRepo
                                             : "Notes sync to github.com/" + lobbySyncRepo)
-                                        : ("Not configured. Set up in your phone's browser at http://" + lobbyIP + ":8000")
+                                        : ("Not configured. Set up repo and token in your phone's browser at http://" + lobbyIP + ":8000")
                                     font.pointSize: 11
                                     font.family: "Noto Sans"
                                     color: lobbySyncOn && lobbySyncRepo !== "" ? "#1b5e20" : "#555555"
@@ -313,7 +313,37 @@
                                     wrapMode: Text.WordWrap
                                 }
                                 Text {
-                                    text: "Sync runs from the phone browser when connected."
+                                    visible: lobbySyncOn && lobbySyncRepo !== "" && !lobbySyncReady
+                                    text: "Token needed — add it once on the phone (Sync setup)."
+                                    font.pointSize: 10
+                                    font.family: "Noto Sans"
+                                    color: "#888888"
+                                    width: parent.width
+                                    wrapMode: Text.WordWrap
+                                }
+                                Rectangle {
+                                    visible: lobbySyncOn && lobbySyncRepo !== ""
+                                    width: parent.width
+                                    height: lobby.actionBtnHeight
+                                    radius: 6
+                                    color: (lobbySyncReady && !lobbySyncing) ? "#f0f0f0" : "#e0e0e0"
+                                    border.color: "#bbb"
+                                    border.width: 1
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: lobbySyncing ? "Syncing…" : "Sync now"
+                                        font.family: "Noto Sans"
+                                        font.pointSize: 12
+                                        color: (lobbySyncReady && !lobbySyncing) ? "black" : "#888888"
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        enabled: lobbySyncReady && !lobbySyncing
+                                        onClicked: writerdeck.syncNow()
+                                    }
+                                }
+                                Text {
+                                    text: "Sync also runs automatically on save, Home, and every few minutes."
                                     font.pointSize: 10
                                     font.family: "Noto Sans"
                                     color: "#888888"

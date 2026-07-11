@@ -15,7 +15,7 @@
 //   {"t":"cmd","c":"home|open|notedeleted|noterenamed|..."}  -- editor commands
 // Browser <- Writerdeck-server: {"type":"openedit","name":"<file>.md"} on tablet open/rename
 //   {"type":"tabletcrud","op":"createnote|deletenote|renamenote","name":"...","oldName":"..."}
-//     on tablet Lobby Files CRUD — phone pairs ghDelete/pushNote; queue drains on connect.
+//     on tablet Lobby Files CRUD — server mirrors to GitHub when sync is configured.
 //   {"type":"diskchanged","name":"<file>.md"} when disk is written under an open editor (slice 8).
 //
 // Integer codepoints are escaping-proof: JSON special chars in typed text
@@ -443,6 +443,9 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 						currentNote = ""
 						currentNoteMu.Unlock()
 						broadcast([]byte(`{"type":"exitedit","source":"home"}`))
+						if syncEng.ready() {
+							syncEng.reconcileAll("home")
+						}
 					}()
 				} else {
 					fmt.Fprintln(os.Stderr, "writerdeck-server: home button -- no active session, ignoring")
@@ -767,7 +770,7 @@ func clearPendingSync() {
 	pushLobbyInfo()
 }
 
-// notifyTabletCrud queues the op and tells connected phone browsers to pair it on GitHub.
+// notifyTabletCrud queues the op and tells connected browsers to refresh; server syncs to GitHub.
 func notifyTabletCrud(op, name, oldName string) {
 	if name != "" {
 		if p := notesSafe(name); p != "" {
@@ -788,6 +791,7 @@ func notifyTabletCrud(op, name, oldName string) {
 	}{"tabletcrud", op, name, oldName})
 	broadcast(msg)
 	pushLobbyInfo()
+	syncEng.trySyncAfterCrud(op, name, oldName)
 }
 
 // maybeBroadcastDiskChanged notifies phone browsers when disk was written for the open note.
@@ -1056,6 +1060,7 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		pushLobbyInfo()
 		pushNotesList()
+		mirrorPhoneCreate(filepath.Base(p))
 
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -1104,7 +1109,8 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(data) //nolint:errcheck
 
 	case http.MethodDelete:
-		if err := deleteNoteFile(filepath.Base(p)); err != nil {
+		base := filepath.Base(p)
+		if err := deleteNoteFile(base); err != nil {
 			if os.IsNotExist(err) {
 				http.NotFound(w, r)
 				return
@@ -1112,6 +1118,7 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "delete failed", http.StatusInternalServerError)
 			return
 		}
+		mirrorPhoneDelete(base)
 		w.WriteHeader(http.StatusNoContent)
 
 	case http.MethodPut:
@@ -1177,6 +1184,7 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "rename failed", http.StatusInternalServerError)
 			return
 		}
+		mirrorPhoneRename(filepath.Base(p), req.Name)
 		w.WriteHeader(http.StatusOK)
 
 	default:
@@ -1195,10 +1203,11 @@ type settingsData struct {
 	ReadFont  string `json:"readFont"`
 	PinDigits string `json:"pinDigits"` // "6", "4", or "none"; default "6"
 	Rotation  int    `json:"rotation"`  // display rotation in degrees (0, 90, 180, 270)
-	SyncOn     bool  `json:"syncOn"`               // GitHub two-way sync enabled
-	SyncRepo   string `json:"syncRepo"`          // "owner/repo" of the notes repo; token never stored here
-	LastSyncAt int64  `json:"lastSyncAt,omitempty"` // unix seconds of last browser reconcile ack
-	PendingSync []pendingSyncOp `json:"pendingSync,omitempty"` // tablet CRUD awaiting phone GitHub pairing
+	SyncOn     bool                       `json:"syncOn"`               // GitHub two-way sync enabled
+	SyncRepo   string                     `json:"syncRepo"`          // "owner/repo" of the notes repo; token never stored here
+	LastSyncAt int64                      `json:"lastSyncAt,omitempty"` // unix seconds of last reconcile
+	SyncMeta   map[string]noteSyncMeta    `json:"syncMeta,omitempty"` // per-note GitHub SHA + local hash (non-secret)
+	PendingSync []pendingSyncOp           `json:"pendingSync,omitempty"` // tablet CRUD awaiting sync (legacy drain)
 }
 
 // pendingSyncOp is one queued tablet file op for the phone browser to mirror on GitHub.
@@ -1633,6 +1642,17 @@ func handleEditorReq(op, name, oldName string) {
 		} else {
 			notifyTabletCrud("renamenote", name, oldName)
 		}
+	case "syncnow":
+		if !syncEng.ready() {
+			fmt.Fprintln(os.Stderr, "writerdeck-server: syncnow ignored — not configured")
+			pushLobbyInfo()
+			return
+		}
+		go func() {
+			pushLobbyInfo()
+			_, _ = syncEng.reconcileAll("tablet")
+			pushLobbyInfo()
+		}()
 	default:
 		fmt.Fprintf(os.Stderr, "writerdeck-server: unknown editor req op %q\n", op)
 	}
@@ -1700,12 +1720,14 @@ func pushLobbyInfo() {
 			pending = fmt.Sprintf("%d sync ops pending", n)
 		}
 		if lastSync == "" {
-			lastSync = pending + " — open phone browser"
+			lastSync = pending
 		} else {
 			lastSync = lastSync + " (" + pending + ")"
 		}
 	}
 	settingsMu.Unlock()
+	syncReady := syncEng.ready()
+	syncing := syncEng.isSyncing()
 	infoMsg, _ := json.Marshal(struct {
 		T         string `json:"t"`
 		IP        string `json:"ip"`
@@ -1714,7 +1736,9 @@ func pushLobbyInfo() {
 		SyncRepo  string `json:"syncRepo"`
 		NoteCount int    `json:"noteCount"`
 		LastSync  string `json:"lastSync"`
-	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync})
+		SyncReady bool   `json:"syncReady"`
+		Syncing   bool   `json:"syncing"`
+	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing})
 	if globalEC != nil {
 		globalEC.write(infoMsg)
 	}
@@ -2339,8 +2363,18 @@ func (s *session) sleepForPower() {
 	if !s.ec.waitAck("ready", "preparesleep", paintAckTimeout) {
 		fmt.Fprintln(os.Stderr, "writerdeck-server: sleep screen ready ack missed -- continuing")
 	}
+	currentNoteMu.Lock()
+	currentNote = ""
+	currentNoteMu.Unlock()
 	beginSyncWait()
-	broadcast([]byte(`{"type":"exitedit","source":"power","awaitSync":true}`))
+	go func() {
+		if syncEng.ready() {
+			syncEng.reconcileAllBlocking("power", syncAckTimeout)
+		} else {
+			signalSyncAck()
+		}
+	}()
+	broadcast([]byte(`{"type":"exitedit","source":"power"}`))
 	waitSyncAck(syncAckTimeout)
 
 	s.mu.Lock()
@@ -2478,6 +2512,12 @@ func openHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// Send saveAndLoad command -- QML saves the current note then calls doLoad(name).
 	editorName := filepath.Base(p) // e.g. "scratch.md"
+	currentNoteMu.Lock()
+	prevNote := currentNote
+	currentNoteMu.Unlock()
+	if syncEng.ready() && editorName != prevNote {
+		_ = syncEng.pullNote(editorName)
+	}
 	cmd, _ := json.Marshal(struct {
 		T    string `json:"t"`
 		C    string `json:"c"`
@@ -2489,6 +2529,9 @@ func openHandler(w http.ResponseWriter, r *http.Request) {
 	broadcastOpenEdit(editorName)
 	if !activeSess.ec.writeCmdWaitAck(cmd, "saved", "open", saveAckTimeout) {
 		fmt.Fprintln(os.Stderr, "writerdeck-server: open save ack missed -- continuing")
+	}
+	if syncEng.ready() && prevNote != "" && prevNote != editorName {
+		syncEng.tryPushNote(prevNote)
 	}
 	w.WriteHeader(http.StatusOK)
 }
@@ -2566,6 +2609,7 @@ func main() {
 	flag.Parse()
 
 	loadSettings()
+	startSyncBackground()
 
 	// Determine PIN length from persisted settings (loaded above).
 	var bootPinLen int
@@ -2636,6 +2680,9 @@ func main() {
 	http.HandleFunc("/api/sync/ack", syncAckHandler)
 	http.HandleFunc("/api/sync/pending", pendingSyncHandler)
 	http.HandleFunc("/api/sync/pending/clear", pendingClearHandler)
+	http.HandleFunc("/api/sync/token", syncTokenHandler)
+	http.HandleFunc("/api/sync/status", syncStatusHandler)
+	http.HandleFunc("/api/sync/run", syncRunHandler)
 	http.HandleFunc("/api/reload", reloadHandler)
 	http.HandleFunc("/api/flush-save", flushSaveHandler)
 

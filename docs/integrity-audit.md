@@ -36,9 +36,10 @@ Mitigated or bounded — not eliminated. Revisit before calling integrity “clo
 - Real edit clashes create `(tablet copy)` duplicates; clash overwrites disk without auto-reloading the editor (drift banner is manual).
 - Stale `tabletOpenNote` after phone-back can skip the wrong file in reconcile until status poll refreshes.
 - External GitHub edits (VS Code, web, git) — marker-aware delete helps; duplicates/resurrections still possible (#19).
-- `localStorage` loss (new browser, cleared site data) — surprise push/pull/clash on next reconcile.
-- Multiple browser tabs share one sync state — serialized but confusing.
-- Power sleep: up to 45 s wait for phone reconcile ack; GitHub may lag if phone offline.
+- ~~`localStorage` loss (new browser, cleared site data) — surprise push/pull/clash on next reconcile.~~ **Closed (2026-07-11):** sync metadata on tablet (`syncMeta` in settings); engine server-side.
+- ~~Multiple browser tabs share one sync state — serialized but confusing.~~ **Closed:** phone no longer runs reconcile.
+- ~~Power sleep: up to 45 s wait for phone reconcile ack; GitHub may lag if phone offline.~~ **Closed:** server reconcile before suspend; no browser dependency.
+- ~~Phone must stay connected for sync engine.~~ **Closed:** server-side engine + 3 min poll + tablet **Sync now**.
 
 **Auth / ops**
 - PIN `none` — anyone on LAN can mutate notes (integrity + confidentiality on untrusted Wi-Fi).

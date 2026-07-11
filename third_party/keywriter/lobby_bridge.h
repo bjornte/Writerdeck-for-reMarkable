@@ -17,6 +17,7 @@ public slots:
     Q_INVOKABLE void deleteNote(const QString &name);
     Q_INVOKABLE void renameNote(const QString &oldName, const QString &newName);
     Q_INVOKABLE void notifyOpen(const QString &name);
+    Q_INVOKABLE void syncNow();
 
     // Called from the socket thread when the server pushes a notes list.
     void deliverNotesList(const QVariantList &items);

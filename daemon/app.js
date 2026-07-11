@@ -2,11 +2,8 @@
 // Sync engine lives in sync.js; shared mutable state in state.js.
 import { state } from './state.js';
 import {
-  reconcileAll, pushNote, pullNoteAndUpdate, ghDelete,
-  updateSyncBannerFromState, verifyGitHubRepo,
-  syncReady, ghToken, startSyncPoll, initSync,
-  setSyncToken, clearSyncStorage,
-  applyTabletCrud, clearPendingSync,
+  updateSyncBannerFromState, refreshSyncStatus, syncConfigured, waitForSyncIdle,
+  initSync, showSyncClash,
   recordEditorDiskBaseline, checkDiskDrift, notifyDiskChanged
 } from './sync.js';
 
@@ -218,9 +215,7 @@ import {
       updateConnectionBar();
       grab();
       loadNotes();
-      // Connect-reconcile: the trigger the event-only model lacked. Runs on
-      // first connect and every reconnect (the natural "back online" hook).
-      if (syncReady()) { reconcileAll('connect'); }
+      refreshSyncStatus();
     };
 
     ws.onclose = function () {
@@ -240,27 +235,9 @@ import {
           state.tabletOpenNote = data.name || '';
           recordEditorDiskBaseline(state.tabletOpenNote);
         } else if (data.type === 'exitedit') {
-          var saved = state.tabletOpenNote;
           state.tabletOpenNote = '';
           state.editorDiskHash = '';
           if (state.typingMode) { hideTypingView(); }
-          var awaitAck = !!data.awaitSync;
-          function ackSync() {
-            if (awaitAck) {
-              fetch('/api/sync/ack', { method: 'POST', credentials: 'same-origin' });
-            }
-          }
-          if (data.source === 'home' || data.source === 'power') {
-            if (syncReady()) {
-              reconcileAll('tablet-' + data.source, { wait: true }).finally(ackSync);
-            } else {
-              ackSync();
-            }
-          } else if (syncReady()) {
-            reconcileAll('tablet-exit');
-          } else if (saved) {
-            pushNote(saved);
-          }
         } else if (data.type === 'tabletcrud') {
           if (data.op === 'deletenote' && state.tabletOpenNote === data.name) {
             state.tabletOpenNote = '';
@@ -268,9 +245,8 @@ import {
             state.tabletOpenNote = data.name || '';
           }
           loadNotes();
-          if (syncReady()) {
-            applyTabletCrud(data.op, data.name, data.oldName).then(clearPendingSync);
-          }
+        } else if (data.type === 'syncclash') {
+          showSyncClash(data.note || '', data.copyName || '');
         } else if (data.type === 'diskchanged') {
           notifyDiskChanged(data.name || '');
         }
@@ -289,7 +265,10 @@ import {
         return r.json();
       })
       .then(function(notes) {
-        if (notes !== null) { renderNotes(notes); updateSyncBannerFromState(); }
+        if (notes !== null) {
+          renderNotes(notes);
+          refreshSyncStatus().then(function(s) { updateSyncBannerFromState(s); });
+        }
       })
       .catch(function(err) { console.error('loadNotes failed:', err); });
   }
@@ -359,27 +338,15 @@ import {
   // openNote: POST /api/open to tell the tablet to save the current note and
   // open the chosen one; then switch the phone to the typing view.
   function openNote(filename, displayName) {
-    // The tablet's /api/open does saveAndLoad: it SAVES the currently-open note
-    // before loading the new one. Capture it so we can push that saved note.
-    var prev = state.tabletOpenNote;
-    function doOpen() {
-      fetch('/api/open', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: filename })
-      }).then(function(r) {
-        if (r.status === 501) { alert('Not in supervisor mode.'); return; }
-        if (!r.ok) { alert('Could not open note (' + r.status + ').'); return; }
-        showTypingView(displayName || filename.replace(/\.md$/, ''), filename);
-        // The note-switch just saved `prev` on the tablet -- push it to GitHub.
-        if (prev && prev !== filename) { pushNote(prev); }
-      }).catch(function() { alert('Could not reach server.'); });
-    }
-    // Skip the pre-open pull when the note is already open on the tablet:
-    // keywriter's save-on-load would immediately overwrite the pulled file.
-    if (!syncReady() || filename === state.tabletOpenNote) { doOpen(); return; }
-    // Pull newest GitHub version to tablet first (best-effort; open regardless of outcome).
-    pullNoteAndUpdate(filename).then(doOpen, doOpen);
+    fetch('/api/open', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: filename })
+    }).then(function(r) {
+      if (r.status === 501) { alert('Not in supervisor mode.'); return; }
+      if (!r.ok) { alert('Could not open note (' + r.status + ').'); return; }
+      showTypingView(displayName || filename.replace(/\.md$/, ''), filename);
+    }).catch(function() { alert('Could not reach server.'); });
   }
 
   function rewirePreviewButtons(filename, displayName) {
@@ -535,8 +502,6 @@ import {
       rewirePreviewButtons(newFilename, newDisplayName);
       loadNotes();
       if (state.tabletOpenNote === filename) { state.tabletOpenNote = newFilename; }
-      // Propagate the rename to GitHub: delete the old path, then push the new one.
-      if (syncReady()) { ghDelete(filename).then(function() { pushNote(newFilename); }); }
     });
   }
 
@@ -546,7 +511,6 @@ import {
       .then(function(r) {
         if (!r.ok) { alert('Could not delete note.'); return; }
         if (state.tabletOpenNote === filename) { state.tabletOpenNote = ''; }
-        ghDelete(filename); // propagate to GitHub so it doesn't resurrect on next pull
         showList();
         loadNotes();
       });
@@ -869,8 +833,7 @@ import {
         if (r.ok) {
           state.syncOn = newVal;
           renderSyncPanel();
-          updateSyncBannerFromState();
-          if (newVal && syncReady()) { reconcileAll('toggle'); }
+          refreshSyncStatus().then(function(s) { updateSyncBannerFromState(s); });
         }
       }).catch(function(){});
     });
@@ -898,23 +861,20 @@ import {
 
       var tokLabel = document.createElement('div');
       tokLabel.style.cssText = 'color:#888;font-size:12px;margin-top:8px;padding:0 2px;';
-      tokLabel.textContent = 'GitHub token (stays on this device \u2014 never sent to the tablet)';
+      tokLabel.textContent = 'GitHub token (held in tablet RAM only \u2014 not written to disk)';
       list.appendChild(tokLabel);
 
       var tokInput = document.createElement('input');
       tokInput.type = 'password'; tokInput.className = 'token-input';
       tokInput.style.width = '100%';
       tokInput.placeholder = 'github_pat_\u2026 or ghp_\u2026'; tokInput.autocomplete = 'off';
-      if (ghToken()) tokInput.value = '\u2022'.repeat(16);
+      if (syncConfigured) tokInput.value = '\u2022'.repeat(16);
       var tokTouched = false;
       tokInput.addEventListener('focus', function() {
         if (!tokTouched) { tokInput.value = ''; tokTouched = true; }
       });
       list.appendChild(tokInput);
 
-      // One primary action for the whole section: save repo (to tablet) + token
-      // (to this browser), then verify both against GitHub so you get a clear
-      // yes/no instead of a silent green flash.
       var verifyLine = document.createElement('div');
       verifyLine.className = 'sync-verify-line';
       verifyLine.style.cssText = 'font-size:12px;padding:6px 2px;min-height:16px;color:#888;';
@@ -927,14 +887,6 @@ import {
       saveBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         var repoVal = repoInput.value.trim();
-        // Persist the token only if the field was actually edited (an untouched
-        // masked field means "keep the existing token"); never wipe on blank here.
-        if (tokTouched && tokInput.value.trim()) {
-          setSyncToken(tokInput.value.trim());
-          tokInput.value = '\u2022'.repeat(16); tokTouched = false;
-        }
-        var token = ghToken();
-        // Save the repo to the tablet first (non-secret), then verify.
         fetch('/api/settings', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ syncRepo: repoVal })
@@ -942,10 +894,9 @@ import {
           if (!r.ok) {
             verifyLine.style.color = '#e57373';
             verifyLine.textContent = '\u2717 Invalid repo \u2014 use owner/repo format.';
-            return;
+            return null;
           }
           state.syncRepo = repoVal;
-          updateSyncBannerFromState();
           var link = list.querySelector('.repo-link');
           if (repoVal) {
             if (!link) {
@@ -956,15 +907,63 @@ import {
             link.innerHTML = '<a href="https://github.com/' + repoVal +
               '" target="_blank" rel="noopener noreferrer">github.com/' + repoVal + '</a>';
           } else if (link) { link.remove(); }
-          if (!repoVal || !token) {
-            verifyLine.style.color = '#888';
-            verifyLine.textContent = 'Saved. Enter both repo and token to verify.';
-            return;
+          if (!tokTouched || !tokInput.value.trim()) {
+            if (!repoVal) {
+              verifyLine.style.color = '#888';
+              verifyLine.textContent = 'Saved repo.';
+              return refreshSyncStatus();
+            }
+            if (!syncConfigured) {
+              verifyLine.style.color = '#888';
+              verifyLine.textContent = 'Saved. Enter token to verify.';
+              return refreshSyncStatus();
+            }
+            verifyLine.style.color = '#4caf50';
+            verifyLine.textContent = '\u2713 Repo saved \u2014 token already on tablet.';
+            return refreshSyncStatus();
           }
-          verifyGitHubRepo(repoVal, token, verifyLine);
+          return fetch('/api/sync/token', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'same-origin',
+            body: JSON.stringify({ token: tokInput.value.trim() })
+          }).then(function(tr) {
+            tokInput.value = '\u2022'.repeat(16); tokTouched = false;
+            if (tr.status === 401) {
+              verifyLine.style.color = '#e57373';
+              verifyLine.textContent = '\u2717 Token rejected.';
+              return refreshSyncStatus();
+            }
+            if (tr.status === 404) {
+              verifyLine.style.color = '#e57373';
+              verifyLine.textContent = '\u2717 Repo not found.';
+              return refreshSyncStatus();
+            }
+            if (!tr.ok) {
+              verifyLine.style.color = '#e57373';
+              verifyLine.textContent = '\u2717 Could not verify.';
+              return refreshSyncStatus();
+            }
+            verifyLine.style.color = '#888';
+            verifyLine.textContent = 'Syncing on tablet\u2026';
+            return refreshSyncStatus().then(function(before) {
+              var baseline = (before && before.lastSyncAt) || 0;
+              return waitForSyncIdle({ baselineLastSync: baseline });
+            }).then(function(s) {
+              loadNotes();
+              if (s && s.lastError) {
+                verifyLine.style.color = '#e57373';
+                verifyLine.textContent = '\u2717 ' + s.lastError;
+                return;
+              }
+              verifyLine.style.color = '#4caf50';
+              var when = (s && s.lastSyncAgo) ? s.lastSyncAgo : 'just now';
+              verifyLine.textContent = '\u2713 Connected \u2014 last synced ' + when + '.';
+            });
+          });
         }).catch(function() {
           verifyLine.style.color = '#e57373';
-          verifyLine.textContent = '\u2717 Could not reach the tablet to save.';
+          verifyLine.textContent = '\u2717 Could not reach the tablet.';
         });
       });
 
@@ -972,41 +971,34 @@ import {
       clearBtn.className = 'sync-btn-secondary'; clearBtn.textContent = 'Clear token';
       clearBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (!confirm('Remove GitHub token from this device?')) return;
-        clearSyncStorage();
-        tokInput.value = ''; tokTouched = true;
-        verifyLine.style.color = '#888';
-        verifyLine.textContent = 'Token removed from this device.';
-        updateSyncBannerFromState();
+        if (!confirm('Remove GitHub token from the tablet?')) return;
+        fetch('/api/sync/token', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          credentials: 'same-origin',
+          body: JSON.stringify({ token: '' })
+        }).then(function() {
+          tokInput.value = ''; tokTouched = true;
+          verifyLine.style.color = '#888';
+          verifyLine.textContent = 'Token cleared from tablet memory.';
+          return refreshSyncStatus();
+        }).then(function(s) { updateSyncBannerFromState(s); });
       });
 
-      var syncNowBtn = document.createElement('button');
-      syncNowBtn.className = 'sync-btn-secondary'; syncNowBtn.textContent = 'Sync now';
-      syncNowBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        if (!syncReady()) {
-          verifyLine.style.color = '#e57373';
-          verifyLine.textContent = '\u2717 Save a repo and token first.';
-          return;
-        }
-        verifyLine.style.color = '#888';
-        verifyLine.textContent = 'Syncing all notes\u2026';
-        reconcileAll('manual').then(function(n) {
-          verifyLine.style.color = '#4caf50';
-          verifyLine.textContent = '\u2713 Synced ' + n + ' note' + (n === 1 ? '' : 's') + '.';
-        });
-      });
-
-      actionRow.appendChild(saveBtn); actionRow.appendChild(syncNowBtn); actionRow.appendChild(clearBtn);
+      actionRow.appendChild(saveBtn); actionRow.appendChild(clearBtn);
       list.appendChild(actionRow);
       list.appendChild(verifyLine);
+
+      var hintLine = document.createElement('div');
+      hintLine.style.cssText = 'font-size:11px;color:#888;padding:4px 2px;';
+      hintLine.textContent = 'Run sync from the tablet Lobby \u2192 Sync tab.';
+      list.appendChild(hintLine);
 
       var statusLine = document.createElement('div');
       statusLine.className = 'sync-status-line';
       statusLine.style.cssText = 'font-size:12px;color:#888;padding:4px 2px;';
-      var ls = localStorage.getItem('ghLastSync');
-      statusLine.textContent = ls ? 'Last synced: ' + ls : 'Never synced on this device';
+      statusLine.textContent = 'Loading sync status\u2026';
       list.appendChild(statusLine);
+      refreshSyncStatus();
     }
   }
 
@@ -1034,11 +1026,6 @@ import {
     startStatusPoll();
   }
 
-  // loadSyncConfig: pull the non-secret syncOn/syncRepo flags at startup, not
-  // just when the Settings panel opens. Without this, connect-reconcile and the
-  // poll both saw the default `false` at page load and silently skipped -- the
-  // note would connect fine yet read "never synced". Runs post-auth; on success
-  // it kicks an immediate reconcile so first connect actually moves files.
   function loadSyncConfig() {
     return fetch('/api/settings')
       .then(function(r) { return r.ok ? r.json() : null; })
@@ -1046,8 +1033,7 @@ import {
         if (!data) return;
         state.syncOn = !!data.syncOn;
         state.syncRepo = data.syncRepo || '';
-        updateSyncBannerFromState();
-        if (syncReady()) { reconcileAll('startup'); }
+        return refreshSyncStatus().then(function(s) { updateSyncBannerFromState(s); });
       })
       .catch(function() {});
   }
@@ -1185,6 +1171,5 @@ import {
     });
     applyMode();
     checkAuthAndInit();
-    startSyncPoll();
   });
 }());

@@ -16,8 +16,9 @@ Phases 0–8 and document integrity slices 1–11 are done — the Companion app
 
 ## Next up
 
-1. **Power button** — needs device test (implementation in [DONE.md](DONE.md) § Editor).
-2. **Lobby Ctrl-K on USB keyboard** — needs device verify.
+1. **Server-side GitHub sync** — shipped 2026-07-11 (slices 1–6). Re-enter token once on phone (**Sync → Save & verify**); device-verified: API, edit-session, deploy. Full GitHub matrix: [server-sync-implementation.md](docs/server-sync-implementation.md) § Device test matrix.
+2. **Power button** — needs device test (implementation in [DONE.md](DONE.md) § Editor).
+3. **Lobby Ctrl-K on USB keyboard** — needs device verify.
 
 ---
 
@@ -51,7 +52,7 @@ Ref: [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues
 ## Resume prompt (paste into a fresh chat)
 
 > Project Writerdeck for reMarkable 1 — a reMarkable 1 as a Wi-Fi Markdown typewriter. Writerdeck-server (`/home/root/Writerdeck-server`, built from `daemon/`) serves a WebSocket + HTML capture page and feeds a patched Writerdeck editor over `/run/Writerdeck.sock` (this kernel can't load `/dev/uinput`); Writerdeck saves `.md` to `Writerdeck-user-documents/`. The client is the Mac in dev, the iPhone in use.
-> State: Phases 0–8, integrity slices 1–11, and Phase 9 polish are done (see [DONE.md](DONE.md)). **Next:** power button device test; Lobby Ctrl-K USB verify. **Phase 10:** USB locale qmaps and encrypted subfolder — [improvements.md](docs/improvements.md), [TODO.md](TODO.md). Integrity audit: [integrity-audit.md](docs/integrity-audit.md). After Writerdeck/QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) #21).
+> State: Phases 0–8, integrity slices 1–11, and Phase 9 polish are done (see [DONE.md](DONE.md)). **Next:** server-side GitHub sync ([server-sync-implementation.md](docs/server-sync-implementation.md)); power button device test; Lobby Ctrl-K USB verify. **Phase 10:** USB locale qmaps and encrypted subfolder — [improvements.md](docs/improvements.md), [TODO.md](TODO.md). Integrity audit: [integrity-audit.md](docs/integrity-audit.md). After Writerdeck/QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) #21).
 > Read first: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [DONE](DONE.md), [lessons](docs/lessons.md), [browser-vs-tablet](docs/browser-vs-tablet.md), [integrity-audit](docs/integrity-audit.md), [improvements](docs/improvements.md). Power-button notes in **Next up** above.
 > Dev: device SSH/deploy over Wi-Fi; IP in `secrets/remarkable.local.env` (`RM_HOST_WIFI`, currently `192.168.1.8`).
 > Constraints: no jailbreak; preserve OTA; no Toltec; static Go binary (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). SSH password gitignored in `secrets/remarkable.local.env`. Iterate over Wi-Fi; keep the tablet awake.

@@ -262,14 +262,19 @@
 +                    if (ls_q != std::string::npos)
 +                        lastSync = line.substr(ls_p, ls_q - ls_p);
 +                }
-+                QMetaObject::invokeMethod(g_rootObj, "setLobbyInfo",
-+                    Qt::QueuedConnection,
-+                    Q_ARG(QVariant, QString::fromStdString(ip)),
-+                    Q_ARG(QVariant, QString::fromStdString(pin)),
-+                    Q_ARG(QVariant, syncOn),
-+                    Q_ARG(QVariant, QString::fromStdString(syncRepo)),
-+                    Q_ARG(QVariant, noteCount),
-+                    Q_ARG(QVariant, QString::fromStdString(lastSync)));
++                bool syncReady = line.find("\"syncReady\":true") != std::string::npos;
++                bool syncing = line.find("\"syncing\":true") != std::string::npos;
+                 QMetaObject::invokeMethod(g_rootObj, "setLobbyInfo",
+                     Qt::QueuedConnection,
+                     Q_ARG(QVariant, QString::fromStdString(ip)),
+                     Q_ARG(QVariant, QString::fromStdString(pin)),
+                     Q_ARG(QVariant, syncOn),
+                     Q_ARG(QVariant, QString::fromStdString(syncRepo)),
+                     Q_ARG(QVariant, noteCount),
+-                    Q_ARG(QVariant, QString::fromStdString(lastSync)));
++                    Q_ARG(QVariant, QString::fromStdString(lastSync)),
++                    Q_ARG(QVariant, syncReady),
++                    Q_ARG(QVariant, syncing));
 +            }
 +        }
 +    } else if (line.find("\"t\":\"notes\"") != std::string::npos) {
