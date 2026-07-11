@@ -230,7 +230,7 @@
 +            }, Qt::QueuedConnection);
 +    } else if (line.find("\"t\":\"info\"") != std::string::npos) {
 +        // {"t":"info","ip":"...","pin":"...","syncOn":...,"syncRepo":"...","noteCount":N,"lastSync":"..."}
-+        // -> setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync) in QML.
++        // -> setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing) in QML.
 +        auto ip_p = line.find("\"ip\":\"");
 +        auto pin_p = line.find("\"pin\":\"");
 +        if (ip_p != std::string::npos && pin_p != std::string::npos && g_rootObj) {
@@ -264,14 +264,13 @@
 +                }
 +                bool syncReady = line.find("\"syncReady\":true") != std::string::npos;
 +                bool syncing = line.find("\"syncing\":true") != std::string::npos;
-                 QMetaObject::invokeMethod(g_rootObj, "setLobbyInfo",
-                     Qt::QueuedConnection,
-                     Q_ARG(QVariant, QString::fromStdString(ip)),
-                     Q_ARG(QVariant, QString::fromStdString(pin)),
-                     Q_ARG(QVariant, syncOn),
-                     Q_ARG(QVariant, QString::fromStdString(syncRepo)),
-                     Q_ARG(QVariant, noteCount),
--                    Q_ARG(QVariant, QString::fromStdString(lastSync)));
++                QMetaObject::invokeMethod(g_rootObj, "setLobbyInfo",
++                    Qt::QueuedConnection,
++                    Q_ARG(QVariant, QString::fromStdString(ip)),
++                    Q_ARG(QVariant, QString::fromStdString(pin)),
++                    Q_ARG(QVariant, syncOn),
++                    Q_ARG(QVariant, QString::fromStdString(syncRepo)),
++                    Q_ARG(QVariant, noteCount),
 +                    Q_ARG(QVariant, QString::fromStdString(lastSync)),
 +                    Q_ARG(QVariant, syncReady),
 +                    Q_ARG(QVariant, syncing));
