@@ -115,6 +115,71 @@ s = s.replace('file://%1/edit/', 'file://%1/Writerdeck-user-documents/', 1)
 assert 'property int mode: 0' in s, "mode property not found in main.qml"
 s = s.replace('property int mode: 0', 'property int mode: 1', 1)
 
+# 1b. Plain-markdown helpers: detect Qt qrichtext/HTML and sanitize corrupted loads.
+old1b = '    function toggleMode() {'
+new1b = (
+    '    function isHtmlPayload(t) {\n'
+    '        if (!t || t.length < 9) return false\n'
+    '        var head = t.substring(0, Math.min(256, t.length)).toLowerCase()\n'
+    '        return head.indexOf("<!doctype html") === 0\n'
+    '            || head.indexOf("<html") === 0\n'
+    '            || t.indexOf(\'name="qrichtext"\') >= 0\n'
+    '    }\n'
+    '\n'
+    '    function sanitizeLoadedNote(t) {\n'
+    '        if (!isHtmlPayload(t)) return t\n'
+    '        console.log("sanitize: stripping HTML wrapper from loaded note")\n'
+    '        var plain = t\n'
+    '        plain = plain.replace(/<br\\s*\\/?>/gi, "\\n")\n'
+    '        plain = plain.replace(/<\\/p>/gi, "\\n")\n'
+    '        plain = plain.replace(/<\\/div>/gi, "\\n")\n'
+    '        plain = plain.replace(/<\\/li>/gi, "\\n")\n'
+    '        plain = plain.replace(/<[^>]+>/g, "")\n'
+    '        plain = plain.replace(/&nbsp;/g, " ")\n'
+    '        plain = plain.replace(/&amp;/g, "&")\n'
+    '        plain = plain.replace(/&lt;/g, "<")\n'
+    '        plain = plain.replace(/&gt;/g, ">")\n'
+    '        plain = plain.replace(/&quot;/g, \'"\')\n'
+    '        plain = plain.replace(/&#(\\d+);/g, function(_, n) { return String.fromCharCode(parseInt(n, 10)) })\n'
+    '        plain = plain.replace(/\\n{3,}/g, "\\n\\n")\n'
+    '        return plain.replace(/^\\s+|\\s+$/g, "")\n'
+    '    }\n'
+    '\n'
+    '    function toggleMode() {'
+)
+assert old1b in s, "toggleMode not found (edit 1b)"
+s = s.replace(old1b, new1b, 1)
+
+# 1c. toggleMode: save only on edit->preview; never doc=query.text across RichText.
+old1c = (
+    '    function toggleMode() {\n'
+    '        if (mode == 0) {\n'
+    '            mode = 1\n'
+    '            query.cursorPosition = lastCursorPostion == -1 ? query.length : lastCursorPostion\n'
+    '        } else {\n'
+    '            doc = query.text\n'
+    '            lastCursorPostion = query.cursorPosition\n'
+    '            mode = 0\n'
+    '        }\n'
+    '        saveFile()\n'
+    '    }'
+)
+new1c = (
+    '    function toggleMode() {\n'
+    '        if (mode == 0) {\n'
+    '            mode = 1\n'
+    '            query.cursorPosition = lastCursorPostion == -1 ? query.length : lastCursorPostion\n'
+    '        } else {\n'
+    '            doc = query.text\n'
+    '            lastCursorPostion = query.cursorPosition\n'
+    '            mode = 0\n'
+    '            saveFile()\n'
+    '        }\n'
+    '    }'
+)
+assert old1c in s, "toggleMode body not found (edit 1c)"
+s = s.replace(old1c, new1c, 1)
+
 # 2. doLoad resets mode on every load -- keep it edit (mode=1).
 #    Match the first 'mode = 0' on the line immediately after 'isOmni = false';
 #    leaves toggleMode's own 'mode = 0' (preview+save) untouched.
@@ -124,6 +189,12 @@ s, n = re.subn(
     s, count=1
 )
 assert n == 1, "doLoad mode=0 pattern not found in main.qml"
+
+# 2a. doLoad: sanitize Qt qrichtext/HTML accidentally saved as .md.
+old2a = '                var response = xhr.responseText\n'
+new2a = '                var response = sanitizeLoadedNote(xhr.responseText)\n'
+assert old2a in s, "doLoad response line not found (edit 2a)"
+s = s.replace(old2a, new2a, 1)
 
 # 2b. doLoad must push loaded bytes into query.text. handleHome/showLobby clear
 #     query.text for the Lobby overlay, which breaks the `text: doc` binding; the
@@ -659,15 +730,41 @@ new7h = (
 assert old7h in s, "function initFile not found (edit 7h)"
 s = s.replace(old7h, new7h, 1)
 
-# 7i. Guard saveFile() against an empty currentFile. After noteDeleted() clears
-#     currentFile, the next saveAndLoad() still calls saveFile() BEFORE doLoad()
-#     -- without this guard that write targets the deleted file's path and
-#     recreates it on disk (the resurrection trap). The guard also fires at boot
-#     (currentFile now defaults to "") and after any Lobby return (handleHome
-#     clears it, edit 7j), making every Lobby entry a clean no-file state.
-old7i = '    function saveFile() {\n        console.log("Save " + currentFile)'
-new7i = '    function saveFile() {\n        if (currentFile === "") return 0\n        console.log("Save " + currentFile)'
-assert old7i in s, "saveFile signature not found (edit 7i)"
+# 7i. saveFile contract: plain UTF-8 only; reject qrichtext/HTML; guard empty path.
+#     In edit mode (mode==1) read query.text; never read query.text in preview
+#     (RichText). Reject HTML payloads before write (content-fidelity slice 2).
+old7i = (
+    '    function saveFile() {\n'
+    '        console.log("Save " + currentFile)\n'
+    '        var fileUrl = folder + currentFile\n'
+    '        console.log(fileUrl)\n'
+    '        var request = new XMLHttpRequest()\n'
+    '        request.open("PUT", fileUrl, false)\n'
+    '        request.send(doc)\n'
+    '        console.log("save -> " + request.status + " " + request.statusText)\n'
+    '        return request.status\n'
+    '    }'
+)
+new7i = (
+    '    function saveFile() {\n'
+    '        if (currentFile === "") return 0\n'
+    '        var content = (mode == 1) ? query.text : doc\n'
+    '        if (isHtmlPayload(content)) {\n'
+    '            console.log("save rejected: HTML/qrichtext payload for " + currentFile)\n'
+    '            return 0\n'
+    '        }\n'
+    '        if (mode == 1) doc = content\n'
+    '        console.log("Save " + currentFile)\n'
+    '        var fileUrl = folder + currentFile\n'
+    '        console.log(fileUrl)\n'
+    '        var request = new XMLHttpRequest()\n'
+    '        request.open("PUT", fileUrl, false)\n'
+    '        request.send(content)\n'
+    '        console.log("save -> " + request.status + " " + request.statusText)\n'
+    '        return request.status\n'
+    '    }'
+)
+assert old7i in s, "saveFile body not found (edit 7i)"
 s = s.replace(old7i, new7i, 1)
 
 # 7j. Demote scratch to an ordinary note: clear the currentFile default so boot
@@ -1145,7 +1242,7 @@ assert s[hk:co].count('{') == s[hk:co].count('}'), "handleKey brace mismatch -- 
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + lobby-subpages + handleHome + doLoad-query-sync + prepareSleep + sleep-screen + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate + lobbyHandleKey).')
+print('  All QML edits applied (props + content-fidelity + setLobbyInfo + lobby-subpages + handleHome + doLoad-query-sync + prepareSleep + sleep-screen + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate + lobbyHandleKey).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true

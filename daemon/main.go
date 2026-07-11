@@ -858,6 +858,20 @@ func notesSafe(name string) string {
 	return filepath.Join(notesDirPath, name)
 }
 
+// rejectsHtmlNoteContent reports Qt qrichtext / HTML accidentally saved as .md.
+func rejectsHtmlNoteContent(content string) bool {
+	if len(content) < 15 {
+		return false
+	}
+	head := strings.ToLower(content)
+	if len(head) > 512 {
+		head = head[:512]
+	}
+	return strings.HasPrefix(head, "<!doctype html") ||
+		strings.HasPrefix(head, "<html") ||
+		strings.Contains(content, `name="qrichtext"`)
+}
+
 // notesListHandler serves GET /api/notes (list) and POST /api/notes (create).
 func notesListHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
@@ -934,6 +948,10 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 		content := req.Content
 		if content == "" {
 			content = "# " + strings.TrimSuffix(req.Name, ".md") + "\n"
+		}
+		if rejectsHtmlNoteContent(content) {
+			http.Error(w, "refusing HTML/qrichtext payload", http.StatusUnsupportedMediaType)
+			return
 		}
 		if err := os.MkdirAll(notesDirPath, 0755); err != nil {
 			http.Error(w, "cannot create notes dir", http.StatusInternalServerError)
@@ -1012,6 +1030,10 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := json.NewDecoder(r.Body).Decode(&putReq); err != nil {
 			http.Error(w, "bad request: need {content}", http.StatusBadRequest)
+			return
+		}
+		if rejectsHtmlNoteContent(putReq.Content) {
+			http.Error(w, "refusing HTML/qrichtext payload", http.StatusUnsupportedMediaType)
 			return
 		}
 		if err := os.MkdirAll(notesDirPath, 0755); err != nil {
@@ -1396,6 +1418,9 @@ func createNoteFile(name, content string) error {
 	}
 	if content == "" {
 		content = "# " + strings.TrimSuffix(filepath.Base(p), ".md") + "\n"
+	}
+	if rejectsHtmlNoteContent(content) {
+		return fmt.Errorf("refusing HTML/qrichtext payload")
 	}
 	if err := os.MkdirAll(notesDirPath, 0755); err != nil {
 		return err
