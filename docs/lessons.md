@@ -10,7 +10,7 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **`rmkw` is binary-only.** Fonts live in the Qt sysroot (~14 MB). After a font change: `RM_FORCE_SYSROOT=1 bash scripts/deploy-keywriter.sh -b`, then respawn the editor.
 
-**`deploy-rmkbd.sh` kills rmkbd.** Follow with `systemctl restart writerdeck`.
+**`deploy-rmkbd.sh` kills Writerdeck-server.** Follow with `systemctl restart writerdeck`.
 
 **scp deadlocks** at a fixed offset on the Mac→Wi-Fi→tablet link. Use `rm_send_file` (gzip-over-ssh) in `_env.sh`.
 
@@ -22,25 +22,27 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 ## systemd & device
 
+**Supervisor logs live in journald** — with `writerdeck.service`, `Writerdeck-server` and Writerdeck Qt stderr both land in `journalctl -u writerdeck.service` (session start/stop, Home relay, QML errors, `editor process exited`). Ad-hoc `nohup … >/tmp/wd-server.log` only when running outside systemd.
+
 **`RequiresMountsFor=/home/root`** on any unit whose `ExecStart` lives on `/home` — otherwise cold boot races the mount and you get `203/EXEC`.
 
-**`HOME=/home/root` in Writerdeck-launcher.sh** — under systemd, root's `$HOME` is `/`, so keywriter's save path breaks without the export.
+**`HOME=/home/root` in Writerdeck-launcher.sh** — under systemd, root's `$HOME` is `/`, so Writerdeck's save path breaks without the export.
 
-**No `pkill` on the device** (BusyBox). Kill by `pidof rmkbd` / `pidof keywriter` + `kill`. Deploy scripts already do this; ad-hoc SSH restarts must too, or you stack duplicate processes.
+**No `pkill -f /home/root/Writerdeck`** — matches `Writerdeck-server` too. Kill the editor with `pidof Writerdeck`; kill the server with `pkill -f /home/root/Writerdeck-server`. Deploy scripts already do this; ad-hoc SSH restarts must too, or you stack duplicate processes.
 
 **Keep the tablet awake** — it drops Wi-Fi on suspend.
 
-## keywriter / QML
+## Writerdeck / QML
 
 **Every save path must sync `query.text → doc` before `saveFile()`** in edit mode. A bare `saveFile()` writes stale `doc`. Guards: saveAndQuit, handleHome, showLobby, saveAndLoad, omni switcher, Ctrl-Q.
 
-**Socket-triggered saves ack back to rmkbd** — `{"t":"saved","c":"home|open|..."}` after the QML handler finishes (BlockingQueuedConnection). rmkbd waits for that before `exitedit`, GitHub push, or HTTP 200 on `/api/open`. Power sleep also gets `{"t":"ready","c":"preparesleep"}` after the e-ink sleep screen paints (~800 ms). Never guess with fixed sleeps for save timing.
+**Socket-triggered saves ack back to Writerdeck-server** — `{"t":"saved","c":"home|open|..."}` after the QML handler finishes (BlockingQueuedConnection). Writerdeck-server waits for that before `exitedit`, GitHub push, or HTTP 200 on `/api/open`. Power sleep also gets `{"t":"ready","c":"preparesleep"}` after the e-ink sleep screen paints (~800 ms). Never guess with fixed sleeps for save timing.
 
 **Lobby is a clean no-file state** — clear `currentFile` on every return; guard `saveFile()` when empty. A stale `currentFile` resurrects deleted notes.
 
-**Ctrl+K / modifier flags** — keywriter's `ctrlPressed` bool only flips on a standalone Control key. Injected keys use the modifier *flag*; `handleKeyDown` must also read `event.modifiers & Qt.ControlModifier`.
+**Ctrl+K / modifier flags** — Writerdeck's `ctrlPressed` bool only flips on a standalone Control key. Injected keys use the modifier *flag*; `handleKeyDown` must also read `event.modifiers & Qt.ControlModifier`.
 
-**USB Escape launch** — `Writerdeck-server` watches USB keyboard evdev nodes (hotplug rescan every 3 s). Escape while no active session and not sleeping → `start()` (Lobby). Ignored while editing (keywriter owns Esc) and while sleeping (power button wakes). Not an Esc-to-wake path.
+**USB Escape launch** — Writerdeck-server watches USB keyboard evdev nodes (hotplug rescan every 3 s). Escape while no active session and not sleeping → `start()` (Lobby). Ignored while editing (Writerdeck owns Esc) and while sleeping (power button wakes). Not an Esc-to-wake path.
 
 **Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`.** Use `line-height` or spacer nodes; always verify on device.
 
@@ -49,6 +51,12 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 **QML `Text` needs explicit `width` + `wrapMode`** or long Lobby copy runs off-screen. The Lobby uses a `Flickable` with vertical centering when content fits (`y = max(0, (viewport − height) / 2)`); taller content scrolls from the top.
 
 **Apostrophes in Python patch heredocs** — use `' + chr(39) + '`, not a literal `'`.
+
+**QML patch blocks must balance braces** — patch 7p (Lobby Ctrl+arrow rotation) once opened `else if (mode == 0 || isLobby) {` without closing it, leaving `Component.onCompleted` inside `handleKey()`. Symptom: `QQmlApplicationEngine failed to load component` / `Expected token ','` at the next top-level item; Writerdeck exits immediately on `/api/open` → `session.end()` → stock UI. `build-keywriter.sh` now asserts `{`/`}` balance in `handleKey` before write; still verify with `scripts/test-edit-session.sh` on device.
+
+**Edit → stock UI in one beat** — if logs show `editor started` then immediate `editor process exited` with a QML parse error, it's a broken `main.qml` patch, not the USB Escape watcher. Rebuild Writerdeck (`rmkw` after CI) and redeploy.
+
+**Home can look like a crash** — two-level Home is intentional: first press saves and returns to Lobby; second press (from Lobby) quits to stock UI. Under systemd, both show as `home button -- relaying to editor` then `editor process exited` / `starting xochitl` — not a segfault. One press straight to stock UI from an open note would be a bug; check whether Lobby appeared between presses (`journalctl | grep home`).
 
 **No cursor blink on e-ink** — it ghosts and smears. Hide while typing won.
 
@@ -64,7 +72,7 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **Lobby last-sync on tablet** — relative time comes from `lastSyncAt` in `settings.json`. The phone must POST `/api/sync/ack` after reconcile; `reconcileAll` does this on every success (not only on power sleep). `pushLobbyInfo` formats it for the Lobby and re-pushes on ack.
 
-**Load sync flags at page init**, not when the Settings panel opens — otherwise auto-sync silently skips.
+**Load sync flags at page init**, not when the Preferences panel opens — otherwise auto-sync silently skips.
 
 **Async primitives must return their promise** — `reconcileAll` didn't wait on `pushNote`; concurrent GitHub PUTs lost commits.
 

@@ -14,7 +14,7 @@ Below is the feature list — what works today. Open work lives in [TODO.md](TOD
 
 ## The core loop
 
-Power on, the tablet boots into a distraction-free editor. Open `http://<tablet-ip>:8000/` in a browser, pick a note, type. Keystrokes travel over WebSocket to `rmkbd`, which feeds a patched keywriter over a local socket. No app to install — the tablet is the server.
+Power on, the tablet boots into a distraction-free editor. Open `http://<tablet-ip>:8000/` in a browser, pick a note, type. Keystrokes travel over WebSocket to Writerdeck-server, which feeds a patched Writerdeck over `/run/Writerdeck.sock`. No app to install — the tablet is the server.
 
 Home from the editor saves and returns to the Lobby. Home from the Lobby quits to the stock reMarkable UI. `Writerdeck-server` keeps serving `:8000` either way — relaunch from the phone (**Edit**) or **Esc on a USB keyboard** (stock UI only).
 
@@ -40,11 +40,11 @@ Fed by `pushLobbyInfo` → `{"t":"info",…}` on socket connect — IP, PIN, `sy
 
 PIN on the tablet, shown on e-ink each boot. Choose 6 digits, 4 digits, or none (none warns you that anyone on your Wi-Fi can connect). Wrong guesses from one IP lock that IP for 60 seconds. The auth cookie lasts until 04:00 local time.
 
-## Settings & sync (browser)
+## Preferences & sync (browser)
 
 **Preferences** — reading font, PIN length, display rotate, and **Exit Writerdeck** (stops the service and returns the tablet to stock UI). **Sync** — separate panel for optional GitHub two-way sync. Both dismiss with Done, ×, ESC, or a backdrop click.
 
-The top bar shows tablet battery and Wi-Fi (`96% · Wi-Fi`), refreshed every 30 seconds.
+The top bar shows a single connection indicator — **Connected · 85%**, **Connecting…**, or **Tablet offline** — refreshed via `GET /api/status` every 5 s.
 
 Sync warnings appear in a banner when sync is on but the browser has no token. The repo link opens on GitHub when configured.
 
@@ -52,11 +52,11 @@ The GitHub token never leaves the browser (`localStorage`). The tablet holds onl
 
 ## Editor (e-ink)
 
-Built from source keywriter, patched for socket input. Renders full-panel via linuxfb. Norwegian and other Unicode characters work through the browser path.
+Built from source (upstream remarkable-keywriter), deployed as Writerdeck and patched for socket input. Renders full-panel via linuxfb. Norwegian and other Unicode characters work through the browser path.
 
 **Reading view.** Pick Inter, Literata, EB Garamond, or DejaVu from the phone. Page up/down in read and edit (about four-fifths of a screen per step). Esc from edit keeps your scroll position — no jump to the bottom.
 
-**Editing.** Block cursor hides while you type, reappears after a pause. Ctrl-K note switcher saves before switching. Mac-style navigation in edit mode (device-verified): Home/End line start/end (Cmd+Home/End doc start/end); Option/Alt+←/→ word; Cmd+←/→ line end; Cmd+↑/↓ doc start/end; Shift extends selection; plain ←/→ scroll the page. **Power button** while editing: save, sleep screen (“Writerdeck is sleeping…”), suspend; press power again to wake and resume. **USB Escape** from stock reMarkable UI (no editor session): launches Writerdeck to the Lobby. Wider margins, paper-like Lobby theme.
+**Editing.** Block cursor hides while you type, reappears after a pause. Ctrl-K note switcher saves before switching. Mac-style navigation in edit mode (device-verified): Home/End line start/end (Cmd+Home/End doc start/end); Option/Alt+←/→ word; Cmd+←/→ line end; Cmd+↑/↓ doc start/end; Shift extends selection; plain ←/→ scroll the page. **Power button** while editing: save, sleep screen (“Writerdeck is sleeping… Press power to wake.”), suspend; press power again to wake and resume. **USB Escape** from stock reMarkable UI (no editor session): launches Writerdeck to the Lobby. Wider margins, paper-like Lobby theme.
 
 **Rotate.** Preferences → Display → **Rotate tablet 90°** (global — affects Lobby, read, and edit). USB in preview/read: Ctrl+←/→. USB in Lobby: **Ctrl+R** (90° clockwise) or Ctrl+←/→ (same as preview). Angle is stored as `"rotation"` in `.Writerdeck/settings.json`, pushed to Writerdeck on connect via socket `setrotation`, and restored after exit/relaunch. USB changes sync back to the server via `rotationChanged`.
 
@@ -70,6 +70,8 @@ Triggers: connect, toggle on, three-minute poll, manual Sync now, **tablet Home 
 
 ## Infrastructure
 
-Static Go binary (`rmkbd`), no on-device runtime deps. Cross-built on the Mac, deployed over Wi-Fi. keywriter built in CI with the toltec Qt sysroot. Cold-boot autostart via systemd. Keep-awake during editor sessions only.
+Static Go binary (`Writerdeck-server` at `/home/root/Writerdeck-server`), no on-device runtime deps. Cross-built on the Mac, deployed over Wi-Fi. Writerdeck built in CI with the toltec Qt sysroot. Cold-boot autostart via `writerdeck.service`. Keep-awake during editor sessions only. On-device layout documented in [docs/architecture.md](docs/architecture.md).
+
+**Regression test:** `bash scripts/test-edit-session.sh` — POST `/api/open` (phone **Edit**) must leave Writerdeck running, xochitl down, and `editorActive: true` for several seconds. Logs to `docs/recon/`.
 
 `/dev/uinput` is dead on this kernel — we feed the editor over a socket instead. That path is settled; don't retry uinput.

@@ -29,7 +29,7 @@ Work in progress, but already a usable appliance. Power on and the tablet boots 
 2. `bash scripts/bootstrap.sh` — installs your SSH key on the tablet.
 3. `bash scripts/fetch-keywriter-dist.sh` — downloads the CI-built editor (keywriter binary + Qt runtime) into `third_party/keywriter/dist/`. Source-only mirror: these aren't committed, so fetch them from CI first (needs `gh`: `brew install gh && gh auth login`).
 4. `bash scripts/deploy-keywriter.sh` — ships the editor to the tablet.
-5. `bash scripts/deploy-rmkbd.sh` — cross-builds and ships the `rmkbd` daemon.
+5. `bash scripts/deploy-rmkbd.sh` — cross-builds and ships Writerdeck-server to `/home/root/Writerdeck-server`.
 6. `bash scripts/install-service.sh` (on the Mac) installs the systemd unit. Then SSH into the tablet (`ssh root@<ip>`) and run `systemctl start writerdeck` to test, then `systemctl enable writerdeck` to boot straight into it. Enable only after the test passes — see the script's boot-loop note.
 
 ### Optional: GitHub syncing of notes
@@ -44,8 +44,9 @@ To set up the repo and enable syncing:
 
 1. Here on GitHub, create a new private repo to hold your notes
 2. Go to the [create token](https://github.com/settings/personal-access-tokens/new) page. Create a fine-grained personal access token with Repository access limited to just that repo and `Repository permissions` → `Contents: Read and write`. Copy the token.
-3. On your phone, open ⚙ → GitHub sync: turn it on, enter the repo as `owner/repo`, and paste the token. The token is kept in that browser only.
-3. The reMarkable tablet never sees the token. It only records whether sync is enabled and the name of the repo.
+3. On your phone, open **Sync** → GitHub sync: turn it on, enter the repo as `owner/repo`, and paste the token.
+    * For security reasons, the token is kept in the phone's browser only, and never reaches the reMarkable. The browser ties the token to the URL. Therefore, the token must be reentered for every Wi-Fi network the reMarkable should sync over, e.g. home, work and mobile hotspot.
+4. While the reMarkable never sees the token, it records whether sync is enabled and the name of the repo.
 
 ![Create token](docs/create-token.png)
 
@@ -71,6 +72,7 @@ Development on the tablet is done over SSH from a machine on the same Wi-Fi. To 
 1. [TODO.md](TODO.md), [DONE.md](DONE.md) etc. briefs on current status.
 2. Create your local credentials: copy [secrets/remarkable.local.env.example](secrets/remarkable.local.env.example) to `remarkable.local.env` and fill in the device password — see [secrets/README.md](secrets/README.md).
 3. Run `bash scripts/bootstrap.sh`, then `bash scripts/recon.sh`. Keep the tablet awake, and iterate over Wi-Fi.
+4. After keywriter changes: CI rebuild → `rmkw` → `bash scripts/test-edit-session.sh` (phone **Edit** must keep Writerdeck up — see [docs/lessons.md](docs/lessons.md) if stock UI reloads instead).
 
 ## Design constraints
 
@@ -80,13 +82,13 @@ Development on the tablet is done over SSH from a machine on the same Wi-Fi. To 
 
 ## Main components
 
-Three pieces — the daemon and client are built here, the editor is third-party (patched):
+Three pieces — the server and client are built here, the editor is third-party (patched):
 
-- rmkbd — a small, static Go daemon running on the tablet. It serves an HTML capture page and a WebSocket, then forwards the keystrokes it receives into a local socket.
-- the client — a browser page (served by rmkbd) that captures keystrokes and sends them over the LAN.
-- keywriter — the third-party [keywriter](https://github.com/dps/remarkable-keywriter) editor, patched to read that socket. A full-screen, distraction-free Markdown editor that saves `.md` on the tablet.
+- **Writerdeck-server** — a small, static Go daemon at `/home/root/Writerdeck-server`. It serves an HTML capture page and a WebSocket, then forwards keystrokes into `/run/Writerdeck.sock`.
+- **the client** — a browser page (served by Writerdeck-server) that captures keystrokes and sends them over the LAN.
+- **Writerdeck** — the third-party [remarkable-keywriter](https://github.com/dps/remarkable-keywriter) editor, patched to read that socket. A full-screen, distraction-free Markdown editor that saves `.md` to `Writerdeck-user-documents/`.
 
-Keystrokes reach the editor through a local socket rather than `/dev/uinput`: this tablet's kernel can't load uinput, so the daemon feeds the patched keywriter instead. The reasoning is in [docs/decisions.md](docs/decisions.md).
+Keystrokes reach the editor through a local socket rather than `/dev/uinput`: this tablet's kernel can't load uinput, so Writerdeck-server feeds the patched editor instead. The reasoning is in [docs/decisions.md](docs/decisions.md).
 
 
 ## Repo layout
@@ -98,8 +100,8 @@ Keystrokes reach the editor through a local socket rather than `/dev/uinput`: th
 
 | Path | What's there |
 |---|---|
-| [daemon/](daemon/) | The Go `rmkbd` daemon: WebSocket, editor-feed socket, embedded capture page |
-| [third_party/](third_party/) | The keywriter editor, cross-built from source in CI |
+| [daemon/](daemon/) | Go source for Writerdeck-server: WebSocket, editor-feed socket, embedded capture page |
+| [third_party/](third_party/) | Upstream keywriter tree; CI builds the `Writerdeck` binary |
 | [scripts/](scripts/) | Cross-platform automation — PowerShell + bash twins (bootstrap, recon, deploy, test) |
 | [docs/](docs/) | Architecture, decisions, setup notes, and recon logs |
 | [secrets/](secrets/) | Local credentials — gitignored; see [secrets/README.md](secrets/README.md) |

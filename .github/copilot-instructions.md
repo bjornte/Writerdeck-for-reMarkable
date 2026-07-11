@@ -1,6 +1,6 @@
 # Copilot instructions — Writerdeck for reMarkable 1
 
-rM1-Writerdeck turns a reMarkable 1 e-paper tablet into a distraction-free Markdown typewriter by forwarding keystrokes from an iPhone keyboard over Wi-Fi. A static Go daemon (`rmkbd`) on the tablet receives key events and feeds them to the third-party keywriter editor (patched to read a local socket), which saves `.md`.
+Writerdeck for reMarkable 1 turns a reMarkable 1 e-paper tablet into a distraction-free Markdown typewriter by forwarding keystrokes from an iPhone keyboard over Wi-Fi. Writerdeck-server (`/home/root/Writerdeck-server`, built from `daemon/`) receives key events and feeds the patched Writerdeck editor (upstream remarkable-keywriter, reads `/run/Writerdeck.sock`), which saves `.md` to `Writerdeck-user-documents/`.
 
 For background, consult [todo](../TODO.md), [architecture](../docs/architecture.md), [decisions](../docs/decisions.md), [done](../DONE.md), and [lessons](../docs/lessons.md).
 
@@ -25,7 +25,7 @@ Example: *"The socket protocol + keywriter input-source patch are specced — pr
 - No jailbreak; preserve OTA firmware updates => avoid Toltec.
 - No on-device runtime deps => static Go binary (`CGO_ENABLED=0`, `GOOS=linux GOARCH=arm GOARM=7`).
 - Markdown is the save format.
-- rmkbd (static Go binary) cross-compiles on the Mac (the only device-reachable host) — `GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0`. Only keywriter needs CI/Docker (the toltec Qt sysroot); don't build it on a host toolchain.
+- Writerdeck-server cross-compiles on the Mac (the only device-reachable host) — `GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0`. Only Writerdeck needs CI/Docker (upstream keywriter + toltec Qt sysroot); don't build it on a host toolchain.
 
 ## Two-machine dev setup
 
@@ -35,7 +35,9 @@ See if `dev-behind-firewall-howto.md` exists locally in the docs folder. If so, 
 
 If dev host on same Wi-Fi as tablet: build, deploy, test locally (no git-bridge). Secrets in `secrets/remarkable.local.env`; scripts source `scripts/_env.sh` for `RM_HOST`.
 
-Daemon loop: `deploy-rmkbd.sh` (embeds `daemon/*` via `go:embed`) → `systemctl restart writerdeck` (deploy kills rmkbd). Verify: `curl http://$RM_HOST:8000/` + `/app.js`; UI at same URL (PIN `none` skips auth). GitHub token is browser `localStorage` only — per-origin, not on tablet. keywriter changes = CI + `deploy-keywriter.sh`, not `deploy-rmkbd.sh`.
+Daemon loop: `deploy-rmkbd.sh` (embeds `daemon/*` via `go:embed` → `/home/root/Writerdeck-server`) → `systemctl restart writerdeck` (deploy kills the running server). Verify: `curl http://$RM_HOST:8000/` + `/app.js`; UI at same URL (PIN `none` skips auth). GitHub token is browser `localStorage` only — per-origin, not on tablet. Writerdeck changes = CI + `deploy-keywriter.sh`, not `deploy-rmkbd.sh`. After Writerdeck deploy, run `bash scripts/test-edit-session.sh` — phone **Edit** must keep Writerdeck up (guards QML patch regressions that flash stock UI). Session logs: `journalctl -u writerdeck.service` (`editor started` / `editor process exited`, QML load errors).
+
+On-device naming: see [architecture.md](../docs/architecture.md) and [decisions.md](../docs/decisions.md) #22. Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server).
 
 ## Doc hygiene
 
@@ -49,4 +51,3 @@ Daemon loop: `deploy-rmkbd.sh` (embeds `daemon/*` via `go:embed`) → `systemctl
 - PowerShell `.ps1` = ASCII-only too — a single non-ASCII char once broke PowerShell parsing (wrong-encoding read). `.ps1` deliberately keep CRLF (Windows-native, per `.gitattributes`); that's correct, leave it. *(Known straggler: `push.ps1` carries the author's accented name — clean to ASCII when next touched, though the name is a deliberate exception.)*
 - Markdown `.md` = Unicode is fine and intentional (em-dashes, arrows, status emoji such as ✅ 🔴 ⬜). The ASCII rule is for code, not prose.
 - Before committing a script, grep it for `[^\x00-\x7F]` — should be empty for every `.sh`/`.ps1`.
-
