@@ -40,6 +40,7 @@ Deploy scripts push binaries with Writerdeck-branded names on the tablet. Repo s
 | `push.ps1` / `push.sh` | One-line stage+commit+push. `push.ps1` bakes in the personal git identity to prevent the work-email-leak footgun. On the Mac, `rmpush` is the alias. |
 | `install-alias.sh` | One-time Mac setup: adds `rmpush`, `rmkw`, and `wd` aliases to `~/.zshrc`. |
 | `lobby.sh` | (Mac) SSH to the tablet and run `~/wd` → Lobby on e-ink. Mac alias: `wd`. |
+| `restore-wiped-notes.sh` | (Mac) Restore zero-byte notes from GitHub history + remove `(tablet copy)` clash duplicates. Run after the Jul 2026 Lobby Home wipe bug. |
 | `wd` | On-device script (deployed to `/home/root/wd`). From an SSH session on the tablet: `~/wd`. |
 | `watch-mac.sh` | Git-bridge auto-sync (Mac side). Pulls everything; auto commits+pushes only new outputs under `docs/recon/` (scoped for safety — edits elsewhere are reported, not committed). macOS GUI banners on arm / each sync / stop. |
 | `watch-pc.ps1` | Git-bridge auto-sync (PC side). Loops `git pull`; pops a Windows toast when a pull brings in new commits. Banners on arm / each pull / stop. No admin, no modules. |

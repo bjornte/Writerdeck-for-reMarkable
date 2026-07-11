@@ -125,6 +125,18 @@ s, n = re.subn(
 )
 assert n == 1, "doLoad mode=0 pattern not found in main.qml"
 
+# 2b. doLoad must push loaded bytes into query.text. handleHome/showLobby clear
+#     query.text for the Lobby overlay, which breaks the `text: doc` binding; the
+#     next Home save then copies empty query.text -> doc and wipes the file.
+old2b = '                currentFile = name\n                doc = response\n'
+new2b = (
+    '                currentFile = name\n'
+    '                doc = response\n'
+    '                query.text = response\n'
+)
+assert old2b in s, "doLoad doc=response block not found (edit 2b)"
+s = s.replace(old2b, new2b, 1)
+
 # 3. Add saveAndQuit() and saveAndLoad(name) before initFile.
 #    saveAndQuit(): syncs query.text->doc so a home-button exit does not
 #    lose the live edit buffer (saveFile() writes doc, not query.text).
@@ -464,7 +476,7 @@ new7 = (
     '            isLobby = true\n'
     '            currentFile = ""\n'
     '            doc = ""\n'
-    '            query.text = ""\n'
+    '            query.text = ""\n'  // clears view; doLoad re-syncs on next open (edit 2b)\n'
     '            lobbyFilesMode = ""\n'
     '            lobbyRefreshNotes()\n'
     '        }\n'
@@ -614,6 +626,9 @@ new7l = (
     '        if (!isLobby) {\n'
     '            if (mode == 1) doc = query.text\n'
     '            saveFile()\n'
+    '            currentFile = ""\n'
+    '            doc = ""\n'
+    '            query.text = ""\n'
     '        }\n'
     '        isLobby = true\n'
     '        lobbyFilesMode = ""\n'
@@ -1129,7 +1144,7 @@ assert s[hk:co].count('{') == s[hk:co].count('}'), "handleKey brace mismatch -- 
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + lobby-subpages + handleHome + prepareSleep + sleep-screen + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate + lobbyHandleKey).')
+print('  All QML edits applied (props + setLobbyInfo + lobby-subpages + handleHome + doLoad-query-sync + prepareSleep + sleep-screen + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate + lobbyHandleKey).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true

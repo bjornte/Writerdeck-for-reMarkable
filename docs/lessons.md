@@ -36,9 +36,11 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **Every save path must sync `query.text → doc` before `saveFile()`** in edit mode. A bare `saveFile()` writes stale `doc`. Guards: saveAndQuit, handleHome, showLobby, saveAndLoad, omni switcher, Ctrl-Q.
 
+**Never clear `query.text` without re-syncing on load** — assigning `query.text = ""` (e.g. returning to Lobby) breaks the `text: doc` binding. `doLoad` must set `query.text = response` after every file read, or the next Home save copies empty text and wipes the file on disk (`save -> 0` in journal).
+
 **Socket-triggered saves ack back to Writerdeck-server** — `{"t":"saved","c":"home|open|..."}` after the QML handler finishes (BlockingQueuedConnection). Writerdeck-server waits for that before `exitedit`, GitHub push, or HTTP 200 on `/api/open`. Power sleep also gets `{"t":"ready","c":"preparesleep"}` after the e-ink sleep screen paints (~800 ms). Never guess with fixed sleeps for save timing.
 
-**Lobby is a clean no-file state** — clear `currentFile` on every return; guard `saveFile()` when empty. A stale `currentFile` resurrects deleted notes.
+**Lobby is a clean no-file state** — clear `currentFile` on every return (`handleHome`, `showLobby`); guard `saveFile()` when empty. A stale `currentFile` resurrects deleted notes.
 
 **Ctrl+K / modifier flags** — Writerdeck's `ctrlPressed` bool only flips on a standalone Control key. Injected keys use the modifier *flag*; `handleKeyDown` must also read `event.modifiers & Qt.ControlModifier`.
 

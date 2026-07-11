@@ -90,6 +90,22 @@ function handleClash(filename, tabletContent) {
         localStorage.removeItem('ghPushFailed_' + filename);
         return;
       }
+      // Accidental wipe: empty tablet vs non-empty GitHub is not a real clash --
+      // restore from GitHub without creating a junk "(tablet copy)" duplicate.
+      if (tabletContent === '' && ghContent !== '') {
+        return fetch('/api/notes/' + encodeURIComponent(filename), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: ghContent })
+        }).then(function(r) {
+          if (r && r.ok) {
+            localStorage.setItem('ghSha_' + filename, ghData.sha);
+            localStorage.setItem('ghLocalHash_' + filename, strHash(ghContent));
+          }
+          localStorage.removeItem('ghPushFailed_' + filename);
+          _onNotesChanged();
+        });
+      }
       var copyBase = filename.replace(/\.md$/, '') + ' (tablet copy)';
       // Keep the tablet's version as a copy, then bring GitHub's into note.md.
       return fetch('/api/notes', {
@@ -126,6 +142,14 @@ export function pushNote(filename) {
     .then(function(r) { return r.ok ? r.text() : null; })
     .then(function(content) {
       if (content === null) return;
+      var storedHash = localStorage.getItem('ghLocalHash_' + filename);
+      var emptyHash = strHash('');
+      // Safety net: never push an empty tablet file over a previously-synced note.
+      // (Lobby Home used to wipe files this way; see lessons.md.)
+      if (content === '' && storedHash && storedHash !== emptyHash) {
+        localStorage.setItem('ghPushFailed_' + filename, '1');
+        return;
+      }
       var sha = localStorage.getItem('ghSha_' + filename) || null;
       var body = { message: 'Writerdeck: ' + filename, content: b64encode(content) };
       if (sha) body.sha = sha;
@@ -337,7 +361,13 @@ function reconcileOne(name, remoteSha) {
       var remoteChanged = storedSha !== remoteSha;             // includes no-stored-sha
       var localChanged = storedHash !== strHash(localContent); // includes no-stored-hash
       if (remoteChanged && localChanged) { return handleClash(name, localContent); }
-      if (localChanged) { return pushNote(name); }
+      if (localChanged) {
+        var emptyHash = strHash('');
+        if (localContent === '' && storedHash && storedHash !== emptyHash && hasRemote) {
+          return pullNoteAndUpdate(name);
+        }
+        return pushNote(name);
+      }
       if (remoteChanged) { return pullNoteAndUpdate(name); }
       return; // both unchanged
     })
