@@ -29,6 +29,7 @@ import (
 	"bufio"
 	_ "embed"
 	crand "crypto/rand"
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/binary"
 	"encoding/hex"
@@ -869,6 +870,29 @@ func rejectsHtmlNoteContent(content string) bool {
 		strings.Contains(content, `name="qrichtext"`)
 }
 
+// noteETag is a content-hash revision token for optimistic concurrency (RFC 7232).
+func noteETag(content []byte) string {
+	sum := sha256.Sum256(content)
+	return `"` + hex.EncodeToString(sum[:8]) + `"`
+}
+
+// ifMatchOK reports whether the If-Match header allows writing over etag.
+func ifMatchOK(ifMatch, etag string) bool {
+	if ifMatch == "" {
+		return false
+	}
+	if ifMatch == "*" {
+		return true
+	}
+	for _, part := range strings.Split(ifMatch, ",") {
+		part = strings.TrimSpace(part)
+		if part == etag || part == "*" {
+			return true
+		}
+	}
+	return false
+}
+
 // notesListHandler serves GET /api/notes (list) and POST /api/notes (create).
 func notesListHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
@@ -973,7 +997,7 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, DELETE, PATCH, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, If-Match")
 		return
 	}
 	if !checkAuth(w, r) {
@@ -1005,6 +1029,7 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		}
+		w.Header().Set("ETag", noteETag(data))
 		w.Write(data) //nolint:errcheck
 
 	case http.MethodDelete:
@@ -1020,7 +1045,8 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPut:
 		// Upsert: write or overwrite content. Used by the sync engine to apply a
-		// version pulled from GitHub. 2 MiB limit matches POST /api/notes.
+		// version pulled from GitHub. Overwrite requires If-Match (content ETag).
+		// 2 MiB limit matches POST /api/notes.
 		r.Body = http.MaxBytesReader(w, r.Body, 2<<20)
 		var putReq struct {
 			Content string `json:"content"`
@@ -1037,10 +1063,24 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "cannot create notes dir", http.StatusInternalServerError)
 			return
 		}
+		existing, err := os.ReadFile(p)
+		if err == nil {
+			etag := noteETag(existing)
+			ifMatch := r.Header.Get("If-Match")
+			if !ifMatchOK(ifMatch, etag) {
+				w.Header().Set("ETag", etag)
+				http.Error(w, "If-Match required or revision mismatch", http.StatusPreconditionFailed)
+				return
+			}
+		} else if !os.IsNotExist(err) {
+			http.Error(w, "read failed", http.StatusInternalServerError)
+			return
+		}
 		if err := os.WriteFile(p, []byte(putReq.Content), 0644); err != nil {
 			http.Error(w, "write failed", http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("ETag", noteETag([]byte(putReq.Content)))
 		w.WriteHeader(http.StatusOK)
 
 	case http.MethodPatch:

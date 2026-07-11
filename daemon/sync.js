@@ -49,6 +49,29 @@ function ghHdrs() {
   };
 }
 
+// getTabletNote: read note body + ETag revision from the tablet API.
+function getTabletNote(filename) {
+  return fetch('/api/notes/' + encodeURIComponent(filename), { credentials: 'same-origin' })
+    .then(function(r) {
+      if (!r.ok) return { ok: false, status: r.status, etag: null, text: null };
+      return r.text().then(function(t) {
+        return { ok: true, status: r.status, etag: r.headers.get('ETag'), text: t };
+      });
+    });
+}
+
+// putTabletNote: PUT with If-Match when overwriting an existing note (OCC).
+function putTabletNote(filename, content, etag) {
+  var headers = { 'Content-Type': 'application/json' };
+  if (etag) headers['If-Match'] = etag;
+  return fetch('/api/notes/' + encodeURIComponent(filename), {
+    method: 'PUT',
+    credentials: 'same-origin',
+    headers: headers,
+    body: JSON.stringify({ content: content })
+  });
+}
+
 export function updateSyncBannerFromState() {
   var el = document.getElementById('sync-banner');
   if (!el) return;
@@ -93,17 +116,15 @@ function handleClash(filename, tabletContent) {
       // Accidental wipe: empty tablet vs non-empty GitHub is not a real clash --
       // restore from GitHub without creating a junk "(tablet copy)" duplicate.
       if (tabletContent === '' && ghContent !== '') {
-        return fetch('/api/notes/' + encodeURIComponent(filename), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: ghContent })
-        }).then(function(r) {
-          if (r && r.ok) {
-            localStorage.setItem('ghSha_' + filename, ghData.sha);
-            localStorage.setItem('ghLocalHash_' + filename, strHash(ghContent));
-          }
-          localStorage.removeItem('ghPushFailed_' + filename);
-          _onNotesChanged();
+        return getTabletNote(filename).then(function(tab) {
+          return putTabletNote(filename, ghContent, tab.etag).then(function(r) {
+            if (r && r.ok) {
+              localStorage.setItem('ghSha_' + filename, ghData.sha);
+              localStorage.setItem('ghLocalHash_' + filename, strHash(ghContent));
+            }
+            localStorage.removeItem('ghPushFailed_' + filename);
+            _onNotesChanged();
+          });
         });
       }
       var copyBase = filename.replace(/\.md$/, '') + ' (tablet copy)';
@@ -113,10 +134,8 @@ function handleClash(filename, tabletContent) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: copyBase, content: tabletContent })
       }).catch(function() {}).then(function() {
-        return fetch('/api/notes/' + encodeURIComponent(filename), {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: ghContent })
+        return getTabletNote(filename).then(function(tab) {
+          return putTabletNote(filename, ghContent, tab.etag);
         });
       }).then(function(r) {
         if (r && r.ok) {
@@ -206,15 +225,13 @@ export function pullNoteAndUpdate(filename) {
       if (!data) return;
       if (localStorage.getItem('ghSha_' + filename) === data.sha) return; // already up to date
       var ghContent = b64decode(data.content);
-      return fetch('/api/notes/' + encodeURIComponent(filename), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: ghContent })
-      }).then(function(r) {
-        if (r.ok) {
-          localStorage.setItem('ghSha_' + filename, data.sha);
-          localStorage.setItem('ghLocalHash_' + filename, strHash(ghContent));
-        }
+      return getTabletNote(filename).then(function(tab) {
+        return putTabletNote(filename, ghContent, tab.etag).then(function(r) {
+          if (r && r.ok) {
+            localStorage.setItem('ghSha_' + filename, data.sha);
+            localStorage.setItem('ghLocalHash_' + filename, strHash(ghContent));
+          }
+        });
       });
     })
     .catch(function() {});

@@ -102,7 +102,7 @@ Stack: **content contract** + **edit lease** + **OCC** + **atomic writes** + **c
 2. ~~**Content fidelity**~~ — shipped 2026-07-11 (`39cbdd3`: save contract, load sanitizer, `toggleMode` fix, server HTML guard).
 3. ~~**`notedeleted` + `noterenamed`**~~ — shipped 2026-07-11 (editor notified on phone rename/delete of open file; `noteDeleted` clears buffer).
 4. ~~**Reconcile policy**~~ — shipped 2026-07-11 (`openNote` in `/api/status`; reconcileAll gated on edit lease for all triggers).
-5. **OCC on disk** — `PUT /api/notes` requires base revision / `If-Match`.
+5. ~~**OCC on disk**~~ — shipped 2026-07-11 (GET ETag; PUT overwrite requires `If-Match`; sync sends revision).
 6. **Atomic note writes** on server (same pattern as `settings.json`).
 7. Tablet CRUD → queued GitHub ops or Lobby “sync pending”.
 8. Optional: reload or conflict banner when disk hash ≠ editor buffer.

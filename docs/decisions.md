@@ -20,7 +20,7 @@ Status: **active — non-negotiable.** Writerdeck is a typewriter: the owner's p
 
 **Feature gate:** no change to `daemon/`, `sync.js`, `build-keywriter.sh`, or note APIs ships without an integrity pass against the five points above. Incident ADRs (#24, empty-push) are patches *under* this contract, not substitutes for it.
 
-**Shipped under this contract:** #24, edit lease (slice 1), content fidelity (slice 2), `notedeleted`/`noterenamed` (slice 3), reconcile policy (slice 4), empty-push guard (#19). **Still violating:** no autosave, no OCC, non-atomic note writes, editor unaware of disk pulls.
+**Shipped under this contract:** #24, slices 1–5, empty-push guard (#19). **Still violating:** no autosave, non-atomic note writes, editor unaware of disk pulls.
 
 ---
 
@@ -116,7 +116,7 @@ Status: built, device-verified 2026-07-11. Returning to Lobby (`handleHome`, `sh
 - USB keyboard locales *(open · medium)*. Browser/Bluetooth path resolves layout in the phone OS (Norwegian works). USB path uses Qt evdev with **US QWERTY** default — Norwegian æøå and other national layouts need per-layout `.qmap` files via `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` ([remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1)); `loadkeys` / `setxkbmap` do not apply. Planned: ship qmaps + `settings.json` picker — [improvements.md](improvements.md), [../TODO.md](../TODO.md) Phase 10.
 - Per-note / subfolder encryption *(open · design)*. Global PIN gates the API; no subset protection yet. Encrypted subfolder with passphrase-derived keys is the leading option — design in [improvements.md](improvements.md); implementation not started.
 - Tablet file management *(partial · shipped)*. Lobby **Files** tab + socket CRUD covers list/create/open/rename/delete on tablet (#23). Upload, download, copy, paste, and GitHub token entry remain browser-only.
-- **Document integrity contract violations** *(open · high)*. Foundational contract: § Document integrity above. Remaining gaps (not optional): autosave / kill durability, OCC, atomic note writes, buffer↔disk reload. Matrix: [improvements.md](improvements.md) § Document integrity.
+- **Document integrity contract violations** *(open · high)*. Remaining: autosave / kill durability, atomic note writes, buffer↔disk reload. Matrix: [improvements.md](improvements.md) § Document integrity.
 - `/dev/uinput` is unavailable and unfixable on this kernel (decision 1). Closed, not a to-do — recorded so nobody retries it.
 - Go toolchain must be on the Mac (`brew install go`) — the only device-reachable host.
 - Disk: only the tiny rootfs is tight, and nothing we ship goes there. `/` (rootfs, ~228 MB) is 96% full; everything we deploy lives on `/home/root/` (separate multi-GB partition). Don't resize rootfs (A/B OTA scheme; brick risk).
