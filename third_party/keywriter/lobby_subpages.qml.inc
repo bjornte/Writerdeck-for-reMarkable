@@ -5,6 +5,13 @@
             visible: isLobby
             z: 5
 
+            readonly property int pageMargin: 24
+            readonly property int tabBtnHeight: 64
+            readonly property int rowHeight: 72
+            readonly property int actionBtnHeight: 72
+            readonly property int tabSpacing: 12
+            readonly property int contentSpacing: 12
+
             FocusScope {
                 id: lobbyFocus
                 anchors.fill: parent
@@ -21,16 +28,18 @@
                     anchors.top: parent.top
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.margins: 8
-                    height: 36
-                    spacing: 4
+                    anchors.leftMargin: lobby.pageMargin
+                    anchors.rightMargin: lobby.pageMargin
+                    anchors.topMargin: lobby.pageMargin
+                    height: lobby.tabBtnHeight + 8
+                    spacing: lobby.tabSpacing
 
                     Repeater {
                         model: lobbyTabLabels
                         delegate: Rectangle {
-                            width: Math.max(72, (lobby.width - 32) / lobbyTabLabels.length - 4)
-                            height: 32
-                            radius: 4
+                            width: Math.max(88, (lobby.width - lobby.pageMargin * 2 - lobby.tabSpacing * (lobbyTabLabels.length - 1)) / lobbyTabLabels.length)
+                            height: lobby.tabBtnHeight
+                            radius: 6
                             color: lobbyPage === index ? "#e0e0e0" : "#f5f5f5"
                             border.color: lobbyPage === index ? "#999" : "#ccc"
                             border.width: 1
@@ -39,7 +48,7 @@
                                 anchors.centerIn: parent
                                 text: (index + 1) + " " + modelData
                                 font.family: "Noto Sans"
-                                font.pointSize: 9
+                                font.pointSize: 11
                                 color: "black"
                             }
 
@@ -54,10 +63,13 @@
                 // ---- page stack ----
                 Item {
                     anchors.top: lobbyTabRow.bottom
+                    anchors.topMargin: lobby.contentSpacing
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.bottom: lobbyHint.top
-                    anchors.margins: 8
+                    anchors.bottomMargin: lobby.contentSpacing
+                    anchors.leftMargin: lobby.pageMargin
+                    anchors.rightMargin: lobby.pageMargin
 
                     // 0 Home
                     Item {
@@ -71,7 +83,7 @@
                             Column {
                                 id: homeCol
                                 width: parent.width
-                                spacing: 6
+                                spacing: lobby.contentSpacing
                                 Text {
                                     text: "Writerdeck"
                                     color: "black"
@@ -122,7 +134,7 @@
 
                         Column {
                             anchors.fill: parent
-                            spacing: 6
+                            spacing: lobby.contentSpacing
 
                             Text {
                                 text: lobbyFilesMode === "new" ? "New note name:"
@@ -147,27 +159,29 @@
                             ListView {
                                 id: lobbyFilesList
                                 width: parent.width
-                                height: parent.height - lobbyFilesBar.height - 40
+                                height: parent.height - lobbyFilesBar.height - lobby.contentSpacing * 2
                                 clip: true
                                 model: lobbyNotesModel
                                 currentIndex: lobbyFilesIndex
+                                spacing: 4
                                 visible: lobbyFilesMode === "" || lobbyFilesMode === "confirm-delete"
                                 delegate: Rectangle {
                                     width: lobbyFilesList.width
-                                    height: 36
+                                    height: lobby.rowHeight
                                     color: index === lobbyFilesIndex ? "#e8e8e8" : "white"
                                     border.color: "#ddd"
                                     border.width: 1
+                                    radius: 4
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         anchors.left: parent.left
-                                        anchors.leftMargin: 8
+                                        anchors.leftMargin: 16
                                         text: model.name
                                         font.family: "Noto Mono"
-                                        font.pointSize: 10
+                                        font.pointSize: 11
                                         color: "black"
                                         elide: Text.ElideRight
-                                        width: parent.width - 16
+                                        width: parent.width - 32
                                     }
                                     MouseArea {
                                         anchors.fill: parent
@@ -179,22 +193,22 @@
                                     }
                                 }
                                 onCurrentIndexChanged: lobbyFilesIndex = currentIndex
-                                highlight: Rectangle { color: "#d0d0d0"; radius: 2 }
+                                highlight: Rectangle { color: "#d0d0d0"; radius: 4 }
                             }
 
                             Row {
                                 id: lobbyFilesBar
                                 width: parent.width
-                                height: 40
-                                spacing: 6
+                                height: lobby.actionBtnHeight + 8
+                                spacing: lobby.tabSpacing
                                 visible: lobbyFilesMode === ""
 
                                 Repeater {
                                     model: ["New", "Open", "Rename", "Delete"]
                                     delegate: Rectangle {
-                                        width: (lobbyFilesBar.width - 18) / 4
-                                        height: 36
-                                        radius: 4
+                                        width: (lobbyFilesBar.width - lobby.tabSpacing * 3) / 4
+                                        height: lobby.actionBtnHeight
+                                        radius: 6
                                         color: "#f0f0f0"
                                         border.color: "#bbb"
                                         border.width: 1
@@ -202,7 +216,7 @@
                                             anchors.centerIn: parent
                                             text: modelData
                                             font.family: "Noto Sans"
-                                            font.pointSize: 10
+                                            font.pointSize: 12
                                         }
                                         MouseArea {
                                             anchors.fill: parent
@@ -231,7 +245,7 @@
                             Column {
                                 id: kbCol
                                 width: parent.width
-                                spacing: 6
+                                spacing: lobby.contentSpacing
                                 Text {
                                     text: "USB keyboard"
                                     font.pointSize: 14
@@ -278,7 +292,7 @@
                             Column {
                                 id: syncCol
                                 width: parent.width
-                                spacing: 6
+                                spacing: lobby.contentSpacing
                                 Text {
                                     text: "GitHub sync"
                                     font.pointSize: 14
@@ -322,7 +336,7 @@
                             Column {
                                 id: setCol
                                 width: parent.width
-                                spacing: 6
+                                spacing: lobby.contentSpacing
                                 Text {
                                     text: "Settings"
                                     font.pointSize: 14
@@ -348,15 +362,16 @@
                                 }
                                 Rectangle {
                                     width: parent.width
-                                    height: 36
-                                    radius: 4
+                                    height: lobby.actionBtnHeight
+                                    radius: 6
                                     color: "#f0f0f0"
                                     border.color: "#bbb"
+                                    border.width: 1
                                     Text {
                                         anchors.centerIn: parent
                                         text: "Rotate 90"
                                         font.family: "Noto Sans"
-                                        font.pointSize: 11
+                                        font.pointSize: 12
                                     }
                                     MouseArea {
                                         anchors.fill: parent
@@ -379,7 +394,7 @@
                             Column {
                                 id: scCol
                                 width: parent.width
-                                spacing: 6
+                                spacing: lobby.contentSpacing
                                 Text {
                                     text: "Shortcuts"
                                     font.pointSize: 14
@@ -405,11 +420,13 @@
                     anchors.bottom: parent.bottom
                     anchors.left: parent.left
                     anchors.right: parent.right
-                    anchors.margins: 8
-                    height: 28
+                    anchors.leftMargin: lobby.pageMargin
+                    anchors.rightMargin: lobby.pageMargin
+                    anchors.bottomMargin: lobby.pageMargin
+                    height: 48
                     verticalAlignment: Text.AlignVCenter
                     font.family: "Noto Mono"
-                    font.pointSize: 8
+                    font.pointSize: 9
                     color: "#888888"
                     text: lobbyPage === 1 && lobbyFilesMode === ""
                         ? "n new  Enter open  r rename  d delete"
