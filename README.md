@@ -1,27 +1,19 @@
 # Writerdeck for reMarkable 1
 
-A Markdown editor for the reMarkable 1, with connection options for USB & Bluetooth keyboards, and optional syncing of notes to your private GitHub repo.
+A distraction-free word processor for the reMarkable 1, with support for hardware keyboards (USB & Bluetooth), optional syncing of notes, and Markdown.
 
-* For Bluetooth: Pair a keyboard to another device — your phone, say — and type over Wi-Fi
-* For USB: Connect the keyboard using an [OTG cable](https://en.wikipedia.org/wiki/USB_On-The-Go#OTG_micro_cables) (Micro-USB male to USB-A female)
+* Bluetooth keyboards: Pair to your phone, then bridge to reMarkable over Wi-Fi.
+* USB keyboards: Use an [OTG cable](https://en.wikipedia.org/wiki/USB_On-The-Go#OTG_micro_cables)
 
 ![Writerdeck for reMarkable 1](docs/Writerdeck-for-reMarkable.jpg)
 
-Background: The reMarkable 1 has a large, nice e-ink screen and a distraction-free OS, but no Bluetooth or keyboard support, and no way to create typed documents. This Writerdeck fills the gap.
+Background: The reMarkable 1 has a large, nice e-ink screen and a distraction-free OS, but no word processor, and no support for hardware keyboards. This Writerdeck fills the gap.
 
-See the [r/writerDeck](https://www.reddit.com/r/writerDeck/) community for more on distraction-free writing.
-
-The project is 99% vibe coded and 1% code reviewed. I (the repo owner, Bjørn) have mostly just herded Claude and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (slightly patched) and a keypress injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
-
-## How it works
-
-```
-Physical keyboard → phone → Wi-Fi → web server on reMarkable → Writerdeck editor
-```
+The project is 90% vibe coded and 50% human reviewed. I (the repo owner, Bjørn) have mostly just herded LLMs and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (slightly patched) and a keypress injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
 
 ## Status
 
-Work in progress, but already a usable appliance. Power on and the tablet boots into a welcome Lobby showing its address and a one-time PIN. Enter that PIN on your phone and you can browse & edit notes. Text entered on the phone's keyboard lands on the e-ink and saves as Markdown. Download or copy notes off the device, and vice versa.
+A usable appliance. There's an abundance of possible improvements, but the core deliverable is working.
 
 ## Installation guide for (expert) users
 
