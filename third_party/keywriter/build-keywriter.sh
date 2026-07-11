@@ -476,7 +476,7 @@ new7 = (
     '            isLobby = true\n'
     '            currentFile = ""\n'
     '            doc = ""\n'
-    '            query.text = ""\n'  // clears view; doLoad re-syncs on next open (edit 2b)\n'
+    '            query.text = ""\n'
     '            lobbyFilesMode = ""\n'
     '            lobbyRefreshNotes()\n'
     '        }\n'
