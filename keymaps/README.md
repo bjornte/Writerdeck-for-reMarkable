@@ -23,3 +23,5 @@ Sources live under `keymaps/src/i386/` (from device `/usr/share/keymaps/i386/`).
 Build uses vendored `kmap2qmap-main.cpp` (Qt 5.15) + `qevdevkeyboardhandler_p.h`.
 
 Deploy: `bash scripts/deploy-keywriter.sh` copies `*.qmap` to `/home/root/keymaps/`.
+
+`writerdeck-alt-arrows.inc` overrides Linux Alt+Left/Right (console switch) so Qt delivers arrow keys for word navigation instead of fake Escape.

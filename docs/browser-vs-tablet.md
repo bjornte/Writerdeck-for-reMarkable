@@ -1,29 +1,13 @@
-# Browser vs tablet — capability matrix
+# Browser vs tablet
 
-What each surface can do today. Contract: [architecture.md](architecture.md). Shipped features: [../DONE.md](../DONE.md). Future work: [improvements.md](improvements.md).
+What each surface can do today. Contract: [architecture.md](architecture.md). Future work: [improvements.md](improvements.md).
 
-The phone/Mac companion (`daemon/index.html` + `app.js` + `sync.js`) handles auth, clipboard, and GitHub setup. The e-ink Lobby is the target for day-to-day controls — see [architecture.md](architecture.md) § Tablet-first controls.
+The phone handles auth, clipboard, and GitHub token entry. The tablet Lobby is where day-to-day controls should live over time — see [architecture.md](architecture.md).
 
-| Capability | Browser (authed) | Tablet (USB / Lobby) |
-|---|---|---|
-| List notes | Yes — scrollable list with size/date | **Files** tab — `ListView` from socket `noteslist`; note count on Home |
-| Create note | **New**, **Upload**, paste-on-create | **Files → New** or **Ctrl-K** → type name → Enter |
-| Open / edit | **Edit** → Type mode + `POST /api/open` | **Files → Open** / Enter / double-tap; **Ctrl-K** picker |
-| Read / preview | Read view (`textContent`, safe) | Esc toggles edit/preview in Writerdeck |
-| Rename | Read view → **Rename** (`PATCH /api/notes/{name}`) | **Files → Rename** or `r` (socket `renamenote`) |
-| Delete | Read view → **Delete** (`DELETE`); pairs with GitHub if sync on | **Files → Delete** or `d` + confirm (socket `deletenote`) |
-| Download / copy | **Download**, **Copy** (http fallback) | No |
-| Paste at cursor | **Paste from here** (Type mode) | No |
-| Font (read view) | Preferences → pick Inter / Literata / EB Garamond / DejaVu | Phone pushes `setfont`; Settings tab shows current font |
-| PIN length | Preferences → 6 / 4 / none | Display only (Lobby shows PIN; no change on device) |
-| Display rotation | Preferences → **Rotate tablet 90°** | **Ctrl-R** / Ctrl+←/→; Settings tab **Rotate 90** button |
-| Sync config | **Setup** panel — on/off, repo, token (`localStorage` + `POST /api/sync/token` → tablet RAM; auto-restore after restart). **Save & verify** while editing: syncs other notes; open note skipped; no long stall | Read-only status on **Sync** tab; **TOKEN NEEDED** warning when no token in RAM |
-| Sync run | — (use tablet Lobby **Sync now**) | **Sync now** when configured; disabled with **Token needed — phone Setup** otherwise |
-| Connection status | Top bar — offline / connecting / connected + battery | Not shown on e-ink |
-| Show PIN on tablet | **Show PIN on tablet** (`POST /api/lobby`, pre-auth) | N/A — you are looking at the PIN |
-| Exit Writerdeck | Preferences → **Exit Writerdeck** (`POST /api/shutdown`) | **Ctrl-Q** or Home from Lobby |
-| Launch Lobby | **Edit** without note (starts session) | **Esc** / L+R page buttons; Mac `wd`; tablet `~/wd` |
-| USB keyboard layout | — (tablet-only) | **Keyboard** tab — US QWERTY / Norwegian (`setkeyboardlayout`; applies on next launch) |
-| Keystrokes | WebSocket — layout resolved by phone OS | USB — Qt evdev qmap; BT — same as browser path |
+On the phone you can list notes in a scrollable list with size and date; create via New, Upload, or paste; open and edit via Edit into Type mode; read in a safe preview; rename and delete from the read view; download and copy; paste at the cursor in Type mode; set font, PIN length, and rotation in Preferences; configure GitHub sync in Setup; see connection status in the top bar; show the PIN on the tablet via a button; exit via Preferences; and launch the Lobby by tapping Edit without selecting a note. Keystrokes go over WebSocket with layout resolved by the phone OS.
 
-**Takeaway:** upload, download, copy, paste, and GitHub **setup** (toggle, repo, token) remain browser-only. **Sync now** lives on the tablet Lobby Sync tab; the engine runs on the tablet. Tablet **Files** CRUD via trusted socket — shipped and device-verified 2026-07-11 ([decisions.md](decisions.md) #23).
+On the tablet you can list notes in the Files tab; create via Files New or Ctrl-K; open via Files or Ctrl-K; toggle edit and preview with Esc; rename and delete in Files with `r` and `d`; see current font in Settings (phone pushes setfont); see the PIN on the Lobby (display only); rotate with Ctrl-R or Ctrl-arrows and a Settings button; see read-only sync status and run Sync now when configured; launch the Lobby from Esc, L+R page buttons, `wd`, or `~/wd`; pick USB keyboard layout in the Keyboard tab; and type from USB via Qt evdev qmap or from Bluetooth the same way as the browser path.
+
+Upload, download, copy, paste, and GitHub setup (toggle, repo, token) stay browser-only. The sync engine runs on the tablet; Sync now lives on the Lobby Sync tab.
+
+Tablet Files CRUD via trusted socket is shipped and device-verified — [decisions.md](decisions.md) §24.

@@ -52,3 +52,5 @@ keycode  57 = space
 keycode  58 = Caps_Lock
 keycode  86 = less             greater          bar
 keycode  97 = Control
+
+include "writerdeck-alt-arrows.inc"

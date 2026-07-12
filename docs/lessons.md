@@ -1,119 +1,99 @@
 # Lessons learned
 
-Operational gotchas from building Writerdeck — the stuff that burned time once and shouldn't burn it again. Architectural *why* lives in [decisions.md](decisions.md); shipped features in [DONE.md](../DONE.md).
+Operational gotchas from building Writerdeck. Why things are the way they are: [decisions.md](decisions.md). What's shipped: [../DONE.md](../DONE.md).
 
----
+## Deploy and staleness
 
-## Deploy & staleness
+Three separate ways a change can look like it did nothing: the CI keywriter binary lags the git push; the browser caches the capture page (serve with `Cache-Control: no-store`); a live editor session keeps the old binary until you respawn it.
 
-**Three layers of "my change did nothing."** (1) CI keywriter binary lags the git push. (2) Browser caches the capture page — serve with `Cache-Control: no-store`. (3) A live editor session keeps the old keywriter binary; respawn after deploy (Home→reopen or reboot).
+`rmkw` pushes the binary only. Font changes need the full Qt sysroot: `RM_FORCE_SYSROOT=1 bash scripts/deploy-keywriter.sh -b`.
 
-**`rmkw` is binary-only.** Fonts live in the Qt sysroot (~14 MB). After a font change: `RM_FORCE_SYSROOT=1 bash scripts/deploy-keywriter.sh -b`, then respawn the editor.
+`deploy-rmkbd.sh` flushes via `POST /api/flush-save`, then SIGTERM-waits about twelve seconds. The old pattern of `pkill` plus half a second could drop an unsaved buffer.
 
-**`deploy-rmkbd.sh` flushes then waits.** `POST /api/flush-save` (loopback) runs `autosavenow` on the open note; then SIGTERM + wait up to ~12 s for Writerdeck-server to exit (save + quit). Follow with `systemctl start writerdeck`. Old behaviour (`pkill` + 0.5 s) could drop unsaved buffer — documented breach, fixed slice 11.
+scp deadlocks at a fixed offset on the Mac-to-Wi-Fi-to-tablet link. Use `rm_send_file` (gzip-over-ssh) in `_env.sh`. On ETXTBSY, kill by full path, stream to `.new`, then `mv`.
 
-**scp deadlocks** at a fixed offset on the Mac→Wi-Fi→tablet link. Use `rm_send_file` (gzip-over-ssh) in `_env.sh`.
+Browser rotate needs both binaries current — the server saves rotation in settings; Writerdeck must handle `setrotation` and relay `rotationChanged`. The rotation watcher is a separate moc'd unit because `Q_OBJECT` in patched `main.cpp` will not link on the ARM Qt build.
 
-**ETXTBSY on deploy** — kill by full path before copying; stream to `.new`, then `mv`.
+## systemd and device
 
-**Browser rotate needs both binaries** — `POST /api/rotate` is handled by Writerdeck-server (saves `"rotation"` in `settings.json`), but restore and USB persistence need Writerdeck to handle `setrotation` and relay `rotationChanged` via `rotation_watcher`. `deploy-rmkbd.sh` alone leaves an old editor at 0° on relaunch; phone rotate may save without the tablet moving.
+With `writerdeck.service`, both server and Writerdeck Qt stderr land in `journalctl -u writerdeck.service`.
 
-**Rotation watcher is a separate moc'd unit** — `Q_OBJECT` in patched `main.cpp` won't link on the ARM Qt build. Keep `rotation_watcher.{h,cpp}` in `edit.pro` (copied by `build-keywriter.sh`).
+Any unit whose ExecStart lives on `/home/root` needs `RequiresMountsFor=/home/root` or cold boot races the mount.
 
-## systemd & device
+Export `HOME=/home/root` in Writerdeck-launcher.sh — under systemd, root's home is `/`, which breaks the save path.
 
-**Supervisor logs live in journald** — with `writerdeck.service`, `Writerdeck-server` and Writerdeck Qt stderr both land in `journalctl -u writerdeck.service` (session start/stop, Home relay, QML errors, `editor process exited`). Ad-hoc `nohup … >/tmp/wd-server.log` only when running outside systemd.
+Never `pkill -f /home/root/Writerdeck`; that pattern matches Writerdeck-server too. Use `pidof Writerdeck` for the editor and `pkill -f Writerdeck-server` for the server.
 
-**`RequiresMountsFor=/home/root`** on any unit whose `ExecStart` lives on `/home` — otherwise cold boot races the mount and you get `203/EXEC`.
+The tablet drops Wi-Fi on suspend. Keep it awake during dev.
 
-**`HOME=/home/root` in Writerdeck-launcher.sh** — under systemd, root's `$HOME` is `/`, so Writerdeck's save path breaks without the export.
+## Writerdeck and QML
 
-**No `pkill -f /home/root/Writerdeck`** — matches `Writerdeck-server` too. Kill the editor with `pidof Writerdeck`; kill the server with `pkill -f /home/root/Writerdeck-server`. Deploy scripts already do this; ad-hoc SSH restarts must too, or you stack duplicate processes.
+Every save path in edit mode must sync `query.text` into `doc` before `saveFile()`. A bare `saveFile()` writes stale content.
 
-**Keep the tablet awake** — it drops Wi-Fi on suspend.
+Never clear `query.text` without re-syncing on load — it breaks the TextEdit binding. Call `syncQueryDisplay()` after load or mode switch. If you skip this, Home save can zero the file (`save -> 0` in the journal) or Esc-toggle can show corrupted preview.
 
-## Writerdeck / QML
+Preview is imperative, not bound. `toggleMode()` and `doLoad` must call `syncQueryDisplay()` and must never read RichText back into `doc`.
 
-**Every save path must sync `query.text → doc` before `saveFile()`** in edit mode. A bare `saveFile()` writes stale `doc`. Guards: saveAndQuit, handleHome, showLobby, saveAndLoad, omni switcher, Ctrl-Q.
+The Lobby Home wipe bug (fixed): a binding bug plus sync pushing empties created `(tablet copy).md` junk. Prevention is slice 2 plus the empty-push guard. Recovery is GitHub history.
 
-**Never clear `query.text` without re-syncing on load** — assigning `query.text = ""` (e.g. returning to Lobby) breaks any `text:` binding on the `TextEdit`. After load or mode switch, call `syncQueryDisplay()` (edit 7f/7u) so the buffer matches `doc` — preview gets `readHtml(doc)`, edit gets plain `doc`. Symptom if broken: Esc-to-preview collapses newlines (plain markdown shown as RichText); Esc-back shows HTML-extracted garbage until reload. Home-save wipe: if display isn't synced, `doc = query.text` → empty → `saveFile()` zeroes the file (`save -> 0` in journal). Device-verified fix 2026-07-11 (binding) + 2026-07-12 (`syncQueryDisplay`).
+Python comments outside string literals in `build-keywriter.sh` heredocs cause SyntaxError in CI. Use `#` on the Python side only.
 
-**Markdown preview is imperative, not bound** — upstream `text: mode ? readHtml(doc) : doc` breaks once the user types or `doLoad` touches `query.text`. `toggleMode()` and `doLoad` must call `syncQueryDisplay()`, which sets `textFormat` then `query.text` (never read RichText back into `doc` on preview→edit).
+Socket-triggered saves ack back to the server — the server waits before exitedit, GitHub push, or HTTP 200 on open. Power sleep sends ready after the sleep screen paints (~800 ms).
 
-**Lobby Files open regression (Jul 2026)** — shipped Lobby subpages let you open notes on tablet without the phone. Testing pattern open → Home → open another triggered the binding bug above; GitHub sync then pushed empty files and clash handling created `(tablet copy).md` junk. Recovery: `bash scripts/restore-wiped-notes.sh` (tablet + `my-notes` from pre-wipe commit). Prevention: edit 2b + sync empty-push guard in `sync.js`.
+Clear `currentFile` on every return to the Lobby or a stale name resurrects deleted notes.
 
-**Python comments inside QML patch heredocs** — `build-keywriter.sh` embeds QML via Python string literals. A `//` JavaScript comment *outside* the string (e.g. after `'query.text = ""\n'`) is a Python `SyntaxError` and fails CI silently until you read the build log. Use `#` for Python-side comments only; QML comments must live inside the quoted string if needed.
+Ctrl-K with injected keys must check `Qt.ControlModifier`, not only the standalone Control key bool.
 
-**Socket-triggered saves ack back to Writerdeck-server** — `{"t":"saved","c":"home|open|..."}` after the QML handler finishes (BlockingQueuedConnection). Writerdeck-server waits for that before `exitedit`, GitHub push, or HTTP 200 on `/api/open`. Power sleep also gets `{"t":"ready","c":"preparesleep"}` after the e-ink sleep screen paints (~800 ms). Never guess with fixed sleeps for save timing.
+USB Escape launch uses evdev watch with three-second hotplug rescan; idle only. Pin the USB keyboard device in the launcher — a bare `keymap=…:grab=1` grabs event1 and starves the Home and Power watcher. L+R page buttons use the same idle path with 800 ms debounce.
 
-**Lobby is a clean no-file state** — clear `currentFile` on every return (`handleHome`, `showLobby`); guard `saveFile()` when empty. A stale `currentFile` resurrects deleted notes.
+Standard Linux kmaps map Alt+Left/Right to `Decr_Console` / `Incr_Console`. Qt evdev turns those into fake `Key_Escape` events; Writerdeck toggles edit/preview on Esc release, so Alt+arrow looked like entering read mode. Override in `keymaps/src/i386/include/writerdeck-alt-arrows.inc`, regenerate with `bash keymaps/generate.sh`, redeploy keymaps, relaunch Writerdeck. `handleKey` also ignores Esc release when Alt or Ctrl is held. Qmap applies at editor launch, not mid-session.
 
-**Ctrl+K / modifier flags** — Writerdeck's `ctrlPressed` bool only flips on a standalone Control key. Injected keys use the modifier *flag*; `handleKeyDown` must also read `event.modifiers & Qt.ControlModifier`.
+## Keyboard and selection
 
-**USB Escape launch** — Writerdeck-server watches USB keyboard evdev nodes (hotplug rescan every 3 s). Escape while no active session and not sleeping → `start()` (Lobby). Ignored while editing (Writerdeck owns Esc) and while sleeping (power button wakes). Not an Esc-to-wake path.
+Phone path and USB path are different inputs. The harness (`daemon/cmd/edit-harness`, `scripts/test-keyboard-harness.sh`) drives keys over WebSocket — same as Type mode, not Qt evdev. It will not catch qmap bugs; those need hardware or a future evdev probe.
 
-**USB keyboard qmap** — `Writerdeck-launcher.sh` pins **USB keyboard only** (`/dev/input/eventN:grab=1:keymap=…`), never gpio-keys (`event1`). `keymap=…:grab=1` without a device path makes Qt evdev auto-discover and **grab event1**, which starves Writerdeck-server's Home/Power watcher. If no USB keyboard at launch, keymap is skipped; server restarts Writerdeck on hotplug or layout change so the launcher re-reads `settings.json`.
+Three tiers: `go test -C daemon -run TestTranslate` for modifier masks in `translate()`; the device harness for cursor/selection via `GET /api/test/editor-state` (Writerdeck publishes `editorstate` over the socket); manual USB checks after qmap or launcher changes.
 
-**Page-button chord launch** — same idle path when **left+right** physical page buttons are held together on `/dev/input/event1` (800 ms debounce). Tablet-only; no USB or phone needed.
+After QML selection or arrow-handler edits: rebuild Writerdeck, relaunch, run `bash scripts/test-keyboard-harness.sh`. After server test API edits: `deploy-rmkbd.sh` too. Logs land in `docs/recon/test-keyboard-harness-*.txt`.
 
-**Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`.** Use `line-height` or spacer nodes; always verify on device.
+Soft reset (default): one hard quit at the start of a full run, then `PUT` note content and `POST /api/reload` between scenarios. Do not use `POST /api/open` to reload the harness note — `saveAndLoad` writes the stale in-memory buffer over the `PUT` first. `--hard-reset` quits the editor per scenario (slow). Single scenario: `bash scripts/test-keyboard-harness.sh -s NAME`.
 
-**Font IDs must match Qt family names exactly** or the editor silently falls back to DejaVu.
+`TextEdit.moveCursorSelection` takes a character index, not `TextEdit.Down` / `TextEdit.Up`. Passing direction enums selects toward a low position and breaks shift+vertical. Use `lineDownPos` / `lineUpPos` and explicit anchor math (same model as horizontal `extendSelectionHorizontal`). Setting `query.cursorPosition` after `query.select()` collapses the selection.
 
-**QML `Text` needs explicit `width` + `wrapMode`** or long Lobby copy runs off-screen. The Lobby uses a `Flickable` with vertical centering when content fits (`y = max(0, (viewport − height) / 2)`); taller content scrolls from the top.
+Saved-file guessing for selection tests was unreliable. Assert `cursor`, `selStart`, `selEnd`, and `textLen` from the editor-state probe instead.
 
-**Apostrophes in Python patch heredocs** — use `' + chr(39) + '`, not a literal `'`.
+Qt RichText ignores margin-bottom on paragraphs and list items — use line-height. Font IDs must match Qt family names exactly. QML Text needs explicit width and wrapMode.
 
-**QML patch blocks must balance braces** — patch 7p once opened `else if (mode == 0 || isLobby) {` without closing it; `lobby/lobby_shell_bottom.inc` once omitted the closing `}` for the page-stack `Item` (Jul 2026). Symptom: `QQmlApplicationEngine failed to load component` / `Expected token '}'` at EOF (`qrc:/main.qml:1397:1`); Writerdeck exits on every launch, server falls back to xochitl. `build-keywriter.sh` asserts `{`/`}` balance in `handleKey` before write; **also** sanity-check full patched QML (with `lobby_subpages.qml.inc`) before deploy. Verify with `journalctl -u writerdeck` or `scripts/test-edit-session.sh`.
+Apostrophes in Python patch heredocs: `' + chr(39) + '`. QML patch blocks must balance braces — symptom is `Expected token '}'` at EOF and Writerdeck exits on every launch. The build asserts balance in `handleKey()`; also sanity-check full patched QML before deploy.
 
-**Edit → stock UI in one beat** — if logs show `editor started` then immediate `editor process exited` with a QML parse error, it's a broken `main.qml` patch, not the USB Escape watcher. Rebuild Writerdeck (`rmkw` after CI) and redeploy.
+Immediate `editor process exited` after start is almost always a QML parse error, not the USB watcher. Two-level Home looks like a crash in logs but is intentional: first Home to Lobby, second to stock UI. No cursor blink on e-ink — it ghosts.
 
-**Home can look like a crash** — two-level Home is intentional: first press saves and returns to Lobby; second press (from Lobby) quits to stock UI. Under systemd, both show as `home button -- relaying to editor` then `editor process exited` / `starting xochitl` — not a segfault. One press straight to stock UI from an open note would be a bug; check whether Lobby appeared between presses (`journalctl | grep home`).
+## Browser and capture page
 
-**No cursor blink on e-ink** — it ghosts and smears. Hide while typing won.
+Capture must stand down when the PIN screen or paste modal is up. Setting `display: ''` does not restore visibility if CSS had `display:none` — set an explicit value. Inline onclick cannot reach IIFE closures; use addEventListener.
 
-## Browser / capture page
+Clipboard API needs HTTPS; on plain LAN http, Copy falls back to execCommand.
 
-**Capture must stand down when an overlay is up** — PIN screen or paste modal. Otherwise keystrokes leak to the tablet.
+Lobby last-sync needs the phone to POST sync ack after reconcile. Load sync flags at page init, not when Preferences opens. Async functions must return their promises.
 
-**`display: ''` restores the stylesheet value** — if CSS says `display:none`, setting `''` keeps it hidden. Set an explicit value.
+GitHub token is per browser origin — new DHCP IP means re-enter the token in Setup.
 
-**Inline `onclick` can't reach IIFE closures** — use `addEventListener`.
-
-**`navigator.clipboard` needs HTTPS** — on plain http LAN, Copy falls back to `execCommand('copy')`.
-
-**Lobby last-sync on tablet** — relative time comes from `lastSyncAt` in `settings.json`. The phone must POST `/api/sync/ack` after reconcile; `reconcileAll` does this on every success (not only on power sleep). `pushLobbyInfo` formats it for the Lobby and re-pushes on ack.
-
-**Load sync flags at page init**, not when the Preferences panel opens — otherwise auto-sync silently skips.
-
-**Async primitives must return their promise** — `reconcileAll` didn't wait on `pushNote`; concurrent GitHub PUTs lost commits.
-
-**GitHub token is per-origin** — new DHCP IP = new browser origin = re-enter token in Setup.
-
-**Writerdeck deploy needs a fresh binary** — `deploy-keywriter.sh` only **pushes** `third_party/keywriter/dist/Writerdeck`; it does not rebuild. QML lives inside that binary. After `build-keywriter.sh` or `lobby/` edits: rebuild (CI or local Docker), then deploy. Without rebuild you redeploy a stale binary (fixes invisible). After deploy, relaunch the editor and check `journalctl -u writerdeck` for QML parse errors.
-
-**Restarting the server does not reload Writerdeck** — the editor process keeps running until Home/quit or kill; binary-only deploy requires relaunch to pick up QML changes.
+Writerdeck deploy needs a fresh binary; QML lives inside it. After lobby edits: CI or Docker rebuild, deploy, relaunch, check journalctl. Restarting the server does not reload a running Writerdeck process.
 
 ## Sync
 
-**Destructive sync ops need per-note confirmation** — `reconcileAll` maps a failed remote list to `[]`; without a 404 guard, one network blip would mass-delete the tablet.
+Destructive sync needs per-note 404 confirmation — a failed remote list must not become mass-delete. Never push empty over a previously-synced note.
 
-**Never push an empty tablet file over a previously-synced note** — `pushNote` refuses when `content === ""` and `ghLocalHash` was non-empty; reconcile pulls from GitHub instead. Clash handler skips `(tablet copy)` when tablet is empty and GitHub has content. Belt-and-suspenders after the Lobby Home wipe bug — a genuine "delete all text" edit still saves non-empty until the owner clears and re-syncs intentionally.
+Open-file tracking shipped in slices 1, 3, and 4; residuals remain — see [integrity-audit.md](integrity-audit.md). Save and verify while editing skips only the open note, not the whole reconcile. Do not inject Escape on boot in edit mode; daemon, editor, and client have independent lifetimes.
 
-**Open-file tracking — slices 1+3+4 shipped, residuals remain** — tablet opens report via `notifyOpen` → server `openNote` / `openedit` WS (slice 1). Phone rename/delete of the open file notifies the editor (`noterenamed` / `notedeleted`, slice 3). Reconcile skips only the open note (`currentNote`), not the whole run (2026-07-12). **Still open:** stale `tabletOpenNote` after phone-back; `doLoad` async races on rapid switch; clash/pull overwrites disk without auto-reload (drift banner is manual). See [integrity-audit.md](integrity-audit.md).
+## CI and patches
 
-**Save & verify while editing** — token save is immediate; background reconcile must not abort entirely when `currentNote` is set (only skip that file). Phone `waitForSyncIdle` must not require `lastSyncAt` to bump — instant reconciles can finish between poll ticks.
+One patch file, one target file. Multi-file `git apply --recount` cannot tell where hunks end.
 
-**Boot in edit mode, don't inject Escape** — daemon, editor, and client have independent lifetimes; a synthetic toggle desyncs on reconnect.
+Font CI needs one hard-failing RUN per font with grep assertion — a trailing `|| true` swallows download failures.
 
-## CI / patches
-
-**One patch file = one target file.** Multi-file `git apply --recount` can't tell where hunks end; second-file edits go through `build-keywriter.sh` sed/python.
-
-**Font CI: one hard-failing `RUN` per font** with `fc-list | grep` assertion. A trailing `|| true` swallows download failures.
-
-**`int(Uint32) % N` overflows 32-bit `int` on device** — modulo in `uint32` space first.
+`int(Uint32) % N` overflows 32-bit int on device; modulo in uint32 space first.
 
 ## Recon on BusyBox
 
-This `od` is a stub — pull raw bytes to the Mac and decode with BSD `od`. No `timeout` — use `dd & sleep & kill`.
+This `od` is a stub — pull raw bytes to the Mac. No `timeout` — use `dd & sleep & kill`.

@@ -1,19 +1,21 @@
 # docs/
 
-Reference material and generated artifacts.
+Reference for the project. Test script output goes in `recon/` — gitignored text files, safe to delete; lessons belong in DONE, TODO, and lessons.
 
-## Contents
-- `architecture.md` — how the system works; **§ Document integrity** is the non-negotiable product contract every feature must satisfy.
-- `decisions.md` — ADR: the *why* behind every choice; **§ Document integrity** states the same contract as foundational policy.
-- `lessons.md` — operational gotchas (deploy staleness, QML patch regressions, journald logs, sync footguns).
-- `browser-vs-tablet.md` — capability matrix: what the phone browser vs e-ink tablet can do today.
-- `integrity-audit.md` — document integrity audit (fixed slices 1–11, known open, unknown).
-- `improvements.md` — open wish-list and design notes (USB locales, encryption, edit UX).
-- `recon/` — local device-test output from `scripts/*` (gitignored `*.txt`). Keep lessons in TODO/DONE/lessons; delete stale logs freely. Large `*.tar.gz` backups are gitignored too. Retired two-machine sync: [dev-behind-firewall-howto.md](dev-behind-firewall-howto.md).
+`architecture.md` — how the system works, device facts, deploy loop. Document integrity is the product contract.
 
-## External references
-- Editor (upstream keywriter → on-device `Writerdeck`): https://github.com/dps/remarkable-keywriter
-- reMarkable input subsystem (evdev): https://remarkable.guide/devel/device/input.html
-- Awesome-reMarkable index: https://github.com/reHackable/awesome-reMarkable
-- ~~uinput Go lib~~ (not usable — this kernel can't load uinput; the editor is fed over a socket instead): https://github.com/bendahl/uinput
-- libremarkable (fallback self-editor spike): https://github.com/canselcik/libremarkable
+`decisions.md` — why each choice was made.
+
+`lessons.md` — operational gotchas.
+
+`browser-vs-tablet.md` — what the phone vs tablet can do.
+
+`integrity-audit.md` — integrity status and open risks.
+
+`improvements.md` — design notes for encryption, locales, future UX.
+
+`server-sync-implementation.md` — shipped server-side GitHub sync reference.
+
+`manual-cleanup-tersify-prompts-at-intervals.md` — periodic doc cleanup prompts.
+
+External: [remarkable-keywriter](https://github.com/dps/remarkable-keywriter) · [input docs](https://remarkable.guide/devel/device/input.html) · [awesome-reMarkable](https://github.com/reHackable/awesome-reMarkable)

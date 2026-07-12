@@ -190,3 +190,5 @@ control	keycode  57 = nul
     alt	keycode  86 = Meta_less
 
 	keycode  97 = Control
+
+include "writerdeck-alt-arrows.inc"

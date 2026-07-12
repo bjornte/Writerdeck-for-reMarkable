@@ -1,52 +1,33 @@
 # daemon/ — Writerdeck-server
 
-The Go daemon that runs on the reMarkable — see [../docs/architecture.md](../docs/architecture.md). Deploys as `/home/root/Writerdeck-server`: a single static ARMv7 binary, no on-device dependencies, always-on once installed.
+Go daemon on the reMarkable. Deploys as `/home/root/Writerdeck-server` — static ARMv7, always-on. Architecture: [../docs/architecture.md](../docs/architecture.md).
 
-## What it does
-> No `/dev/uinput` on this kernel (it can't load it — exports trimmed; see [../DONE.md](../DONE.md)). Writerdeck-server feeds a patched Writerdeck over a local socket (`/run/Writerdeck.sock`) instead.
+No `/dev/uinput` on this kernel — feeds Writerdeck over `/run/Writerdeck.sock`.
 
-- Serves the capture page + WebSocket on `:8000` — `index.html` is embedded via `go:embed` (nothing extra to deploy). The browser sends key events; the server forwards them to Writerdeck as integer Unicode codepoints (`{"t":"text","cp":N}`, escaping-proof) plus named keys/modifiers — Writerdeck takes Qt input, so there is no fd to swap; it replays decoded keys.
-- Notes file-manager API on `/api/notes` (list / read / create / rename / delete over `/home/root/Writerdeck-user-documents`), gated by a per-boot PIN (`/api/pin` → HttpOnly `writerdeck_token` session cookie that also guards the WS upgrade).
-- Settings API on `/api/settings` and rotate on `POST /api/rotate` — font, PIN length, and display rotation persist to `/home/root/.Writerdeck/settings.json`; rotation is pushed to Writerdeck on connect (`setrotation`) and after phone rotate.
-- Supervisor / lifecycle split — owns the `xochitl ↔ Writerdeck` toggle in Go: keeps serving `:8000` even under the stock GUI and summons Writerdeck on demand (`/api/open`, `/api/launch`); boot auto-launches one editor session; the physical Home button relays through to Writerdeck (two-level Home: edit→Lobby, Lobby→quit→xochitl). **Launch from stock UI** when idle: **USB Escape** (evdev hotplug watch) or **left+right page buttons together** (`/dev/input/event1`) → Lobby — not a wake-from-sleep path (power button only). Pushes Lobby info to Writerdeck on socket connect (`IP`, PIN, sync flags, note count, formatted last sync) via `{"t":"info",…}`; `POST /api/sync/ack` (after phone reconcile) stores `lastSyncAt` and re-pushes. Session lines (`editor started`, `editor process exited`, `home button -- relaying to editor`) go to stderr → `journalctl -u writerdeck.service` when run under systemd.
+- Capture page + WebSocket on `:8000`; forwards keys as `{"t":"text","cp":N}`.
+- Notes API `/api/notes` on `Writerdeck-user-documents/`; PIN auth.
+- Settings `/api/settings`; rotation `POST /api/rotate`.
+- xochitl ↔ Writerdeck lifecycle; USB Escape and L+R page-button launch when idle.
+- GitHub sync engine (`syncengine.go`).
 
 ## Layout
+
 ```
-daemon/
-  go.mod
-  main.go          embed + HTTP route table + main()
-  editor.go        editor socket, key translation, dial loop
-  input.go         physical buttons, USB keyboard launch/hotplug
-  websocket.go     WS hub, broadcast, current-note tracking
-  notes.go         /api/notes + tablet file ops
-  settings.go      /api/settings, pending-sync queue
-  auth.go          PIN auth, session cookie, brute-force throttle
-  lobby.go         pushLobbyInfo, /api/lobby
-  handlers.go      status, open, launch, rotate, flush-save, …
-  session.go       xochitl ↔ Writerdeck supervisor lifecycle
-  syncengine.go    GitHub reconcile engine
-  syncgithub.go    GitHub Contents API client
-  syncapi.go       /api/sync/* handlers
-  syncmeta.go      per-note sync metadata in settings.json
-  index.html       capture page markup (embedded)
-  app.js           phone UI bootstrap (embedded)
-  connection.js    WebSocket + key capture (embedded)
-  notes-ui.js      note list, preview, typing view (embedded)
-  panels.js        PIN, Preferences, Setup overlays (embedded)
-  deps.js          cross-module callback registry (embedded)
-  state.js         shared mutable UI state (embedded)
-  sync.js          GitHub sync engine in the browser (embedded)
-  app.css          styles (embedded)
+main.go, editor.go, input.go, websocket.go, notes.go, settings.go,
+auth.go, lobby.go, handlers.go, session.go,
+syncengine.go, syncgithub.go, syncapi.go, syncmeta.go,
+index.html, app.js, connection.js, notes-ui.js, panels.js,
+deps.js, state.js, sync.js, app.css  (embedded)
 ```
 
-## Build & deploy
-Static ARMv7 (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). Deploys originate on the Mac — the only host that reaches the tablet:
+## Build
+
 ```bash
-bash ../scripts/deploy-rmkbd.sh      # cross-build → /home/root/Writerdeck-server  (rmkw = binary-only Writerdeck redeploy)
+bash ../scripts/deploy-rmkbd.sh
 ```
 
 ## Troubleshooting
 
-**Edit from browser → stock UI reloads in one beat** — Writerdeck started then exited; `session.end()` restarted `xochitl`. Check `journalctl -u writerdeck.service` for `QQmlApplicationEngine failed to load component` (broken QML patch) or `editor started` immediately followed by `editor process exited`. Rebuild and redeploy Writerdeck (`rmkw` after CI). Automated check: `bash ../scripts/test-edit-session.sh` (see [decisions.md](../docs/decisions.md) #21).
+Edit → stock UI flash: Writerdeck exited — check journalctl for QML errors. Run `test-edit-session.sh`.
 
-**Do not `pkill -f /home/root/Writerdeck`** — that pattern also matches `Writerdeck-server`. Use `pidof Writerdeck` for the editor; `pkill -f /home/root/Writerdeck-server` for the server.
+Do not `pkill -f /home/root/Writerdeck` — matches server. Use `pidof Writerdeck`.

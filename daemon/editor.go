@@ -81,6 +81,9 @@ type editorConn struct {
 
 	ackMu   sync.Mutex
 	ackWait []*ackWait
+
+	stateMu   sync.Mutex
+	stateWait chan EditorState
 }
 
 type ackWait struct {
@@ -154,6 +157,10 @@ func (e *editorConn) writeCmdWaitAck(cmd []byte, typ, cmdName string, timeout ti
 }
 
 func (e *editorConn) handleEditorLine(line []byte) {
+	if st, ok := parseEditorState(line); ok {
+		e.deliverState(st)
+		return
+	}
 	var msg struct {
 		T       string `json:"t"`
 		C       string `json:"c"`

@@ -192,6 +192,8 @@
 +            QMetaObject::invokeMethod(g_rootObj, "reloadNote", Qt::QueuedConnection);
 +        else if (cmd == "showlobby" && g_rootObj)
 +            invokeSaveCmd("showLobby", "showlobby");
++        else if (cmd == "editorstate" && g_rootObj)
++            QMetaObject::invokeMethod(g_rootObj, "publishEditorState", Qt::BlockingQueuedConnection);
 +        else if (cmd == "setfont" && g_rootObj) {
 +            // {"t":"cmd","c":"setfont","family":"Inter"} -> setReadFont(name) in QML.
 +            // Changes the reading-view font; the allow-list check lives in rmkbd (Go).

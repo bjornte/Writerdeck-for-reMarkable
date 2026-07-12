@@ -1,59 +1,42 @@
-# Writerdeck for reMarkable 1 — TODO
+# TODO
 
-> Writerdeck for reMarkable 1 turns a first-gen reMarkable 1 e-paper tablet into a distraction-free Markdown typewriter: type on an iPhone (or laptop) keyboard, the keystrokes travel over Wi-Fi to the tablet, which shows the text on e-ink and saves `.md`.
->
-> This file is just the open work. How it works → [docs/architecture.md](docs/architecture.md). Why → [docs/decisions.md](docs/decisions.md). What's shipped → [DONE.md](DONE.md). Gotchas → [docs/lessons.md](docs/lessons.md).
->
-> Keystrokes reach the editor over a local socket, not `/dev/uinput` (this kernel can't load uinput — see [docs/decisions.md](docs/decisions.md)). Verify each item on the device before checking it off.
+Writerdeck for reMarkable 1 turns a first-gen tablet into a Wi-Fi Markdown typewriter. Phases 0–8, integrity slices 1–11, and server-side GitHub sync are shipped — see [DONE.md](DONE.md).
 
----
+How: [docs/architecture.md](docs/architecture.md). Why: [docs/decisions.md](docs/decisions.md). Gotchas: [docs/lessons.md](docs/lessons.md).
 
-## Status
+Keystrokes reach the editor over `/run/Writerdeck.sock`, not uinput ([docs/decisions.md](docs/decisions.md) §1). Verify on the device before checking anything off.
 
-Phases 0–8 and document integrity slices 1–11 are done — the Companion appliance works end-to-end (see [DONE.md](DONE.md)). Optional polish below remains.
+## Next unchecked
 
----
+1. USB Norwegian keyboard — æ ø å Æ Ø Å, AltGr, `@`, `{` `}` on a physical NO keyboard. Qmaps and Lobby picker are shipped; Alt+Left/Right no longer flip to preview ([lessons.md](docs/lessons.md)). Remaining checks are hardware-only.
+2. Lobby Ctrl-K on USB keyboard — device verify.
+3. Power button sleep/wake — device verify. Implementation is in [DONE.md](DONE.md); test is outstanding.
 
-## Next up
-
-1. **Server-side GitHub sync** — shipped 2026-07-11 (slices 1–6). Re-enter token once on phone (**Sync → Save & verify**); device-verified: API, edit-session, deploy. Full GitHub matrix: [server-sync-implementation.md](docs/server-sync-implementation.md) § Device test matrix.
-2. **Power button** — needs device test (implementation in [DONE.md](DONE.md) § Editor).
-3. **Lobby Ctrl-K on USB keyboard** — needs device verify.
-
----
-
-## Phase 10 — locales & protection
+## Phase 10 — locales and protection
 
 Design notes: [docs/improvements.md](docs/improvements.md).
 
-### USB keyboard locales (Norwegian first)
+USB keyboard locales:
 
-- [x] Generate `no.qmap` (and `us.qmap` baseline) via `ckbcomp` + `kmap2qmap`; ship in `keymaps/`, deploy to `/home/root/keymaps/`.
-- [x] Extend `Writerdeck-launcher.sh` to set `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` from `settings.json` → `keyboardLayout` (default `us`).
-- [x] Hotplug-safe device path — rescan or match Writerdeck-server’s keyboard discovery; document event-node variance.
-- [x] Lobby / Preferences: layout picker (tablet **Keyboard** tab; removed from phone).
-- [ ] Device test: æ ø å Æ Ø Å, AltGr, `@`, `{` `}` on Norwegian USB keyboard.
+- [x] `no.qmap` and `us.qmap` via ckbcomp and kmap2qmap; ship in `keymaps/`.
+- [x] `Writerdeck-launcher.sh` reads `keyboardLayout` from settings.
+- [x] Hotplug-safe keyboard path; Lobby Keyboard tab picker.
+- [ ] Device test (item 1 above).
 
-Ref: [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1) — `loadkeys` / `setxkbmap` do **not** work for Qt apps on rM.
+`loadkeys` and `setxkbmap` do not work for Qt apps on rM — see [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1).
 
-### Encrypted / password-protected note subset
+Encrypted note subset:
 
-- [ ] Design ADR: encrypted subfolder (e.g. `private/`), passphrase-derived key, session unlock, sync exclusion.
-- [ ] Implement only after design sign-off — Go `crypto/*`, rate-limited unlock, locked entries in list API.
+- [ ] Design ADR: encrypted subfolder, passphrase-derived key, session unlock, sync exclusion.
+- [ ] Implement after sign-off.
 
----
+## Open question
 
-## Open questions
+Stay firmware-update-current? Each OTA resets the SSH password and may wipe the systemd unit — re-deploy and re-enable ([docs/decisions.md](docs/decisions.md) open risks).
 
-1. Stay firmware-update-current? Each OTA resets the SSH password and may wipe the systemd unit ⇒ a re-deploy + re-`enable` cadence (low-risk; recovery documented in [docs/decisions.md](docs/decisions.md)).
+## Resume prompt
 
----
-
-## Resume prompt (paste into a fresh chat)
-
-> Project Writerdeck for reMarkable 1 — a reMarkable 1 as a Wi-Fi Markdown typewriter. Writerdeck-server (`/home/root/Writerdeck-server`, built from `daemon/`) serves a WebSocket + HTML capture page and feeds a patched Writerdeck editor over `/run/Writerdeck.sock` (this kernel can't load `/dev/uinput`); Writerdeck saves `.md` to `Writerdeck-user-documents/`. The client is the Mac in dev, the iPhone in use.
-> State: Phases 0–8, integrity slices 1–11, and Phase 9 polish are done (see [DONE.md](DONE.md)). **Next:** server-side GitHub sync ([server-sync-implementation.md](docs/server-sync-implementation.md)); power button device test; Lobby Ctrl-K USB verify. **Phase 10:** USB locale qmaps and encrypted subfolder — [improvements.md](docs/improvements.md), [TODO.md](TODO.md). Integrity audit: [integrity-audit.md](docs/integrity-audit.md). After Writerdeck/QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) #21).
-> Read first: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [DONE](DONE.md), [lessons](docs/lessons.md), [browser-vs-tablet](docs/browser-vs-tablet.md), [integrity-audit](docs/integrity-audit.md), [improvements](docs/improvements.md). Power-button notes in **Next up** above.
-> Dev: device SSH/deploy over Wi-Fi; IP in `secrets/remarkable.local.env` (`RM_HOST_WIFI`, currently `192.168.1.8`).
-> Constraints: no jailbreak; preserve OTA; no Toltec; static Go binary (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). SSH password gitignored in `secrets/remarkable.local.env`. Iterate over Wi-Fi; keep the tablet awake.
-> Refs: editor https://github.com/dps/remarkable-keywriter · keyboard layouts https://github.com/dps/remarkable-keywriter/issues/1 · input docs https://remarkable.guide/devel/device/input.html.
+> Project: reMarkable 1 Wi-Fi Markdown typewriter. Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Mac deploys; iPhone uses.
+> Shipped: [DONE.md](DONE.md). Next unchecked: Norwegian USB device test (æøå, AltGr — Alt+arrow fixed in qmap); Ctrl-K USB verify; power button device test. Phase 10 encryption: [improvements.md](docs/improvements.md). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) §21); after arrow/selection QML: `bash scripts/test-keyboard-harness.sh` (§22).
+> Read: architecture, decisions, DONE, lessons, browser-vs-tablet, integrity-audit. Device: `secrets/remarkable.local.env` (`RM_HOST_WIFI`).
+> Constraints: no jailbreak/OTA/Toltec; `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`.

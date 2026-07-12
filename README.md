@@ -103,8 +103,8 @@ Keystrokes reach the editor through a local socket rather than `/dev/uinput`: th
 |---|---|
 | [daemon/](daemon/) | Go source for Writerdeck-server: WebSocket, editor-feed socket, embedded capture page |
 | [third_party/](third_party/) | Upstream keywriter tree; CI builds the `Writerdeck` binary |
-| [scripts/](scripts/) | Cross-platform automation — PowerShell + bash twins (bootstrap, recon, deploy, test) |
-| [docs/](docs/) | Architecture, decisions, setup notes, and recon logs |
+| [scripts/](scripts/) | Bash automation — bootstrap, recon, deploy, test |
+| [docs/](docs/) | Architecture, decisions, lessons |
 | [secrets/](secrets/) | Local credentials — gitignored; see [secrets/README.md](secrets/README.md) |
 
 

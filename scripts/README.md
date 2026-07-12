@@ -1,76 +1,51 @@
 # scripts/
 
-Automation for the dev/deploy loop. Run from the repo root.
+Dev/deploy automation. Run from repo root. Credentials: [../secrets/remarkable.local.env](../secrets/remarkable.local.env) via `_env.sh`.
 
-> Device work is bash-only on the Mac, which reaches the tablet over Wi-Fi. Scripts read credentials/addresses from [../secrets/remarkable.local.env](../secrets/remarkable.local.env) (gitignored) via `_env.sh`.
-
-## On-device names vs repo script names
-
-Deploy scripts push binaries with Writerdeck-branded names on the tablet. Repo script names like `deploy-rmkbd.sh` and `deploy-keywriter.sh` are historical:
+## On-device names
 
 | On tablet | Built from |
 |---|---|
 | `/home/root/Writerdeck-server` | `daemon/` via `deploy-rmkbd.sh` |
-| `/home/root/Writerdeck` | `third_party/keywriter/` (CI) via `deploy-keywriter.sh` |
+| `/home/root/Writerdeck` | CI via `deploy-keywriter.sh` |
 | `/home/root/Writerdeck-launcher.sh` | `scripts/Writerdeck-launcher.sh` |
-| `/home/root/wd` | `scripts/wd` — show Lobby (`~/wd` on tablet SSH) |
-| `/home/root/Writerdeck-user-documents/` | notes directory |
-| `/home/root/.Writerdeck/settings.json` | persisted prefs |
-| `/run/Writerdeck.sock` | daemon ↔ editor socket |
+| `/home/root/wd` | `scripts/wd` |
 | `writerdeck.service` | `scripts/writerdeck.service` |
 
-`migrate-device-layout.sh` runs automatically from deploy/install scripts: renames legacy paths (`rmkbd`, `keywriter`, `edit/`, `.rmkbd/`, etc.) and removes old binaries.
+`migrate-device-layout.sh` renames legacy paths on deploy.
 
 ## Writerdeck deploy
 
-`deploy-keywriter.sh` **pushes** `dist/Writerdeck`; it does **not** rebuild. After `build-keywriter.sh` or `lobby/` changes you must produce a new binary first.
-
-**CI path** (default):
+`deploy-keywriter.sh` pushes `dist/Writerdeck` — does not rebuild.
 
 ```bash
-git push
-bash scripts/fetch-keywriter-dist.sh [run-id]
-bash scripts/deploy-keywriter.sh -b    # rmkw
+git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywriter.sh -b
 bash scripts/test-edit-session.sh
 ```
 
-**Local Docker path** (Apple Silicon: add `--platform linux/amd64`):
-
-```bash
-docker build --platform linux/amd64 -t rm1-writerdeck-keywriter-builder third_party/keywriter/
-docker run --rm --platform linux/amd64 -v "$PWD/third_party/keywriter/dist:/out" rm1-writerdeck-keywriter-builder
-bash scripts/deploy-keywriter.sh -b
-journalctl -u writerdeck -n 30    # on device — confirm no QML parse error
-```
+Local Docker (Apple Silicon: `--platform linux/amd64` on both docker commands).
 
 ## Scripts
 
-| Script | Does |
+| Script | Purpose |
 |---|---|
-| `_env.sh` | Shared helper: dot-sourced by the bash device scripts. Loads secrets; defines ssh/scp + key-test helpers. |
-| `paths.sh` | Canonical on-device path constants (sourced by other scripts). |
-| `migrate-device-layout.sh` | One-time rename of legacy on-device paths + removal of old binaries. Auto-run from deploy/install scripts. |
-| `bootstrap.sh` | Generate an SSH keypair if absent; install the pubkey on the device (one password prompt); enable Wi-Fi SSH (`rm-ssh-over-wlan on`); verify key login. |
-| `recon.sh` | Snapshot device facts: OS version, `ip addr`, input devices, disk. Self-logs to `../docs/recon/`. Re-run after a firmware update to refresh the facts. |
-| `fetch-keywriter-dist.sh` | Pull CI-built `dist/Writerdeck` + `qt5.tar.gz` from GitHub Actions (`gh` required). Run after `git push` triggers `build-keywriter.yml`. |
-| `deploy-keywriter.sh` | (Mac) Ship CI-built `Writerdeck` binary + `qt5/` sysroot to `/home/root/`, launch via `Writerdeck-launcher.sh`, print a verdict, trap-restore xochitl. Self-logs to `../docs/recon/`. |
-| `deploy-rmkbd.sh` | Cross-build Writerdeck-server (ARMv7 static, `CGO_ENABLED=0`). Deploy ships to `/home/root/Writerdeck-server`: **`POST /api/flush-save`** then SIGTERM-waits for graceful exit (~12 s) before replacing the binary.
-| `Writerdeck-launcher.sh` | The proven linuxfb launch env (panel geometry/DPI + epaper scene graph) in one place — sourced by `deploy-keywriter.sh` and by Writerdeck-server to spawn Writerdeck as its child. |
-| `test-e2e.sh` | (Mac) Full browser→e-ink pipeline test: build+deploy Writerdeck-server → stop xochitl → launch Writerdeck + server → print the browser URL → hold for a human to type → show daemon log + `scratch.md` → restore xochitl. `-s` skips the server build+scp. Self-logs to `../docs/recon/`. |
-| `test-edit-session.sh` | (Mac) Regression: `POST /api/open` (phone **Edit**) from stock UI must keep Writerdeck running, xochitl stopped, and `editorActive: true` for ~8 s. Prep starts server if needed; cleanup returns to stock UI without killing the daemon. Self-logs to `../docs/recon/`. |
-| `push.sh` | One-line stage+commit+push. On the Mac, `rmpush` is the alias (`install-alias.sh`).
-| `install-alias.sh` | One-time Mac setup: adds `rmpush`, `rmkw`, and `wd` aliases to `~/.zshrc`. |
-| `lobby.sh` | (Mac) SSH to the tablet and run `~/wd` → Lobby on e-ink. Mac alias: `wd`. |
-| `restore-wiped-notes.sh` | (Mac) Restore zero-byte notes from GitHub history + remove `(tablet copy)` clash duplicates. Run after the Jul 2026 Lobby Home wipe bug. |
-| `wd` | On-device script (deployed to `/home/root/wd`). From an SSH session on the tablet: `~/wd`. |
-| `install-service.sh` | (Mac) Install `writerdeck.service` on the device: scp unit → `/etc/systemd/system/`, `daemon-reload`. Migrates off legacy unit names if present. Does not enable (boot-loop guard); prints the manual-start → enable → recovery steps. |
-| `writerdeck.service` | systemd unit — runs `/home/root/Writerdeck-server` under `systemd-inhibit` (keep-awake), stops/restores xochitl around it. Installed by `install-service.sh`. |
+| `_env.sh` | Shared secrets, ssh, `rm_send_file` |
+| `paths.sh` | On-device path constants |
+| `bootstrap.sh` | SSH key install, enable Wi-Fi SSH |
+| `recon.sh` | Device fact snapshot → `docs/recon/` (re-run after OTA) |
+| `fetch-keywriter-dist.sh` | Pull CI artifacts (`gh` required) |
+| `deploy-keywriter.sh` | Ship Writerdeck + qt5 sysroot |
+| `deploy-rmkbd.sh` | Cross-build and ship Writerdeck-server (flush-save + graceful wait) |
+| `Writerdeck-launcher.sh` | Qt linuxfb launch env |
+| `test-e2e.sh` | Full pipeline test (`-s` skips server rebuild) |
+| `test-edit-session.sh` | Writerdeck/QML regression — POST `/api/open` |
+| `test-keyboard-harness.sh` | Modifier+arrow and selection on device (WebSocket path). `GET /api/test/editor-state`. Default: one launch, `PUT` + `/api/reload` between scenarios — not `/api/open` (see [lessons.md](../docs/lessons.md)). `-s NAME`, `--list`, `--unit`, `--hard-reset`, `-v`. Logs: `docs/recon/test-keyboard-harness-*.txt`. After QML selection/arrow or daemon test API edits. |
+| `lobby.sh` / `wd` | Show Lobby on e-ink |
+| `install-service.sh` | Install systemd unit (manual enable) |
+| `install-alias.sh` | Mac aliases: `rmpush`, `rmkw`, `wd` |
+| `fix-hostkey.sh` | Clear stale SSH host key |
+| `push.sh` | Stage, commit, push |
 
-## Convention: device actions become committed scripts
+Convention: script device actions; tee output to `docs/recon/` where useful. Never log secrets.
 
-Don't hand-type long `ssh root@…` one-liners — script every device action so it runs as one short line, and `tee` device output to `docs/recon/` so verdicts are captured locally (`recon.sh`, `deploy-keywriter.sh`, `test-e2e.sh` already do). Never log a secret there — `bootstrap.sh` echoes the root password, so it isn't logged.
-
-## Conventions
-- Iterate over Wi‑Fi (`192.168.1.8`) — the working path on the Mac (USB‑ethernet is dead there: no macOS RNDIS). Scripts default to it via `$RM_HOST`; override with `export RM_HOST=10.11.99.1` if USB ever revives.
-- Scripts never hardcode the password; they read it from the secrets file at runtime.
-- Keep scripts idempotent and re-runnable.
+Wi-Fi via `$RM_HOST` (default from secrets). Keep scripts idempotent.

@@ -71,6 +71,18 @@ void LobbyBridge::setKeyboardLayout(const QString &layout)
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
 }
 
+void LobbyBridge::publishState(int cursor, int selStart, int selEnd, int textLen, int mode)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("state");
+    o[QStringLiteral("cursor")] = cursor;
+    o[QStringLiteral("selStart")] = selStart;
+    o[QStringLiteral("selEnd")] = selEnd;
+    o[QStringLiteral("textLen")] = textLen;
+    o[QStringLiteral("mode")] = mode;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
 void LobbyBridge::deliverNotesList(const QVariantList &items)
 {
     if (!m_root)
