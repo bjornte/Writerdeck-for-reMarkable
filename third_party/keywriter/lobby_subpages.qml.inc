@@ -489,7 +489,7 @@
                                     visible: lobbySettingsMode === ""
 
                                     Text {
-                                        text: "Reading font"
+                                        text: "\nReading font"
                                         font.pointSize: 12
                                         font.family: "Noto Sans"
                                         color: "black"
@@ -532,11 +532,19 @@
                                     }
 
                                     Text {
-                                        text: "PIN length"
+                                        text: "\nPIN for phone pairing"
                                         font.pointSize: 12
                                         font.family: "Noto Sans"
                                         color: "black"
                                         width: parent.width
+                                    }
+                                    Text {
+                                        text: "Adding a PIN ensures that only intended devices can access your notes"
+                                        font.pointSize: 10
+                                        font.family: "Noto Sans"
+                                        color: "#666666"
+                                        width: parent.width
+                                        wrapMode: Text.WordWrap
                                     }
                                     Column {
                                         width: parent.width
@@ -569,7 +577,7 @@
                                                     Text {
                                                         visible: !!modelData.warn
                                                         anchors.horizontalCenter: parent.horizontalCenter
-                                                        text: modelData.warn
+                                                        text: modelData.warn || ""
                                                         font.family: "Noto Sans"
                                                         font.pointSize: 9
                                                         color: "#666666"
@@ -587,10 +595,17 @@
                                     }
 
                                     Text {
-                                        text: "Display rotation: " + root.rotation + " degrees\nCtrl-R or Ctrl+arrows to rotate."
-                                        font.pointSize: 11
+                                        text: "\nDisplay rotation"
+                                        font.pointSize: 12
                                         font.family: "Noto Sans"
-                                        color: "#555555"
+                                        color: "black"
+                                        width: parent.width
+                                    }
+                                    Text {
+                                        text: root.rotation + " degrees. Ctrl-R or Ctrl+arrows to rotate."
+                                        font.pointSize: 10
+                                        font.family: "Noto Sans"
+                                        color: "#666666"
                                         width: parent.width
                                         wrapMode: Text.WordWrap
                                     }
@@ -614,7 +629,7 @@
                                     }
 
                                     Text {
-                                        text: "Service"
+                                        text: "\nService"
                                         font.pointSize: 12
                                         font.family: "Noto Sans"
                                         color: "black"
