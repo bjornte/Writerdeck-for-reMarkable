@@ -107,7 +107,7 @@
                                                     Text {
                                                         visible: !!modelData.warn
                                                         anchors.horizontalCenter: parent.horizontalCenter
-                                                        text: modelData.warn
+                                                        text: modelData.warn || ""
                                                         font.family: "Noto Sans"
                                                         font.pointSize: 9
                                                         color: "#666666"
