@@ -3,7 +3,7 @@
 import { state } from './state.js';
 import {
   updateSyncBannerFromState, refreshSyncStatus, syncConfigured, waitForSyncIdle,
-  initSync, showSyncClash,
+  initSync, showSyncClash, ghToken, setSyncToken, clearSyncToken,
   recordEditorDiskBaseline, checkDiskDrift, notifyDiskChanged
 } from './sync.js';
 
@@ -861,14 +861,14 @@ import {
 
       var tokLabel = document.createElement('div');
       tokLabel.style.cssText = 'color:#888;font-size:12px;margin-top:8px;padding:0 2px;';
-      tokLabel.textContent = 'GitHub token (held in tablet RAM only \u2014 not written to disk)';
+      tokLabel.textContent = 'GitHub token (saved in this browser; copied to tablet RAM when verified)';
       list.appendChild(tokLabel);
 
       var tokInput = document.createElement('input');
       tokInput.type = 'password'; tokInput.className = 'token-input';
       tokInput.style.width = '100%';
       tokInput.placeholder = 'github_pat_\u2026 or ghp_\u2026'; tokInput.autocomplete = 'off';
-      if (syncConfigured) tokInput.value = '\u2022'.repeat(16);
+      if (ghToken() || syncConfigured) tokInput.value = '\u2022'.repeat(16);
       var tokTouched = false;
       tokInput.addEventListener('focus', function() {
         if (!tokTouched) { tokInput.value = ''; tokTouched = true; }
@@ -907,29 +907,36 @@ import {
             link.innerHTML = '<a href="https://github.com/' + repoVal +
               '" target="_blank" rel="noopener noreferrer">github.com/' + repoVal + '</a>';
           } else if (link) { link.remove(); }
-          if (!tokTouched || !tokInput.value.trim()) {
+          if (tokTouched && tokInput.value.trim()) {
+            setSyncToken(tokInput.value.trim());
+            tokInput.value = '\u2022'.repeat(16); tokTouched = false;
+          }
+          var token = ghToken();
+          if (!token) {
             if (!repoVal) {
               verifyLine.style.color = '#888';
               verifyLine.textContent = 'Saved repo.';
               return refreshSyncStatus();
             }
-            if (!syncConfigured) {
-              verifyLine.style.color = '#888';
-              verifyLine.textContent = 'Saved. Enter token to verify.';
-              return refreshSyncStatus();
-            }
-            verifyLine.style.color = '#4caf50';
-            verifyLine.textContent = '\u2713 Repo saved \u2014 token already on tablet.';
+            verifyLine.style.color = '#888';
+            verifyLine.textContent = 'Saved. Enter token to verify.';
+            return refreshSyncStatus();
+          }
+          if (!repoVal) {
+            verifyLine.style.color = '#888';
+            verifyLine.textContent = 'Saved token. Enter repo to verify.';
             return refreshSyncStatus();
           }
           return fetch('/api/sync/token', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             credentials: 'same-origin',
-            body: JSON.stringify({ token: tokInput.value.trim() })
+            body: JSON.stringify({ token: token })
           }).then(function(tr) {
             tokInput.value = '\u2022'.repeat(16); tokTouched = false;
             if (tr.status === 401) {
+              clearSyncToken();
+              tokInput.value = ''; tokTouched = true;
               verifyLine.style.color = '#e57373';
               verifyLine.textContent = '\u2717 Token rejected.';
               return refreshSyncStatus();
@@ -971,7 +978,8 @@ import {
       clearBtn.className = 'sync-btn-secondary'; clearBtn.textContent = 'Clear token';
       clearBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (!confirm('Remove GitHub token from the tablet?')) return;
+        if (!confirm('Remove GitHub token from this browser and the tablet?')) return;
+        clearSyncToken();
         fetch('/api/sync/token', {
           method: 'POST', headers: {'Content-Type': 'application/json'},
           credentials: 'same-origin',
@@ -979,7 +987,7 @@ import {
         }).then(function() {
           tokInput.value = ''; tokTouched = true;
           verifyLine.style.color = '#888';
-          verifyLine.textContent = 'Token cleared from tablet memory.';
+          verifyLine.textContent = 'Token cleared.';
           return refreshSyncStatus();
         }).then(function(s) { updateSyncBannerFromState(s); });
       });

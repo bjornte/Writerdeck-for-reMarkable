@@ -7,14 +7,62 @@ var _onBannerChange = function() {};
 
 export var syncConfigured = false;
 
+var _tokenPushPromise = null;
+
+export function ghToken() {
+  return localStorage.getItem('ghToken') || '';
+}
+
+export function setSyncToken(token) {
+  localStorage.setItem('ghToken', token);
+}
+
+export function clearSyncToken() {
+  localStorage.removeItem('ghToken');
+}
+
+export function pushStoredTokenToTablet() {
+  var token = ghToken();
+  if (!token || !state.syncOn || !state.syncRepo) return Promise.resolve(false);
+  if (_tokenPushPromise) return _tokenPushPromise;
+  _tokenPushPromise = fetch('/api/sync/token', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'same-origin',
+    body: JSON.stringify({ token: token })
+  }).then(function(r) {
+    _tokenPushPromise = null;
+    if (r.status === 401) clearSyncToken();
+    return r.ok;
+  }).catch(function() {
+    _tokenPushPromise = null;
+    return false;
+  });
+  return _tokenPushPromise;
+}
+
 export function initSync(opts) {
   _onNotesChanged = opts.onNotesChanged || function() {};
   _onBannerChange = opts.onBannerChange || function() {};
 }
 
-export function refreshSyncStatus() {
+function fetchSyncStatus() {
   return fetch('/api/sync/status', { credentials: 'same-origin' })
-    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(r) { return r.ok ? r.json() : null; });
+}
+
+export function refreshSyncStatus() {
+  return fetchSyncStatus()
+    .then(function(data) {
+      if (!data) return null;
+      if (data.syncOn && !data.configured && ghToken()) {
+        return pushStoredTokenToTablet().then(function(ok) {
+          if (!ok) return data;
+          return fetchSyncStatus();
+        });
+      }
+      return data;
+    })
     .then(function(data) {
       if (!data) return null;
       syncConfigured = !!data.configured;
@@ -45,8 +93,11 @@ function updateSyncStatusLines(data) {
   if (!data) return;
   var els = document.querySelectorAll('.sync-status-line');
   if (data.syncOn && !data.configured) {
+    var missing = ghToken()
+      ? 'Restoring saved token to tablet\u2026'
+      : 'Token not on tablet \u2014 use Save & verify below';
     for (var i = 0; i < els.length; i++) {
-      els[i].textContent = 'Token not on tablet \u2014 use Save & verify below';
+      els[i].textContent = missing;
       els[i].style.color = '#b45309';
     }
     return;
