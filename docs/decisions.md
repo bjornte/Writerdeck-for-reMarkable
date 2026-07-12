@@ -138,6 +138,18 @@ Edit mode stays `TextEdit.PlainText` — raw Markdown bytes in `doc`, monospace 
 
 RichText in edit mode was tried upstream and in early patches; reading formatted `query.text` back into `doc` caused empty saves, HTML on disk, and corrupted previews. The integrity contract gates any WYSIWYG-in-edit proposal: a display-only overlay or C++ syntax highlighter could work in theory, but true hide-the-markers editing is out of scope unless someone writes an ADR and re-tests slices 1–11.
 
+## 27. Lobby Files: Edit and Read
+
+The Files tab offers Edit and Read instead of a single Open. Edit runs `saveAndLoad()` — type mode, same as phone Edit, and the server broadcasts `openedit`. Read runs `doLoad()` in preview (`mode=0`) without `openedit`, so the phone stays in the note list. USB: Enter edits, `v` reads. Touch: double-tap or a second tap on the already-selected row opens Edit.
+
+## 28. Physical Home duplicate delivery (interim)
+
+gpio-keys on `/dev/input/event1` reaches both Writerdeck-server (`cmd home`) and Qt evdev (`Key_Home`). Without pairing, one press from edit/read could land in the Lobby then immediately quit. Interim fix: `handleHome(fromPhysicalCmd)` sets `suppressNextHomeKey` on the cmd path; the duplicate `Key_Home` consumes it. Durable fix: exclusive grab on `event1` in Go so Qt never sees physical Home — [handoff-physical-home-input.md](handoff-physical-home-input.md).
+
+## 29. Lobby keyboard regression test
+
+After Home from edit, `lobbyFocus` must keep USB and WebSocket keys working — a bare `FocusScope` without `Keys` handlers stole focus. `scripts/test-lobby-keyboard.sh` opens a note, drops to Lobby via `POST /api/lobby`, sends Files-tab keys over WebSocket, reopens the note, and asserts Home-from-read does not quit Writerdeck (`POST /api/test/home`). Run after Lobby or `handleHome` QML changes alongside `test-edit-session.sh`.
+
 ---
 
 

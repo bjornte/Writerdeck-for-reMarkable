@@ -14,7 +14,7 @@ Home from the editor saves and returns to the Lobby. Home from the Lobby quits t
 
 Six-tab pager on e-ink: Home, Files, Keyboard, Sync, Settings, Shortcuts. Touch the tabs or use Tab, arrows, or digits 1–6. On socket connect the server pushes IP, PIN, sync state, note count, and formatted last sync; it re-pushes when wlan0 gets an address, a reconcile finishes, or notes change.
 
-The Files tab lists notes from the server over a trusted socket, supports New, Open, Rename, and Delete with touch or USB keys (`n`, Enter, `r`, `d`). Opening a note uses the same path as phone Edit. Show PIN on tablet (phone button) drops back to the Lobby when a second device needs the PIN.
+The Files tab lists notes from the server over a trusted socket. New, Edit, Read, Rename, and Delete work by touch or USB keys (`n`, Enter, `v`, `r`, `d`). Edit opens the note in type mode (same path as phone Edit); Read opens preview on e-ink without switching the phone to Type mode. A second tap on an already-selected row opens Edit. After Home from edit, Lobby keyboard focus stays on `lobbyFocus` so USB and WebSocket keys keep working. Home from read returns to the Lobby (not quit). Show PIN on tablet (phone button) drops back to the Lobby when a second device needs the PIN.
 
 Launch from stock UI: Mac `wd` or `bash scripts/lobby.sh`; on tablet SSH, `~/wd`; USB Esc; L+R page buttons.
 
@@ -46,6 +46,6 @@ Plain Markdown on disk, no silent overwrite of live edits, durable saves. Slices
 
 Static Go binary at `/home/root/Writerdeck-server`. Writerdeck built in CI. Cold-boot autostart via `writerdeck.service`. Keep-awake during editor sessions only. On-device layout: [docs/architecture.md](docs/architecture.md).
 
-Regression: `bash scripts/test-edit-session.sh` — POST `/api/open` must keep Writerdeck running, xochitl down, and editorActive true for several seconds.
+Regression: `bash scripts/test-edit-session.sh` — POST `/api/open` must keep Writerdeck running, xochitl down, and editorActive true for several seconds. After Lobby or `handleHome` QML changes: `bash scripts/test-lobby-keyboard.sh` — lobby keys after return from edit, Home-from-read must not quit Writerdeck.
 
 `/dev/uinput` is dead on this kernel. The editor is fed over a socket. Do not retry uinput.

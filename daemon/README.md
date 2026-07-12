@@ -9,7 +9,7 @@ No `/dev/uinput` on this kernel — feeds Writerdeck over `/run/Writerdeck.sock`
 - Notes API `/api/notes` on `Writerdeck-user-documents/`; PIN auth.
 - Settings `/api/settings`; rotation `POST /api/rotate`.
 - xochitl ↔ Writerdeck lifecycle; USB Escape and L+R page-button launch when idle.
-- GitHub sync engine (`syncengine.go`); WebSocket `needtoken` when tablet RAM lacks a token; test endpoints `/api/test/*` and `cmd/edit-harness/` for keyboard harness.
+- GitHub sync engine (`syncengine.go`); WebSocket `needtoken` when tablet RAM lacks a token; test endpoints `/api/test/*`; `cmd/edit-harness/` and `cmd/lobby-keyboard-test/` for device regression tests.
 
 ## Layout
 
@@ -30,6 +30,6 @@ bash ../scripts/deploy-rmkbd.sh
 
 ## Troubleshooting
 
-Edit → stock UI flash: Writerdeck exited — check journalctl for QML errors. Run `test-edit-session.sh`.
+Edit → stock UI flash: Writerdeck exited — check journalctl for QML errors. Run `test-edit-session.sh`; after Lobby/`handleHome` changes also `test-lobby-keyboard.sh`.
 
 Do not `pkill -f /home/root/Writerdeck` — matches server. Use `pidof Writerdeck`.

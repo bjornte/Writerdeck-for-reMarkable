@@ -68,6 +68,10 @@ Apostrophes in Python patch heredocs: `' + chr(39) + '`. QML patch blocks must b
 
 Immediate `editor process exited` after start is almost always a QML parse error, not the USB watcher. Two-level Home looks like a crash in logs but is intentional: first Home to Lobby, second to stock UI. No cursor blink on e-ink — it ghosts.
 
+Physical Home on gpio-keys delivers twice: Go sends `cmd home`, Qt sends `Key_Home`. Without `suppressNextHomeKey` pairing (or a future exclusive grab on event1), read → Home could quit Writerdeck instead of returning to the Lobby. See [decisions.md](decisions.md) §28 and [handoff-physical-home-input.md](handoff-physical-home-input.md).
+
+After Home from edit, Lobby USB keys failed when `lobbyFocus.forceActiveFocus()` hit a `FocusScope` with no `Keys` handlers — delegate to `handleKey` / `handleKeyDown` / `handleKeyUp`, and set `query.focus: !isLobby` so the editor does not compete.
+
 `cursorOnLastLine()` must use visual line position (`positionToRectangle`), not "no newline after cursor" — a wrapped last paragraph is one logical line but many visual lines; newline-only detection makes Down jump to end-of-line mid-paragraph. Auto-scroll via `ensureVisible` on every cursor move can feel like blanking or page-flips near the document end on e-ink; scroll only when the cursor nears the viewport edge.
 
 ## Browser and capture page

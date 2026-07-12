@@ -59,7 +59,7 @@ Writerdeck-server keeps `:8000` up even under stock xochitl. It summons Writerde
 
 A random PIN is minted per boot and shown in the Lobby. The phone POSTs it for an HttpOnly session cookie that gates the notes API and WebSocket. Length is owner-choosable: 6, 4, or none. Per-IP lockout backs the PIN modes.
 
-Preferences on the phone cover font, PIN, rotation, and exit. Notes sync setup (bar: Sync setup) covers GitHub sync — toggle, repo, token, Save, and Sync. The Lobby is a six-tab pager — Home, Files, Keyboard, Sync, Settings, Shortcuts — fed by socket info messages with IP, PIN, sync state, note count, and last sync. Files CRUD goes through a trusted socket, not unauthenticated LAN HTTP. Launch from stock UI: USB Escape, left and right page buttons together, Mac `wd`, tablet `~/wd`.
+Preferences on the phone cover font, PIN, rotation, and exit. Notes sync setup (bar: Sync setup) covers GitHub sync — toggle, repo, token, Save, and Sync. The Lobby is a six-tab pager — Home, Files, Keyboard, Sync, Settings, Shortcuts — fed by socket info messages with IP, PIN, sync state, note count, and last sync. Files CRUD goes through a trusted socket, not unauthenticated LAN HTTP; Edit and Read are separate (Read keeps the phone out of Type mode). Launch from stock UI: USB Escape, left and right page buttons together, Mac `wd`, tablet `~/wd`.
 
 Browse mode on the phone is the file manager — no key capture. Type mode forwards keystrokes. Edit opens the note on e-ink. When the tablet opens a note, the server broadcasts `openedit` and the phone mirrors into Type mode (`followTabletOpen` in `notes-ui.js`) unless an overlay has focus. Home on the tablet broadcasts `exitedit` so the phone drops back to the list.
 
@@ -109,4 +109,4 @@ git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywrite
 
 Aliases via `bash scripts/install-alias.sh`: `rmkw` for binary-only Writerdeck deploy; `test-edit-session.sh` after QML changes ([decisions.md](decisions.md) §21); `test-keyboard-harness.sh` after arrow/selection QML (§22); `test-e2e.sh -s` for the full pipeline without rebuilding the server; `rmpush` to commit and push. Deploy uses gzip-over-ssh, not scp ([decisions.md](decisions.md) §12).
 
-After Writerdeck or QML changes, run `test-edit-session.sh`; add `test-keyboard-harness.sh` when `handleKey` or selection logic changed. After server or embedded JS only, restart the server and smoke-test the API or browser. After both, do both. Iterate over Wi-Fi; logs in `journalctl -u writerdeck.service`.
+After Writerdeck or QML changes, run `test-edit-session.sh`; add `test-keyboard-harness.sh` when `handleKey` or selection logic changed; add `test-lobby-keyboard.sh` when Lobby navigation, `handleHome`, or `lobbyFocus` changed ([decisions.md](decisions.md) §29). After server or embedded JS only, restart the server and smoke-test the API or browser. After both, do both. Iterate over Wi-Fi; logs in `journalctl -u writerdeck.service`.
