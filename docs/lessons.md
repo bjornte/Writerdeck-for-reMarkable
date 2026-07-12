@@ -50,6 +50,8 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **USB Escape launch** — Writerdeck-server watches USB keyboard evdev nodes (hotplug rescan every 3 s). Escape while no active session and not sleeping → `start()` (Lobby). Ignored while editing (Writerdeck owns Esc) and while sleeping (power button wakes). Not an Esc-to-wake path.
 
+**USB keyboard qmap** — `Writerdeck-launcher.sh` must set `QT_QPA_EVDEV_KEYBOARD_PARAMETERS=keymap=/home/root/keymaps/no.qmap:grab=1` **without** pinning `/dev/input/eventN`. Pinning a device node only works if the keyboard is already plugged in at launch; Qt auto-discovers keyboards when the device path is omitted. Layout changes restart Writerdeck so the launcher re-reads `settings.json`.
+
 **Page-button chord launch** — same idle path when **left+right** physical page buttons are held together on `/dev/input/event1` (800 ms debounce). Tablet-only; no USB or phone needed.
 
 **Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`.** Use `line-height` or spacer nodes; always verify on device.

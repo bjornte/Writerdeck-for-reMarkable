@@ -1642,6 +1642,21 @@ func renameNoteFile(oldName, newName string) error {
 	return nil
 }
 
+// restartEditorForLayoutChange relaunches Writerdeck so the launcher re-reads
+// settings.json and applies the new .qmap (Qt reads keymap at process start).
+func restartEditorForLayoutChange() {
+	if activeSess == nil || !activeSess.isActive() {
+		return
+	}
+	go func() {
+		fmt.Fprintln(os.Stderr, "writerdeck-server: keyboard layout changed -- restarting editor")
+		activeSess.quit()
+		if err := activeSess.start(); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: restart after keyboard layout: %v\n", err)
+		}
+	}()
+}
+
 // handleEditorReq serves trusted file ops from the local editor over the socket.
 func handleEditorReq(op, name, oldName string) {
 	switch op {
@@ -1679,6 +1694,7 @@ func handleEditorReq(op, name, oldName string) {
 		saveSettingsLocked()
 		settingsMu.Unlock()
 		pushLobbyInfo()
+		restartEditorForLayoutChange()
 	default:
 		fmt.Fprintf(os.Stderr, "writerdeck-server: unknown editor req op %q\n", op)
 	}

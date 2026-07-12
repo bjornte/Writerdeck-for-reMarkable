@@ -254,7 +254,7 @@
                                     width: parent.width
                                 }
                                 Text {
-                                    text: "Connect with a USB OTG cable.\nApplies on next editor launch."
+                                    text: "Connect with a USB OTG cable.\nChanging layout restarts Writerdeck."
                                     font.pointSize: 11
                                     font.family: "Noto Sans"
                                     color: "#555555"
