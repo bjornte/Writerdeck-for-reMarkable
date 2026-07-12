@@ -1,0 +1,435 @@
+// Writerdeck-server — see main.go for overview.
+
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+)
+
+// --- Notes API ---
+
+// notesDirPath is where .md notes are stored.
+// Override with --notes-dir for local testing (default: /home/root/Writerdeck-user-documents).
+var notesDirPath = "/home/root/Writerdeck-user-documents"
+
+// noteInfo is the JSON shape returned by GET /api/notes.
+type noteInfo struct {
+	Name     string `json:"name"`
+	Size     int64  `json:"size"`
+	Modified string `json:"modified"`
+}
+
+// notesSafe validates a filename and returns its full path, or "".
+// Rejects empty names, slashes, "..", and appends ".md" if absent.
+func notesSafe(name string) string {
+	if name == "" || strings.Contains(name, "/") || strings.Contains(name, "..") {
+		return ""
+	}
+	if !strings.HasSuffix(name, ".md") {
+		name += ".md"
+	}
+	return filepath.Join(notesDirPath, name)
+}
+
+// rejectsHtmlNoteContent reports Qt qrichtext / HTML accidentally saved as .md.
+func rejectsHtmlNoteContent(content string) bool {
+	if len(content) < 15 {
+		return false
+	}
+	head := strings.ToLower(content)
+	if len(head) > 512 {
+		head = head[:512]
+	}
+	return strings.HasPrefix(head, "<!doctype html") ||
+		strings.HasPrefix(head, "<html") ||
+		strings.Contains(content, `name="qrichtext"`)
+}
+
+// noteETag is a content-hash revision token for optimistic concurrency (RFC 7232).
+func noteETag(content []byte) string {
+	sum := sha256.Sum256(content)
+	return `"` + hex.EncodeToString(sum[:8]) + `"`
+}
+
+// ifMatchOK reports whether the If-Match header allows writing over etag.
+func ifMatchOK(ifMatch, etag string) bool {
+	if ifMatch == "" {
+		return false
+	}
+	if ifMatch == "*" {
+		return true
+	}
+	for _, part := range strings.Split(ifMatch, ",") {
+		part = strings.TrimSpace(part)
+		if part == etag || part == "*" {
+			return true
+		}
+	}
+	return false
+}
+
+// writeNoteFile atomically writes note bytes (write-temp-then-rename, like settings.json).
+func writeNoteFile(path string, content []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, content, 0644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
+}
+
+// notesListHandler serves GET /api/notes (list) and POST /api/notes (create).
+func notesListHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		return
+	}
+	if r.URL.Path != "/api/notes" {
+		http.NotFound(w, r)
+		return
+	}
+	if !checkAuth(w, r) {
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		entries, err := os.ReadDir(notesDirPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				w.Header().Set("Content-Type", "application/json")
+				w.Write([]byte("[]\n")) //nolint:errcheck
+				return
+			}
+			http.Error(w, "cannot read notes dir", http.StatusInternalServerError)
+			return
+		}
+		var notes []noteInfo
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+				continue
+			}
+			info, err := e.Info()
+			if err != nil {
+				continue
+			}
+			notes = append(notes, noteInfo{
+				Name:     e.Name(),
+				Size:     info.Size(),
+				Modified: info.ModTime().Format(time.RFC3339),
+			})
+		}
+		if notes == nil {
+			notes = []noteInfo{}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(notes) //nolint:errcheck
+
+	case http.MethodPost:
+		// Cap the request body. The client also limits uploads to 1 MB, but a
+		// client-side check is bypassable (e.g. a direct curl by an authed
+		// caller), so this is the authoritative limit for ALL create paths
+		// (New / New w/ paste / Upload). 2 MiB leaves headroom over a 1 MB text
+		// file once it is wrapped + escaped in the JSON {name, content} envelope.
+		// When exceeded, the read fails and the decode below returns 400.
+		r.Body = http.MaxBytesReader(w, r.Body, 2<<20)
+		var req struct {
+			Name    string `json:"name"`
+			Content string `json:"content"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
+			http.Error(w, "bad request: need {name}", http.StatusBadRequest)
+			return
+		}
+		p := notesSafe(req.Name)
+		if p == "" {
+			http.Error(w, "invalid name", http.StatusBadRequest)
+			return
+		}
+		if _, err := os.Stat(p); err == nil {
+			http.Error(w, "already exists", http.StatusConflict)
+			return
+		}
+		content := req.Content
+		if content == "" {
+			content = "# " + strings.TrimSuffix(req.Name, ".md") + "\n"
+		}
+		if rejectsHtmlNoteContent(content) {
+			http.Error(w, "refusing HTML/qrichtext payload", http.StatusUnsupportedMediaType)
+			return
+		}
+		if err := writeNoteFile(p, []byte(content)); err != nil {
+			http.Error(w, "write failed", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		pushLobbyInfo()
+		pushNotesList()
+		mirrorPhoneCreate(filepath.Base(p))
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// notesItemHandler serves GET /api/notes/{name} (read),
+// DELETE /api/notes/{name} (delete), and PATCH /api/notes/{name} (rename).
+func notesItemHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, DELETE, PATCH, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, If-Match")
+		return
+	}
+	if !checkAuth(w, r) {
+		return
+	}
+	name := strings.TrimPrefix(r.URL.Path, "/api/notes/")
+	// Download variant: GET /api/notes/{name}/download
+	// Strip the suffix BEFORE notesSafe() -- notesSafe rejects names containing '/'.
+	download := strings.HasSuffix(name, "/download")
+	if download {
+		name = strings.TrimSuffix(name, "/download")
+	}
+	p := notesSafe(name)
+	if p == "" {
+		http.Error(w, "invalid name", http.StatusBadRequest)
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		data, err := os.ReadFile(p)
+		if err != nil {
+			http.NotFound(w, r)
+			return
+		}
+		if download {
+			base := filepath.Base(p)
+			w.Header().Set("Content-Disposition", `attachment; filename="`+base+`"`)
+			w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+		} else {
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		}
+		w.Header().Set("ETag", noteETag(data))
+		w.Write(data) //nolint:errcheck
+
+	case http.MethodDelete:
+		base := filepath.Base(p)
+		if err := deleteNoteFile(base); err != nil {
+			if os.IsNotExist(err) {
+				http.NotFound(w, r)
+				return
+			}
+			http.Error(w, "delete failed", http.StatusInternalServerError)
+			return
+		}
+		mirrorPhoneDelete(base)
+		w.WriteHeader(http.StatusNoContent)
+
+	case http.MethodPut:
+		// Upsert: write or overwrite content. Used by the sync engine to apply a
+		// version pulled from GitHub. Overwrite requires If-Match (content ETag).
+		// 2 MiB limit matches POST /api/notes.
+		r.Body = http.MaxBytesReader(w, r.Body, 2<<20)
+		var putReq struct {
+			Content string `json:"content"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&putReq); err != nil {
+			http.Error(w, "bad request: need {content}", http.StatusBadRequest)
+			return
+		}
+		if rejectsHtmlNoteContent(putReq.Content) {
+			http.Error(w, "refusing HTML/qrichtext payload", http.StatusUnsupportedMediaType)
+			return
+		}
+		existing, err := os.ReadFile(p)
+		editorLocal := isLoopback(r)
+		if err == nil {
+			if !editorLocal {
+				etag := noteETag(existing)
+				ifMatch := r.Header.Get("If-Match")
+				if !ifMatchOK(ifMatch, etag) {
+					w.Header().Set("ETag", etag)
+					http.Error(w, "If-Match required or revision mismatch", http.StatusPreconditionFailed)
+					return
+				}
+			}
+		} else if !os.IsNotExist(err) {
+			http.Error(w, "read failed", http.StatusInternalServerError)
+			return
+		}
+		if err := writeNoteFile(p, []byte(putReq.Content)); err != nil {
+			http.Error(w, "write failed", http.StatusInternalServerError)
+			return
+		}
+		if !editorLocal {
+			maybeBroadcastDiskChanged(filepath.Base(p))
+		}
+		w.Header().Set("ETag", noteETag([]byte(putReq.Content)))
+		w.WriteHeader(http.StatusOK)
+
+	case http.MethodPatch:
+		// Rename: body {"name":"new-name.md"}
+		var req struct {
+			Name string `json:"name"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
+			http.Error(w, "bad request: need {name}", http.StatusBadRequest)
+			return
+		}
+		if err := renameNoteFile(filepath.Base(p), req.Name); err != nil {
+			if strings.Contains(err.Error(), "already taken") {
+				http.Error(w, "name already taken", http.StatusConflict)
+				return
+			}
+			if strings.Contains(err.Error(), "invalid") {
+				http.Error(w, "invalid name", http.StatusBadRequest)
+				return
+			}
+			http.Error(w, "rename failed", http.StatusInternalServerError)
+			return
+		}
+		mirrorPhoneRename(filepath.Base(p), req.Name)
+		w.WriteHeader(http.StatusOK)
+
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+// readAllNotes returns metadata for every .md file in the notes directory.
+func readAllNotes() []noteInfo {
+	entries, err := os.ReadDir(notesDirPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []noteInfo{}
+		}
+		return nil
+	}
+	var notes []noteInfo
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		notes = append(notes, noteInfo{
+			Name:     e.Name(),
+			Size:     info.Size(),
+			Modified: info.ModTime().Format(time.RFC3339),
+		})
+	}
+	if notes == nil {
+		notes = []noteInfo{}
+	}
+	return notes
+}
+
+// pushNotesList sends the full note list to the editor for the Lobby Files page.
+func pushNotesList() {
+	notes := readAllNotes()
+	msg, _ := json.Marshal(struct {
+		T     string     `json:"t"`
+		Items []noteInfo `json:"items"`
+	}{"notes", notes})
+	if globalEC != nil {
+		globalEC.write(msg)
+	}
+}
+
+// createNoteFile writes a new note; name is validated via notesSafe.
+func createNoteFile(name, content string) error {
+	p := notesSafe(name)
+	if p == "" {
+		return fmt.Errorf("invalid name")
+	}
+	if _, err := os.Stat(p); err == nil {
+		return fmt.Errorf("already exists")
+	}
+	if content == "" {
+		content = "# " + strings.TrimSuffix(filepath.Base(p), ".md") + "\n"
+	}
+	if rejectsHtmlNoteContent(content) {
+		return fmt.Errorf("refusing HTML/qrichtext payload")
+	}
+	if err := writeNoteFile(p, []byte(content)); err != nil {
+		return err
+	}
+	pushLobbyInfo()
+	pushNotesList()
+	return nil
+}
+
+// deleteNoteFile removes a note and notifies the editor if it was open.
+func deleteNoteFile(name string) error {
+	p := notesSafe(name)
+	if p == "" {
+		return fmt.Errorf("invalid name")
+	}
+	if err := os.Remove(p); err != nil {
+		return err
+	}
+	currentNoteMu.Lock()
+	wasOpen := currentNote != "" && filepath.Base(p) == currentNote
+	if wasOpen {
+		currentNote = ""
+	}
+	currentNoteMu.Unlock()
+	if wasOpen && activeSess != nil && activeSess.isActive() {
+		if globalEC != nil {
+			globalEC.write([]byte(`{"t":"cmd","c":"notedeleted"}`))
+		}
+		broadcast([]byte(`{"type":"exitedit"}`))
+	}
+	pushLobbyInfo()
+	pushNotesList()
+	return nil
+}
+
+// renameNoteFile renames a note on disk and notifies the editor if it was open.
+func renameNoteFile(oldName, newName string) error {
+	oldP := notesSafe(oldName)
+	newP := notesSafe(newName)
+	if oldP == "" || newP == "" {
+		return fmt.Errorf("invalid name")
+	}
+	if _, err := os.Stat(newP); err == nil {
+		return fmt.Errorf("name already taken")
+	}
+	if err := os.Rename(oldP, newP); err != nil {
+		return err
+	}
+	newBase := filepath.Base(newP)
+	currentNoteMu.Lock()
+	wasOpen := currentNote != "" && filepath.Base(oldP) == currentNote
+	if wasOpen {
+		currentNote = newBase
+	}
+	currentNoteMu.Unlock()
+	if wasOpen && activeSess != nil && activeSess.isActive() {
+		if globalEC != nil {
+			cmd, _ := json.Marshal(struct {
+				T    string `json:"t"`
+				C    string `json:"c"`
+				Name string `json:"name"`
+			}{"cmd", "noterenamed", newBase})
+			globalEC.write(cmd)
+		}
+		broadcastOpenEdit(newBase)
+	}
+	pushLobbyInfo()
+	pushNotesList()
+	return nil
+}

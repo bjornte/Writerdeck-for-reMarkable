@@ -14,9 +14,29 @@ The Go daemon that runs on the reMarkable — see [../docs/architecture.md](../d
 ```
 daemon/
   go.mod
-  main.go        Writerdeck-server: flags, WebSocket + HTTP handlers, notes API, PIN/session, supervisor, editor-feed socket
-  index.html     capture page + phone file-manager (keydown/keyup → WebSocket), embedded via go:embed
-  app.js         browser UI logic (embedded)
+  main.go          embed + HTTP route table + main()
+  editor.go        editor socket, key translation, dial loop
+  input.go         physical buttons, USB keyboard launch/hotplug
+  websocket.go     WS hub, broadcast, current-note tracking
+  notes.go         /api/notes + tablet file ops
+  settings.go      /api/settings, pending-sync queue
+  auth.go          PIN auth, session cookie, brute-force throttle
+  lobby.go         pushLobbyInfo, /api/lobby
+  handlers.go      status, open, launch, rotate, flush-save, …
+  session.go       xochitl ↔ Writerdeck supervisor lifecycle
+  syncengine.go    GitHub reconcile engine
+  syncgithub.go    GitHub Contents API client
+  syncapi.go       /api/sync/* handlers
+  syncmeta.go      per-note sync metadata in settings.json
+  index.html       capture page markup (embedded)
+  app.js           phone UI bootstrap (embedded)
+  connection.js    WebSocket + key capture (embedded)
+  notes-ui.js      note list, preview, typing view (embedded)
+  panels.js        PIN, Preferences, Setup overlays (embedded)
+  deps.js          cross-module callback registry (embedded)
+  state.js         shared mutable UI state (embedded)
+  sync.js          GitHub sync engine in the browser (embedded)
+  app.css          styles (embedded)
 ```
 
 ## Build & deploy

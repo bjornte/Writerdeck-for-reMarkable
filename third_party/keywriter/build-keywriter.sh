@@ -1197,7 +1197,9 @@ new7q = (
 assert old7q in s, "handleKey function not found (7q)"
 s = s.replace(old7q, new7q, 1)
 
-# 8. Add ListModel + Lobby subpages (from lobby_subpages.qml.inc) and sleep screen.
+# 8. Add ListModel + Lobby subpages (concat lobby/*.inc) and sleep screen.
+import subprocess
+subprocess.run(['/concat-lobby.sh'], check=True)
 with open('/lobby_subpages.qml.inc', 'r') as lf:
     lobby_ui = lf.read()
 lobby_rect = (

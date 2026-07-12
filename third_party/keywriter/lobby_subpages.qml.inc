@@ -126,7 +126,6 @@
                             }
                         }
                     }
-
                     // 1 Files
                     Item {
                         visible: lobbyPage === 1
@@ -232,7 +231,6 @@
                             }
                         }
                     }
-
                     // 2 Keyboard
                     Item {
                         visible: lobbyPage === 2
@@ -269,42 +267,33 @@
                                     width: parent.width
                                 }
                                 Row {
+                                    id: kbLayoutRow
                                     width: parent.width
                                     spacing: lobby.tabSpacing
-                                    Rectangle {
-                                        width: (parent.width - lobby.tabSpacing) / 2
-                                        height: lobby.actionBtnHeight
-                                        radius: 6
-                                        color: lobbyKeyboardLayout === "us" ? "#e8e8e8" : "#f0f0f0"
-                                        border.color: lobbyKeyboardLayout === "us" ? "black" : "#bbb"
-                                        border.width: lobbyKeyboardLayout === "us" ? 2 : 1
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "US QWERTY"
-                                            font.family: "Noto Sans"
-                                            font.pointSize: 11
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: writerdeck.setKeyboardLayout("us")
-                                        }
-                                    }
-                                    Rectangle {
-                                        width: (parent.width - lobby.tabSpacing) / 2
-                                        height: lobby.actionBtnHeight
-                                        radius: 6
-                                        color: lobbyKeyboardLayout === "no" ? "#e8e8e8" : "#f0f0f0"
-                                        border.color: lobbyKeyboardLayout === "no" ? "black" : "#bbb"
-                                        border.width: lobbyKeyboardLayout === "no" ? 2 : 1
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: "Norwegian"
-                                            font.family: "Noto Sans"
-                                            font.pointSize: 11
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: writerdeck.setKeyboardLayout("no")
+                                    property var layoutOptions: [
+                                        { id: "us", label: "US QWERTY" },
+                                        { id: "no", label: "Norwegian" }
+                                    ]
+                                    Repeater {
+                                        model: kbLayoutRow.layoutOptions
+                                        delegate: Rectangle {
+                                            width: (kbLayoutRow.width - lobby.tabSpacing * (kbLayoutRow.layoutOptions.length - 1)) / kbLayoutRow.layoutOptions.length
+                                            height: lobby.actionBtnHeight
+                                            radius: 6
+                                            property bool selected: lobbyKeyboardLayout === modelData.id
+                                            color: selected ? "#e8e8e8" : "#f0f0f0"
+                                            border.color: selected ? "black" : "#bbb"
+                                            border.width: selected ? 2 : 1
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: modelData.label
+                                                font.family: "Noto Sans"
+                                                font.pointSize: 11
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: writerdeck.setKeyboardLayout(modelData.id)
+                                            }
                                         }
                                     }
                                 }
@@ -326,7 +315,6 @@
                             }
                         }
                     }
-
                     // 3 Sync
                     Item {
                         visible: lobbyPage === 3
@@ -426,7 +414,6 @@
                             }
                         }
                     }
-
                     // 4 Settings
                     Item {
                         visible: lobbyPage === 4
@@ -484,7 +471,6 @@
                             }
                         }
                     }
-
                     // 5 Shortcuts
                     Item {
                         visible: lobbyPage === 5
@@ -516,8 +502,6 @@
                             }
                         }
                     }
-                }
-
                 Text {
                     id: lobbyHint
                     anchors.bottom: parent.bottom
