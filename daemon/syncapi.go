@@ -10,11 +10,23 @@ import (
 func syncTokenHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		return
 	}
 	if !checkAuth(w, r) {
+		return
+	}
+	if r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "application/json")
+		if !syncEng.tokenConfigured() {
+			json.NewEncoder(w).Encode(map[string]bool{"configured": false}) //nolint:errcheck
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{ //nolint:errcheck
+			"configured": true,
+			"token":      syncEng.getToken(),
+		})
 		return
 	}
 	if r.Method != http.MethodPost {

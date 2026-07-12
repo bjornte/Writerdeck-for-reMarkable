@@ -87,7 +87,7 @@ func pushLobbyInfo() {
 	syncReady := syncEng.ready()
 	syncing := syncEng.isSyncing()
 	if syncOn && syncRepo != "" && !syncReady {
-		lastSync = "Token needed — add in phone Setup"
+		lastSync = "Token needed — add in phone Sync setup"
 	}
 	infoMsg, _ := json.Marshal(struct {
 		T              string `json:"t"`

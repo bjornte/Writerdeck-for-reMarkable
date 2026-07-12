@@ -1,0 +1,46 @@
+---
+description: Writerdeck reMarkable 1 — constraints, deploy, mandatory on-device verify
+alwaysApply: true
+---
+
+# Writerdeck for reMarkable 1
+
+Markdown typewriter: Mac deploys Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Background: `TODO.md`, `docs/architecture.md`, `docs/decisions.md`, `DONE.md`, `docs/lessons.md`.
+
+## Verify on device (mandatory — do not skip)
+
+**Deploy success ≠ tested.** Before calling work done after `daemon/`, `build-keywriter.sh`, or `lobby/` changes:
+
+1. Rebuild Writerdeck if QML changed
+2. Deploy (`deploy-rmkbd.sh` and/or `deploy-keywriter.sh -b`)
+3. SSH → `journalctl -u writerdeck -n 30` — fail on QML parse errors or instant `editor process exited`
+4. `bash scripts/test-edit-session.sh` (or open a note and toggle Esc)
+
+Run this every time without being asked. You cannot see e-ink; you can read logs and run scripts.
+
+Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server). On-device naming: `docs/architecture.md`, `docs/decisions.md` #22.
+
+## Constraints
+
+- No jailbreak; preserve OTA → avoid Toltec
+- Static Go only: `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`
+- Markdown save format
+- Cross-compile Writerdeck-server on Mac; never local `docker build` for Writerdeck — CI/GHA + `fetch-keywriter-dist.sh`
+
+## Dev setup
+
+Secrets: `secrets/remarkable.local.env`; scripts source `scripts/_env.sh` for `RM_HOST`.
+
+**Daemon:** `deploy-rmkbd.sh` → `systemctl restart writerdeck`. Verify: `curl http://$RM_HOST:8000/` and `/app.js`.
+
+**Writerdeck:** `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Relaunch Writerdeck after binary deploy (server restart alone is not enough). Then `bash scripts/test-edit-session.sh`.
+
+GitHub token: browser `localStorage ghToken` + tablet RAM via `POST /api/sync/token` (auto-repost after restart). Logs: `journalctl -u writerdeck.service`.
+
+## Doc hygiene
+
+Update `TODO.md` / `DONE.md` as work progresses. How → `architecture.md`; why → `decisions.md`; gotchas → `lessons.md`. No new summary markdown files. Prune dead scripts/files when paths close; grep references first.
+
+## Encoding
+
+Executable/device files (`.sh`, `.service`, `.go`, `.yml`, Dockerfile): ASCII-only + LF, no BOM. Markdown `.md`: Unicode OK. Before committing scripts: grep for `[^\x00-\x7F]` — must be empty for `.sh`/`.ps1`.

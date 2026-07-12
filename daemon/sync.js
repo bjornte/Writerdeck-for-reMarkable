@@ -6,8 +6,10 @@ var _onNotesChanged = function() {};
 var _onBannerChange = function() {};
 
 export var syncConfigured = false;
+export var syncOffline = false;
 
 var _tokenPushPromise = null;
+var _tokenPullPromise = null;
 
 export function ghToken() {
   return localStorage.getItem('ghToken') || '';
@@ -19,6 +21,26 @@ export function setSyncToken(token) {
 
 export function clearSyncToken() {
   localStorage.removeItem('ghToken');
+}
+
+export function pullTokenFromTablet() {
+  if (ghToken()) return Promise.resolve(false);
+  if (_tokenPullPromise) return _tokenPullPromise;
+  _tokenPullPromise = fetch('/api/sync/token', { credentials: 'same-origin' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      _tokenPullPromise = null;
+      if (data && data.configured && data.token) {
+        setSyncToken(data.token);
+        return true;
+      }
+      return false;
+    })
+    .catch(function() {
+      _tokenPullPromise = null;
+      return false;
+    });
+  return _tokenPullPromise;
 }
 
 export function pushStoredTokenToTablet() {
@@ -51,10 +73,31 @@ function fetchSyncStatus() {
     .then(function(r) { return r.ok ? r.json() : null; });
 }
 
+function reportSyncOffline() {
+  syncOffline = true;
+  syncConfigured = false;
+  updateSyncBannerFromState(null);
+  var els = document.querySelectorAll('.sync-status-line');
+  for (var i = 0; i < els.length; i++) {
+    els[i].textContent = 'Tablet offline \u2014 could not reach sync status';
+    els[i].style.color = '#e57373';
+  }
+}
+
 export function refreshSyncStatus() {
   return fetchSyncStatus()
     .then(function(data) {
-      if (!data) return null;
+      if (!data) {
+        reportSyncOffline();
+        return null;
+      }
+      syncOffline = false;
+      if (data.syncOn && !ghToken() && data.configured) {
+        return pullTokenFromTablet().then(function(pulled) {
+          if (!pulled) return data;
+          return fetchSyncStatus();
+        });
+      }
       if (data.syncOn && !data.configured && ghToken()) {
         return pushStoredTokenToTablet().then(function(ok) {
           if (!ok) return data;
@@ -70,18 +113,24 @@ export function refreshSyncStatus() {
       updateSyncStatusLines(data);
       return data;
     })
-    .catch(function() { return null; });
+    .catch(function() {
+      reportSyncOffline();
+      return null;
+    });
 }
 
 export function updateSyncBannerFromState(status) {
   var el = document.getElementById('sync-banner');
   if (!el) return;
-  if (state.syncOn && status && !status.configured) {
-    el.innerHTML = '\u26a0 GitHub sync is on \u2014 add your token in <strong>Setup</strong>.';
+  if (syncOffline) {
+    el.innerHTML = '\u26a0 Tablet offline \u2014 sync status unavailable.';
+    el.style.display = 'block';
+  } else if (state.syncOn && status && !status.configured) {
+    el.innerHTML = '\u26a0 GitHub sync is on \u2014 add your token in <strong>Sync setup</strong>.';
     el.style.display = 'block';
   } else if (status && status.lastError) {
     el.innerHTML = '\u26a0 ' + status.lastError +
-      ' \u2014 renew token in <strong>Setup</strong>.';
+      ' \u2014 renew token in <strong>Sync setup</strong>.';
     el.style.display = 'block';
   } else {
     el.style.display = 'none';
@@ -95,10 +144,24 @@ function updateSyncStatusLines(data) {
   if (data.syncOn && !data.configured) {
     var missing = ghToken()
       ? 'Restoring saved token to tablet\u2026'
-      : 'Token not on tablet \u2014 use Save & verify below';
+      : 'Token not on tablet \u2014 enter token and tap Save below';
     for (var i = 0; i < els.length; i++) {
       els[i].textContent = missing;
       els[i].style.color = '#b45309';
+    }
+    return;
+  }
+  if (data.lastError) {
+    for (var e = 0; e < els.length; e++) {
+      els[e].textContent = 'Sync failed: ' + data.lastError;
+      els[e].style.color = '#e57373';
+    }
+    return;
+  }
+  if (data.syncing) {
+    for (var s = 0; s < els.length; s++) {
+      els[s].textContent = 'Syncing\u2026';
+      els[s].style.color = '#888';
     }
     return;
   }

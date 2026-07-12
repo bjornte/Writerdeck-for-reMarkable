@@ -1,6 +1,6 @@
 // app.js — phone UI bootstrap: wire modules and event listeners.
 // connection.js — WebSocket + key capture; notes-ui.js — file manager;
-// panels.js — PIN, Preferences, Setup; sync.js — GitHub engine.
+// panels.js — PIN screen, Preferences, Notes sync setup; sync.js — GitHub engine.
 import { state } from './state.js';
 import { initSync } from './sync.js';
 import { deps } from './deps.js';
