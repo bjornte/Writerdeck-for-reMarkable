@@ -29,11 +29,11 @@ export function updateSyncBannerFromState(status) {
   var el = document.getElementById('sync-banner');
   if (!el) return;
   if (state.syncOn && status && !status.configured) {
-    el.innerHTML = '\u26a0 GitHub sync is on \u2014 add your token in <strong>Sync</strong>.';
+    el.innerHTML = '\u26a0 GitHub sync is on \u2014 add your token in <strong>Setup</strong>.';
     el.style.display = 'block';
   } else if (status && status.lastError) {
     el.innerHTML = '\u26a0 ' + status.lastError +
-      ' \u2014 renew token in <strong>Sync</strong>.';
+      ' \u2014 renew token in <strong>Setup</strong>.';
     el.style.display = 'block';
   } else {
     el.style.display = 'none';
@@ -43,9 +43,19 @@ export function updateSyncBannerFromState(status) {
 
 function updateSyncStatusLines(data) {
   if (!data) return;
-  var text = data.lastSyncAgo ? 'Last synced: ' + data.lastSyncAgo : 'Never synced';
   var els = document.querySelectorAll('.sync-status-line');
-  for (var i = 0; i < els.length; i++) els[i].textContent = text;
+  if (data.syncOn && !data.configured) {
+    for (var i = 0; i < els.length; i++) {
+      els[i].textContent = 'Token not on tablet \u2014 use Save & verify below';
+      els[i].style.color = '#b45309';
+    }
+    return;
+  }
+  var text = data.lastSyncAgo ? 'Last synced: ' + data.lastSyncAgo : 'Never synced';
+  for (var j = 0; j < els.length; j++) {
+    els[j].textContent = text;
+    els[j].style.color = '#888';
+  }
 }
 
 // waitForSyncIdle: poll until background reconcile finishes (token verify runs async on tablet).

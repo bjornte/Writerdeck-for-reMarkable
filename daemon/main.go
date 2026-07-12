@@ -1648,11 +1648,7 @@ func handleEditorReq(op, name, oldName string) {
 			pushLobbyInfo()
 			return
 		}
-		go func() {
-			pushLobbyInfo()
-			_, _ = syncEng.reconcileAll("tablet")
-			pushLobbyInfo()
-		}()
+		go func() { _, _ = syncEng.reconcileAll("tablet") }()
 	default:
 		fmt.Fprintf(os.Stderr, "writerdeck-server: unknown editor req op %q\n", op)
 	}
@@ -1728,6 +1724,9 @@ func pushLobbyInfo() {
 	settingsMu.Unlock()
 	syncReady := syncEng.ready()
 	syncing := syncEng.isSyncing()
+	if syncOn && syncRepo != "" && !syncReady {
+		lastSync = "Token needed — add in phone Setup"
+	}
 	infoMsg, _ := json.Marshal(struct {
 		T         string `json:"t"`
 		IP        string `json:"ip"`

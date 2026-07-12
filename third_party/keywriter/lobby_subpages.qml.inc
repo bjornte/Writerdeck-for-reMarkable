@@ -302,22 +302,16 @@
                                 }
                                 Text {
                                     text: lobbySyncOn && lobbySyncRepo !== ""
-                                        ? (lobbyLastSync !== ""
-                                            ? "Last sync was " + lobbyLastSync + ".\nNotes sync to github.com/" + lobbySyncRepo
-                                            : "Notes sync to github.com/" + lobbySyncRepo)
-                                        : ("Not configured. Set up repo and token in your phone's browser at http://" + lobbyIP + ":8000")
+                                        ? (!lobbySyncReady
+                                            ? "GitHub token missing.\nAdd it in phone Setup:\nhttp://" + lobbyIP + ":8000\nRepo: github.com/" + lobbySyncRepo
+                                            : (lobbyLastSync !== ""
+                                                ? "Last sync was " + lobbyLastSync + ".\nNotes sync to github.com/" + lobbySyncRepo
+                                                : "Notes sync to github.com/" + lobbySyncRepo))
+                                        : ("Sync not configured.\nSet up in phone Setup:\nhttp://" + lobbyIP + ":8000")
                                     font.pointSize: 11
                                     font.family: "Noto Sans"
-                                    color: lobbySyncOn && lobbySyncRepo !== "" ? "#1b5e20" : "#555555"
-                                    width: parent.width
-                                    wrapMode: Text.WordWrap
-                                }
-                                Text {
-                                    visible: lobbySyncOn && lobbySyncRepo !== "" && !lobbySyncReady
-                                    text: "Token needed — add it once on the phone (Sync setup)."
-                                    font.pointSize: 10
-                                    font.family: "Noto Sans"
-                                    color: "#888888"
+                                    color: (lobbySyncOn && lobbySyncRepo !== "" && !lobbySyncReady) ? "#b45309"
+                                         : (lobbySyncOn && lobbySyncRepo !== "" ? "#1b5e20" : "#555555")
                                     width: parent.width
                                     wrapMode: Text.WordWrap
                                 }
@@ -331,7 +325,8 @@
                                     border.width: 1
                                     Text {
                                         anchors.centerIn: parent
-                                        text: lobbySyncing ? "Syncing…" : "Sync now"
+                                        text: !lobbySyncReady ? "Token needed on phone"
+                                            : (lobbySyncing ? "Syncing…" : "Sync now")
                                         font.family: "Noto Sans"
                                         font.pointSize: 12
                                         color: (lobbySyncReady && !lobbySyncing) ? "black" : "#888888"

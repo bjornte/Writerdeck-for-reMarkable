@@ -330,7 +330,6 @@ func (e *syncEngine) markSyncComplete() {
 	curSettings.LastSyncAt = time.Now().Unix()
 	saveSettingsLocked()
 	settingsMu.Unlock()
-	pushLobbyInfo()
 	signalSyncAck()
 }
 
@@ -350,7 +349,10 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 		e.syncingMu.Lock()
 		e.syncing = false
 		e.syncingMu.Unlock()
+		pushLobbyInfo()
 	}()
+
+	pushLobbyInfo()
 
 	fmt.Fprintf(os.Stderr, "writerdeck-server: sync reconcile (%s)\n", reason)
 
