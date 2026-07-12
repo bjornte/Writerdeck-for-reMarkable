@@ -6,9 +6,11 @@
 #   /home/root/Writerdeck-server --editor /home/root/Writerdeck-launcher.sh
 #
 # USB keyboard layout: reads keyboardLayout from settings.json (default us),
-# applies the matching .qmap from /home/root/keymaps/.  Omit the /dev/input/eventN
-# prefix so Qt discovers the keyboard at runtime (hotplug-safe); pinning a device
-# node at launch fails when the keyboard is plugged in after Writerdeck starts.
+# applies the matching .qmap from /home/root/keymaps/ on a USB keyboard device
+# only (never gpio-keys /dev/input/event1 — grab=1 without a device path makes
+# Qt evdev grab event1 and breaks Home/Power). If no USB keyboard is present at
+# launch, keymap is skipped; Writerdeck-server restarts the editor when one is
+# plugged in so the layout applies.
 #
 # Deploy: bash scripts/deploy-keywriter.sh (copies this alongside the binary).
 
@@ -28,6 +30,7 @@ export QT_QPA_GENERIC_PLUGINS=evdevtablet
 SETTINGS="/home/root/.Writerdeck/settings.json"
 KEYMAPS="/home/root/keymaps"
 DEFAULT_LAYOUT="us"
+BUTTON_DEV="/dev/input/event1"
 
 read_keyboard_layout() {
   local layout=""
@@ -41,11 +44,29 @@ read_keyboard_layout() {
   esac
 }
 
+find_usb_keyboard_dev() {
+  local ev dev name
+  for ev in /sys/class/input/event*; do
+    [ -e "$ev" ] || continue
+    dev="/dev/input/$(basename "$ev")"
+    [ "$dev" = "$BUTTON_DEV" ] && continue
+    name=$(cat "$ev/device/name" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    case "$name" in
+      *keyboard*) echo "$dev"; return 0 ;;
+    esac
+  done
+  return 1
+}
+
 layout=$(read_keyboard_layout)
 qmap="${KEYMAPS}/${layout}.qmap"
 if [ -f "$qmap" ]; then
-  export QT_QPA_EVDEV_KEYBOARD_PARAMETERS="keymap=${qmap}:grab=1"
-  echo "Writerdeck-launcher: USB layout=${layout} keymap=${qmap}" >&2
+  if kb_dev=$(find_usb_keyboard_dev); then
+    export QT_QPA_EVDEV_KEYBOARD_PARAMETERS="${kb_dev}:grab=1:keymap=${qmap}"
+    echo "Writerdeck-launcher: USB layout=${layout} dev=${kb_dev} keymap=${qmap}" >&2
+  else
+    echo "Writerdeck-launcher: USB layout=${layout} (no keyboard yet — keymap skipped)" >&2
+  fi
 fi
 
 cd /home/root

@@ -562,6 +562,27 @@ func readUSBKeyboardEvents(dev string, s *session, debounce *struct {
 	}
 }
 
+// watchUSBKeyboardHotplug restarts the editor when a USB keyboard appears during
+// an active session so the launcher can pin the device and apply the .qmap.
+func watchUSBKeyboardHotplug(s *session) {
+	known := make(map[string]struct{})
+	for _, dev := range findKeyboardInputDevices() {
+		known[dev] = struct{}{}
+	}
+	for {
+		time.Sleep(keyboardRescan)
+		for _, dev := range findKeyboardInputDevices() {
+			if _, ok := known[dev]; ok {
+				continue
+			}
+			known[dev] = struct{}{}
+			if s != nil && s.isActive() {
+				restartEditorForKeymap("USB keyboard " + dev + " connected")
+			}
+		}
+	}
+}
+
 // watchUSBKeyboardForLaunch rescans for USB keyboards and listens for Escape to
 // start Writerdeck when idle (stock UI). Does not intercept Esc while editing.
 func watchUSBKeyboardForLaunch(s *session) {
@@ -1642,17 +1663,17 @@ func renameNoteFile(oldName, newName string) error {
 	return nil
 }
 
-// restartEditorForLayoutChange relaunches Writerdeck so the launcher re-reads
-// settings.json and applies the new .qmap (Qt reads keymap at process start).
-func restartEditorForLayoutChange() {
+// restartEditorForKeymap relaunches Writerdeck so the launcher re-reads
+// settings.json and applies the .qmap on a USB keyboard (Qt reads keymap at process start).
+func restartEditorForKeymap(reason string) {
 	if activeSess == nil || !activeSess.isActive() {
 		return
 	}
 	go func() {
-		fmt.Fprintln(os.Stderr, "writerdeck-server: keyboard layout changed -- restarting editor")
+		fmt.Fprintf(os.Stderr, "writerdeck-server: %s -- restarting editor for keymap\n", reason)
 		activeSess.quit()
 		if err := activeSess.start(); err != nil {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: restart after keyboard layout: %v\n", err)
+			fmt.Fprintf(os.Stderr, "writerdeck-server: restart after keymap change: %v\n", err)
 		}
 	}()
 }
@@ -1694,7 +1715,7 @@ func handleEditorReq(op, name, oldName string) {
 		saveSettingsLocked()
 		settingsMu.Unlock()
 		pushLobbyInfo()
-		restartEditorForLayoutChange()
+		restartEditorForKeymap("keyboard layout changed")
 	default:
 		fmt.Fprintf(os.Stderr, "writerdeck-server: unknown editor req op %q\n", op)
 	}
@@ -2745,6 +2766,7 @@ func main() {
 		// Always-on Home watcher: loops for rmkbd's lifetime.
 		go watchHomeButton(activeSess, ec)
 		go watchUSBKeyboardForLaunch(activeSess)
+		go watchUSBKeyboardHotplug(activeSess)
 
 		// HTTP server always-on in the background.
 		go func() {
