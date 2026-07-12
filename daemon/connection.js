@@ -224,6 +224,9 @@ function connect() {
       if (data.type === 'openedit') {
         state.tabletOpenNote = data.name || '';
         recordEditorDiskBaseline(state.tabletOpenNote);
+        if (state.tabletOpenNote && !overlayUp()) {
+          deps.followTabletOpen(state.tabletOpenNote);
+        }
       } else if (data.type === 'exitedit') {
         state.tabletOpenNote = '';
         state.editorDiskHash = '';

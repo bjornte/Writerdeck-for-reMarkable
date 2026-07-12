@@ -13,7 +13,7 @@
                     font.pointSize: 9
                     color: "#888888"
                     text: lobbyPage === 1 && lobbyFilesMode === ""
-                        ? "n new  Enter open  r rename  d delete"
+                        ? "n new  Enter edit  v read  r rename  d delete"
                         : "Tab next page  1-6 jump  Ctrl-K files"
                 }
             }

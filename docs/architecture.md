@@ -59,11 +59,11 @@ Writerdeck-server keeps `:8000` up even under stock xochitl. It summons Writerde
 
 A random PIN is minted per boot and shown in the Lobby. The phone POSTs it for an HttpOnly session cookie that gates the notes API and WebSocket. Length is owner-choosable: 6, 4, or none. Per-IP lockout backs the PIN modes.
 
-Preferences on the phone cover font, PIN, rotation, and exit. Setup covers GitHub sync. The Lobby is a six-tab pager — Home, Files, Keyboard, Sync, Settings, Shortcuts — fed by socket info messages with IP, PIN, sync state, note count, and last sync. Files CRUD goes through a trusted socket, not unauthenticated LAN HTTP. Launch from stock UI: USB Escape, left and right page buttons together, Mac `wd`, tablet `~/wd`.
+Preferences on the phone cover font, PIN, rotation, and exit. Notes sync setup (bar: Sync setup) covers GitHub sync — toggle, repo, token, Save, and Sync. The Lobby is a six-tab pager — Home, Files, Keyboard, Sync, Settings, Shortcuts — fed by socket info messages with IP, PIN, sync state, note count, and last sync. Files CRUD goes through a trusted socket, not unauthenticated LAN HTTP. Launch from stock UI: USB Escape, left and right page buttons together, Mac `wd`, tablet `~/wd`.
 
-Browse mode on the phone is the file manager — no key capture. Type mode forwards keystrokes. Edit opens the note on e-ink. Home on the tablet broadcasts `exitedit` so the phone drops back to the list.
+Browse mode on the phone is the file manager — no key capture. Type mode forwards keystrokes. Edit opens the note on e-ink. When the tablet opens a note, the server broadcasts `openedit` and the phone mirrors into Type mode (`followTabletOpen` in `notes-ui.js`) unless an overlay has focus. Home on the tablet broadcasts `exitedit` so the phone drops back to the list.
 
-GitHub sync is optional and off by default. The server is the engine; the token stays in RAM; `syncMeta` persists on disk. Reference: [server-sync-implementation.md](server-sync-implementation.md).
+GitHub sync is optional and off by default. The server is the engine; the token stays in RAM (browser `localStorage` + tablet RAM, never disk). After a service restart the server asks connected browsers for the token via WebSocket `needtoken`; see [server-sync-implementation.md](server-sync-implementation.md).
 
 IP is detected from wlan0 and re-pushed to the Lobby when it changes.
 

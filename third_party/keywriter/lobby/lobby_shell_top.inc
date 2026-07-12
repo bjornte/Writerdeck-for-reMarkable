@@ -16,10 +16,18 @@
                 id: lobbyFocus
                 anchors.fill: parent
                 focus: isLobby && !isOmni
+                Keys.enabled: isLobby && !isOmni
+                Keys.onPressed: handleKeyDown(event)
+                Keys.onReleased: {
+                    handleKeyUp(event)
+                    handleKey(event)
+                }
 
                 Connections {
                     target: root
-                    onIsLobbyChanged: if (isLobby) Qt.callLater(function() { lobbyFocus.forceActiveFocus() })
+                    function onIsLobbyChanged() {
+                        if (isLobby) Qt.callLater(function() { lobbyFocus.forceActiveFocus() })
+                    }
                 }
 
                 // ---- tab bar (touch + keyboard 1-6 / Tab / arrows) ----

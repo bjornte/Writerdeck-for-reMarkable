@@ -14,7 +14,7 @@ Reference for the project. Test script output goes in `recon/` — gitignored te
 
 `improvements.md` — design notes for encryption, locales, future UX.
 
-`server-sync-implementation.md` — shipped server-side GitHub sync reference.
+`server-sync-implementation.md` — shipped server-side GitHub sync reference (token restore, `needtoken`, log verification).
 
 `manual-cleanup-tersify-prompts-at-intervals.md` — periodic doc cleanup prompts.
 

@@ -57,8 +57,12 @@
                                     MouseArea {
                                         anchors.fill: parent
                                         onClicked: {
-                                            lobbyFilesIndex = index
-                                            lobbyFilesList.currentIndex = index
+                                            if (index === lobbyFilesIndex)
+                                                root.lobbyOpenSelected()
+                                            else {
+                                                lobbyFilesIndex = index
+                                                lobbyFilesList.currentIndex = index
+                                            }
                                         }
                                         onDoubleClicked: root.lobbyOpenSelected()
                                     }
@@ -75,9 +79,9 @@
                                 visible: lobbyFilesMode === ""
 
                                 Repeater {
-                                    model: ["New", "Open", "Rename", "Delete"]
+                                    model: ["New", "Edit", "Read", "Rename", "Delete"]
                                     delegate: Rectangle {
-                                        width: (lobbyFilesBar.width - lobby.tabSpacing * 3) / 4
+                                        width: (lobbyFilesBar.width - lobby.tabSpacing * 4) / 5
                                         height: lobby.actionBtnHeight
                                         radius: 6
                                         color: "#f0f0f0"
@@ -87,13 +91,14 @@
                                             anchors.centerIn: parent
                                             text: modelData
                                             font.family: "Noto Sans"
-                                            font.pointSize: 12
+                                            font.pointSize: 11
                                         }
                                         MouseArea {
                                             anchors.fill: parent
                                             onClicked: {
                                                 if (modelData === "New") root.lobbyFilesBeginNew()
-                                                else if (modelData === "Open") root.lobbyOpenSelected()
+                                                else if (modelData === "Edit") root.lobbyOpenSelected()
+                                                else if (modelData === "Read") root.lobbyReadSelected()
                                                 else if (modelData === "Rename") root.lobbyFilesBeginRename()
                                                 else if (modelData === "Delete") root.lobbyFilesBeginDelete()
                                             }

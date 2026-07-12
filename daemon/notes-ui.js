@@ -58,6 +58,15 @@ export function showList(e) {
   document.getElementById('notes').style.display = '';
 }
 
+// followTabletOpen: tablet opened a note (openedit) -- mirror it on the phone so
+// keystrokes forward immediately. Skips when already typing that file, or when an
+// overlay (PIN, settings, paste) has focus.
+export function followTabletOpen(filename) {
+  if (!filename) return;
+  if (state.typingMode && currentTypingFile === filename) return;
+  showTypingView(filename.replace(/\.md$/, ''), filename);
+}
+
 // showTypingView: hide everything else, show the "typing on the tablet" panel.
 // noteName is the display name (without .md) shown in the header.
 export function showTypingView(noteName, filename) {

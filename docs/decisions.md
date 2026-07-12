@@ -104,7 +104,7 @@ A second device that arrives mid-edit sees the note, not the PIN. `POST /api/lob
 
 ## 19. GitHub sync is a non-authoritative reconciler
 
-The engine runs on Writerdeck-server. The token lives in browser `localStorage` and tablet RAM via `POST /api/sync/token`; it is never written to disk. Reconcile unions tablet and repo note lists and copies anything missing from either side — it never deletes on its own. Destructive ops from the browser pair to GitHub. External deletes on GitHub propagate when the local copy is pristine and carries a stored `sha`, confirmed with a per-note 404 before acting; unpushed local edits resurrect instead of deleting. Empty-push guard refuses to push a zero-byte file over a previously-synced note. Details: [server-sync-implementation.md](server-sync-implementation.md).
+The engine runs on Writerdeck-server. The token lives in browser `localStorage` and tablet RAM via `POST /api/sync/token`; it is never written to disk. After a restart clears tablet RAM, the server sends WebSocket `needtoken` to connected browsers so a saved token can be reposted automatically; the browser may also push on reconnect via `refreshSyncStatus()`. Reconcile unions tablet and repo note lists and copies anything missing from either side — it never deletes on its own. Destructive ops from the browser pair to GitHub. External deletes on GitHub propagate when the local copy is pristine and carries a stored `sha`, confirmed with a per-note 404 before acting; unpushed local edits resurrect instead of deleting. Empty-push guard refuses to push a zero-byte file over a previously-synced note. Details: [server-sync-implementation.md](server-sync-implementation.md).
 
 ## 20. Display rotation persists in settings
 
@@ -131,6 +131,12 @@ The Lobby Files tab sends `{"t":"req","op":…}` over the existing Unix socket; 
 ## 25. Display sync after Lobby clears the buffer
 
 Returning to the Lobby assigns `query.text = ""`, which breaks any `text:` binding on the `TextEdit`. `doLoad` and `toggleMode()` call `syncQueryDisplay()` so edit shows plain `doc` and preview shows `readHtml(doc)` — never RichText extracted back into `doc`. Without this, Home save can zero files. `showLobby` also clears `currentFile`.
+
+## 26. Plain-text edit mode
+
+Edit mode stays `TextEdit.PlainText` — raw Markdown bytes in `doc`, monospace on screen. Read mode (Esc) renders via sundown into RichText. Formatted headings, bold, and italic belong in read mode only.
+
+RichText in edit mode was tried upstream and in early patches; reading formatted `query.text` back into `doc` caused empty saves, HTML on disk, and corrupted previews. The integrity contract gates any WYSIWYG-in-edit proposal: a display-only overlay or C++ syntax highlighter could work in theory, but true hide-the-markers editing is out of scope unless someone writes an ADR and re-tests slices 1–11.
 
 ---
 

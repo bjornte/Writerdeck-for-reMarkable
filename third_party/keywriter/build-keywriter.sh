@@ -206,8 +206,14 @@ new2b = (
     '                currentFile = name\n'
     '                doc = response\n'
     '                autosaveSnapshot = response\n'
-    '                syncQueryDisplay()\n'
-    '                writerdeck.notifyOpen(name)\n'
+    '                if (lobbyOpenInReadMode) {\n'
+    '                    mode = 0\n'
+    '                    lobbyOpenInReadMode = false\n'
+    '                    syncQueryDisplay()\n'
+    '                } else {\n'
+    '                    syncQueryDisplay()\n'
+    '                    writerdeck.notifyOpen(name)\n'
+    '                }\n'
 )
 assert old2b in s, "doLoad doc=response block not found (edit 2b)"
 s = s.replace(old2b, new2b, 1)
@@ -363,10 +369,18 @@ new6 = (
     '    property var lobbyTabLabels: ["Home", "Files", "Keyboard", "Sync", "Settings", "Shortcuts"]\n'
     '    property int lobbyFilesIndex: 0\n'
     '    property string lobbyFilesMode: ""\n'
-    '    property string lobbyFilesInput: ""'
+    '    property string lobbyFilesInput: ""\n'
+    '    property bool lobbyOpenInReadMode: false\n'
+    '    property bool suppressNextHomeKey: false'
 )
 assert old6 in s, "isOmni property not found in main.qml"
 s = s.replace(old6, new6, 1)
+
+# 6b. In the Lobby, lobbyFocus owns keyboard input; query must not compete.
+old6b = 'focus: !isOmni'
+new6b = 'focus: !isOmni && !isLobby'
+assert old6b in s, "query focus binding not found (edit 6b)"
+s = s.replace(old6b, new6b, 1)
 
 # 7. Add setLobbyInfo() and handleHome() before initFile.
 #    setLobbyInfo: called from C++ via invokeMethod when rmkbd connects, so the
@@ -374,6 +388,9 @@ s = s.replace(old6, new6, 1)
 #    handleHome: two-level Home (slice 8e):
 #      - editing -> save current note + return to Lobby (isLobby = true)
 #      - Lobby   -> Qt.quit() -> cmd.Wait fires -> s.end() -> xochitl restarts
+#    Physical Home delivers twice: gpio-keys -> daemon cmd (fromPhysicalCmd=true)
+#    and Qt Key_Home. suppressNextHomeKey pairs off the duplicate; USB Home uses
+#    the Key_Home path only (fromPhysicalCmd=false).
 old7 = '    function initFile(name) {'
 new7 = (
     '    function setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing, keyboardLayout) {\n'
@@ -425,6 +442,17 @@ new7 = (
     '        var row = lobbyNotesModel.get(lobbyFilesIndex)\n'
     '        if (!row || row.name === "") return\n'
     '        saveAndLoad(row.name)\n'
+    '    }\n'
+    '\n'
+    '    function lobbyReadSelected() {\n'
+    '        if (lobbyNotesModel.count === 0) return\n'
+    '        var row = lobbyNotesModel.get(lobbyFilesIndex)\n'
+    '        if (!row || row.name === "") return\n'
+    '        isLobby = false\n'
+    '        if (mode == 1) doc = query.text\n'
+    '        saveFile()\n'
+    '        lobbyOpenInReadMode = true\n'
+    '        doLoad(row.name)\n'
     '    }\n'
     '\n'
     '    function lobbyFilesBeginNew() {\n'
@@ -496,10 +524,6 @@ new7 = (
     '            }\n'
     '            return true\n'
     '        }\n'
-    '        if (event.key === Qt.Key_Home) {\n'
-    '            Qt.quit()\n'
-    '            return true\n'
-    '        }\n'
     '        if (event.key === Qt.Key_Tab) {\n'
     '            if (event.modifiers & Qt.ShiftModifier)\n'
     '                lobbyGoPage((lobbyPage + lobbyTabLabels.length - 1) % lobbyTabLabels.length)\n'
@@ -544,6 +568,10 @@ new7 = (
     '                lobbyFilesBeginRename()\n'
     '                return true\n'
     '            }\n'
+    '            if (event.key === Qt.Key_V && !(event.modifiers & Qt.ControlModifier)) {\n'
+    '                lobbyReadSelected()\n'
+    '                return true\n'
+    '            }\n'
     '        }\n'
     '        return false\n'
     '    }\n'
@@ -555,7 +583,9 @@ new7 = (
     '        isSleeping = true\n'
     '    }\n'
     '\n'
-    '    function handleHome() {\n'
+    '    function handleHome(fromPhysicalCmd) {\n'
+    '        if (fromPhysicalCmd === undefined)\n'
+    '            fromPhysicalCmd = false\n'
     '        if (isLobby) {\n'
     '            Qt.quit()\n'
     '        } else {\n'
@@ -567,6 +597,9 @@ new7 = (
     '            query.text = ""\n'
     '            autosaveSnapshot = ""\n'
     '            lobbyFilesMode = ""\n'
+    '            lobbyPage = 0\n'
+    '            if (fromPhysicalCmd)\n'
+    '                suppressNextHomeKey = true\n'
     '            lobbyRefreshNotes()\n'
     '        }\n'
     '    }\n'
@@ -652,8 +685,15 @@ old7m = (
 )
 new7m = (
     '                onCursorRectangleChanged: {\n'
-    '                    if (mode == 1)\n'
-    '                        flick.ensureVisible(cursorRectangle)\n'
+    '                    if (mode == 1) {\n'
+    '                        var margin = 120\n'
+    '                        var viewTop = flick.contentY + margin\n'
+    '                        var viewBot = flick.contentY + flick.height - margin\n'
+    '                        var cy = cursorRectangle.y\n'
+    '                        var cb = cy + cursorRectangle.height\n'
+    '                        if (cy < viewTop || cb > viewBot)\n'
+    '                            flick.ensureVisible(cursorRectangle, margin)\n'
+    '                    }\n'
     '                }'
 )
 assert old7m in s, "onCursorRectangleChanged ensureVisible block not found (edit 7m)"
@@ -735,6 +775,7 @@ new7l = (
     '        }\n'
     '        isLobby = true\n'
     '        lobbyFilesMode = ""\n'
+    '        lobbyPage = 0\n'
     '        lobbyRefreshNotes()\n'
     '    }\n'
     '\n'
@@ -956,18 +997,23 @@ old7n_fn = '    function showLobby() {'
 new7n_fn = (
     '    function publishEditorState() {\n'
     '        writerdeck.publishState(query.cursorPosition, query.selectionStart,\n'
-    '            query.selectionEnd, query.text.length, mode)\n'
+    '            query.selectionEnd, query.text.length, mode, isLobby ? 1 : 0)\n'
     '    }\n'
     '\n'
     '    function cursorOnLastLine() {\n'
     '        if (mode != 1) return false\n'
-    '        return query.text.indexOf("\\n", query.cursorPosition) === -1\n'
+    '        var len = query.text.length\n'
+    '        if (len === 0) return true\n'
+    '        var curY = query.positionToRectangle(query.cursorPosition).y\n'
+    '        var endY = query.positionToRectangle(len).y\n'
+    '        return curY >= endY - 1\n'
     '    }\n'
     '\n'
     '    function cursorOnFirstLine() {\n'
     '        if (mode != 1) return false\n'
-    '        var pos = query.cursorPosition\n'
-    '        return pos === 0 || query.text.lastIndexOf("\\n", pos - 1) === -1\n'
+    '        var curY = query.positionToRectangle(query.cursorPosition).y\n'
+    '        var topY = query.positionToRectangle(0).y\n'
+    '        return curY <= topY + 1\n'
     '    }\n'
     '\n'
     '    function isSpaceChar(c) {\n'
@@ -1279,9 +1325,7 @@ old7p = (
     '            }'
 )
 new7p = (
-    '        if (mode == 0 && event.key === Qt.Key_Home)\n'
-    '            Qt.quit()\n'
-    '        else if (mode == 0 || isLobby) {\n'
+    '        if (mode == 0 || isLobby) {\n'
     '            switch (event.key) {\n'
     '            case Qt.Key_Right:\n'
     '                if (ctrlPressed || (event.modifiers & Qt.ControlModifier))\n'
@@ -1301,6 +1345,18 @@ s = s.replace(old7p, new7p, 1)
 old7q = '    function handleKey(event) {'
 new7q = (
     '    function handleKey(event) {\n'
+    '        if (event.key === Qt.Key_Home) {\n'
+    '            if (suppressNextHomeKey) {\n'
+    '                suppressNextHomeKey = false\n'
+    '                event.accepted = true\n'
+    '                return\n'
+    '            }\n'
+    '            handleHome(false)\n'
+    '            event.accepted = true\n'
+    '            return\n'
+    '        }\n'
+    '        if (suppressNextHomeKey)\n'
+    '            suppressNextHomeKey = false\n'
     '        if (isLobby && !isOmni) {\n'
     '            if (lobbyHandleKey(event)) {\n'
     '                event.accepted = true\n'

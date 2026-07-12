@@ -8,7 +8,7 @@ Three separate ways a change can look like it did nothing: the CI keywriter bina
 
 `rmkw` pushes the binary only. Font changes need the full Qt sysroot: `RM_FORCE_SYSROOT=1 bash scripts/deploy-keywriter.sh -b`.
 
-`deploy-rmkbd.sh` flushes via `POST /api/flush-save`, then SIGTERM-waits about twelve seconds. The old pattern of `pkill` plus half a second could drop an unsaved buffer.
+`deploy-rmkbd.sh` flushes via `POST /api/flush-save`, then SIGTERM-waits about twelve seconds. The old pattern of `pkill` plus half a second could drop an unsaved buffer. Deploy stops the server — run `systemctl start writerdeck` (or restart) before verifying the phone UI.
 
 scp deadlocks at a fixed offset on the Mac-to-Wi-Fi-to-tablet link. Use `rm_send_file` (gzip-over-ssh) in `_env.sh`. On ETXTBSY, kill by full path, stream to `.new`, then `mv`.
 
@@ -68,15 +68,17 @@ Apostrophes in Python patch heredocs: `' + chr(39) + '`. QML patch blocks must b
 
 Immediate `editor process exited` after start is almost always a QML parse error, not the USB watcher. Two-level Home looks like a crash in logs but is intentional: first Home to Lobby, second to stock UI. No cursor blink on e-ink — it ghosts.
 
+`cursorOnLastLine()` must use visual line position (`positionToRectangle`), not "no newline after cursor" — a wrapped last paragraph is one logical line but many visual lines; newline-only detection makes Down jump to end-of-line mid-paragraph. Auto-scroll via `ensureVisible` on every cursor move can feel like blanking or page-flips near the document end on e-ink; scroll only when the cursor nears the viewport edge.
+
 ## Browser and capture page
 
-Capture must stand down when the PIN screen or paste modal is up. Setting `display: ''` does not restore visibility if CSS had `display:none` — set an explicit value. Inline onclick cannot reach IIFE closures; use addEventListener.
+Capture must stand down when the PIN screen, paste modal, or settings/sync overlays are up — `followTabletOpen` checks the same gate before auto-entering Type mode on `openedit`. Setting `display: ''` does not restore visibility if CSS had `display:none` — set an explicit value. Inline onclick cannot reach IIFE closures; use addEventListener.
 
 Clipboard API needs HTTPS; on plain LAN http, Copy falls back to execCommand.
 
 Lobby last-sync needs the phone to POST sync ack after reconcile. Load sync flags at page init, not when Preferences opens. Async functions must return their promises.
 
-GitHub token is per browser origin — new DHCP IP means re-enter the token in Setup.
+GitHub token is per browser origin (`localStorage ghToken`). A new tablet IP is a new origin — enter the token once in Notes sync setup, then it persists in that browser. After a service restart, tablet RAM is empty until the browser reposts (WebSocket `needtoken` or `refreshSyncStatus` on reconnect). Verify in journal: `sync reconcile (token)` after `client connected` — see [server-sync-implementation.md](server-sync-implementation.md).
 
 Writerdeck deploy needs a fresh binary; QML lives inside it. After lobby edits: CI or Docker rebuild, deploy, relaunch, check journalctl. Restarting the server does not reload a running Writerdeck process.
 

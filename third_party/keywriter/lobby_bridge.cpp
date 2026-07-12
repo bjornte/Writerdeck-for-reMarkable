@@ -71,7 +71,7 @@ void LobbyBridge::setKeyboardLayout(const QString &layout)
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
 }
 
-void LobbyBridge::publishState(int cursor, int selStart, int selEnd, int textLen, int mode)
+void LobbyBridge::publishState(int cursor, int selStart, int selEnd, int textLen, int mode, int isLobby)
 {
     QJsonObject o;
     o[QStringLiteral("t")] = QStringLiteral("state");
@@ -80,6 +80,7 @@ void LobbyBridge::publishState(int cursor, int selStart, int selEnd, int textLen
     o[QStringLiteral("selEnd")] = selEnd;
     o[QStringLiteral("textLen")] = textLen;
     o[QStringLiteral("mode")] = mode;
+    o[QStringLiteral("isLobby")] = isLobby;
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
 }
 

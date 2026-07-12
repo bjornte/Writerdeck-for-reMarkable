@@ -6,7 +6,7 @@ import { initSync } from './sync.js';
 import { deps } from './deps.js';
 import { initConnection, connect, grab, applyMode } from './connection.js';
 import {
-  loadNotes, showList, hideTypingView, createNote, uploadFile,
+  loadNotes, showList, hideTypingView, followTabletOpen, createNote, uploadFile,
   showPasteModal, hidePasteModal, submitPaste
 } from './notes-ui.js';
 import {
@@ -16,6 +16,7 @@ import {
 
 deps.loadNotes = loadNotes;
 deps.hideTypingView = hideTypingView;
+deps.followTabletOpen = followTabletOpen;
 deps.showPinScreen = showPinScreen;
 deps.connect = connect;
 

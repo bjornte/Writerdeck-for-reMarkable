@@ -20,7 +20,7 @@ Launch from stock UI: Mac `wd` or `bash scripts/lobby.sh`; on tablet SSH, `~/wd`
 
 ## Phone companion
 
-List, create, read, rename, delete, upload `.md`, download, and copy notes from the browser. Browse mode is the file manager — no key capture. Type mode sends keystrokes to the tablet with an echo footer. Edit opens the note on e-ink; Home on the tablet drops the phone back to the list. Paste from clipboard. Dark type mode for OLED phones.
+List, create, read, rename, delete, upload `.md`, download, and copy notes from the browser. Browse mode is the file manager — no key capture. Type mode sends keystrokes to the tablet with an echo footer. Edit opens the note on e-ink; opening a note on the tablet (Files, Ctrl-K, or reconnect while a note is open) also switches the phone to Type mode via WebSocket `openedit`, so typing can start without tapping Edit. Home on the tablet drops the phone back to the list. Paste from clipboard. Dark type mode for OLED phones.
 
 ## Security
 
@@ -28,7 +28,7 @@ PIN on the tablet each boot — 6 digits, 4 digits, or none (none warns that any
 
 ## Preferences and sync
 
-Font, PIN length, display rotate, and Exit Writerdeck live in Preferences. GitHub sync has its own Setup panel. Connection indicator refreshes via status every five seconds. Token in phone browser and tablet RAM only; `syncOn`, `syncRepo`, and `syncMeta` on disk.
+Font, PIN length, display rotate, and Exit Writerdeck live in Preferences (bar button). GitHub sync lives in Notes sync setup (bar: Sync setup) — toggle, repo, token, Save, Sync. Connection indicator refreshes via status every five seconds. Token in phone browser and tablet RAM only; auto-restore after restart via WebSocket `needtoken`; `syncOn`, `syncRepo`, and `syncMeta` on disk.
 
 ## Editor
 
@@ -36,7 +36,7 @@ Built from upstream remarkable-keywriter, deployed as Writerdeck, patched for so
 
 ## GitHub sync
 
-Optional, off by default. Writerdeck-server reconciles with a private repo — pull missing either way, push local-only, clashes keep both copies. Marker-aware delete when the local copy is pristine with stored sha. Empty-push guard refuses zero bytes over previously-synced content. Triggers on boot, three-minute poll, token verify, Sync now, Home, power, and CRUD. Skips only the note open on the tablet.
+Optional, off by default. Writerdeck-server reconciles with a private repo — pull missing either way, push local-only, clashes keep both copies. Marker-aware delete when the local copy is pristine with stored sha. Empty-push guard refuses zero bytes over previously-synced content. Triggers on boot, three-minute poll, token verify, Sync now, Home, power, and CRUD. Skips only the note open on the tablet. Lobby Sync tab shows TOKEN NEEDED, SYNC OFFLINE, and SYNC FAILED. Token auto-restore after restart: [server-sync-implementation.md](docs/server-sync-implementation.md).
 
 ## Document integrity
 

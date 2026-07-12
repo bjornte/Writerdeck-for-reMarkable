@@ -52,7 +52,7 @@ Secrets: `secrets/remarkable.local.env`; scripts source `scripts/_env.sh` for `R
 
 **Writerdeck:** `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Relaunch Writerdeck after binary deploy (server restart alone is not enough). Then `bash scripts/test-edit-session.sh`; run `bash scripts/test-keyboard-harness.sh` when keyboard/selection QML changed.
 
-GitHub token: browser `localStorage ghToken` + tablet RAM via `POST /api/sync/token` (auto-repost after restart). Logs: `journalctl -u writerdeck.service`.
+GitHub token: browser `localStorage ghToken` + tablet RAM via `POST /api/sync/token`; after restart WebSocket `needtoken` triggers auto-repost. Logs: `journalctl -u writerdeck.service` — token restore shows `sync reconcile (token)` after `client connected` (see `docs/server-sync-implementation.md`).
 
 ## Documentation
 

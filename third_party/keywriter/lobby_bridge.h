@@ -19,7 +19,7 @@ public slots:
     Q_INVOKABLE void notifyOpen(const QString &name);
     Q_INVOKABLE void syncNow();
     Q_INVOKABLE void setKeyboardLayout(const QString &layout);
-    Q_INVOKABLE void publishState(int cursor, int selStart, int selEnd, int textLen, int mode);
+    Q_INVOKABLE void publishState(int cursor, int selStart, int selEnd, int textLen, int mode, int isLobby);
 
     // Called from the socket thread when the server pushes a notes list.
     void deliverNotesList(const QVariantList &items);

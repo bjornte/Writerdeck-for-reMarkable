@@ -159,8 +159,13 @@
 +                }
 +            }
 +        }
-+        else if (cmd == "home" && g_rootObj)
-+            invokeSaveCmd("handleHome", "home");
++        else if (cmd == "home" && g_rootObj) {
++            // Physical Home: daemon cmd and Qt Key_Home both fire; pass true so QML
++            // pairs off the duplicate Key_Home instead of treating it as quit-from-lobby.
++            QMetaObject::invokeMethod(g_rootObj, "handleHome", Qt::BlockingQueuedConnection,
++                Q_ARG(QVariant, true));
++            rmkbdSendAck("saved", "home");
++        }
 +        else if (cmd == "preparesleep" && g_rootObj) {
 +            invokeSaveCmd("prepareSleep", "preparesleep");
 +            // E-ink needs a beat after isSleeping=true before suspend/sync.

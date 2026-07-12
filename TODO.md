@@ -11,6 +11,7 @@ Keystrokes reach the editor over `/run/Writerdeck.sock`, not uinput ([docs/decis
 1. USB Norwegian keyboard — æ ø å Æ Ø Å, AltGr, `@`, `{` `}` on a physical NO keyboard. Qmaps and Lobby picker are shipped; Alt+Left/Right no longer flip to preview ([lessons.md](docs/lessons.md)). Remaining checks are hardware-only.
 2. Lobby Ctrl-K on USB keyboard — device verify.
 3. Power button sleep/wake — device verify. Implementation is in [DONE.md](DONE.md); test is outstanding.
+4. Edit scroll/cursor patch — in `build-keywriter.sh`; push, `fetch-keywriter-dist.sh`, `deploy-keywriter.sh -b`, then `test-keyboard-harness.sh` and manual last-line typing on device.
 
 ## Phase 10 — locales and protection
 
@@ -37,6 +38,6 @@ Stay firmware-update-current? Each OTA resets the SSH password and may wipe the 
 ## Resume prompt
 
 > Project: reMarkable 1 Wi-Fi Markdown typewriter. Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Mac deploys; iPhone uses.
-> Shipped: [DONE.md](DONE.md). Next unchecked: Norwegian USB device test (æøå, AltGr — Alt+arrow fixed in qmap); Ctrl-K USB verify; power button device test. Phase 10 encryption: [improvements.md](docs/improvements.md). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) §21); after arrow/selection QML: `bash scripts/test-keyboard-harness.sh` (§22).
+> Shipped: [DONE.md](DONE.md). Next unchecked: Norwegian USB device test (æøå, AltGr — Alt+arrow fixed in qmap); Ctrl-K USB verify; power button device test; edit scroll/cursor patch deploy+verify. Phase 10 encryption: [improvements.md](docs/improvements.md). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) §21); after arrow/selection QML: `bash scripts/test-keyboard-harness.sh` (§22).
 > Read: architecture, decisions, DONE, lessons, browser-vs-tablet, integrity-audit. Device: `secrets/remarkable.local.env` (`RM_HOST_WIFI`).
 > Constraints: no jailbreak/OTA/Toltec; `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`.

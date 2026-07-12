@@ -165,6 +165,7 @@ func main() {
 	http.HandleFunc("/api/flush-save", flushSaveHandler)
 	http.HandleFunc("/api/test/reset", testResetHandler)
 	http.HandleFunc("/api/test/editor-state", testEditorStateHandler)
+	http.HandleFunc("/api/test/home", testHomeHandler)
 
 	if *editorPath != "" {
 		// Supervisor mode: rmkbd is always-on; editor sessions are on-demand.

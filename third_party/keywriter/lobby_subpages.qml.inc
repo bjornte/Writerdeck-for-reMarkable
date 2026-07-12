@@ -16,10 +16,18 @@
                 id: lobbyFocus
                 anchors.fill: parent
                 focus: isLobby && !isOmni
+                Keys.enabled: isLobby && !isOmni
+                Keys.onPressed: handleKeyDown(event)
+                Keys.onReleased: {
+                    handleKeyUp(event)
+                    handleKey(event)
+                }
 
                 Connections {
                     target: root
-                    onIsLobbyChanged: if (isLobby) Qt.callLater(function() { lobbyFocus.forceActiveFocus() })
+                    function onIsLobbyChanged() {
+                        if (isLobby) Qt.callLater(function() { lobbyFocus.forceActiveFocus() })
+                    }
                 }
 
                 // ---- tab bar (touch + keyboard 1-6 / Tab / arrows) ----
@@ -185,8 +193,12 @@
                                     MouseArea {
                                         anchors.fill: parent
                                         onClicked: {
-                                            lobbyFilesIndex = index
-                                            lobbyFilesList.currentIndex = index
+                                            if (index === lobbyFilesIndex)
+                                                root.lobbyOpenSelected()
+                                            else {
+                                                lobbyFilesIndex = index
+                                                lobbyFilesList.currentIndex = index
+                                            }
                                         }
                                         onDoubleClicked: root.lobbyOpenSelected()
                                     }
@@ -203,9 +215,9 @@
                                 visible: lobbyFilesMode === ""
 
                                 Repeater {
-                                    model: ["New", "Open", "Rename", "Delete"]
+                                    model: ["New", "Edit", "Read", "Rename", "Delete"]
                                     delegate: Rectangle {
-                                        width: (lobbyFilesBar.width - lobby.tabSpacing * 3) / 4
+                                        width: (lobbyFilesBar.width - lobby.tabSpacing * 4) / 5
                                         height: lobby.actionBtnHeight
                                         radius: 6
                                         color: "#f0f0f0"
@@ -215,13 +227,14 @@
                                             anchors.centerIn: parent
                                             text: modelData
                                             font.family: "Noto Sans"
-                                            font.pointSize: 12
+                                            font.pointSize: 11
                                         }
                                         MouseArea {
                                             anchors.fill: parent
                                             onClicked: {
                                                 if (modelData === "New") root.lobbyFilesBeginNew()
-                                                else if (modelData === "Open") root.lobbyOpenSelected()
+                                                else if (modelData === "Edit") root.lobbyOpenSelected()
+                                                else if (modelData === "Read") root.lobbyReadSelected()
                                                 else if (modelData === "Rename") root.lobbyFilesBeginRename()
                                                 else if (modelData === "Delete") root.lobbyFilesBeginDelete()
                                             }
@@ -525,7 +538,7 @@
                                     width: parent.width
                                 }
                                 Text {
-                                    text: "Lobby: Tab / arrows / 1-6 switch pages\nFiles: Up/Down select  Enter open  n d r\nStock UI: Esc (USB) or L+R page buttons → Lobby\nCtrl-K: quick file picker\nCtrl-R: rotate  Ctrl-Q: quit\nHome: exit to reMarkable UI"
+                                    text: "Lobby: Tab / arrows / 1-6 switch pages\nFiles: Up/Down select  Enter edit  v read  n d r\nStock UI: Esc (USB) or L+R page buttons → Lobby\nCtrl-K: quick file picker\nCtrl-R: rotate  Ctrl-Q: quit\nHome: exit to reMarkable UI"
                                     font.pointSize: 10
                                     font.family: "Noto Mono"
                                     color: "#555555"
@@ -550,7 +563,7 @@
                     font.pointSize: 9
                     color: "#888888"
                     text: lobbyPage === 1 && lobbyFilesMode === ""
-                        ? "n new  Enter open  r rename  d delete"
+                        ? "n new  Enter edit  v read  r rename  d delete"
                         : "Tab next page  1-6 jump  Ctrl-K files"
                 }
             }

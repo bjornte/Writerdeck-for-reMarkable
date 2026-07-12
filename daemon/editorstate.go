@@ -12,7 +12,8 @@ type EditorState struct {
 	SelStart int `json:"selStart"`
 	SelEnd   int `json:"selEnd"`
 	TextLen  int `json:"textLen"`
-	Mode     int `json:"mode"` // 0=preview, 1=edit
+	Mode     int `json:"mode"`    // 0=preview, 1=edit
+	IsLobby  int `json:"isLobby"` // 1=Lobby visible
 }
 
 const stateQueryTimeout = 3 * time.Second
@@ -75,6 +76,7 @@ func parseEditorState(line []byte) (EditorState, bool) {
 		SelEnd   int    `json:"selEnd"`
 		TextLen  int    `json:"textLen"`
 		Mode     int    `json:"mode"`
+		IsLobby  int    `json:"isLobby"`
 	}
 	if err := json.Unmarshal(line, &raw); err != nil || raw.T != "state" {
 		return EditorState{}, false
@@ -85,6 +87,7 @@ func parseEditorState(line []byte) (EditorState, bool) {
 		SelEnd:   raw.SelEnd,
 		TextLen:  raw.TextLen,
 		Mode:     raw.Mode,
+		IsLobby:  raw.IsLobby,
 	}, true
 }
 

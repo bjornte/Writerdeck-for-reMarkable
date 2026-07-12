@@ -22,6 +22,10 @@ Regenerate with `bash keymaps/generate.sh`. Deploy via `deploy-keywriter.sh`. Lo
 
 More VS Code-like list indentation; optional cursor block beside the active line; headline navigation; status bar with title, confirmations, zoom, time — battery is already on the phone status bar.
 
+WYSIWYG Markdown in edit mode (large headings, bold, italic without visible `**` / `#`) is not planned — see [decisions.md](decisions.md) §26. Esc/read mode already renders sundown output.
+
+Scroll/cursor niceties in `build-keywriter.sh` (visual last-line detection via `positionToRectangle`, edge-threshold `ensureVisible`) are patched but need CI rebuild and device verify after deploy.
+
 ## Browser (future)
 
 Bulk select and multi-delete; search across titles and bodies; HTTPS for native Share sheet; encrypted-folder unlock UI paired with tablet encryption above.
