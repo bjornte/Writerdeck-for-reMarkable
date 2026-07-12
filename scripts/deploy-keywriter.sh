@@ -175,6 +175,14 @@ echo "--- Deploying Writerdeck-launcher.sh -> /home/root/Writerdeck-launcher.sh 
 rm_send_file "$DIR/Writerdeck-launcher.sh" "/home/root/Writerdeck-launcher.sh" "$TARGET"
 rm_ssh 'chmod +x /home/root/Writerdeck-launcher.sh' "$TARGET"
 echo "  OK"
+
+echo "--- Deploying keymaps -> /home/root/keymaps/ ---"
+rm_ssh 'mkdir -p /home/root/keymaps' "$TARGET"
+for qmap in "$REPO/keymaps"/*.qmap; do
+  [ -f "$qmap" ] || continue
+  rm_send_file "$qmap" "/home/root/keymaps/$(basename "$qmap")" "$TARGET"
+done
+echo "  OK"
 rm_deploy_wd "$TARGET"
 echo "  ${DEVICE_WD} OK"
 echo

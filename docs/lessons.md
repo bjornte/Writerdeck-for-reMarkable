@@ -84,7 +84,11 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **Async primitives must return their promise** — `reconcileAll` didn't wait on `pushNote`; concurrent GitHub PUTs lost commits.
 
-**GitHub token is per-origin** — new DHCP IP = new browser origin = re-enter token.
+**GitHub token is per-origin** — new DHCP IP = new browser origin = re-enter token in Setup.
+
+**Writerdeck deploy needs fresh CI artifact** — `deploy-keywriter.sh` pushes `third_party/keywriter/dist/Writerdeck`; without `fetch-keywriter-dist.sh` after push, you redeploy a stale binary (QML changes invisible on tablet).
+
+**Restarting the server does not reload Writerdeck** — the editor process keeps running until Home/quit or kill; binary-only deploy requires relaunch to pick up QML changes.
 
 ## Sync
 
@@ -92,7 +96,9 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **Never push an empty tablet file over a previously-synced note** — `pushNote` refuses when `content === ""` and `ghLocalHash` was non-empty; reconcile pulls from GitHub instead. Clash handler skips `(tablet copy)` when tablet is empty and GitHub has content. Belt-and-suspenders after the Lobby Home wipe bug — a genuine "delete all text" edit still saves non-empty until the owner clears and re-syncs intentionally.
 
-**Open-file tracking — slices 1+3+4 shipped, residuals remain** — tablet opens report via `notifyOpen` → server `openNote` / `openedit` WS (slice 1). Phone rename/delete of the open file notifies the editor (`noterenamed` / `notedeleted`, slice 3). Reconcile skips `openNote` from `/api/status` (slice 4), not phone `typingMode` alone. **Still open:** stale `tabletOpenNote` after phone-back; `doLoad` async races on rapid switch; clash/pull overwrites disk without auto-reload (drift banner is manual). See [integrity-audit.md](integrity-audit.md).
+**Open-file tracking — slices 1+3+4 shipped, residuals remain** — tablet opens report via `notifyOpen` → server `openNote` / `openedit` WS (slice 1). Phone rename/delete of the open file notifies the editor (`noterenamed` / `notedeleted`, slice 3). Reconcile skips only the open note (`currentNote`), not the whole run (2026-07-12). **Still open:** stale `tabletOpenNote` after phone-back; `doLoad` async races on rapid switch; clash/pull overwrites disk without auto-reload (drift banner is manual). See [integrity-audit.md](integrity-audit.md).
+
+**Save & verify while editing** — token save is immediate; background reconcile must not abort entirely when `currentNote` is set (only skip that file). Phone `waitForSyncIdle` must not require `lastSyncAt` to bump — instant reconciles can finish between poll ticks.
 
 **Boot in edit mode, don't inject Escape** — daemon, editor, and client have independent lifetimes; a synthetic toggle desyncs on reconnect.
 

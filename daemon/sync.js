@@ -114,14 +114,20 @@ export function waitForSyncIdle(opts) {
   opts = opts || {};
   var deadline = Date.now() + (opts.timeoutMs || 90000);
   var sawSyncing = false;
+  var idleTicks = 0;
   var baseline = opts.baselineLastSync || 0;
   return new Promise(function(resolve) {
     function tick() {
       refreshSyncStatus().then(function(s) {
         if (!s) { resolve(null); return; }
-        if (s.syncing) sawSyncing = true;
+        if (s.syncing) {
+          sawSyncing = true;
+          idleTicks = 0;
+        } else {
+          idleTicks++;
+        }
         if (s.lastError) { resolve(s); return; }
-        if (!s.syncing && (sawSyncing || s.lastSyncAt > baseline)) {
+        if (!s.syncing && (sawSyncing || s.lastSyncAt > baseline || idleTicks >= 2)) {
           resolve(s); return;
         }
         if (Date.now() > deadline) { resolve(s); return; }

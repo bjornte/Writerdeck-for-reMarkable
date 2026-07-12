@@ -254,12 +254,59 @@
                                     width: parent.width
                                 }
                                 Text {
-                                    text: "Connect with a USB OTG cable.\nLayout is US QWERTY until locale qmaps ship."
+                                    text: "Connect with a USB OTG cable.\nApplies on next editor launch."
                                     font.pointSize: 11
                                     font.family: "Noto Sans"
                                     color: "#555555"
                                     width: parent.width
                                     wrapMode: Text.WordWrap
+                                }
+                                Text {
+                                    text: "Layout"
+                                    font.pointSize: 12
+                                    font.family: "Noto Sans"
+                                    color: "black"
+                                    width: parent.width
+                                }
+                                Row {
+                                    width: parent.width
+                                    spacing: lobby.tabSpacing
+                                    Rectangle {
+                                        width: (parent.width - lobby.tabSpacing) / 2
+                                        height: lobby.actionBtnHeight
+                                        radius: 6
+                                        color: lobbyKeyboardLayout === "us" ? "#e8e8e8" : "#f0f0f0"
+                                        border.color: lobbyKeyboardLayout === "us" ? "black" : "#bbb"
+                                        border.width: lobbyKeyboardLayout === "us" ? 2 : 1
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "US QWERTY"
+                                            font.family: "Noto Sans"
+                                            font.pointSize: 11
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: writerdeck.setKeyboardLayout("us")
+                                        }
+                                    }
+                                    Rectangle {
+                                        width: (parent.width - lobby.tabSpacing) / 2
+                                        height: lobby.actionBtnHeight
+                                        radius: 6
+                                        color: lobbyKeyboardLayout === "no" ? "#e8e8e8" : "#f0f0f0"
+                                        border.color: lobbyKeyboardLayout === "no" ? "black" : "#bbb"
+                                        border.width: lobbyKeyboardLayout === "no" ? 2 : 1
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "Norwegian"
+                                            font.family: "Noto Sans"
+                                            font.pointSize: 11
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: writerdeck.setKeyboardLayout("no")
+                                        }
+                                    }
                                 }
                                 Text {
                                     text: "Bluetooth / phone"

@@ -2,6 +2,8 @@
 
 Move the GitHub reconcile engine from the phone browser (`daemon/sync.js`) to Writerdeck-server (Go). The phone keeps **token entry and sync settings UI only** until device-verified; then **remove all reconcile logic from the browser** (no dual engine).
 
+**Status (2026-07-12):** shipped and device-verified. Engine runs on tablet; phone **Setup** panel saves token + repo; **Sync now** on tablet Lobby. Browser keeps `localStorage ghToken` as a convenience cache and auto-reposts to tablet RAM when the service restarts. Tablet **Sync** tab shows a high-contrast **TOKEN NEEDED** box when `syncReady` is false (e-ink: black border, not colour alone).
+
 Supersedes the phone-as-engine model in [research-github-sync.md](research-github-sync.md) § Implementation and [decisions.md](decisions.md) #19 (reconciler behaviour unchanged; execution location moves).
 
 **Contract:** same integrity rules as [integrity-audit.md](integrity-audit.md) — edit lease, empty-push guard, copy-on-clash, no delete-without-confirm, sequential pushes.
@@ -13,13 +15,13 @@ Supersedes the phone-as-engine model in [research-github-sync.md](research-githu
 | Concern | Today | Target |
 |---|---|---|
 | Sync engine | `sync.js` in phone browser | Go in Writerdeck-server |
-| GitHub token | `localStorage ghToken` (phone-only) | Phone POSTs once; server holds **in RAM** for service lifetime |
+| GitHub token | `localStorage ghToken` (phone-only) | Browser `localStorage ghToken` **and** tablet RAM via `POST /api/sync/token`. Phone auto-reposts saved token when tablet RAM is empty after service restart. Never on tablet disk. |
 | Per-note SHA/hash | `localStorage ghSha_*`, `ghLocalHash_*` | `settings.json` → `syncMeta` map (non-secret) |
 | Triggers | WS connect, poll, exitedit, tabletcrud, manual | Server hooks + optional phone “Sync now” → `POST /api/sync/run` |
 | Power sleep | Browser reconcile + `/api/sync/ack` | Server reconcile inline in `sleepForPower` |
 | `pendingSync` queue | Browser drains via `/api/sync/pending` | Server drains on enqueue or at reconcile start |
 
-Token survives: editor quit/reopen, Lobby cycles, Wi‑Fi/IP change. Cleared on: service restart, reboot, explicit `POST /api/sync/token` with empty body, or auth failure (401/403).
+Token on tablet survives: editor quit/reopen, Lobby cycles, Wi‑Fi/IP change. Cleared from tablet RAM on: service restart, reboot, explicit clear, or auth failure (401/403). Browser `ghToken` survives service restarts and re-fills tablet RAM on next page load (or **Save & verify**).
 
 ---
 
@@ -106,7 +108,9 @@ No new module dependencies — stdlib `net/http`, `encoding/json`, `encoding/bas
 
 **Disk I/O:** engine calls internal note helpers directly — no loopback HTTP. Respects existing atomic `writeNoteFile` and edit lease via `currentNoteMu`.
 
-**Open note:** skip push/pull/reconcile/delete for `currentNote` (same as `tabletOpenNote` gate).
+**Open note:** skip push/pull/reconcile/delete for `currentNote` only — `reconcileAll` still runs for all other notes (edit lease is per-note, not whole-run abort).
+
+**Phone Setup — Save & verify:** POSTs token → async `reconcileAll("token")`. While a note is open on the tablet, reconcile skips that file and syncs the rest. UI polls `/api/sync/status` until idle; if the open note was skipped, shows *"Token saved — synced other notes; «name» skipped while open."*
 
 ---
 
@@ -167,7 +171,7 @@ Delete from `app.js`:
 - WS handlers that call sync on `exitedit`, `tabletcrud`, connect
 - `verifyGitHubRepo` import; wire Save & verify to `/api/sync/token`
 
-Remove `localStorage` keys: `ghToken`, `ghSha_*`, `ghLocalHash_*`, `ghPushFailed_*`, `ghLastSync`.
+Remove legacy `localStorage` keys from the old phone engine: `ghSha_*`, `ghLocalHash_*`, `ghPushFailed_*`, `ghLastSync`. **Keep** `ghToken` — browser cache for re-posting to tablet RAM.
 
 Remove endpoints only used by browser engine: `/api/sync/pending`, `/api/sync/pending/clear` (or keep as no-op stubs one release).
 
@@ -249,7 +253,7 @@ Ship and **device-verify each slice** before the next. Integrity gate applies to
 - [decisions.md](decisions.md) — new #25 or #19 addendum: server-side engine, ephemeral token
 - [integrity-audit.md](integrity-audit.md) — close “phone offline / localStorage / multi-tab” residuals
 - [browser-vs-tablet.md](browser-vs-tablet.md)
-- [lessons.md](lessons.md) — retire “GitHub token per-origin” for engine; note token still per-origin in browser until slice 6 removes localStorage entirely
+- [lessons.md](lessons.md) — deploy Writerdeck: `fetch-keywriter-dist.sh` before `deploy-keywriter.sh`; restart server alone does not reload running Writerdeck GUI
 - [research-github-sync.md](research-github-sync.md) — strikethrough phone-engine paragraph, link here
 
 ---

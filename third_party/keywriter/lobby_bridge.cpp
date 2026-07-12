@@ -62,6 +62,15 @@ void LobbyBridge::syncNow()
     sendReq(QStringLiteral("{\"t\":\"req\",\"op\":\"syncnow\"}"));
 }
 
+void LobbyBridge::setKeyboardLayout(const QString &layout)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("req");
+    o[QStringLiteral("op")] = QStringLiteral("setkeyboardlayout");
+    o[QStringLiteral("name")] = layout;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
 void LobbyBridge::deliverNotesList(const QVariantList &items)
 {
     if (!m_root)

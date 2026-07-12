@@ -28,10 +28,10 @@ Design notes: [docs/improvements.md](docs/improvements.md).
 
 ### USB keyboard locales (Norwegian first)
 
-- [ ] Generate `no.qmap` (and `us.qmap` baseline) via `ckbcomp` + `kmap2qmap`; ship in `keymaps/`, deploy to `/home/root/keymaps/`.
-- [ ] Extend `Writerdeck-launcher.sh` to set `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` from `settings.json` → `keyboardLayout` (default `us`).
-- [ ] Hotplug-safe device path — rescan or match Writerdeck-server’s keyboard discovery; document event-node variance.
-- [ ] Lobby / Preferences: layout picker (browser + optional tablet Keyboard subpage).
+- [x] Generate `no.qmap` (and `us.qmap` baseline) via `ckbcomp` + `kmap2qmap`; ship in `keymaps/`, deploy to `/home/root/keymaps/`.
+- [x] Extend `Writerdeck-launcher.sh` to set `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` from `settings.json` → `keyboardLayout` (default `us`).
+- [x] Hotplug-safe device path — rescan or match Writerdeck-server’s keyboard discovery; document event-node variance.
+- [x] Lobby / Preferences: layout picker (tablet **Keyboard** tab; removed from phone).
 - [ ] Device test: æ ø å Æ Ø Å, AltGr, `@`, `{` `}` on Norwegian USB keyboard.
 
 Ref: [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1) — `loadkeys` / `setxkbmap` do **not** work for Qt apps on rM.

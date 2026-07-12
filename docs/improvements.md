@@ -57,7 +57,7 @@ export QT_QPA_EVDEV_KEYBOARD_PARAMETERS="/dev/input/eventN:grab=1:keymap=/home/r
 - **`grab=1`** dedicates the keyboard to Writerdeck until exit — acceptable here (xochitl is stopped during sessions).
 - **Event node varies** (`event2`, `event3`, …) — may need hotplug match or the same rescan logic Writerdeck-server uses for Escape launch (`findKeyboardInputDevices`).
 - **reMarkable 1** uses standard Qt linuxfb evdev, not rM2 folio’s custom epaper-qpa keymap — qmap path applies to Writerdeck, not stock xochitl.
-- Ship **multiple qmaps** (e.g. `us`, `no`, `de`) and persist choice in `settings.json` → `keyboardLayout` → launcher picks file. Lobby **Keyboard** subpage shows current layout + switch shortcut.
+- Ship **multiple qmaps** (e.g. `us`, `no`, `de`) and persist choice in `settings.json` → `keyboardLayout` → launcher picks file. Lobby **Keyboard** tab is the picker (tablet-only; phone duplicate removed).
 - **Build pipeline:** add `keymaps/` in repo; CI or maintainer script regenerates from `ckbcomp` layouts; deploy beside Qt sysroot (~tens of KB per layout).
 - **AltGr / compose:** qmap includes dead keys for standard layouts; test æøå on device after deploy.
 

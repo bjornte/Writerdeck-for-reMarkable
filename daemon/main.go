@@ -1200,9 +1200,10 @@ var settingsFilePath = "/home/root/.Writerdeck/settings.json"
 
 // settingsData is the on-disk and in-memory settings schema.
 type settingsData struct {
-	ReadFont  string `json:"readFont"`
-	PinDigits string `json:"pinDigits"` // "6", "4", or "none"; default "6"
-	Rotation  int    `json:"rotation"`  // display rotation in degrees (0, 90, 180, 270)
+	ReadFont        string `json:"readFont"`
+	PinDigits       string `json:"pinDigits"`       // "6", "4", or "none"; default "6"
+	Rotation        int    `json:"rotation"`        // display rotation in degrees (0, 90, 180, 270)
+	KeyboardLayout  string `json:"keyboardLayout"`  // USB evdev qmap id: "us", "no"; default "us"
 	SyncOn     bool                       `json:"syncOn"`               // GitHub two-way sync enabled
 	SyncRepo   string                     `json:"syncRepo"`          // "owner/repo" of the notes repo; token never stored here
 	LastSyncAt int64                      `json:"lastSyncAt,omitempty"` // unix seconds of last reconcile
@@ -1245,7 +1246,26 @@ func isValidGitHubRepo(repo string) bool {
 	return valid(parts[0]) && valid(parts[1])
 }
 
-// fontOption is one entry in the reading-view font picker.
+// keyboardLayoutOption is the USB qmap allow-list (tablet Keyboard tab via setkeyboardlayout).
+type keyboardLayoutOption struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+}
+
+var keyboardLayoutRegistry = []keyboardLayoutOption{
+	{ID: "us", Label: "US QWERTY"},
+	{ID: "no", Label: "Norwegian"},
+}
+
+func normalizeKeyboardLayout(id string) string {
+	for _, k := range keyboardLayoutRegistry {
+		if k.ID == id {
+			return id
+		}
+	}
+	return "us"
+}
+
 type fontOption struct {
 	ID    string `json:"id"`    // exact Qt internal family name (must match TTF)
 	Label string `json:"label"` // human-readable label shown in the phone UI
@@ -1287,6 +1307,9 @@ func loadSettings() {
 		}
 		if s.PinDigits == "" {
 			s.PinDigits = "6" // upgrade: existing font-only settings.json had no pin field
+		}
+		if s.KeyboardLayout == "" {
+			s.KeyboardLayout = "us"
 		}
 		curSettings = s
 	}
@@ -1649,6 +1672,13 @@ func handleEditorReq(op, name, oldName string) {
 			return
 		}
 		go func() { _, _ = syncEng.reconcileAll("tablet") }()
+	case "setkeyboardlayout":
+		layout := normalizeKeyboardLayout(name)
+		settingsMu.Lock()
+		curSettings.KeyboardLayout = layout
+		saveSettingsLocked()
+		settingsMu.Unlock()
+		pushLobbyInfo()
 	default:
 		fmt.Fprintf(os.Stderr, "writerdeck-server: unknown editor req op %q\n", op)
 	}
@@ -1709,6 +1739,10 @@ func pushLobbyInfo() {
 	settingsMu.Lock()
 	syncOn := curSettings.SyncOn
 	syncRepo := curSettings.SyncRepo
+	keyboardLayout := curSettings.KeyboardLayout
+	if keyboardLayout == "" {
+		keyboardLayout = "us"
+	}
 	lastSync := formatLastSyncAgo(curSettings.LastSyncAt)
 	if n := len(curSettings.PendingSync); n > 0 {
 		pending := "sync pending"
@@ -1728,16 +1762,17 @@ func pushLobbyInfo() {
 		lastSync = "Token needed — add in phone Setup"
 	}
 	infoMsg, _ := json.Marshal(struct {
-		T         string `json:"t"`
-		IP        string `json:"ip"`
-		PIN       string `json:"pin"`
-		SyncOn    bool   `json:"syncOn"`
-		SyncRepo  string `json:"syncRepo"`
-		NoteCount int    `json:"noteCount"`
-		LastSync  string `json:"lastSync"`
-		SyncReady bool   `json:"syncReady"`
-		Syncing   bool   `json:"syncing"`
-	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing})
+		T              string `json:"t"`
+		IP             string `json:"ip"`
+		PIN            string `json:"pin"`
+		SyncOn         bool   `json:"syncOn"`
+		SyncRepo       string `json:"syncRepo"`
+		NoteCount      int    `json:"noteCount"`
+		LastSync       string `json:"lastSync"`
+		SyncReady      bool   `json:"syncReady"`
+		Syncing        bool   `json:"syncing"`
+		KeyboardLayout string `json:"keyboardLayout"`
+	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, keyboardLayout})
 	if globalEC != nil {
 		globalEC.write(infoMsg)
 	}

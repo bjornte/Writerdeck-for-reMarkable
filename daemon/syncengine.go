@@ -360,8 +360,7 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 
 	open := e.openNote()
 	if open != "" {
-		fmt.Fprintf(os.Stderr, "writerdeck-server: sync skipped — edit lease on %s\n", open)
-		return 0, nil
+		fmt.Fprintf(os.Stderr, "writerdeck-server: sync skipping open note %s\n", open)
 	}
 
 	entries, status, err := e.ghListNotes()

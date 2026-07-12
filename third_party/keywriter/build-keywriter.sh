@@ -354,6 +354,7 @@ new6 = (
     '    property string lobbyLastSync: ""\n'
     '    property bool lobbySyncReady: false\n'
     '    property bool lobbySyncing: false\n'
+    '    property string lobbyKeyboardLayout: "us"\n'
     '    property int lobbyPage: 0\n'
     '    property var lobbyTabLabels: ["Home", "Files", "Keyboard", "Sync", "Settings", "Shortcuts"]\n'
     '    property int lobbyFilesIndex: 0\n'
@@ -371,7 +372,7 @@ s = s.replace(old6, new6, 1)
 #      - Lobby   -> Qt.quit() -> cmd.Wait fires -> s.end() -> xochitl restarts
 old7 = '    function initFile(name) {'
 new7 = (
-    '    function setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing) {\n'
+    '    function setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing, keyboardLayout) {\n'
     '        lobbyIP = ip\n'
     '        lobbyPIN = pin\n'
     '        lobbySyncOn = !!syncOn\n'
@@ -380,6 +381,7 @@ new7 = (
     '        lobbyLastSync = lastSync || ""\n'
     '        lobbySyncReady = !!syncReady\n'
     '        lobbySyncing = !!syncing\n'
+    '        lobbyKeyboardLayout = keyboardLayout || "us"\n'
     '    }\n'
     '\n'
     '    function lobbyGoPage(idx) {\n'

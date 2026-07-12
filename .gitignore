@@ -63,6 +63,7 @@ Thumbs.db
 # result). Only the large backup tarballs are ignored.
 # ──────────────────────────────────────────────────────────────
 /docs/recon/*.tar.gz
+keymaps/.tmp/
 
 # Public release: ship source-only. The keywriter binary + qt5.tar.gz are
 # CI-built (build-keywriter.yml); they are NOT committed in this public mirror.

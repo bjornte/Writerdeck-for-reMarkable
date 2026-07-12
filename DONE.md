@@ -48,9 +48,9 @@ PIN on the tablet, shown on e-ink each boot. Choose 6 digits, 4 digits, or none 
 
 The top bar shows a single connection indicator — **Connected · 85%**, **Connecting…**, or **Tablet offline** — refreshed via `GET /api/status` every 5 s.
 
-Sync warnings appear in a banner when sync is on but the browser has no token. The repo link opens on GitHub when configured.
+Sync warnings appear in a banner when sync is on but the tablet has no token in RAM. The repo link opens on GitHub when configured.
 
-The GitHub token never leaves the browser (`localStorage`). The tablet holds only `syncOn` and `syncRepo`.
+The GitHub token is saved in the phone browser (`localStorage ghToken`) and copied to tablet RAM for the sync engine. The tablet never writes the token to disk — only `syncOn`, `syncRepo`, and `syncMeta`.
 
 ## Editor (e-ink)
 
@@ -64,11 +64,11 @@ Built from source (upstream remarkable-keywriter), deployed as Writerdeck and pa
 
 ## GitHub sync
 
-Optional, off by default. The phone reconciles tablet notes with a private repo — pull what's missing either way, push local-only notes, handle clashes by keeping both copies with clear names. **Safety nets (2026-07-11):** refuses to push a zero-byte file over a previously-synced note; empty-tablet vs non-empty-GitHub clash restores from GitHub without creating `(tablet copy)` duplicates.
+Optional, off by default. **Writerdeck-server** reconciles tablet notes with a private repo — pull what's missing either way, push local-only notes, handle clashes by keeping both copies with clear names. Engine runs on the tablet (phone no longer required for sync). Phone **Setup** saves token + repo; browser remembers the token and re-posts to tablet RAM after service restart. Tablet Lobby **Sync** tab: **Sync now** + **TOKEN NEEDED** warning when RAM is empty. **Safety nets (2026-07-11):** refuses to push a zero-byte file over a previously-synced note; empty-tablet vs non-empty-GitHub clash restores from GitHub without creating `(tablet copy)` duplicates.
 
-**Marker-aware delete** — a note deleted on GitHub (VS Code, web UI, git) propagates to the tablet when the local copy is pristine and carries a stored `sha`. Unpushed local edits resurrect instead of deleting. External renames reconcile as delete-old + pull-new. **Tablet delete/rename** queues `pendingSync` and pairs to GitHub when the phone browser is connected (slice 7); otherwise on next connect/reconcile.
+**Marker-aware delete** — a note deleted on GitHub (VS Code, web UI, git) propagates to the tablet when the local copy is pristine and carries a stored `sha`. Unpushed local edits resurrect instead of deleting. External renames reconcile as delete-old + pull-new. **Tablet delete/rename** pairs to GitHub on the server directly.
 
-Triggers: connect, toggle on, three-minute poll, manual Sync now, **tablet Home or Power** (full reconcile via phone browser). Each successful reconcile POSTs `/api/sync/ack`, which stores `lastSyncAt` in settings and refreshes the Lobby. Skips the note the tablet is editing — `openNote` from `/api/status` (edit lease, slices 1+4).
+Triggers: boot, three-minute poll, token verify, tablet **Sync now**, tablet Home or Power, tablet CRUD, phone CRUD. Each successful reconcile stores `lastSyncAt` in settings and refreshes the Lobby. Skips **only** the note the tablet is editing (`currentNote` / edit lease) — other notes still sync while you write.
 
 ## Document integrity (slices 1–11, 2026-07-11)
 

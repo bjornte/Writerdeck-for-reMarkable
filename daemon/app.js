@@ -965,7 +965,16 @@ import {
               }
               verifyLine.style.color = '#4caf50';
               var when = (s && s.lastSyncAgo) ? s.lastSyncAgo : 'just now';
-              verifyLine.textContent = '\u2713 Connected \u2014 last synced ' + when + '.';
+              return fetch('/api/status', { credentials: 'same-origin' })
+                .then(function(r) { return r.ok ? r.json() : null; })
+                .then(function(st) {
+                  if (st && st.openNote) {
+                    verifyLine.textContent = '\u2713 Token saved \u2014 synced other notes; \u201c' +
+                      st.openNote.replace(/\.md$/, '') + '\u201d skipped while open.';
+                    return;
+                  }
+                  verifyLine.textContent = '\u2713 Connected \u2014 last synced ' + when + '.';
+                });
             });
           });
         }).catch(function() {
