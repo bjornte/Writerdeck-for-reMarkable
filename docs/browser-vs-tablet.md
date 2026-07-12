@@ -2,10 +2,18 @@
 
 What each surface can do today. Contract: [architecture.md](architecture.md). Future work: [improvements.md](improvements.md).
 
-The phone handles auth, clipboard, and GitHub token entry. The tablet Lobby is where day-to-day controls should live over time — see [architecture.md](architecture.md).
+The phone is a keyboard bridge, import/export helper, and GitHub token entry surface. Day-to-day file management and device settings live on the tablet Lobby.
 
-On the phone you can list notes in a scrollable list with size and date; create via New, Upload, or paste; open and edit via Edit into Type mode; enter Type mode automatically when the tablet opens a note (WebSocket `openedit`); read in a safe preview; rename and delete from the read view; download and copy; paste at the cursor in Type mode; set font, PIN length, and rotation in Preferences; configure GitHub sync in Notes sync setup (bar button: Sync setup); see connection status in the top bar; show the PIN on the tablet via a button; exit via Preferences; and launch the Lobby by tapping Edit without selecting a note. Keystrokes go over WebSocket with layout resolved by the phone OS.
+## Phone
 
-On the tablet you can list notes in the Files tab; create via Files New or Ctrl-K; open for edit via Files Edit, Enter, double-tap, or a second tap on the selected row, or Ctrl-K; open for read via Files Read or `v` (preview on e-ink, phone stays out of Type mode); toggle edit and preview with Esc; rename and delete in Files with `r` and `d`; see current font in Settings (phone pushes setfont); see the PIN on the Lobby (display only); rotate with Ctrl-R or Ctrl-arrows and a Settings button; see sync status on the Lobby Sync tab (last sync, Sync now, TOKEN NEEDED, SYNC OFFLINE, or SYNC FAILED) and run Sync now when configured; launch the Lobby from Esc, L+R page buttons, `wd`, or `~/wd`; pick USB keyboard layout in the Keyboard tab; and type from USB via Qt evdev qmap or from Bluetooth the same way as the browser path.
+Connect with the PIN, then use the note list for **Upload** and **Download** only — not for reading or opening notes. **Upload** imports an external `.md`, `.markdown`, or `.txt` as a new note on disk. **Download** saves one note to the phone via `Content-Disposition: attachment`. There is no plaintext preview and no phone-initiated Edit.
 
-Upload, download, copy, paste, and GitHub setup (toggle, repo, token, Save, Sync) stay browser-only for now. The sync engine runs on the tablet; Sync now lives on the Lobby Sync tab. Tablet Files CRUD via trusted socket is shipped — [decisions.md](decisions.md) §24. Longer term, duplicate phone file-manager controls can retire once the tablet path is enough for day-to-day use — see [improvements.md](improvements.md).
+Open a note on the tablet (Files → Edit, Enter, or second tap on a row). The server sends WebSocket `openedit` and the phone enters **Type mode**: keystrokes forward to e-ink with an echo footer. In Type mode, **Paste from phone** (or "Paste from here" on iPad) opens a modal, reads the clipboard, and replays the text at the current tablet cursor through the existing keystroke path — it does not create a note and is not Upload.
+
+Also on the phone: GitHub sync in Notes sync setup (bar: Sync setup); connection status; Show PIN on tablet. Keystroke layout resolves in the phone OS (Norwegian works today).
+
+## Tablet
+
+List notes in the Files tab; create via New or Ctrl-K; open for edit via Edit, Enter, double-tap, or second tap on the selected row; open for read via Read or `v` (preview on e-ink); toggle edit and preview with Esc; rename and delete with `r` and `d`; reading font and PIN length in Settings; rotate with Ctrl-R or Ctrl-arrows; Exit Writerdeck in Settings (confirm with Enter); sync status and Sync now on the Sync tab; USB keyboard layout in the Keyboard tab; type from USB (Qt evdev qmap) or Bluetooth (same WebSocket path as the phone). Launch Lobby: Esc, L+R page buttons, `wd`, `~/wd`.
+
+Upload, download, paste-at-cursor, and GitHub token entry stay browser-only. Sync engine runs on the tablet; Sync now lives on the Lobby Sync tab. Tablet Files CRUD uses the trusted socket — [decisions.md](decisions.md) §24.

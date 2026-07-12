@@ -15,7 +15,7 @@ var echo = document.getElementById('echo');
 var trap = document.getElementById('trap');
 var buf = '';
 var ws;
-// state.typingMode: false=Browse (list/read, no capture), true=Type (capture + echo).
+// state.typingMode: false=Browse (list, no capture), true=Type (capture + echo).
 export function applyMode() {
   document.getElementById('foot').style.display = state.typingMode ? 'block' : 'none';
   document.body.classList.toggle('typing-dark', state.typingMode);
@@ -167,8 +167,6 @@ function overlayUp() {
   if (ps && ps.style.display !== 'none') return true;
   var pm = document.getElementById('paste-modal');
   if (pm && pm.style.display === 'flex') return true;
-  var ss = document.getElementById('settings-screen');
-  if (ss && ss.style.display !== 'none') return true;
   return false;
 }
 

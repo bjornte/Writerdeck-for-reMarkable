@@ -438,6 +438,16 @@ func handleEditorReq(op, name, oldName string) {
 		settingsMu.Unlock()
 		pushLobbyInfo()
 		restartEditorForKeymap("keyboard layout changed")
+	case "setreadfont":
+		if !applyReadFont(name) {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: editor setreadfont: unknown font %q\n", name)
+		}
+	case "setpindigits":
+		if !applyPinDigits(name) {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: editor setpindigits: invalid %q\n", name)
+		}
+	case "shutdown":
+		requestShutdown("tablet Settings")
 	default:
 		fmt.Fprintf(os.Stderr, "writerdeck-server: unknown editor req op %q\n", op)
 	}

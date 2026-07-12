@@ -365,6 +365,8 @@ new6 = (
     '    property string lobbySyncError: ""\n'
     '    property bool lobbyWifi: true\n'
     '    property string lobbyKeyboardLayout: "us"\n'
+    '    property string lobbyPinDigits: "6"\n'
+    '    property string lobbySettingsMode: ""\n'
     '    property int lobbyPage: 0\n'
     '    property var lobbyTabLabels: ["Home", "Files", "Keyboard", "Sync", "Settings", "Shortcuts"]\n'
     '    property int lobbyFilesIndex: 0\n'
@@ -393,7 +395,7 @@ s = s.replace(old6b, new6b, 1)
 #    the Key_Home path only (fromPhysicalCmd=false).
 old7 = '    function initFile(name) {'
 new7 = (
-    '    function setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing, keyboardLayout) {\n'
+    '    function setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing, keyboardLayout, pinDigits) {\n'
     '        lobbyIP = ip\n'
     '        lobbyPIN = pin\n'
     '        lobbySyncOn = !!syncOn\n'
@@ -403,6 +405,7 @@ new7 = (
     '        lobbySyncReady = !!syncReady\n'
     '        lobbySyncing = !!syncing\n'
     '        lobbyKeyboardLayout = keyboardLayout || "us"\n'
+    '        lobbyPinDigits = pinDigits || "6"\n'
     '    }\n'
     '\n'
     '    function setLobbySyncStatus(syncError, wifi) {\n'
@@ -415,6 +418,7 @@ new7 = (
     '        lobbyPage = idx\n'
     '        lobbyFilesMode = ""\n'
     '        lobbyFilesInput = ""\n'
+    '        lobbySettingsMode = ""\n'
     '        if (idx === 1) lobbyRefreshNotes()\n'
     '    }\n'
     '\n'
@@ -478,6 +482,15 @@ new7 = (
     '        lobbyFilesMode = ""\n'
     '    }\n'
     '\n'
+    '    function lobbySettingsBeginExit() {\n'
+    '        lobbySettingsMode = "confirm-exit"\n'
+    '    }\n'
+    '\n'
+    '    function lobbySettingsDoExit() {\n'
+    '        lobbySettingsMode = ""\n'
+    '        writerdeck.exitWriterdeck()\n'
+    '    }\n'
+    '\n'
     '    function lobbyFilesSubmitInput() {\n'
     '        var name = lobbyFilesInput.trim()\n'
     '        if (name === "") { lobbyFilesMode = ""; return }\n'
@@ -502,6 +515,11 @@ new7 = (
     '        if (lobbyFilesMode === "confirm-delete") {\n'
     '            if (event.key === Qt.Key_Escape) { lobbyFilesMode = ""; return true }\n'
     '            if (event.key === Qt.Key_Return) { lobbyFilesDoDelete(); return true }\n'
+    '            return true\n'
+    '        }\n'
+    '        if (lobbySettingsMode === "confirm-exit") {\n'
+    '            if (event.key === Qt.Key_Escape) { lobbySettingsMode = ""; return true }\n'
+    '            if (event.key === Qt.Key_Return) { lobbySettingsDoExit(); return true }\n'
     '            return true\n'
     '        }\n'
     '        if (lobbyFilesMode === "new" || lobbyFilesMode === "rename") {\n'
@@ -1464,8 +1482,8 @@ cursor_state_block = (
 s = s[:last_body_pos] + cursor_state_block + s[last_body_pos:]
 
 # rotateScreen(): rotate the display 90 degrees clockwise. Called by the C++
-# rotate cmd sent by rmkbd on POST /api/rotate (C++ sets root.rotation directly;
-# this function remains for symmetry / manual calls). Increments root.rotation by
+# setrotation cmd: server pushes saved angle on connect or after USB rotation ack.
+# rotate cmd (legacy): bump root.rotation 90 CW if ever sent; phone POST /api/rotate removed.
 # 90 mod 360; the body Rectangle already swaps its width/height at 90/270 degrees.
 old_rotate_fn = '    function initFile(name) {'
 new_rotate_fn = (

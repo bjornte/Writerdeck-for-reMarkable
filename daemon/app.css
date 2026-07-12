@@ -19,18 +19,18 @@ html, body {
 }
 #dot.on  { background: #4caf50; }
 #dot.off { background: #e53935; }
-#sync-btn, #settings-btn {
+#sync-btn {
   background: transparent; color: #aaa; border: none;
   font-size: 13px; cursor: pointer; padding: 4px 8px;
   -webkit-tap-highlight-color: transparent;
   white-space: nowrap;
 }
-#sync-btn:active, #settings-btn:active { color: #fff; }
+#sync-btn:active { color: #fff; }
 #banner-stack {
   position: fixed; top: 40px; left: 0; right: 0; z-index: 90;
 }
 :root { --below-bar: 40px; }
-#notes, #preview, #typing { top: var(--below-bar); }
+#notes, #typing { top: var(--below-bar); }
 /* PIN auth screen — hidden until 401 or explicit showPinScreen() */
 #pin-screen {
   position: fixed; inset: 0; background: #f5f5f0;
@@ -67,7 +67,7 @@ html, body {
   background: #f5f5f0; position: sticky; top: 0; z-index: 1;
 }
 #notes-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; }
-#new-btn, #upload-btn {
+#upload-btn {
   background: #222; color: #eee; border: none; border-radius: 6px;
   padding: 6px 14px; font-size: 14px; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -101,14 +101,13 @@ html, body {
   padding: 12px 16px; font-size: 16px; cursor: pointer;
 }
 .note-row {
-  display: flex; align-items: center; padding: 0 14px; min-height: 52px;
+  display: flex; align-items: center; gap: 8px; padding: 0 14px; min-height: 52px;
   border-bottom: 1px solid #eee;
 }
 .note-name {
-  flex: 1; font-size: 16px; color: #222; padding: 14px 0; cursor: pointer;
-  user-select: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  flex: 1; font-size: 16px; color: #222; padding: 14px 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.note-name:active { opacity: 0.5; }
 .note-btn {
   background: none; border: 1px solid #bbb; border-radius: 5px;
   padding: 5px 10px; font-size: 12px; color: #555; cursor: pointer;
@@ -116,27 +115,6 @@ html, body {
 }
 .note-btn.danger { border-color: #e53935; color: #e53935; }
 #notes-empty { padding: 40px 14px; text-align: center; color: #bbb; font-size: 15px; }
-/* Preview */
-#preview {
-  position: fixed; left: 0; right: 0; bottom: 0;
-  overflow-y: auto; -webkit-overflow-scrolling: touch;
-  background: #f5f5f0; display: none;
-}
-#preview-head {
-  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
-  border-bottom: 1px solid #e0e0e0; background: #f5f5f0;
-  position: sticky; top: 0;
-}
-#preview-back {
-  background: none; border: none; font-size: 14px; color: #4caf50;
-  cursor: pointer; padding: 4px 0;
-}
-#preview-acts { display: flex; gap: 6px; flex-shrink: 0; }
-#preview-title { font-size: 15px; color: #333; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#preview-body {
-  padding: 16px 14px; font-family: 'Courier New', monospace; font-size: 14px;
-  line-height: 1.7; white-space: pre-wrap; word-break: break-word; color: #333; margin: 0;
-}
 /* Typing view: shown while an editor session is active on the tablet */
 #typing {
   position: fixed; left: 0; right: 0; bottom: 110px;
@@ -188,13 +166,13 @@ body.typing-dark #foot { border-top-color: #222; }
 body.typing-dark #typing-note,
 body.typing-dark #echo { color: #ddd; }
 body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
-/* Settings overlay */
-#settings-screen, #sync-screen {
+/* Sync setup overlay */
+#sync-screen {
   position: fixed; inset: 0; background: rgba(0,0,0,0.75);
   display: flex; align-items: center; justify-content: center;
   z-index: 100;
 }
-#settings-box, #sync-box {
+#sync-box {
   background: #222; border-radius: 16px; padding: 28px 24px;
   display: flex; flex-direction: column; align-items: stretch; gap: 14px;
   width: 320px; max-width: 90vw;
@@ -208,8 +186,8 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
   -webkit-tap-highlight-color: transparent;
 }
 .overlay-close:active { color: #fff; }
-#settings-title, #sync-title { color: #ccc; font-size: 15px; text-align: center; margin-bottom: 4px; }
-#settings-list, #sync-list { display: flex; flex-direction: column; gap: 6px; }
+#sync-title { color: #ccc; font-size: 15px; text-align: center; margin-bottom: 4px; }
+#sync-list { display: flex; flex-direction: column; gap: 6px; }
 .font-row {
   background: #333; border-radius: 8px; padding: 12px 14px;
   display: flex; justify-content: space-between; align-items: center;
@@ -219,15 +197,11 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
 .font-row:active { background: #444; }
 .font-row.active { background: #1b4c20; color: #fff; }
 .font-row .font-check { color: #4caf50; font-size: 16px; }
-#settings-done, #sync-done {
+#sync-done {
   background: #4caf50; color: #fff; border: none; border-radius: 8px;
   padding: 12px 0; font-size: 16px; cursor: pointer; margin-top: 4px;
   -webkit-tap-highlight-color: transparent;
 }
-/* Settings section sub-heading */
-.settings-section { color: #888; font-size: 12px; margin-top: 10px; padding: 0 2px; letter-spacing: 0.5px; text-transform: uppercase; }
-/* Warning label inside a PIN row */
-.row-warn { font-size: 11px; color: #e57373; margin-top: 4px; }
 /* GitHub sync banners and token input */
 #sync-banner, #clash-banner, #drift-banner {
   padding: 10px 14px; font-size: 13px; line-height: 1.5;

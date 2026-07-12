@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 )
 
 // --- Settings API ---
@@ -85,6 +84,67 @@ func normalizeKeyboardLayout(id string) string {
 		}
 	}
 	return "us"
+}
+
+func isValidReadFont(font string) bool {
+	for _, f := range fontRegistry {
+		if f.ID == font {
+			return true
+		}
+	}
+	return false
+}
+
+// applyReadFont persists the reading font and pushes setfont to a live editor.
+func applyReadFont(font string) bool {
+	if !isValidReadFont(font) {
+		return false
+	}
+	settingsMu.Lock()
+	curSettings.ReadFont = font
+	saveSettingsLocked()
+	settingsMu.Unlock()
+	if globalEC != nil {
+		cmd, _ := json.Marshal(struct {
+			T      string `json:"t"`
+			C      string `json:"c"`
+			Family string `json:"family"`
+		}{"cmd", "setfont", font})
+		globalEC.write(cmd)
+	}
+	return true
+}
+
+// applyPinDigits regenerates the LAN PIN and persists the length mode.
+func applyPinDigits(pinDigits string) bool {
+	pinLen := 0
+	switch pinDigits {
+	case "6":
+		pinLen = 6
+	case "4":
+		pinLen = 4
+	case "none":
+		pinLen = 0
+	default:
+		return false
+	}
+	newPIN := generatePIN(pinLen)
+	newToken := generateToken()
+	authMu.Lock()
+	authPIN = newPIN
+	authToken = newToken
+	pinRequired = pinLen > 0
+	authMu.Unlock()
+	pinMu.Lock()
+	pinAttempts = map[string]*pinAttempt{}
+	pinMu.Unlock()
+	settingsMu.Lock()
+	curSettings.PinDigits = pinDigits
+	saveSettingsLocked()
+	settingsMu.Unlock()
+	pushLobbyInfo()
+	pushNotesList()
+	return true
 }
 
 type fontOption struct {
@@ -166,102 +226,23 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		settingsMu.Lock()
 		resp := struct {
-			ReadFont  string       `json:"readFont"`
-			Fonts     []fontOption `json:"fonts"`
-			PinDigits string       `json:"pinDigits"`
-			PinOpts   []string     `json:"pinOpts"`
-			SyncOn    bool         `json:"syncOn"`
-			SyncRepo  string       `json:"syncRepo"`
-		}{curSettings.ReadFont, fontRegistry, curSettings.PinDigits, []string{"6", "4", "none"},
+			ReadFont  string `json:"readFont"`
+			PinDigits string `json:"pinDigits"`
+			SyncOn    bool   `json:"syncOn"`
+			SyncRepo  string `json:"syncRepo"`
+		}{curSettings.ReadFont, curSettings.PinDigits,
 			curSettings.SyncOn, curSettings.SyncRepo}
 		settingsMu.Unlock()
 		json.NewEncoder(w).Encode(resp) //nolint:errcheck
 
 	case http.MethodPost:
 		var req struct {
-			ReadFont  string  `json:"readFont"`
-			PinDigits string  `json:"pinDigits"`
-			SyncOn    *bool   `json:"syncOn"`
-			SyncRepo  *string `json:"syncRepo"`
+			SyncOn   *bool   `json:"syncOn"`
+			SyncRepo *string `json:"syncRepo"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "bad request", http.StatusBadRequest)
 			return
-		}
-		if req.ReadFont != "" {
-			// Validate against registry -- prevents arbitrary family injection.
-			valid := false
-			for _, f := range fontRegistry {
-				if f.ID == req.ReadFont {
-					valid = true
-					break
-				}
-			}
-			if !valid {
-				http.Error(w, "unknown font", http.StatusBadRequest)
-				return
-			}
-			settingsMu.Lock()
-			curSettings.ReadFont = req.ReadFont
-			saveSettingsLocked()
-			font := curSettings.ReadFont
-			settingsMu.Unlock()
-			// Push to editor if a connection is alive.
-			if globalEC != nil {
-				cmd, _ := json.Marshal(struct {
-					T      string `json:"t"`
-					C      string `json:"c"`
-					Family string `json:"family"`
-				}{"cmd", "setfont", font})
-				globalEC.write(cmd)
-			}
-		}
-		if req.PinDigits != "" {
-			// Validate the enum; 400 on an unknown value.
-			pinLen := 0
-			switch req.PinDigits {
-			case "6":
-				pinLen = 6
-			case "4":
-				pinLen = 4
-			case "none":
-				pinLen = 0
-			default:
-				http.Error(w, `pinDigits must be "6", "4", or "none"`, http.StatusBadRequest)
-				return
-			}
-			newPIN := generatePIN(pinLen)
-			newToken := generateToken()
-			authMu.Lock()
-			authPIN = newPIN
-			authToken = newToken
-			pinRequired = pinLen > 0
-			authMu.Unlock()
-			// Clear stale lockouts so the fresh PIN starts clean.
-			pinMu.Lock()
-			pinAttempts = map[string]*pinAttempt{}
-			pinMu.Unlock()
-			// Persist.
-			settingsMu.Lock()
-			curSettings.PinDigits = req.PinDigits
-			saveSettingsLocked()
-			settingsMu.Unlock()
-			// Push new Lobby info to editor so the tablet shows the updated PIN at once.
-			// (No-PIN mode sends pin="" so the QML conditional renders the friendly line.)
-			pushLobbyInfo()
-			pushNotesList()
-			// Issue a fresh cookie so the changer stays authed after the change.
-			// Without this, switching from no-PIN to 6-digit would instantly 401 the changer.
-			exp := nextMorningCutoff(time.Now())
-			http.SetCookie(w, &http.Cookie{
-				Name:     "writerdeck_token",
-				Value:    newToken,
-				Path:     "/",
-				HttpOnly: true,
-				SameSite: http.SameSiteStrictMode,
-				Expires:  exp,
-				MaxAge:   int(time.Until(exp).Seconds()),
-			})
 		}
 		if req.SyncRepo != nil {
 			repo := *req.SyncRepo

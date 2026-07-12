@@ -12,7 +12,7 @@ Three separate ways a change can look like it did nothing: the CI keywriter bina
 
 scp deadlocks at a fixed offset on the Mac-to-Wi-Fi-to-tablet link. Use `rm_send_file` (gzip-over-ssh) in `_env.sh`. On ETXTBSY, kill by full path, stream to `.new`, then `mv`.
 
-Browser rotate needs both binaries current — the server saves rotation in settings; Writerdeck must handle `setrotation` and relay `rotationChanged`. The rotation watcher is a separate moc'd unit because `Q_OBJECT` in patched `main.cpp` will not link on the ARM Qt build.
+Browser rotate needed both binaries current when `POST /api/rotate` existed on the phone; that path is removed. The server still saves rotation in settings and pushes `setrotation` on connect; Writerdeck must handle it. USB Ctrl+arrow relays `rotationChanged` via `rotation_watcher`.
 
 ## systemd and device
 
@@ -80,7 +80,7 @@ Capture must stand down when the PIN screen, paste modal, or settings/sync overl
 
 Clipboard API needs HTTPS; on plain LAN http, Copy falls back to execCommand.
 
-Lobby last-sync needs the phone to POST sync ack after reconcile. Load sync flags at page init, not when Preferences opens. Async functions must return their promises.
+Lobby last-sync needs the phone to POST sync ack after reconcile. Load sync flags at page init, not when Sync setup opens. Async functions must return their promises.
 
 GitHub token is per browser origin (`localStorage ghToken`). A new tablet IP is a new origin — enter the token once in Notes sync setup, then it persists in that browser. After a service restart, tablet RAM is empty until the browser reposts (WebSocket `needtoken` or `refreshSyncStatus` on reconnect). Verify in journal: `sync reconcile (token)` after `client connected` — see [server-sync-implementation.md](server-sync-implementation.md).
 

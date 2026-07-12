@@ -8,7 +8,7 @@ Why the project is built this way. How it works: [architecture.md](architecture.
 
 Writerdeck is a typewriter. The owner's prose must survive editing, sync, and normal device use as plain Markdown on disk. That contract gates every feature — not a polish item for later. Full audit: [integrity-audit.md](integrity-audit.md).
 
-Files on disk are UTF-8 Markdown, never Qt HTML or rich text. While a note is open on the tablet, reconcile, phone CRUD, and rename/delete must not silently overwrite it. Saves go through defined paths, with 45-second autosave and save-before-stop on deploy and SIGTERM; a SIGKILL or crash before the next autosave or flush can still lose recent typing. If disk changes under an open session, the user must reload or get conflict UX — the buffer must not blindly win. GitHub sync assists backup; it must not delete, empty-push, or fork paths against a live edit.
+Files on disk are UTF-8 Markdown, never Qt HTML or rich text. While a note is open on the tablet, reconcile and tablet-side rename/delete must not silently overwrite it. Saves go through defined paths, with 45-second autosave and save-before-stop on deploy and SIGTERM; a SIGKILL or crash before the next autosave or flush can still lose recent typing. If disk changes under an open session, the user must reload or get conflict UX — the buffer must not blindly win. GitHub sync assists backup; it must not delete, empty-push, or fork paths against a live edit.
 
 No change to `daemon/`, the sync engine, `build-keywriter.sh`, or note APIs ships without an integrity pass against those rules.
 
@@ -18,7 +18,7 @@ A green deploy script is not a pass. After any change to `daemon/`, `build-keywr
 
 ## Move features to reMarkable lobby UI
 
-Over time, move controls from the phone to the tablet Lobby and remove duplicates once the tablet path is verified
+Shipped July 2026. Phone file-manager dedup: create, read preview, Edit, rename, and delete removed from the browser; tablet Files tab owns day-to-day file ops. Phone keeps upload, download, paste-at-cursor (Type mode), and sync token entry — [browser-vs-tablet.md](browser-vs-tablet.md). Preferences dedup (July 2026): reading font, PIN length, and Exit Writerdeck moved to the Lobby Settings tab; phone Preferences removed.
 
 ---
 
@@ -66,9 +66,9 @@ Physical page buttons (`KEY_LEFT` / `KEY_RIGHT` on `/dev/input/event1`) are read
 
 The tablet is the web server; there is no phone app. Writerdeck-server does all file operations on `Writerdeck-user-documents/` natively. Writerdeck changes are a Lobby overlay and opening a note via `saveAndLoad(name)`. A random PIN is minted per boot and shown on e-ink; you must hold the device to read it. Two-level Home — edit to Lobby, Lobby to quit — means you can write again without rebooting.
 
-## 9. Share is Download plus Copy
+## 9. Share is Download
 
-The native iOS share sheet needs HTTPS, which we do not have on plain LAN http. Download with `Content-Disposition: attachment` and copy-to-clipboard are the reliable paths. `navigator.clipboard` also needs a secure context, so Copy falls back to a temporary textarea and `document.execCommand('copy')` on plain http.
+The native iOS share sheet needs HTTPS, which we do not have on plain LAN http. **Download** with `Content-Disposition: attachment` is the reliable export path on the phone (per-row button on the note list). A read-view **Copy** button existed earlier; it left with phone preview dedup. Paste-at-cursor in Type mode is insert-while-editing, not export — see [browser-vs-tablet.md](browser-vs-tablet.md).
 
 ## 10. Two-machine dev split (retired)
 
@@ -104,15 +104,15 @@ A second device that arrives mid-edit sees the note, not the PIN. `POST /api/lob
 
 ## 19. GitHub sync is a non-authoritative reconciler
 
-The engine runs on Writerdeck-server. The token lives in browser `localStorage` and tablet RAM via `POST /api/sync/token`; it is never written to disk. After a restart clears tablet RAM, the server sends WebSocket `needtoken` to connected browsers so a saved token can be reposted automatically; the browser may also push on reconnect via `refreshSyncStatus()`. Reconcile unions tablet and repo note lists and copies anything missing from either side — it never deletes on its own. Destructive ops from the browser pair to GitHub. External deletes on GitHub propagate when the local copy is pristine and carries a stored `sha`, confirmed with a per-note 404 before acting; unpushed local edits resurrect instead of deleting. Empty-push guard refuses to push a zero-byte file over a previously-synced note. Details: [server-sync-implementation.md](server-sync-implementation.md).
+The engine runs on Writerdeck-server. The token lives in browser `localStorage` and tablet RAM via `POST /api/sync/token`; it is never written to disk. After a restart clears tablet RAM, the server sends WebSocket `needtoken` to connected browsers so a saved token can be reposted automatically; the browser may also push on reconnect via `refreshSyncStatus()`. Reconcile unions tablet and repo note lists and copies anything missing from either side — it never deletes on its own. Tablet Files CRUD pairs to GitHub via the trusted socket. External deletes on GitHub propagate when the local copy is pristine and carries a stored `sha`, confirmed with a per-note 404 before acting; unpushed local edits resurrect instead of deleting. Empty-push guard refuses to push a zero-byte file over a previously-synced note. Details: [server-sync-implementation.md](server-sync-implementation.md).
 
 ## 20. Display rotation persists in settings
 
-Global rotation (0, 90, 180, 270) is stored in `.Writerdeck/settings.json`. Phone rotate POSTs to the server, which pushes `setrotation` on connect. USB Ctrl+arrow in preview relays `rotationChanged` back via `rotation_watcher`. Both binaries must be current — server-only deploy can save to disk while an old Writerdeck ignores `setrotation`.
+Global rotation (0, 90, 180, 270) is stored in `.Writerdeck/settings.json`. On editor connect the server pushes `setrotation` from saved settings. On the tablet, Ctrl-R, Ctrl-arrows, and the Lobby Settings button call `rotateScreen()`; USB rotation relays `rotationChanged` back via `rotation_watcher`. Phone Preferences no longer expose rotate — tablet only.
 
 ## 21. Edit-session regression test
 
-Phone Edit (`POST /api/open`) is the primary companion launch path. If Writerdeck exits immediately, the session ends, xochitl restarts, and it looks like the stock UI reloading — almost always a broken QML patch, not the server. `scripts/test-edit-session.sh` POSTs `/api/open` from stock UI and asserts Writerdeck stays up about eight seconds. Run it after Writerdeck or QML deploy (`rmkw`); not after server-only deploy — restart the server and spot-check the API instead. `build-keywriter.sh` asserts brace balance in `handleKey()` before write.
+`POST /api/open` launches a note from outside the tablet UI (tests and scripts). If Writerdeck exits immediately, the session ends, xochitl restarts, and it looks like the stock UI reloading — almost always a broken QML patch, not the server. `scripts/test-edit-session.sh` POSTs `/api/open` from stock UI and asserts Writerdeck stays up about eight seconds. Run it after Writerdeck or QML deploy (`rmkw`); not after server-only deploy — restart the server and spot-check the API instead. `build-keywriter.sh` asserts brace balance in `handleKey()` before write.
 
 ## 22. Keyboard selection harness
 
@@ -140,7 +140,7 @@ RichText in edit mode was tried upstream and in early patches; reading formatted
 
 ## 27. Lobby Files: Edit and Read
 
-The Files tab offers Edit and Read instead of a single Open. Edit runs `saveAndLoad()` — type mode, same as phone Edit, and the server broadcasts `openedit`. Read runs `doLoad()` in preview (`mode=0`) without `openedit`, so the phone stays in the note list. USB: Enter edits, `v` reads. Touch: double-tap or a second tap on the already-selected row opens Edit.
+The Files tab offers Edit and Read instead of a single Open. Edit runs `saveAndLoad()` — type mode; the server broadcasts `openedit` and the phone enters Type mode. Read runs `doLoad()` in preview (`mode=0`) without `openedit`. USB: Enter edits, `v` reads. Touch: double-tap or a second tap on the already-selected row opens Edit.
 
 ## 28. Physical Home duplicate delivery (interim)
 

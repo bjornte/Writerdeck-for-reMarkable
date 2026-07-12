@@ -470,19 +470,5 @@ func startSyncBackground() {
 	}()
 }
 
-// mirrorPhoneDelete pairs a browser-initiated delete with GitHub.
-func mirrorPhoneDelete(name string) { syncEng.trySyncAfterCrud("deletenote", name, "") }
-
-// mirrorPhoneRename pairs a browser-initiated rename with GitHub.
-func mirrorPhoneRename(oldName, newName string) {
-	if !syncEng.ready() {
-		return
-	}
-	go func() {
-		_ = syncEng.ghDeleteNote(oldName)
-		_ = syncEng.pushNote(newName)
-	}()
-}
-
-// mirrorPhoneCreate pushes a newly created note to GitHub.
+// mirrorPhoneCreate pushes a newly uploaded note to GitHub.
 func mirrorPhoneCreate(name string) { syncEng.tryPushNote(name) }

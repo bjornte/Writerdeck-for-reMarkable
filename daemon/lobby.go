@@ -67,6 +67,7 @@ func pushLobbyInfo() {
 	settingsMu.Lock()
 	syncOn := curSettings.SyncOn
 	syncRepo := curSettings.SyncRepo
+	pinDigits := curSettings.PinDigits
 	keyboardLayout := curSettings.KeyboardLayout
 	if keyboardLayout == "" {
 		keyboardLayout = "us"
@@ -107,7 +108,8 @@ func pushLobbyInfo() {
 		SyncError      string `json:"syncError"`
 		Wifi           bool   `json:"wifi"`
 		KeyboardLayout string `json:"keyboardLayout"`
-	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, syncErr, wifi, keyboardLayout})
+		PinDigits      string `json:"pinDigits"`
+	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, syncErr, wifi, keyboardLayout, pinDigits})
 	if globalEC != nil {
 		globalEC.write(infoMsg)
 	}

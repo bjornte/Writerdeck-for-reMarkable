@@ -236,7 +236,7 @@
 +                g_rootObj->setProperty("rotation", (r + 90) % 360);
 +            }, Qt::QueuedConnection);
 +    } else if (line.find("\"t\":\"info\"") != std::string::npos) {
-+        // {"t":"info","ip":"...","pin":"...","syncOn":...,"syncRepo":"...","noteCount":N,"lastSync":"...","keyboardLayout":"us|no"}
++        // {"t":"info","ip":"...","pin":"...","syncOn":...,"syncRepo":"...","noteCount":N,"lastSync":"...","keyboardLayout":"us|no","pinDigits":"6|4|none"}
 +        // -> setLobbyInfo(...) + setLobbySyncStatus(syncError, wifi) in QML.
 +        auto ip_p = line.find("\"ip\":\"");
 +        auto pin_p = line.find("\"pin\":\"");
@@ -288,6 +288,14 @@
 +                    if (kl_q != std::string::npos)
 +                        keyboardLayout = line.substr(kl_p, kl_q - kl_p);
 +                }
++                std::string pinDigits = "6";
++                auto pd_p = line.find("\"pinDigits\":\"");
++                if (pd_p != std::string::npos) {
++                    pd_p += 13;
++                    auto pd_q = line.find('"', pd_p);
++                    if (pd_q != std::string::npos)
++                        pinDigits = line.substr(pd_p, pd_q - pd_p);
++                }
 +                QMetaObject::invokeMethod(g_rootObj, "setLobbyInfo",
 +                    Qt::QueuedConnection,
 +                    Q_ARG(QVariant, QString::fromStdString(ip)),
@@ -298,7 +306,8 @@
 +                    Q_ARG(QVariant, QString::fromStdString(lastSync)),
 +                    Q_ARG(QVariant, syncReady),
 +                    Q_ARG(QVariant, syncing),
-+                    Q_ARG(QVariant, QString::fromStdString(keyboardLayout)));
++                    Q_ARG(QVariant, QString::fromStdString(keyboardLayout)),
++                    Q_ARG(QVariant, QString::fromStdString(pinDigits)));
 +                QMetaObject::invokeMethod(g_rootObj, "setLobbySyncStatus",
 +                    Qt::QueuedConnection,
 +                    Q_ARG(QVariant, QString::fromStdString(syncError)),

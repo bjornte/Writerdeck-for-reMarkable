@@ -12,44 +12,177 @@
                                 width: parent.width
                                 spacing: lobby.contentSpacing
                                 Text {
-                                    text: "Settings"
+                                    text: lobbySettingsMode === "confirm-exit"
+                                          ? "Stop Writerdeck? Enter=yes  Esc=no"
+                                          : "Settings"
                                     font.pointSize: 14
                                     font.family: "Noto Sans"
                                     color: "black"
                                     width: parent.width
                                 }
-                                Text {
-                                    text: "Reading font: " + readFont + "\n(change on phone Preferences)"
-                                    font.pointSize: 11
-                                    font.family: "Noto Sans"
-                                    color: "#555555"
+
+                                Column {
                                     width: parent.width
-                                    wrapMode: Text.WordWrap
-                                }
-                                Text {
-                                    text: "Display rotation: " + root.rotation + " degrees\nCtrl-R or Ctrl+arrows to rotate."
-                                    font.pointSize: 11
-                                    font.family: "Noto Sans"
-                                    color: "#555555"
-                                    width: parent.width
-                                    wrapMode: Text.WordWrap
-                                }
-                                Rectangle {
-                                    width: parent.width
-                                    height: lobby.actionBtnHeight
-                                    radius: 6
-                                    color: "#f0f0f0"
-                                    border.color: "#bbb"
-                                    border.width: 1
+                                    spacing: lobby.contentSpacing
+                                    visible: lobbySettingsMode === ""
+
                                     Text {
-                                        anchors.centerIn: parent
-                                        text: "Rotate 90"
-                                        font.family: "Noto Sans"
+                                        text: "Reading font"
                                         font.pointSize: 12
+                                        font.family: "Noto Sans"
+                                        color: "black"
+                                        width: parent.width
                                     }
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        onClicked: root.rotateScreen()
+                                    Grid {
+                                        id: fontGrid
+                                        width: parent.width
+                                        columns: 2
+                                        rowSpacing: lobby.tabSpacing
+                                        columnSpacing: lobby.tabSpacing
+                                        property var fontOptions: [
+                                            { id: "Inter", label: "Inter" },
+                                            { id: "Literata", label: "Literata" },
+                                            { id: "EB Garamond", label: "EB Garamond" },
+                                            { id: "DejaVu Sans", label: "DejaVu Sans" }
+                                        ]
+                                        Repeater {
+                                            model: fontGrid.fontOptions
+                                            delegate: Rectangle {
+                                                width: (fontGrid.width - lobby.tabSpacing) / 2
+                                                height: lobby.actionBtnHeight
+                                                radius: 6
+                                                property bool selected: readFont === modelData.id
+                                                color: selected ? "#e8e8e8" : "#f0f0f0"
+                                                border.color: selected ? "black" : "#bbb"
+                                                border.width: selected ? 2 : 1
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: modelData.label
+                                                    font.family: "Noto Sans"
+                                                    font.pointSize: 11
+                                                }
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    onClicked: writerdeck.setReadFont(modelData.id)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        text: "PIN length"
+                                        font.pointSize: 12
+                                        font.family: "Noto Sans"
+                                        color: "black"
+                                        width: parent.width
+                                    }
+                                    Column {
+                                        width: parent.width
+                                        spacing: lobby.tabSpacing
+                                        Repeater {
+                                            model: [
+                                                { id: "6", label: "6 digits" },
+                                                { id: "4", label: "4 digits" },
+                                                { id: "none", label: "No PIN", warn: "Anyone on Wi-Fi can read and edit notes" }
+                                            ]
+                                            delegate: Rectangle {
+                                                width: parent.width
+                                                height: modelData.warn ? lobby.actionBtnHeight + 28 : lobby.actionBtnHeight
+                                                radius: 6
+                                                property bool selected: lobbyPinDigits === modelData.id
+                                                color: selected ? "#e8e8e8" : "#f0f0f0"
+                                                border.color: selected ? "black" : "#bbb"
+                                                border.width: selected ? 2 : 1
+                                                Column {
+                                                    anchors.centerIn: parent
+                                                    width: parent.width - 16
+                                                    spacing: 2
+                                                    Text {
+                                                        anchors.horizontalCenter: parent.horizontalCenter
+                                                        text: modelData.label
+                                                        font.family: "Noto Sans"
+                                                        font.pointSize: 11
+                                                        color: "black"
+                                                    }
+                                                    Text {
+                                                        visible: !!modelData.warn
+                                                        anchors.horizontalCenter: parent.horizontalCenter
+                                                        text: modelData.warn
+                                                        font.family: "Noto Sans"
+                                                        font.pointSize: 9
+                                                        color: "#666666"
+                                                        horizontalAlignment: Text.AlignHCenter
+                                                        wrapMode: Text.WordWrap
+                                                        width: parent.width
+                                                    }
+                                                }
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    onClicked: writerdeck.setPinDigits(modelData.id)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        text: "Display rotation: " + root.rotation + " degrees\nCtrl-R or Ctrl+arrows to rotate."
+                                        font.pointSize: 11
+                                        font.family: "Noto Sans"
+                                        color: "#555555"
+                                        width: parent.width
+                                        wrapMode: Text.WordWrap
+                                    }
+                                    Rectangle {
+                                        width: parent.width
+                                        height: lobby.actionBtnHeight
+                                        radius: 6
+                                        color: "#f0f0f0"
+                                        border.color: "#bbb"
+                                        border.width: 1
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "Rotate 90"
+                                            font.family: "Noto Sans"
+                                            font.pointSize: 12
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: root.rotateScreen()
+                                        }
+                                    }
+
+                                    Text {
+                                        text: "Service"
+                                        font.pointSize: 12
+                                        font.family: "Noto Sans"
+                                        color: "black"
+                                        width: parent.width
+                                    }
+                                    Text {
+                                        text: "Stop Writerdeck and return the tablet to the stock reMarkable UI. Reconnect later via SSH or reboot."
+                                        font.pointSize: 10
+                                        font.family: "Noto Sans"
+                                        color: "#666666"
+                                        width: parent.width
+                                        wrapMode: Text.WordWrap
+                                    }
+                                    Rectangle {
+                                        width: parent.width
+                                        height: lobby.actionBtnHeight
+                                        radius: 6
+                                        color: "#f0f0f0"
+                                        border.color: "#bbb"
+                                        border.width: 1
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: "Exit Writerdeck"
+                                            font.family: "Noto Sans"
+                                            font.pointSize: 12
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: root.lobbySettingsBeginExit()
+                                        }
                                     }
                                 }
                             }

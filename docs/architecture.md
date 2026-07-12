@@ -51,17 +51,15 @@ The client is embedded HTML and JavaScript inside the server binary — no separ
 
 ## The companion appliance
 
-The tablet is the web server. Open Safari on the phone; no app to install.
-
-Over time, move controls from the phone to the tablet Lobby and remove duplicates once the tablet path is verified. USB keyboard layout already lives on the tablet only (Keyboard tab). Split today: [browser-vs-tablet.md](browser-vs-tablet.md).
+The tablet is the web server. Open Safari on the phone; no app to install. Phone file-manager and preferences dedup is done — upload, download, paste-at-cursor in Type mode, and sync token entry stay on the phone. USB keyboard layout and device settings (font, PIN, rotation, exit) live on the tablet Lobby. Split: [browser-vs-tablet.md](browser-vs-tablet.md).
 
 Writerdeck-server keeps `:8000` up even under stock xochitl. It summons Writerdeck on demand: stop xochitl, spawn Writerdeck, and on Home from the Lobby restart xochitl while the server keeps serving. Boot auto-launches one editor session. Notes live in `Writerdeck-user-documents/`; the Go API rejects unsafe paths via `notesSafe()`.
 
 A random PIN is minted per boot and shown in the Lobby. The phone POSTs it for an HttpOnly session cookie that gates the notes API and WebSocket. Length is owner-choosable: 6, 4, or none. Per-IP lockout backs the PIN modes.
 
-Preferences on the phone cover font, PIN, rotation, and exit. Notes sync setup (bar: Sync setup) covers GitHub sync — toggle, repo, token, Save, and Sync. The Lobby is a six-tab pager — Home, Files, Keyboard, Sync, Settings, Shortcuts — fed by socket info messages with IP, PIN, sync state, note count, and last sync. Files CRUD goes through a trusted socket, not unauthenticated LAN HTTP; Edit and Read are separate (Read keeps the phone out of Type mode). Launch from stock UI: USB Escape, left and right page buttons together, Mac `wd`, tablet `~/wd`.
+Notes sync setup on the phone (bar: Sync setup) covers GitHub sync — toggle, repo, token, Save, and Sync. The Lobby is a six-tab pager — Home, Files, Keyboard, Sync, Settings, Shortcuts — fed by socket info messages with IP, PIN, sync state, note count, and last sync. Settings on the tablet covers reading font, PIN length, display rotation, and Exit Writerdeck. Files CRUD goes through a trusted socket, not unauthenticated LAN HTTP. Launch from stock UI: USB Escape, left and right page buttons together, Mac `wd`, tablet `~/wd`.
 
-Browse mode on the phone is the file manager — no key capture. Type mode forwards keystrokes. Edit opens the note on e-ink. When the tablet opens a note, the server broadcasts `openedit` and the phone mirrors into Type mode (`followTabletOpen` in `notes-ui.js`) unless an overlay has focus. Home on the tablet broadcasts `exitedit` so the phone drops back to the list.
+Browse mode on the phone shows a note list for upload and download only — no key capture, no preview, no phone-initiated Edit. Type mode forwards keystrokes when the tablet opens a note; **Paste from phone** replays clipboard text at the cursor (modal in `notes-ui.js`, not upload). The server broadcasts `openedit` and the phone mirrors into Type mode (`followTabletOpen`) unless an overlay has focus. Home on the tablet broadcasts `exitedit` so the phone drops back to the list.
 
 GitHub sync is optional and off by default. The server is the engine; the token stays in RAM (browser `localStorage` + tablet RAM, never disk). After a service restart the server asks connected browsers for the token via WebSocket `needtoken`; see [server-sync-implementation.md](server-sync-implementation.md).
 

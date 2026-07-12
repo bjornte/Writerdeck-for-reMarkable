@@ -71,6 +71,29 @@ void LobbyBridge::setKeyboardLayout(const QString &layout)
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
 }
 
+void LobbyBridge::setReadFont(const QString &font)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("req");
+    o[QStringLiteral("op")] = QStringLiteral("setreadfont");
+    o[QStringLiteral("name")] = font;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
+void LobbyBridge::setPinDigits(const QString &digits)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("req");
+    o[QStringLiteral("op")] = QStringLiteral("setpindigits");
+    o[QStringLiteral("name")] = digits;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
+void LobbyBridge::exitWriterdeck()
+{
+    sendReq(QStringLiteral("{\"t\":\"req\",\"op\":\"shutdown\"}"));
+}
+
 void LobbyBridge::publishState(int cursor, int selStart, int selEnd, int textLen, int mode, int isLobby)
 {
     QJsonObject o;

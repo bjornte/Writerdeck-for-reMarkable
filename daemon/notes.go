@@ -183,12 +183,12 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// notesItemHandler serves GET /api/notes/{name} (read),
-// DELETE /api/notes/{name} (delete), and PATCH /api/notes/{name} (rename).
+// notesItemHandler serves GET /api/notes/{name} (read or download) and
+// PUT /api/notes/{name} (content upsert for sync and tablet loopback).
 func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, DELETE, PATCH, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, If-Match")
 		return
 	}
@@ -223,19 +223,6 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("ETag", noteETag(data))
 		w.Write(data) //nolint:errcheck
-
-	case http.MethodDelete:
-		base := filepath.Base(p)
-		if err := deleteNoteFile(base); err != nil {
-			if os.IsNotExist(err) {
-				http.NotFound(w, r)
-				return
-			}
-			http.Error(w, "delete failed", http.StatusInternalServerError)
-			return
-		}
-		mirrorPhoneDelete(base)
-		w.WriteHeader(http.StatusNoContent)
 
 	case http.MethodPut:
 		// Upsert: write or overwrite content. Used by the sync engine to apply a
@@ -277,30 +264,6 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			maybeBroadcastDiskChanged(filepath.Base(p))
 		}
 		w.Header().Set("ETag", noteETag([]byte(putReq.Content)))
-		w.WriteHeader(http.StatusOK)
-
-	case http.MethodPatch:
-		// Rename: body {"name":"new-name.md"}
-		var req struct {
-			Name string `json:"name"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
-			http.Error(w, "bad request: need {name}", http.StatusBadRequest)
-			return
-		}
-		if err := renameNoteFile(filepath.Base(p), req.Name); err != nil {
-			if strings.Contains(err.Error(), "already taken") {
-				http.Error(w, "name already taken", http.StatusConflict)
-				return
-			}
-			if strings.Contains(err.Error(), "invalid") {
-				http.Error(w, "invalid name", http.StatusBadRequest)
-				return
-			}
-			http.Error(w, "rename failed", http.StatusInternalServerError)
-			return
-		}
-		mirrorPhoneRename(filepath.Base(p), req.Name)
 		w.WriteHeader(http.StatusOK)
 
 	default:

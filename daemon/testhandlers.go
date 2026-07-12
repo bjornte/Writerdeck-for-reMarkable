@@ -77,3 +77,34 @@ func testEditorStateHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(st) //nolint:errcheck
 }
+
+// testTabletReqHandler exercises trusted tablet socket ops (setreadfont, setpindigits).
+func testTabletReqHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		return
+	}
+	if !checkAuth(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Op   string `json:"op"`
+		Name string `json:"name"`
+	}
+	if json.NewDecoder(r.Body).Decode(&req) != nil || req.Op == "" {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	switch req.Op {
+	case "setreadfont", "setpindigits", "setkeyboardlayout":
+		handleEditorReq(req.Op, req.Name, "")
+	default:
+		http.Error(w, "unsupported op", http.StatusBadRequest)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}

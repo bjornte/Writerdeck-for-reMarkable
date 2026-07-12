@@ -56,30 +56,16 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	}{battery, charging, wifi, getLocalIP(), editorActive, openNote})
 }
 
-// shutdownHandler handles POST /api/shutdown: end the editor session, restore
-// xochitl, and exit rmkbd. The phone companion disconnects until rmkbd is
-// started again (SSH, reboot hook, or systemd).
-func shutdownHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkAuth(w, r) {
-		return
-	}
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	if activeSess == nil {
-		http.Error(w, "not in supervisor mode", http.StatusNotImplemented)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
+// requestShutdown ends the editor session, restores xochitl, and exits the server.
+func requestShutdown(source string) {
 	go func() {
 		time.Sleep(200 * time.Millisecond)
-		if activeSess.isActive() {
+		if activeSess != nil && activeSess.isActive() {
 			activeSess.quit()
 		} else {
 			exec.Command("systemctl", "start", "xochitl").Run() //nolint:errcheck
 		}
-		fmt.Fprintln(os.Stderr, "writerdeck-server: shutdown requested from phone -- exiting")
+		fmt.Fprintf(os.Stderr, "writerdeck-server: shutdown requested from %s -- exiting\n", source)
 		os.Exit(0)
 	}()
 }
@@ -322,44 +308,6 @@ func openHandler(w http.ResponseWriter, r *http.Request) {
 	if syncEng.ready() && prevNote != "" && prevNote != editorName {
 		syncEng.tryPushNote(prevNote)
 	}
-	w.WriteHeader(http.StatusOK)
-}
-
-// rotateHandler handles POST /api/rotate: rotates the editor display 90 degrees
-// clockwise, persists the new angle to settings.json, and pushes it to Writerdeck.
-func rotateHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodOptions {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		return
-	}
-	if !checkAuth(w, r) {
-		return
-	}
-	if r.Method != http.MethodPost {
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	if activeSess == nil {
-		http.Error(w, "not in supervisor mode", http.StatusNotImplemented)
-		return
-	}
-	if !activeSess.isActive() {
-		http.Error(w, "no active editor session", http.StatusConflict)
-		return
-	}
-	settingsMu.Lock()
-	curSettings.Rotation = normalizeRotation(curSettings.Rotation + 90)
-	rotation := curSettings.Rotation
-	saveSettingsLocked()
-	settingsMu.Unlock()
-	rotMsg, _ := json.Marshal(struct {
-		T       string `json:"t"`
-		C       string `json:"c"`
-		Degrees int    `json:"degrees"`
-	}{"cmd", "setrotation", rotation})
-	activeSess.ec.write(rotMsg)
 	w.WriteHeader(http.StatusOK)
 }
 

@@ -6,29 +6,29 @@ Open work: [TODO.md](TODO.md). How: [docs/architecture.md](docs/architecture.md)
 
 ## Core loop
 
-Power on and the tablet boots into a distraction-free editor. Open `http://<tablet-ip>:8000/` in a browser, pick a note, type. Keystrokes travel WebSocket to Writerdeck-server, which feeds Writerdeck over `/run/Writerdeck.sock`. No app to install on the phone.
+Power on and the tablet boots into a distraction-free editor. Open `http://<tablet-ip>:8000/` on the phone for the keyboard bridge; open notes on the tablet Files tab. Keystrokes travel WebSocket to Writerdeck-server, which feeds Writerdeck over `/run/Writerdeck.sock`. No app to install on the phone.
 
-Home from the editor saves and returns to the Lobby. Home from the Lobby quits to the stock reMarkable UI. Writerdeck-server keeps serving port 8000 either way — relaunch from the phone (Edit), Esc on a USB keyboard, or left and right page buttons together from stock UI.
+Home from the editor saves and returns to the Lobby. Home from the Lobby quits to the stock reMarkable UI. Writerdeck-server keeps serving port 8000 either way — relaunch from the tablet Files tab, Esc on a USB keyboard, or left and right page buttons together from stock UI.
 
 ## Lobby
 
 Six-tab pager on e-ink: Home, Files, Keyboard, Sync, Settings, Shortcuts. Touch the tabs or use Tab, arrows, or digits 1–6. On socket connect the server pushes IP, PIN, sync state, note count, and formatted last sync; it re-pushes when wlan0 gets an address, a reconcile finishes, or notes change.
 
-The Files tab lists notes from the server over a trusted socket. New, Edit, Read, Rename, and Delete work by touch or USB keys (`n`, Enter, `v`, `r`, `d`). Edit opens the note in type mode (same path as phone Edit); Read opens preview on e-ink without switching the phone to Type mode. A second tap on an already-selected row opens Edit. After Home from edit, Lobby keyboard focus stays on `lobbyFocus` so USB and WebSocket keys keep working. Home from read returns to the Lobby (not quit). Show PIN on tablet (phone button) drops back to the Lobby when a second device needs the PIN.
+The Files tab lists notes from the server over a trusted socket. New, Edit, Read, Rename, and Delete work by touch or USB keys (`n`, Enter, `v`, `r`, `d`). Edit opens the note in type mode; Read opens preview on e-ink. A second tap on an already-selected row opens Edit. After Home from edit, Lobby keyboard focus stays on `lobbyFocus` so USB and WebSocket keys keep working. Home from read returns to the Lobby (not quit). Show PIN on tablet (phone button) drops back to the Lobby when a second device needs the PIN.
 
 Launch from stock UI: Mac `wd` or `bash scripts/lobby.sh`; on tablet SSH, `~/wd`; USB Esc; L+R page buttons.
 
 ## Phone companion
 
-List, create, read, rename, delete, upload `.md`, download, and copy notes from the browser. Browse mode is the file manager — no key capture. Type mode sends keystrokes to the tablet with an echo footer. Edit opens the note on e-ink; opening a note on the tablet (Files, Ctrl-K, or reconnect while a note is open) also switches the phone to Type mode via WebSocket `openedit`, so typing can start without tapping Edit. Home on the tablet drops the phone back to the list. Paste from clipboard. Dark type mode for OLED phones.
+Upload and download `.md` notes from the note list. Type mode when the tablet opens a note (Files, Ctrl-K, or reconnect) via WebSocket `openedit` — keystrokes to e-ink with an echo footer. **Paste from phone** in Type mode inserts clipboard text at the tablet cursor (keystroke replay, not a new file). Home on the tablet drops the phone back to the list. Dark type mode for OLED phones. No phone preview, Edit, or file CRUD — tablet Lobby Files tab.
 
 ## Security
 
 PIN on the tablet each boot — 6 digits, 4 digits, or none (none warns that anyone on your Wi-Fi can connect). Five wrong guesses from one IP lock that IP for 60 seconds. Auth cookie until 04:00 local time.
 
-## Preferences and sync
+## Settings and sync
 
-Font, PIN length, display rotate, and Exit Writerdeck live in Preferences (bar button). GitHub sync lives in Notes sync setup (bar: Sync setup) — toggle, repo, token, Save, Sync. Connection indicator refreshes via status every five seconds. Token in phone browser and tablet RAM only; auto-restore after restart via WebSocket `needtoken`; `syncOn`, `syncRepo`, and `syncMeta` on disk.
+Reading font, PIN length, display rotation, and Exit Writerdeck live on the tablet Lobby Settings tab. GitHub sync lives in Notes sync setup on the phone (bar: Sync setup) — toggle, repo, token, Save, Sync. Connection indicator refreshes via status every five seconds. Token in phone browser and tablet RAM only; auto-restore after restart via WebSocket `needtoken`; `syncOn`, `syncRepo`, and `syncMeta` on disk.
 
 ## Editor
 

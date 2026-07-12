@@ -47,7 +47,7 @@ To set up the repo and enable syncing:
 1. Power on the tablet — it boots into a Lobby showing the connect URL (`http://<ip>:8000`), PIN, and setup sections.
 2. Open that address in the phone's browser, and enter the PIN.
 3. Pair a physical keyboard to your phone.
-4. Tap a note to read it, or Edit to type — keystrokes land on the e-ink and save as `.md`. New makes a note; Rename / Delete / Download / Copy live in the read view; **Preferences** picks the reading font, PIN length, and display rotation (6 / 4 / off for PIN).
+4. Open a note on the tablet Files tab (Edit, Enter, or double-tap) — the phone enters Type mode and keystrokes land on e-ink. **Upload** and **Download** are on the phone note list. In Type mode, **Paste from phone** inserts clipboard text at the cursor. Reading font and PIN length live on the tablet Lobby Settings tab. Rotate the display there too (Ctrl-R or Ctrl-arrows).
 
 **Show the Lobby**
 

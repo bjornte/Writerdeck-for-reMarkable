@@ -1,19 +1,13 @@
-// panels.js — PIN screen, Preferences, Notes sync setup overlays.
+// panels.js — PIN screen, Notes sync setup overlays.
 import { state } from './state.js';
 import {
   updateSyncBannerFromState, refreshSyncStatus, syncConfigured, waitForSyncIdle,
   ghToken, setSyncToken, clearSyncToken, pullTokenFromTablet, pushStoredTokenToTablet
 } from './sync.js';
 import { deps } from './deps.js';
-import { connect, grab, setStatus, startStatusPoll, stopStatusPoll, closeWebSocket } from './connection.js';
+import { connect, grab, setStatus, startStatusPoll, stopStatusPoll } from './connection.js';
 import { renderNotes, loadNotes } from './notes-ui.js';
 
-// ---- Auth ----
-
-// --- Settings panel (font + PIN picker) ---
-var currentFont = '';
-var settingsFonts = [];
-var currentPinDigits = '6';
 // state.syncOn and state.syncRepo (in state.js) mirror /api/settings
 
 // Auto-advance poll: while the PIN screen is up, poll GET /api/notes every
@@ -41,14 +35,16 @@ function stopPinPoll() {
   if (pinPollTimer) { clearInterval(pinPollTimer); pinPollTimer = null; }
 }
 
-function applyPinDigits(d) {
-  currentPinDigits = d;
-  renderSettingsList(); // immediate UI feedback
-  fetch('/api/settings', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({pinDigits: d})
-  }).catch(function() {});
+function configurePinInput(pinDigits) {
+  var pinInput = document.getElementById('pin-input');
+  if (!pinInput) return;
+  if (pinDigits === '4') {
+    pinInput.maxLength = 4;
+    pinInput.placeholder = '0000';
+  } else {
+    pinInput.maxLength = 6;
+    pinInput.placeholder = '000000';
+  }
 }
 
 export function updateBannerOffset() {
@@ -63,16 +59,6 @@ export function updateBannerOffset() {
     h += visible;
   }
   document.documentElement.style.setProperty('--below-bar', h + 'px');
-}
-
-export function showSettings() {
-  document.getElementById('settings-screen').style.display = 'flex';
-  loadSettingsPanel();
-}
-
-export function hideSettings() {
-  document.getElementById('settings-screen').style.display = 'none';
-  grab();
 }
 
 export function showSync() {
@@ -94,20 +80,6 @@ export function wireOverlayDismiss(screenId, boxId, hideFn) {
   box.addEventListener('click', function(e) { e.stopPropagation(); });
 }
 
-function loadSettingsPanel() {
-  fetch('/api/settings')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      currentFont = data.readFont;
-      settingsFonts = data.fonts;
-      currentPinDigits = data.pinDigits || '6';
-      state.syncOn = !!data.syncOn;
-      state.syncRepo = data.syncRepo || '';
-      renderSettingsList();
-    })
-    .catch(function() {});
-}
-
 function loadSyncPanel() {
   fetch('/api/settings')
     .then(function(r) { return r.json(); })
@@ -120,152 +92,6 @@ function loadSyncPanel() {
     .catch(function() {});
 }
 
-function renderSyncPanel() {
-  var list = document.getElementById('sync-list');
-  list.innerHTML = '';
-  renderSyncControls(list);
-}
-
-function requestRotate(onMsg) {
-  return fetch('/api/rotate', { method: 'POST' })
-    .then(function(r) {
-      if (r.ok) {
-        if (onMsg) { onMsg.style.color = '#4caf50'; onMsg.textContent = 'Rotated 90\u00b0.'; }
-        return;
-      }
-      var err = 'Rotate failed (' + r.status + ').';
-      if (r.status === 409) err = 'No editor session \u2014 open a note on the tablet.';
-      else if (r.status === 401) err = 'Not authorized \u2014 reconnect and enter PIN.';
-      if (onMsg) { onMsg.style.color = '#e57373'; onMsg.textContent = err; }
-      else { alert(err); }
-    })
-    .catch(function() {
-      var err = 'Could not reach the tablet.';
-      if (onMsg) { onMsg.style.color = '#e57373'; onMsg.textContent = err; }
-      else { alert(err); }
-    });
-}
-
-function renderSettingsList() {
-  var list = document.getElementById('settings-list');
-  list.innerHTML = '';
-
-  // ---- Font section ----
-  var fh = document.createElement('div');
-  fh.className = 'settings-section';
-  fh.textContent = 'Reading font';
-  list.appendChild(fh);
-  settingsFonts.forEach(function(f) {
-    var row = document.createElement('div');
-    row.className = 'font-row' + (f.id === currentFont ? ' active' : '');
-    var check = f.id === currentFont ? '<span class="font-check">&#10003;</span>' : '';
-    row.innerHTML = '<span>' + f.label + '</span>' + check;
-    row.addEventListener('click', function(e) {
-      e.stopPropagation();
-      applyFont(f.id);
-    });
-    list.appendChild(row);
-  });
-
-  // ---- PIN section ----
-  var ph = document.createElement('div');
-  ph.className = 'settings-section';
-  ph.textContent = 'PIN length';
-  list.appendChild(ph);
-  var pinOpts = [
-    {id: '6', label: '6 digits'},
-    {id: '4', label: '4 digits'},
-    {id: 'none', label: 'No PIN', warn: 'Anyone on your Wi-Fi can read & edit your notes'}
-  ];
-  // Sync pin-input maxlength/placeholder with the active PIN length.
-  var pinInput = document.getElementById('pin-input');
-  if (pinInput) {
-    if (currentPinDigits === '4') {
-      pinInput.maxLength = 4; pinInput.placeholder = '0000';
-    } else {
-      pinInput.maxLength = 6; pinInput.placeholder = '000000';
-    }
-  }
-  pinOpts.forEach(function(opt) {
-    var row = document.createElement('div');
-    row.className = 'font-row' + (opt.id === currentPinDigits ? ' active' : '');
-    var inner = '<div><div>' + opt.label + '</div>';
-    if (opt.warn) {
-      inner += '<div class="row-warn">' + opt.warn + '</div>';
-    }
-    inner += '</div>';
-    if (opt.id === currentPinDigits) { inner += '<span class="font-check">&#10003;</span>'; }
-    row.innerHTML = inner;
-    row.addEventListener('click', function(e) {
-      e.stopPropagation();
-      applyPinDigits(opt.id);
-    });
-    list.appendChild(row);
-  });
-
-  // ---- Display section ----
-  var dh = document.createElement('div');
-  dh.className = 'settings-section';
-  dh.textContent = 'Display';
-  list.appendChild(dh);
-
-  var rotateMsg = document.createElement('div');
-  rotateMsg.style.cssText = 'font-size:12px;padding:4px 2px;min-height:16px;color:#888;';
-
-  var rotateBtn = document.createElement('button');
-  rotateBtn.className = 'sync-btn';
-  rotateBtn.style.width = '100%';
-  rotateBtn.textContent = 'Rotate tablet 90\u00b0';
-  rotateBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    rotateMsg.style.color = '#888';
-    rotateMsg.textContent = 'Rotating\u2026';
-    requestRotate(rotateMsg);
-  });
-  list.appendChild(rotateBtn);
-  list.appendChild(rotateMsg);
-
-  // ---- Service section ----
-  var svh = document.createElement('div');
-  svh.className = 'settings-section';
-  svh.textContent = 'Service';
-  list.appendChild(svh);
-
-  var exitWarn = document.createElement('div');
-  exitWarn.className = 'row-warn';
-  exitWarn.style.cssText = 'padding:4px 2px 8px;line-height:1.4;';
-  exitWarn.textContent = 'Stop Writerdeck and return the tablet to the stock reMarkable UI. Reconnect later via SSH or reboot.';
-  list.appendChild(exitWarn);
-
-  var exitMsg = document.createElement('div');
-  exitMsg.style.cssText = 'font-size:12px;padding:4px 2px;min-height:16px;color:#888;';
-
-  var exitBtn = document.createElement('button');
-  exitBtn.className = 'sync-btn-danger';
-  exitBtn.textContent = 'Exit Writerdeck';
-  exitBtn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (!confirm('Exit Writerdeck on the tablet? This page will disconnect.')) return;
-    exitMsg.style.color = '#888';
-    exitMsg.textContent = 'Stopping\u2026';
-    fetch('/api/shutdown', { method: 'POST' })
-      .then(function(r) {
-        if (!r.ok) throw new Error('status ' + r.status);
-        exitMsg.style.color = '#4caf50';
-        exitMsg.textContent = 'Stopped. Stock UI should be back on the tablet.';
-          closeWebSocket();
-        setStatus('off', 'Writerdeck stopped on tablet');
-        stopStatusPoll();
-      })
-      .catch(function() {
-        exitMsg.style.color = '#e57373';
-        exitMsg.textContent = 'Could not stop -- try again or use SSH.';
-      });
-  });
-  list.appendChild(exitBtn);
-  list.appendChild(exitMsg);
-}
-
 function updateSyncButtonStyles(saveBtn, syncBtn) {
   var hasToken = !!ghToken();
   if (hasToken) {
@@ -275,6 +101,12 @@ function updateSyncButtonStyles(saveBtn, syncBtn) {
     saveBtn.className = 'sync-btn';
     syncBtn.className = 'sync-btn-secondary';
   }
+}
+
+function renderSyncPanel() {
+  var list = document.getElementById('sync-list');
+  list.innerHTML = '';
+  renderSyncControls(list);
 }
 
 function renderSyncControls(list) {
@@ -553,16 +385,6 @@ function renderSyncControls(list) {
   }
 }
 
-function applyFont(id) {
-  currentFont = id;
-  renderSettingsList(); // immediate UI feedback
-  fetch('/api/settings', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({readFont: id})
-  }).catch(function() {}); // Go pushes setfont to the editor automatically
-}
-
 export function showPinScreen() {
   stopStatusPoll();
   document.getElementById('pin-screen').style.display = 'flex';
@@ -572,7 +394,6 @@ export function showPinScreen() {
 export function hidePinScreen() {
   stopPinPoll();
   document.getElementById('pin-screen').style.display = 'none';
-  document.getElementById('settings-btn').style.display = 'block';
   document.getElementById('sync-btn').style.display = 'block';
   startStatusPoll();
 }
@@ -593,6 +414,7 @@ export function checkAuthAndInit() {
   fetch('/api/settings')
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(settings) {
+      if (settings) configurePinInput(settings.pinDigits || '6');
       if (settings && settings.pinDigits === 'none') {
         document.getElementById('pin-screen').style.display = 'none';
       }
@@ -609,7 +431,7 @@ export function checkAuthAndInit() {
       connect();
       grab();
       renderNotes(notes);
-      loadSyncConfig(); // populate syncOn/syncRepo so auto-sync can fire
+      loadSyncConfig();
     })
     .catch(function() {
       setStatus('off', 'Cannot reach tablet \u2014 retrying\u2026');

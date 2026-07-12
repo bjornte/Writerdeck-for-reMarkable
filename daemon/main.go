@@ -148,13 +148,11 @@ func main() {
 	http.HandleFunc("/api/pin", pinHandler)
 	http.HandleFunc("/api/launch", launchHandler)
 	http.HandleFunc("/api/open", openHandler)
-	http.HandleFunc("/api/rotate", rotateHandler)
 	http.HandleFunc("/api/notes", notesListHandler)
 	http.HandleFunc("/api/notes/", notesItemHandler)
 	http.HandleFunc("/api/settings", settingsHandler)
 	http.HandleFunc("/api/lobby", lobbyHandler) // pre-auth: reveals PIN on e-ink only
 	http.HandleFunc("/api/status", statusHandler)
-	http.HandleFunc("/api/shutdown", shutdownHandler)
 	http.HandleFunc("/api/sync/ack", syncAckHandler)
 	http.HandleFunc("/api/sync/pending", pendingSyncHandler)
 	http.HandleFunc("/api/sync/pending/clear", pendingClearHandler)
@@ -166,6 +164,7 @@ func main() {
 	http.HandleFunc("/api/test/reset", testResetHandler)
 	http.HandleFunc("/api/test/editor-state", testEditorStateHandler)
 	http.HandleFunc("/api/test/home", testHomeHandler)
+	http.HandleFunc("/api/test/tablet-req", testTabletReqHandler)
 
 	if *editorPath != "" {
 		// Supervisor mode: rmkbd is always-on; editor sessions are on-demand.
