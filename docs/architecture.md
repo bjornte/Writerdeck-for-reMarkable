@@ -125,13 +125,15 @@ Cross-compile + deploy Writerdeck-server from a host that can reach the tablet o
 bash scripts/deploy-rmkbd.sh    # builds Writerdeck-server → /home/root/Writerdeck-server
 ```
 
-Writerdeck (CI-built — **no local `docker build` on Mac**):
+Writerdeck (QML baked into binary — **rebuild before deploy**):
 
 ```bash
+# CI
 git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywriter.sh -b
+# or local Docker (Apple Silicon: --platform linux/amd64 on both docker commands — see scripts/README.md)
 ```
 
-**Writerdeck QML is baked into the CI binary** — always `fetch-keywriter-dist.sh` after `git push` before deploy. `systemctl restart writerdeck` reloads the server only; exit Writerdeck on the tablet (or kill the process) so the new binary loads.
+**`deploy-keywriter.sh` pushes `dist/Writerdeck`; it does not rebuild.** After `build-keywriter.sh` or `lobby/` edits, fetch or Docker-build first. `systemctl restart writerdeck` reloads the server only; relaunch the editor so the new binary loads. Check `journalctl -u writerdeck` for QML parse errors after deploy.
 
 Requires Go (`brew install go` on macOS). `deploy-rmkbd.sh` cross-builds and deploys. Writerdeck is cross-built in CI (`third_party/keywriter/`, toltec Qt sysroot), not on a host toolchain.
 
@@ -139,7 +141,7 @@ Requires Go (`brew install go` on macOS). `deploy-rmkbd.sh` cross-builds and dep
 
 ## Dev-loop shortcuts (aliases via `bash scripts/install-alias.sh`)
 
-- `rmkw` (= `deploy-keywriter.sh -b`) — binary-only Writerdeck redeploy (~1 s): pushes just the ~219 K binary, skips re-throwing the 14 MB Qt5 sysroot (static; only changes on a Qt rebuild — then pass `RM_FORCE_SYSROOT=1`). Use after any `socket-inject.patch` / `build-keywriter.sh` change once CI has rebuilt. **Then:** `bash scripts/test-edit-session.sh`.
+- `rmkw` (= `deploy-keywriter.sh -b`) — binary-only Writerdeck redeploy (~1 s): pushes `dist/Writerdeck`, skips the Qt5 sysroot tarball. **Requires a fresh binary in `dist/`** (CI fetch or local Docker rebuild after any `build-keywriter.sh` / `lobby/` change). **Then:** relaunch editor + `journalctl -u writerdeck` or `bash scripts/test-edit-session.sh`.
 - `bash scripts/test-e2e.sh -s` — full browser→e-ink pipeline test, skipping the Writerdeck-server build+scp (~2 s; server already on device). Drop `-s` to rebuild+redeploy first.
 - `bash scripts/test-edit-session.sh` — **Writerdeck/QML only** ([decisions.md](decisions.md) #21): phone **Edit** must keep Writerdeck up; not for `deploy-rmkbd.sh`-only changes.
 - `rmpush "msg"` (= `push.sh`) — commit+push.

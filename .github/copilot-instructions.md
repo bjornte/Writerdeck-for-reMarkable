@@ -33,6 +33,10 @@ Mac on the same Wi-Fi as the tablet: build, deploy, test locally. Secrets in `se
 
 Daemon loop: `deploy-rmkbd.sh` (embeds `daemon/*` via `go:embed` → `/home/root/Writerdeck-server`) → `systemctl restart writerdeck` (deploy kills the running server). Verify: `curl http://$RM_HOST:8000/` + `/app.js`; UI at same URL (PIN `none` skips auth). GitHub token: browser `localStorage ghToken` + tablet RAM via `POST /api/sync/token` (auto-repost after restart). **Writerdeck:** `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b` (`rmkw`) — never local `docker build` on Mac; CI runs Docker in GHA; relaunch Writerdeck after binary deploy (server restart alone is not enough). After Writerdeck deploy, run `bash scripts/test-edit-session.sh` — phone **Edit** must keep Writerdeck up (guards QML patch regressions that flash stock UI). Session logs: `journalctl -u writerdeck.service` (`editor started` / `editor process exited`, QML load errors).
 
+## Verify on device (mandatory — do not skip)
+
+**Deploy success ≠ tested.** Agents and humans must verify on the tablet before calling work done. After `daemon/`, `build-keywriter.sh`, or `lobby/` changes: rebuild Writerdeck if QML changed → deploy → SSH → `journalctl -u writerdeck -n 30` (fail on QML parse errors or instant `editor process exited`) → `bash scripts/test-edit-session.sh` or open a note and toggle Esc. You cannot see e-ink, but you **can** read logs and run these scripts — **do it every time**, without being asked.
+
 On-device naming: see [architecture.md](../docs/architecture.md) and [decisions.md](../docs/decisions.md) #22. Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server).
 
 ## Doc hygiene

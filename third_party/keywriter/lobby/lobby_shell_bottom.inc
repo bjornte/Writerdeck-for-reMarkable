@@ -1,3 +1,4 @@
+                }
                 Text {
                     id: lobbyHint
                     anchors.bottom: parent.bottom

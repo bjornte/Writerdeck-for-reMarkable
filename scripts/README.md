@@ -23,13 +23,24 @@ Deploy scripts push binaries with Writerdeck-branded names on the tablet. Repo s
 
 ## Writerdeck deploy
 
-After `third_party/keywriter/` changes — **Mac does not run `docker build`**; CI does (`.github/workflows/build-keywriter.yml`):
+`deploy-keywriter.sh` **pushes** `dist/Writerdeck`; it does **not** rebuild. After `build-keywriter.sh` or `lobby/` changes you must produce a new binary first.
+
+**CI path** (default):
 
 ```bash
 git push
 bash scripts/fetch-keywriter-dist.sh [run-id]
 bash scripts/deploy-keywriter.sh -b    # rmkw
 bash scripts/test-edit-session.sh
+```
+
+**Local Docker path** (Apple Silicon: add `--platform linux/amd64`):
+
+```bash
+docker build --platform linux/amd64 -t rm1-writerdeck-keywriter-builder third_party/keywriter/
+docker run --rm --platform linux/amd64 -v "$PWD/third_party/keywriter/dist:/out" rm1-writerdeck-keywriter-builder
+bash scripts/deploy-keywriter.sh -b
+journalctl -u writerdeck -n 30    # on device — confirm no QML parse error
 ```
 
 ## Scripts

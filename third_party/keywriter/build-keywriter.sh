@@ -168,11 +168,13 @@ new1c = (
     '    function toggleMode() {\n'
     '        if (mode == 0) {\n'
     '            mode = 1\n'
+    '            syncQueryDisplay()\n'
     '            query.cursorPosition = lastCursorPostion == -1 ? query.length : lastCursorPostion\n'
     '        } else {\n'
     '            doc = query.text\n'
     '            lastCursorPostion = query.cursorPosition\n'
     '            mode = 0\n'
+    '            syncQueryDisplay()\n'
     '            saveFile()\n'
     '        }\n'
     '    }'
@@ -203,8 +205,8 @@ old2b = '                currentFile = name\n                doc = response\n'
 new2b = (
     '                currentFile = name\n'
     '                doc = response\n'
-    '                query.text = response\n'
     '                autosaveSnapshot = response\n'
+    '                syncQueryDisplay()\n'
     '                writerdeck.notifyOpen(name)\n'
 )
 assert old2b in s, "doLoad doc=response block not found (edit 2b)"
@@ -665,10 +667,22 @@ new7f_fn = (
     '            .replace(/<li>/g, ' + chr(39) + '<li style="margin-bottom:8px">' + chr(39) + ')\n' +
     '    }\n' +
     '\n' +
+    '    function syncQueryDisplay() {\n' +
+    '        if (mode == 0) {\n' +
+    '            query.textFormat = TextEdit.RichText\n' +
+    '            query.text = readHtml(doc)\n' +
+    '        } else {\n' +
+    '            query.textFormat = TextEdit.PlainText\n' +
+    '            query.text = doc\n' +
+    '        }\n' +
+    '    }\n' +
+    '\n' +
     '    function initFile(name) {'
 )
 assert old7f_fn in s, "function initFile not found (edit 7f)"
 s = s.replace(old7f_fn, new7f_fn, 1)
+# 7f only swaps utils.markdown -> readHtml in toggle paths; edit 7u drops the
+# TextEdit `text:` binding (broken by typing and doLoad) in favour of syncQueryDisplay().
 assert 'text: mode == 0 ? utils.markdown(doc) : doc' in s, "text binding not found (edit 7f)"
 s = s.replace('text: mode == 0 ? utils.markdown(doc) : doc',
               'text: mode == 0 ? root.readHtml(doc) : doc', 1)
@@ -683,6 +697,7 @@ old7g_fn = '    function initFile(name) {'
 new7g_fn = (
     '    function setReadFont(name) {\n'
     '        readFont = name\n'
+    '        if (mode == 0) syncQueryDisplay()\n'
     '    }\n'
     '\n'
     '    function initFile(name) {'
@@ -1281,6 +1296,11 @@ new_rotate_fn = (
 assert old_rotate_fn in s, "function initFile not found (rotateScreen)"
 s = s.replace(old_rotate_fn, new_rotate_fn, 1)
 
+# 7u. Drop the TextEdit `text:` binding -- broken by typing and doLoad; syncQueryDisplay()
+#     (edit 7f) sets query.text imperatively on load and in toggleMode (edit 1c).
+assert 'text: mode == 0 ? root.readHtml(doc) : doc' in s, "text binding not found (edit 7u drop)"
+s = s.replace('                text: mode == 0 ? root.readHtml(doc) : doc\n', '', 1)
+
 # Sanity: handleKey must close before Component.onCompleted (patch 7p regressed once).
 hk = s.find('    function handleKey(event) {')
 co = s.find('    Component.onCompleted: {')
@@ -1289,7 +1309,7 @@ assert s[hk:co].count('{') == s[hk:co].count('}'), "handleKey brace mismatch -- 
 
 with open('main.qml', 'w') as f:
     f.write(s)
-print('  All QML edits applied (props + content-fidelity + setLobbyInfo + lobby-subpages + handleHome + doLoad-query-sync + prepareSleep + sleep-screen + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + noteRenamed + reloadNote + autosave + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate + lobbyHandleKey).')
+print('  All QML edits applied (props + content-fidelity + setLobbyInfo + lobby-subpages + handleHome + doLoad-query-sync + prepareSleep + sleep-screen + openNotePicker + omni-z + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q/R + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + read-no-autoscroll + cursor-boundary + mac-arrows-home-end + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + noteRenamed + reloadNote + autosave + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen + lobby-rotate + lobbyHandleKey + syncQueryDisplay).')
 PYEOF
 echo "  main.qml after edit:"
 grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true

@@ -22,6 +22,10 @@ Status: **active — non-negotiable.** Writerdeck is a typewriter: the owner's p
 
 **Shipped under this contract:** #24, slices 1–11, empty-push guard (#19). **Residual:** SIGKILL/crash before autosave or flush; Writerdeck binary must match server for `autosavenow` + loopback save.
 
+## Device verification — deploy is not done (foundational)
+
+Status: **active — non-negotiable.** A green deploy script is not a pass. After any change to `daemon/`, `build-keywriter.sh`, `lobby/`, or deploy scripts: **rebuild Writerdeck when QML changed** → deploy → relaunch editor → **`journalctl -u writerdeck -n 30` on the tablet**. Fail on `QQmlApplicationEngine failed`, `Expected token`, or immediate `editor process exited`. Optional: human e-ink glance; **mandatory for agents: SSH + logs** (and `bash scripts/test-edit-session.sh` when Writerdeck QML touched). "Works in theory" does not ship.
+
 ---
 
 ## 1. Feed the editor over a local socket, not `/dev/uinput`
@@ -119,8 +123,8 @@ Status: built, device-verified. Binaries and paths on the tablet use Writerdeck 
 ## 23. Tablet file CRUD via trusted socket (Lobby Files)
 Status: built (Phase 10 partial), device-verified 2026-07-11. Extends #8 without exposing unauthenticated LAN HTTP: Writerdeck sends `{"t":"req","op":"noteslist|createnote|deletenote|renamenote",…}` over the existing Unix socket; Writerdeck-server performs the same disk ops as `/api/notes`. Six-tab Lobby (**Home · Files · Keyboard · Sync · Settings · Shortcuts**) with touch + Tab/arrows/1–6 navigation; Files page lists notes, supports New/Open/Rename/Delete (touch buttons + `n`/Enter/`r`/`d`). Open still uses `saveAndLoad` (phone path unchanged). Tablet delete/rename/create queues `pendingSync` and notifies the phone via `tabletcrud` WebSocket — GitHub pairs immediately when the browser is connected, or on next connect/reconcile (slice 7; was next-reconcile-only in #19). Mac/tablet launch helpers: `wd` / `bash scripts/lobby.sh` / on-device `~/wd`.
 
-## 24. `doLoad` must re-sync `query.text` after Lobby clears the editor
-Status: built, device-verified 2026-07-11. Returning to Lobby (`handleHome`, `showLobby`) assigns `query.text = ""`, which breaks the QML `text: doc` one-way binding. Without `query.text = response` in `doLoad`'s XHR callback (edit 2b), the next Home save copies empty `query.text` into `doc` and `saveFile()` zeroes the file (`save -> 0` in journal). First open after boot worked; open → Home → open another wiped notes and cascaded into GitHub via sync. `showLobby` now also clears `currentFile` for a clean no-file Lobby state. Recovery script: `scripts/restore-wiped-notes.sh`. Lesson banked in [lessons.md](lessons.md).
+## 24. Editor display sync after Lobby clears the buffer
+Status: built, device-verified 2026-07-11 (Home wipe), 2026-07-12 (preview). Returning to Lobby (`handleHome`, `showLobby`) assigns `query.text = ""`, which breaks any `text:` binding on the `TextEdit`. `doLoad` and `toggleMode()` call `syncQueryDisplay()` so edit shows plain `doc` and preview shows `readHtml(doc)` — never RichText extracted back into `doc`. Without this, Home save can zero files (`save -> 0` in journal) or Esc-toggle can look like content corruption (presentation-only until reload). `showLobby` also clears `currentFile` for a clean no-file Lobby state. Recovery script: `scripts/restore-wiped-notes.sh`. Lesson banked in [lessons.md](lessons.md).
 
 ---
 

@@ -36,7 +36,9 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **Every save path must sync `query.text → doc` before `saveFile()`** in edit mode. A bare `saveFile()` writes stale `doc`. Guards: saveAndQuit, handleHome, showLobby, saveAndLoad, omni switcher, Ctrl-Q.
 
-**Never clear `query.text` without re-syncing on load** — assigning `query.text = ""` (e.g. returning to Lobby) breaks the `text: doc` binding on the `TextEdit`. `doLoad` must set `query.text = response` after every file read (build-keywriter.sh edit 2b), or the next Home save runs `doc = query.text` → empty → `saveFile()` wipes the file on disk. Symptom in `journalctl -u writerdeck`: repeated `qml: Save foo.md` then `qml: save -> 0`. First open after boot can look fine; **second** open/Home cycle wipes. Device-verified fix 2026-07-11.
+**Never clear `query.text` without re-syncing on load** — assigning `query.text = ""` (e.g. returning to Lobby) breaks any `text:` binding on the `TextEdit`. After load or mode switch, call `syncQueryDisplay()` (edit 7f/7u) so the buffer matches `doc` — preview gets `readHtml(doc)`, edit gets plain `doc`. Symptom if broken: Esc-to-preview collapses newlines (plain markdown shown as RichText); Esc-back shows HTML-extracted garbage until reload. Home-save wipe: if display isn't synced, `doc = query.text` → empty → `saveFile()` zeroes the file (`save -> 0` in journal). Device-verified fix 2026-07-11 (binding) + 2026-07-12 (`syncQueryDisplay`).
+
+**Markdown preview is imperative, not bound** — upstream `text: mode ? readHtml(doc) : doc` breaks once the user types or `doLoad` touches `query.text`. `toggleMode()` and `doLoad` must call `syncQueryDisplay()`, which sets `textFormat` then `query.text` (never read RichText back into `doc` on preview→edit).
 
 **Lobby Files open regression (Jul 2026)** — shipped Lobby subpages let you open notes on tablet without the phone. Testing pattern open → Home → open another triggered the binding bug above; GitHub sync then pushed empty files and clash handling created `(tablet copy).md` junk. Recovery: `bash scripts/restore-wiped-notes.sh` (tablet + `my-notes` from pre-wipe commit). Prevention: edit 2b + sync empty-push guard in `sync.js`.
 
@@ -62,7 +64,7 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **Apostrophes in Python patch heredocs** — use `' + chr(39) + '`, not a literal `'`.
 
-**QML patch blocks must balance braces** — patch 7p (Lobby Ctrl+arrow rotation) once opened `else if (mode == 0 || isLobby) {` without closing it, leaving `Component.onCompleted` inside `handleKey()`. Symptom: `QQmlApplicationEngine failed to load component` / `Expected token ','` at the next top-level item; Writerdeck exits immediately on `/api/open` → `session.end()` → stock UI. `build-keywriter.sh` now asserts `{`/`}` balance in `handleKey` before write; still verify with `scripts/test-edit-session.sh` on device.
+**QML patch blocks must balance braces** — patch 7p once opened `else if (mode == 0 || isLobby) {` without closing it; `lobby/lobby_shell_bottom.inc` once omitted the closing `}` for the page-stack `Item` (Jul 2026). Symptom: `QQmlApplicationEngine failed to load component` / `Expected token '}'` at EOF (`qrc:/main.qml:1397:1`); Writerdeck exits on every launch, server falls back to xochitl. `build-keywriter.sh` asserts `{`/`}` balance in `handleKey` before write; **also** sanity-check full patched QML (with `lobby_subpages.qml.inc`) before deploy. Verify with `journalctl -u writerdeck` or `scripts/test-edit-session.sh`.
 
 **Edit → stock UI in one beat** — if logs show `editor started` then immediate `editor process exited` with a QML parse error, it's a broken `main.qml` patch, not the USB Escape watcher. Rebuild Writerdeck (`rmkw` after CI) and redeploy.
 
@@ -88,7 +90,7 @@ Operational gotchas from building Writerdeck — the stuff that burned time once
 
 **GitHub token is per-origin** — new DHCP IP = new browser origin = re-enter token in Setup.
 
-**Writerdeck deploy needs fresh CI artifact** — `deploy-keywriter.sh` pushes `third_party/keywriter/dist/Writerdeck`; without `fetch-keywriter-dist.sh` after push, you redeploy a stale binary (QML changes invisible on tablet).
+**Writerdeck deploy needs a fresh binary** — `deploy-keywriter.sh` only **pushes** `third_party/keywriter/dist/Writerdeck`; it does not rebuild. QML lives inside that binary. After `build-keywriter.sh` or `lobby/` edits: rebuild (CI or local Docker), then deploy. Without rebuild you redeploy a stale binary (fixes invisible). After deploy, relaunch the editor and check `journalctl -u writerdeck` for QML parse errors.
 
 **Restarting the server does not reload Writerdeck** — the editor process keeps running until Home/quit or kill; binary-only deploy requires relaunch to pick up QML changes.
 
