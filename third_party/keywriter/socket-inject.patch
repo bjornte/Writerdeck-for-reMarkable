@@ -230,7 +230,7 @@
 +            }, Qt::QueuedConnection);
 +    } else if (line.find("\"t\":\"info\"") != std::string::npos) {
 +        // {"t":"info","ip":"...","pin":"...","syncOn":...,"syncRepo":"...","noteCount":N,"lastSync":"...","keyboardLayout":"us|no"}
-+        // -> setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing, keyboardLayout, syncError, wifi) in QML.
++        // -> setLobbyInfo(...) + setLobbySyncStatus(syncError, wifi) in QML.
 +        auto ip_p = line.find("\"ip\":\"");
 +        auto pin_p = line.find("\"pin\":\"");
 +        if (ip_p != std::string::npos && pin_p != std::string::npos && g_rootObj) {
@@ -291,7 +291,9 @@
 +                    Q_ARG(QVariant, QString::fromStdString(lastSync)),
 +                    Q_ARG(QVariant, syncReady),
 +                    Q_ARG(QVariant, syncing),
-+                    Q_ARG(QVariant, QString::fromStdString(keyboardLayout)),
++                    Q_ARG(QVariant, QString::fromStdString(keyboardLayout)));
++                QMetaObject::invokeMethod(g_rootObj, "setLobbySyncStatus",
++                    Qt::QueuedConnection,
 +                    Q_ARG(QVariant, QString::fromStdString(syncError)),
 +                    Q_ARG(QVariant, wifi));
 +            }
