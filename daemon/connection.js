@@ -260,4 +260,4 @@ export function closeWebSocket() {
   if (ws && ws.readyState === WebSocket.OPEN) { ws.close(); }
 }
 
-export { connect, send, grab, startStatusPoll, stopStatusPoll, setStatus, overlayUp, applyMode, closeWebSocket };
+export { connect, send, grab, startStatusPoll, stopStatusPoll, setStatus, overlayUp };

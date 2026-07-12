@@ -7,16 +7,32 @@ alwaysApply: true
 
 Markdown typewriter: Mac deploys Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Background: `TODO.md`, `docs/architecture.md`, `docs/decisions.md`, `DONE.md`, `docs/lessons.md`.
 
-## Verify on device (mandatory — do not skip)
+## Verify before calling work done (mandatory — do not skip)
 
-**Deploy success ≠ tested.** Before calling work done after `daemon/`, `build-keywriter.sh`, or `lobby/` changes:
+**Deploy success ≠ tested. curl/API 200 ≠ UI works.**
 
-1. Rebuild Writerdeck if QML changed
-2. Deploy (`deploy-rmkbd.sh` and/or `deploy-keywriter.sh -b`)
-3. SSH → `journalctl -u writerdeck -n 30` — fail on QML parse errors or instant `editor process exited`
-4. `bash scripts/test-edit-session.sh` (or open a note and toggle Esc)
+After `daemon/`, `build-keywriter.sh`, or `lobby/` changes:
 
-Run this every time without being asked. You cannot see e-ink; you can read logs and run scripts.
+### Phone browser UI (required for any `daemon/*.js` / embedded HTML/CSS change)
+
+`curl` cannot catch ES module load failures — the page can show static `connecting...` with zero JS running.
+
+1. Deploy (`deploy-rmkbd.sh`; ensure `systemctl start writerdeck` if service stopped)
+2. **Load the page** at `http://$RM_HOST:8000/` (browser tools or real browser) — hard refresh if cached
+3. Confirm **JavaScript actually ran**:
+   - Notes list populated (not empty with only the static top bar)
+   - Connection bar shows **Connected** or **Tablet offline** — not stuck on HTML default `connecting...`
+   - PIN screen hidden when `pinDigits` is `none`
+4. Spot-check changed UI (e.g. Sync setup modal, Save/Sync buttons)
+5. If modules fail to load, fix before moving on (common: duplicate `export` in `connection.js`)
+
+### Tablet / server (required for all deploys)
+
+1. Rebuild Writerdeck if QML changed → `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`
+2. SSH → `journalctl -u writerdeck -n 30` — fail on QML parse errors or instant `editor process exited`
+3. `bash scripts/test-edit-session.sh` after Writerdeck/QML deploy
+
+Run all applicable steps every time without being asked. Do not declare done with known gaps ("not yet on tablet", "should work").
 
 Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server). On-device naming: `docs/architecture.md`, `docs/decisions.md` #22.
 
@@ -31,7 +47,7 @@ Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server). On-device n
 
 Secrets: `secrets/remarkable.local.env`; scripts source `scripts/_env.sh` for `RM_HOST`.
 
-**Daemon:** `deploy-rmkbd.sh` → `systemctl restart writerdeck`. Verify: `curl http://$RM_HOST:8000/` and `/app.js`.
+**Daemon:** `deploy-rmkbd.sh` → `systemctl restart writerdeck`. Verify APIs **and** load the phone UI (see above) — not `curl` alone.
 
 **Writerdeck:** `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Relaunch Writerdeck after binary deploy (server restart alone is not enough). Then `bash scripts/test-edit-session.sh`.
 

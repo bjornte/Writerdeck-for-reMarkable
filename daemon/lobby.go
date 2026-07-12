@@ -86,8 +86,13 @@ func pushLobbyInfo() {
 	settingsMu.Unlock()
 	syncReady := syncEng.ready()
 	syncing := syncEng.isSyncing()
+	syncErr := syncEng.getLastError()
+	wifi := wifiUp()
 	if syncOn && syncRepo != "" && !syncReady {
 		lastSync = "Token needed — add in phone Sync setup"
+	}
+	if syncOn && syncRepo != "" && syncReady && !wifi {
+		syncErr = "No Wi-Fi - cannot reach GitHub"
 	}
 	infoMsg, _ := json.Marshal(struct {
 		T              string `json:"t"`
@@ -99,8 +104,10 @@ func pushLobbyInfo() {
 		LastSync       string `json:"lastSync"`
 		SyncReady      bool   `json:"syncReady"`
 		Syncing        bool   `json:"syncing"`
+		SyncError      string `json:"syncError"`
+		Wifi           bool   `json:"wifi"`
 		KeyboardLayout string `json:"keyboardLayout"`
-	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, keyboardLayout})
+	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, syncErr, wifi, keyboardLayout})
 	if globalEC != nil {
 		globalEC.write(infoMsg)
 	}
@@ -110,23 +117,38 @@ func pushLobbyInfo() {
 }
 
 // watchLobbyIP re-pushes lobby info when wlan0 gets an address after boot or
-// when the DHCP lease changes. pushLobbyInfo on socket connect alone is too
-// early on cold boot: DHCP often completes after keywriter has already shown
-// http://?:8000.
+// when the DHCP lease changes, or when Wi-Fi goes up/down (sync status).
 func watchLobbyIP() {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
+	var lastWifi bool
+	var haveWifi bool
 	for range ticker.C {
 		ip := getLocalIP()
+		w := wifiUp()
 		lobbyIPMu.Lock()
-		changed := ip != lastPushedLobbyIP
+		ipChanged := ip != lastPushedLobbyIP
 		lobbyIPMu.Unlock()
-		if !changed || globalEC == nil || !globalEC.ready() {
+		wifiChanged := !haveWifi || w != lastWifi
+		if (!ipChanged && !wifiChanged) || globalEC == nil || !globalEC.ready() {
 			continue
 		}
+		lastWifi = w
+		haveWifi = true
 		pushLobbyInfo()
-		pushNotesList()
+		if ipChanged {
+			pushNotesList()
+		}
 	}
+}
+
+// wifiUp reports whether wlan0 is up (Lobby sync offline detection).
+func wifiUp() bool {
+	st, err := os.ReadFile("/sys/class/net/wlan0/operstate")
+	if err != nil {
+		return false
+	}
+	return strings.TrimSpace(string(st)) == "up"
 }
 
 // --- Lobby-on-demand ---

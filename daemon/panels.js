@@ -590,7 +590,14 @@ export function loadSyncConfig() {
 }
 
 export function checkAuthAndInit() {
-  fetch('/api/notes')
+  fetch('/api/settings')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(settings) {
+      if (settings && settings.pinDigits === 'none') {
+        document.getElementById('pin-screen').style.display = 'none';
+      }
+      return fetch('/api/notes');
+    })
     .then(function(r) {
       if (r.status === 401) { showPinScreen(); return null; }
       if (!r.ok) throw new Error('server error');
@@ -604,7 +611,10 @@ export function checkAuthAndInit() {
       renderNotes(notes);
       loadSyncConfig(); // populate syncOn/syncRepo so auto-sync can fire
     })
-    .catch(function() { setTimeout(checkAuthAndInit, 2000); });
+    .catch(function() {
+      setStatus('off', 'Cannot reach tablet \u2014 retrying\u2026');
+      setTimeout(checkAuthAndInit, 2000);
+    });
 }
 
 export function submitPIN(e) {
@@ -612,7 +622,6 @@ export function submitPIN(e) {
   var pin = document.getElementById('pin-input').value.trim();
   var errEl = document.getElementById('pin-err');
   errEl.textContent = '';
-  if (!pin) return;
   fetch('/api/pin', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

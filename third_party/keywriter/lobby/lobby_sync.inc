@@ -20,6 +20,7 @@
                                 }
                                 Text {
                                     visible: !(lobbySyncOn && lobbySyncRepo !== "" && !lobbySyncReady)
+                                        && !(lobbySyncOn && lobbySyncRepo !== "" && lobbySyncReady && lobbySyncError !== "")
                                     text: lobbySyncOn && lobbySyncRepo !== ""
                                         ? (lobbyLastSync !== ""
                                             ? "Last sync was " + lobbyLastSync + ".\nNotes sync to github.com/" + lobbySyncRepo
@@ -30,6 +31,38 @@
                                     color: lobbySyncOn && lobbySyncRepo !== "" ? "#1b5e20" : "#555555"
                                     width: parent.width
                                     wrapMode: Text.WordWrap
+                                }
+                                Rectangle {
+                                    visible: lobbySyncOn && lobbySyncRepo !== "" && lobbySyncReady && lobbySyncError !== ""
+                                    width: parent.width
+                                    height: syncErrCol.height + 20
+                                    color: "white"
+                                    border.color: "black"
+                                    border.width: 2
+                                    radius: 4
+                                    Column {
+                                        id: syncErrCol
+                                        anchors.centerIn: parent
+                                        width: parent.width - 20
+                                        spacing: 10
+                                        Text {
+                                            text: !lobbyWifi ? "SYNC OFFLINE" : "SYNC FAILED"
+                                            font.pointSize: 16
+                                            font.bold: true
+                                            font.family: "Noto Sans"
+                                            color: "black"
+                                            width: parent.width
+                                        }
+                                        Text {
+                                            text: lobbySyncError
+                                            font.pointSize: 13
+                                            font.family: "Noto Sans"
+                                            color: "black"
+                                            width: parent.width
+                                            wrapMode: Text.WordWrap
+                                            lineHeight: 1.25
+                                        }
+                                    }
                                 }
                                 Rectangle {
                                     visible: lobbySyncOn && lobbySyncRepo !== "" && !lobbySyncReady

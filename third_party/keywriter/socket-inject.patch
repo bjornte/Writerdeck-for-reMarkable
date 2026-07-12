@@ -230,7 +230,7 @@
 +            }, Qt::QueuedConnection);
 +    } else if (line.find("\"t\":\"info\"") != std::string::npos) {
 +        // {"t":"info","ip":"...","pin":"...","syncOn":...,"syncRepo":"...","noteCount":N,"lastSync":"...","keyboardLayout":"us|no"}
-+        // -> setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing, keyboardLayout) in QML.
++        // -> setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing, keyboardLayout, syncError, wifi) in QML.
 +        auto ip_p = line.find("\"ip\":\"");
 +        auto pin_p = line.find("\"pin\":\"");
 +        if (ip_p != std::string::npos && pin_p != std::string::npos && g_rootObj) {
@@ -264,6 +264,15 @@
 +                }
 +                bool syncReady = line.find("\"syncReady\":true") != std::string::npos;
 +                bool syncing = line.find("\"syncing\":true") != std::string::npos;
++                std::string syncError;
++                auto se_p = line.find("\"syncError\":\"");
++                if (se_p != std::string::npos) {
++                    se_p += 13;
++                    auto se_q = line.find('"', se_p);
++                    if (se_q != std::string::npos)
++                        syncError = line.substr(se_p, se_q - se_p);
++                }
++                bool wifi = line.find("\"wifi\":true") != std::string::npos;
 +                std::string keyboardLayout = "us";
 +                auto kl_p = line.find("\"keyboardLayout\":\"");
 +                if (kl_p != std::string::npos) {
@@ -282,7 +291,9 @@
 +                    Q_ARG(QVariant, QString::fromStdString(lastSync)),
 +                    Q_ARG(QVariant, syncReady),
 +                    Q_ARG(QVariant, syncing),
-+                    Q_ARG(QVariant, QString::fromStdString(keyboardLayout)));
++                    Q_ARG(QVariant, QString::fromStdString(keyboardLayout)),
++                    Q_ARG(QVariant, QString::fromStdString(syncError)),
++                    Q_ARG(QVariant, wifi));
 +            }
 +        }
 +    } else if (line.find("\"t\":\"notes\"") != std::string::npos) {

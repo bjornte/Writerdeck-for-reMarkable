@@ -367,6 +367,10 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 	if err != nil {
 		if status == 401 || status == 403 {
 			e.setLastError("GitHub token rejected")
+		} else if !wifiUp() {
+			e.setLastError("No Wi-Fi - cannot reach GitHub")
+		} else {
+			e.setLastError("Could not reach GitHub")
 		}
 		return 0, err
 	}
