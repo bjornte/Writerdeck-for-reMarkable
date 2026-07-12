@@ -20,12 +20,6 @@ id_ed25519*
 *.key
 
 # ──────────────────────────────────────────────────────────────
-# Personal / local-only docs — kept on disk for the two-machine
-# workflow, but not published. (See the file's own header.)
-# ──────────────────────────────────────────────────────────────
-docs/dev-behind-firewall-howto.md
-
-# ──────────────────────────────────────────────────────────────
 # Build artifacts (the Go daemon and friends)
 # ──────────────────────────────────────────────────────────────
 /Writerdeck-server
@@ -35,7 +29,7 @@ docs/dev-behind-firewall-howto.md
 dist/
 
 # Exception: third_party/keywriter/dist/ holds CI-built artifacts
-# (keywriter binary + qt5.tar.gz) that travel to the Mac via the git bridge.
+# (Writerdeck binary + qt5.tar.gz); Mac deploy uses fetch-keywriter-dist.sh.
 !third_party/keywriter/dist/
 !third_party/keywriter/dist/**
 # Re-ignore the locally-unpacked qt5/ tree -- only the compressed tarball is
@@ -58,10 +52,9 @@ Thumbs.db
 /third_party/keywriter/edit
 
 # ──────────────────────────────────────────────────────────────
-# Recon output. The small recon-*.txt LOGS are committed on purpose so they
-# sync between machines (e.g. the Mac runs recon, the work laptop reads the
-# result). Only the large backup tarballs are ignored.
+# Recon output — local device-test logs (regenerable; not committed).
 # ──────────────────────────────────────────────────────────────
+/docs/recon/*.txt
 /docs/recon/*.tar.gz
 keymaps/.tmp/
 

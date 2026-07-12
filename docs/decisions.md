@@ -59,8 +59,8 @@ Status: built (slices 8a–8e), device-verified. The owner wanted a boot Lobby (
 ## 9. Share = best-effort fallback (Download + Copy)
 Status: built (Phase 8 slice 8f), device-verified. The native iOS share sheet needs a secure context (HTTPS), unavailable on plain LAN http — so we shipped the reliable fallback: a `Content-Disposition: attachment` download route + copy-to-clipboard, both in the phone's Read view. `navigator.clipboard` *also* needs a secure context, so Copy falls back to a temporary `<textarea>` + `document.execCommand('copy')` on plain http — same constraint, banked. Revisit the native sheet only if a secure context becomes available.
 
-## 10. Two-machine split + git bridge (tunnel deferred)
-Status: active. Author-specific dev-environment workaround, not part of the product: a corporate VPN keeps the dev laptop off the LAN, so device work runs on a second machine and git bridges the two. A reverse tunnel was *feasible* but deferred (infra + exposure risk) in favor of the git bridge; the clean fix is an IT split-tunnel exception.
+## 10. Two-machine split + git bridge (retired)
+Status: retired (July 2026). Was an author-specific workaround: corporate VPN kept a work laptop off the LAN while a Mac did device deploy/recon; git synced the two. Machinery removed; all dev is Mac-on-LAN now. Historical detail: [dev-behind-firewall-howto.md](dev-behind-firewall-howto.md).
 
 ## 11. Wi-Fi is the dev path (not USB)
 Status: active. The Mac's USB-ethernet gadget is inactive (no DHCP lease / no macOS RNDIS); Wi-Fi SSH works when `RM_HOST_WIFI` in secrets matches the tablet (DHCP — changes with network).

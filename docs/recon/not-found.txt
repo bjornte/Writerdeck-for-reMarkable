@@ -1,5 +1,0 @@
-reMarkable: ~/ systemctl restart rm1-writerdeck
-Failed to restart rm1-writerdeck.service: Unit rm1-writerdeck.service not found.
-reMarkable: ~/ systemctl start rm1-writerdeck
-Failed to start rm1-writerdeck.service: Unit rm1-writerdeck.service not found.
-reMarkable: ~/ 

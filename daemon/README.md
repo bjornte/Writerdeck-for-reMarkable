@@ -44,7 +44,6 @@ Static ARMv7 (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). Deploys originate 
 ```bash
 bash ../scripts/deploy-rmkbd.sh      # cross-build → /home/root/Writerdeck-server  (rmkw = binary-only Writerdeck redeploy)
 ```
-The ThinkPad can cross-build for a compile check (`../scripts/build-rmkbd.ps1`) but can't reach the device.
 
 ## Troubleshooting
 

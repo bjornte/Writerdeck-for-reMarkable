@@ -79,7 +79,7 @@ RM_FORCE_SYSROOT="${RM_FORCE_SYSROOT:-0}"
 
 TS="$(date +%Y-%m-%dT%H-%M-%S)"
 if [ "$RM_BINARY_ONLY" = "1" ]; then
-    # Fast loop: no recon log file (avoids a committed docs/recon/ entry per run).
+    # Fast loop: no recon log file (avoids cluttering docs/recon/).
     LOG="(none -- binary-only)"
 else
     RECON_DIR="$REPO/docs/recon"
@@ -379,5 +379,4 @@ fi
 echo "======================================"
 echo
 echo "  Full log : $LOG"
-echo "  Sync back: git add docs/recon/ && git commit -m 'deploy-keywriter verdict' && git push"
 echo

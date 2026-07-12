@@ -9,7 +9,7 @@ Reference material and generated artifacts.
 - `browser-vs-tablet.md` — capability matrix: what the phone browser vs e-ink tablet can do today.
 - `integrity-audit.md` — document integrity audit (fixed slices 1–11, known open, unknown).
 - `improvements.md` — open wish-list and design notes (USB locales, encryption, edit UX).
-- `recon/` — regenerable device output, self-logged via `tee` by `scripts/*`. Timestamped `recon-*.txt` logs are committed, then pruned once their lesson lands in TODO/DONE — the folder persists via `.gitkeep`. Large `*.tar.gz` backups are gitignored. Includes `test-edit-session-*.txt` from the Edit-from-browser regression script.
+- `recon/` — local device-test output from `scripts/*` (gitignored `*.txt`). Keep lessons in TODO/DONE/lessons; delete stale logs freely. Large `*.tar.gz` backups are gitignored too. Retired two-machine sync: [dev-behind-firewall-howto.md](dev-behind-firewall-howto.md).
 
 ## External references
 - Editor (upstream keywriter → on-device `Writerdeck`): https://github.com/dps/remarkable-keywriter

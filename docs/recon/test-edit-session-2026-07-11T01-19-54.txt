@@ -1,4 +1,0 @@
-=== test-edit-session  2026-07-11T01-19-54  target=192.168.1.8  note=vetle.md ===
-scripts/test-edit-session.sh: line 90: syntax error near unexpected token `;;'
-
---- Cleanup (restore stock UI if editor still up) ---

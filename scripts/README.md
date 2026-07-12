@@ -2,9 +2,7 @@
 
 Automation for the dev/deploy loop. Run from the repo root.
 
-> Device work is bash-only, on a machine that can reach the tablet over Wi-Fi. The bash scripts read credentials/addresses from [../secrets/remarkable.local.env](../secrets/remarkable.local.env) (gitignored) via `_env.sh`.
->
-> The Windows `*.ps1` scripts cover the off-device parts: cross-build (`build-rmkbd.ps1`), commits (`push.ps1`), and the git-bridge watcher (`watch-pc.ps1`).
+> Device work is bash-only on the Mac, which reaches the tablet over Wi-Fi. Scripts read credentials/addresses from [../secrets/remarkable.local.env](../secrets/remarkable.local.env) (gitignored) via `_env.sh`.
 
 ## On-device names vs repo script names
 
@@ -45,23 +43,21 @@ bash scripts/test-edit-session.sh
 | `recon.sh` | Snapshot device facts: OS version, `ip addr`, input devices, disk. Self-logs to `../docs/recon/`. Re-run after a firmware update to refresh the facts. |
 | `fetch-keywriter-dist.sh` | Pull CI-built `dist/Writerdeck` + `qt5.tar.gz` from GitHub Actions (`gh` required). Run after `git push` triggers `build-keywriter.yml`. |
 | `deploy-keywriter.sh` | (Mac) Ship CI-built `Writerdeck` binary + `qt5/` sysroot to `/home/root/`, launch via `Writerdeck-launcher.sh`, print a verdict, trap-restore xochitl. Self-logs to `../docs/recon/`. |
-| `deploy-rmkbd.sh` | Cross-build Writerdeck-server (ARMv7 static, `CGO_ENABLED=0`). Mac deploy ships to `/home/root/Writerdeck-server`: **`POST /api/flush-save`** then SIGTERM-waits for graceful exit (~12 s) before replacing the binary. `build-rmkbd.ps1` builds only.
+| `deploy-rmkbd.sh` | Cross-build Writerdeck-server (ARMv7 static, `CGO_ENABLED=0`). Deploy ships to `/home/root/Writerdeck-server`: **`POST /api/flush-save`** then SIGTERM-waits for graceful exit (~12 s) before replacing the binary.
 | `Writerdeck-launcher.sh` | The proven linuxfb launch env (panel geometry/DPI + epaper scene graph) in one place — sourced by `deploy-keywriter.sh` and by Writerdeck-server to spawn Writerdeck as its child. |
 | `test-e2e.sh` | (Mac) Full browser→e-ink pipeline test: build+deploy Writerdeck-server → stop xochitl → launch Writerdeck + server → print the browser URL → hold for a human to type → show daemon log + `scratch.md` → restore xochitl. `-s` skips the server build+scp. Self-logs to `../docs/recon/`. |
 | `test-edit-session.sh` | (Mac) Regression: `POST /api/open` (phone **Edit**) from stock UI must keep Writerdeck running, xochitl stopped, and `editorActive: true` for ~8 s. Prep starts server if needed; cleanup returns to stock UI without killing the daemon. Self-logs to `../docs/recon/`. |
-| `push.ps1` / `push.sh` | One-line stage+commit+push. `push.ps1` bakes in the personal git identity to prevent the work-email-leak footgun. On the Mac, `rmpush` is the alias. |
+| `push.sh` | One-line stage+commit+push. On the Mac, `rmpush` is the alias (`install-alias.sh`).
 | `install-alias.sh` | One-time Mac setup: adds `rmpush`, `rmkw`, and `wd` aliases to `~/.zshrc`. |
 | `lobby.sh` | (Mac) SSH to the tablet and run `~/wd` → Lobby on e-ink. Mac alias: `wd`. |
 | `restore-wiped-notes.sh` | (Mac) Restore zero-byte notes from GitHub history + remove `(tablet copy)` clash duplicates. Run after the Jul 2026 Lobby Home wipe bug. |
 | `wd` | On-device script (deployed to `/home/root/wd`). From an SSH session on the tablet: `~/wd`. |
-| `watch-mac.sh` | Git-bridge auto-sync (Mac side). Pulls everything; auto commits+pushes only new outputs under `docs/recon/` (scoped for safety — edits elsewhere are reported, not committed). macOS GUI banners on arm / each sync / stop. |
-| `watch-pc.ps1` | Git-bridge auto-sync (PC side). Loops `git pull`; pops a Windows toast when a pull brings in new commits. Banners on arm / each pull / stop. No admin, no modules. |
 | `install-service.sh` | (Mac) Install `writerdeck.service` on the device: scp unit → `/etc/systemd/system/`, `daemon-reload`. Migrates off legacy unit names if present. Does not enable (boot-loop guard); prints the manual-start → enable → recovery steps. |
 | `writerdeck.service` | systemd unit — runs `/home/root/Writerdeck-server` under `systemd-inhibit` (keep-awake), stops/restores xochitl around it. Installed by `install-service.sh`. |
 
 ## Convention: device actions become committed scripts
 
-Don't hand-type long `ssh root@…` one-liners — script every device action so it runs as one short line, and `tee` device output to `docs/recon/` so verdicts are captured (`recon.sh`, `deploy-keywriter.sh`, `test-e2e.sh` already do). Never log a secret there — `bootstrap.sh` echoes the root password, so it isn't logged. Optional auto-sync watchers: `bash scripts/watch-mac.sh` + `./scripts/watch-pc.ps1`.
+Don't hand-type long `ssh root@…` one-liners — script every device action so it runs as one short line, and `tee` device output to `docs/recon/` so verdicts are captured locally (`recon.sh`, `deploy-keywriter.sh`, `test-e2e.sh` already do). Never log a secret there — `bootstrap.sh` echoes the root password, so it isn't logged.
 
 ## Conventions
 - Iterate over Wi‑Fi (`192.168.1.8`) — the working path on the Mac (USB‑ethernet is dead there: no macOS RNDIS). Scripts default to it via `$RM_HOST`; override with `export RM_HOST=10.11.99.1` if USB ever revives.

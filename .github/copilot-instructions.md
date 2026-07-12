@@ -27,13 +27,9 @@ Example: *"The socket protocol + keywriter input-source patch are specced — pr
 - Markdown is the save format.
 - Writerdeck-server cross-compiles on the Mac (the only device-reachable host) — `GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0`. Only Writerdeck needs CI/Docker (upstream keywriter + toltec Qt sysroot); don't build it on a host toolchain.
 
-## Two-machine dev setup
+## Dev setup
 
-See if `dev-behind-firewall-howto.md` exists locally in the docs folder. If so, adhere.
-
-## One-machine dev setup
-
-If dev host on same Wi-Fi as tablet: build, deploy, test locally (no git-bridge). Secrets in `secrets/remarkable.local.env`; scripts source `scripts/_env.sh` for `RM_HOST`.
+Mac on the same Wi-Fi as the tablet: build, deploy, test locally. Secrets in `secrets/remarkable.local.env`; scripts source `scripts/_env.sh` for `RM_HOST`. Retired two-machine workflow: [dev-behind-firewall-howto.md](../docs/dev-behind-firewall-howto.md).
 
 Daemon loop: `deploy-rmkbd.sh` (embeds `daemon/*` via `go:embed` → `/home/root/Writerdeck-server`) → `systemctl restart writerdeck` (deploy kills the running server). Verify: `curl http://$RM_HOST:8000/` + `/app.js`; UI at same URL (PIN `none` skips auth). GitHub token: browser `localStorage ghToken` + tablet RAM via `POST /api/sync/token` (auto-repost after restart). **Writerdeck:** `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b` (`rmkw`) — never local `docker build` on Mac; CI runs Docker in GHA; relaunch Writerdeck after binary deploy (server restart alone is not enough). After Writerdeck deploy, run `bash scripts/test-edit-session.sh` — phone **Edit** must keep Writerdeck up (guards QML patch regressions that flash stock UI). Session logs: `journalctl -u writerdeck.service` (`editor started` / `editor process exited`, QML load errors).
 
@@ -48,6 +44,5 @@ On-device naming: see [architecture.md](../docs/architecture.md) and [decisions.
 ## Encoding & line endings (this bit us before — honor exactly)
 
 - Executable / device files = ASCII-only + LF. `.sh`, `.service`, `Dockerfile`, `.go`, `.yml` run on the reMarkable (Linux) or in CI; a stray non-ASCII byte or a CRLF breaks the device shell / systemd. `.gitattributes` already normalizes these to LF in the repo (every file reads `i/lf` under `git ls-files --eol`, even if a Windows checkout shows `w/crlf`) — keep it that way; never add a BOM.
-- PowerShell `.ps1` = ASCII-only too — a single non-ASCII char once broke PowerShell parsing (wrong-encoding read). `.ps1` deliberately keep CRLF (Windows-native, per `.gitattributes`); that's correct, leave it. *(Known straggler: `push.ps1` carries the author's accented name — clean to ASCII when next touched, though the name is a deliberate exception.)*
 - Markdown `.md` = Unicode is fine and intentional (em-dashes, arrows, status emoji such as ✅ 🔴 ⬜). The ASCII rule is for code, not prose.
 - Before committing a script, grep it for `[^\x00-\x7F]` — should be empty for every `.sh`/`.ps1`.

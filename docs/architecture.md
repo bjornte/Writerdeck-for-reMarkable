@@ -133,7 +133,7 @@ git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywrite
 
 **Writerdeck QML is baked into the CI binary** — always `fetch-keywriter-dist.sh` after `git push` before deploy. `systemctl restart writerdeck` reloads the server only; exit Writerdeck on the tablet (or kill the process) so the new binary loads.
 
-Requires Go (`brew install go` on macOS). `deploy-rmkbd.sh` cross-builds and deploys; `build-rmkbd.ps1` cross-builds only (no device step). Writerdeck is cross-built in CI (`third_party/keywriter/`, toltec Qt sysroot), not on a host toolchain.
+Requires Go (`brew install go` on macOS). `deploy-rmkbd.sh` cross-builds and deploys. Writerdeck is cross-built in CI (`third_party/keywriter/`, toltec Qt sysroot), not on a host toolchain.
 
 > **After `deploy-rmkbd.sh`:** calls `POST /api/flush-save` then SIGTERM-waits up to ~12 s for graceful shutdown (save + quit). Restart with `systemctl start writerdeck`. Server-only — no `test-edit-session.sh` ([decisions.md](decisions.md) #21).
 
@@ -142,7 +142,7 @@ Requires Go (`brew install go` on macOS). `deploy-rmkbd.sh` cross-builds and dep
 - `rmkw` (= `deploy-keywriter.sh -b`) — binary-only Writerdeck redeploy (~1 s): pushes just the ~219 K binary, skips re-throwing the 14 MB Qt5 sysroot (static; only changes on a Qt rebuild — then pass `RM_FORCE_SYSROOT=1`). Use after any `socket-inject.patch` / `build-keywriter.sh` change once CI has rebuilt. **Then:** `bash scripts/test-edit-session.sh`.
 - `bash scripts/test-e2e.sh -s` — full browser→e-ink pipeline test, skipping the Writerdeck-server build+scp (~2 s; server already on device). Drop `-s` to rebuild+redeploy first.
 - `bash scripts/test-edit-session.sh` — **Writerdeck/QML only** ([decisions.md](decisions.md) #21): phone **Edit** must keep Writerdeck up; not for `deploy-rmkbd.sh`-only changes.
-- `rmpush "msg"` (= `push.sh`/`push.ps1`) — commit+push under the personal identity.
+- `rmpush "msg"` (= `push.sh`) — commit+push.
 - `/home/root/Writerdeck-server -v` — per-key inject logging for keymap debugging; default is terse (connects + a count every 25 keys).
 - SSH preflight pings first, so the scripts tell *tablet asleep* from *missing key*.
 

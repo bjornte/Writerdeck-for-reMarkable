@@ -16,5 +16,5 @@ third_party/
     rotation_watcher.h  ← moc'd rotationChanged → server notify
     rotation_watcher.cpp
     socket-inject.patch ← main.cpp socket reader + setrotation
-    dist/               ← CI-built Writerdeck + qt5.tar.gz (git bridge)
+    dist/               ← CI-built Writerdeck + qt5.tar.gz (fetch via fetch-keywriter-dist.sh)
 ```
