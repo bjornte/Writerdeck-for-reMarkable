@@ -114,6 +114,7 @@ func pushLobbyInfo() {
 	lobbyIPMu.Lock()
 	lastPushedLobbyIP = ip
 	lobbyIPMu.Unlock()
+	maybeBroadcastNeedToken()
 }
 
 // watchLobbyIP re-pushes lobby info when wlan0 gets an address after boot or

@@ -73,6 +73,7 @@ func syncTokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	syncEng.setToken(req.Token)
 	syncEng.setLastError("")
+	pushLobbyInfo()
 	go func() {
 		n, err := syncEng.reconcileAll("token")
 		if err == nil {

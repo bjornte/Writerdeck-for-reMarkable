@@ -63,6 +63,20 @@ export function pushStoredTokenToTablet() {
   return _tokenPushPromise;
 }
 
+export function respondToNeedToken() {
+  if (!ghToken()) return Promise.resolve(false);
+  return fetchSyncStatus().then(function(data) {
+    if (!data || !data.syncOn || !data.syncRepo) return false;
+    state.syncOn = true;
+    state.syncRepo = data.syncRepo;
+    if (data.configured) return true;
+    return pushStoredTokenToTablet().then(function(ok) {
+      if (!ok) return false;
+      return refreshSyncStatus().then(function() { return true; });
+    });
+  });
+}
+
 export function initSync(opts) {
   _onNotesChanged = opts.onNotesChanged || function() {};
   _onBannerChange = opts.onBannerChange || function() {};

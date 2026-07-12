@@ -110,6 +110,50 @@ func broadcast(msg []byte) {
 	}
 }
 
+var (
+	needTokenMu     sync.Mutex
+	needTokenLast   time.Time
+	needTokenMinGap = 8 * time.Second
+)
+
+func sendNeedToken(client *wsClient) {
+	if !syncEng.needsBrowserToken() {
+		return
+	}
+	msg, _ := json.Marshal(struct {
+		Type string `json:"type"`
+	}{"needtoken"})
+	select {
+	case client.send <- msg:
+	default:
+	}
+}
+
+// maybeBroadcastNeedToken asks connected browsers to POST a saved GitHub token
+// when sync is on but tablet RAM has none (e.g. after server restart).
+func maybeBroadcastNeedToken() {
+	if !syncEng.needsBrowserToken() {
+		return
+	}
+	wsClientsMu.Lock()
+	n := len(wsClients)
+	wsClientsMu.Unlock()
+	if n == 0 {
+		return
+	}
+	needTokenMu.Lock()
+	if time.Since(needTokenLast) < needTokenMinGap {
+		needTokenMu.Unlock()
+		return
+	}
+	needTokenLast = time.Now()
+	needTokenMu.Unlock()
+	msg, _ := json.Marshal(struct {
+		Type string `json:"type"`
+	}{"needtoken"})
+	broadcast(msg)
+}
+
 // notifyTabletCrud queues the op and tells connected browsers to refresh; server syncs to GitHub.
 func notifyTabletCrud(op, name, oldName string) {
 	if name != "" {
@@ -210,6 +254,7 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 			default:
 			}
 		}
+		sendNeedToken(client)
 		remote := r.RemoteAddr
 		fmt.Fprintf(os.Stderr, "writerdeck-server: client connected %s\n", remote)
 		var keys int

@@ -2,7 +2,7 @@
 import { state } from './state.js';
 import {
   updateSyncBannerFromState, refreshSyncStatus, showSyncClash,
-  recordEditorDiskBaseline, checkDiskDrift, notifyDiskChanged
+  recordEditorDiskBaseline, checkDiskDrift, notifyDiskChanged, respondToNeedToken
 } from './sync.js';
 import { deps } from './deps.js';
 
@@ -239,6 +239,8 @@ function connect() {
         showSyncClash(data.note || '', data.copyName || '');
       } else if (data.type === 'diskchanged') {
         notifyDiskChanged(data.name || '');
+      } else if (data.type === 'needtoken') {
+        respondToNeedToken();
       }
       // Unknown types are silently ignored -- forward-compatible.
     } catch (e) {}

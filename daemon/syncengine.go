@@ -46,6 +46,14 @@ func (e *syncEngine) tokenConfigured() bool {
 	return e.getToken() != ""
 }
 
+func (e *syncEngine) needsBrowserToken() bool {
+	settingsMu.Lock()
+	on := curSettings.SyncOn
+	repo := curSettings.SyncRepo
+	settingsMu.Unlock()
+	return on && repo != "" && !e.tokenConfigured()
+}
+
 func (e *syncEngine) setLastError(msg string) {
 	e.errMu.Lock()
 	e.lastError = msg
