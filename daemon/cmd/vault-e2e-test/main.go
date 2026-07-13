@@ -181,7 +181,12 @@ func run(base, wsURL, host string, cleanup bool) error {
 	if err := goLobby(base); err != nil {
 		return err
 	}
+	if err := waitNoteOnServer(base, testNote, 10*time.Second); err != nil {
+		return fmt.Errorf("after save: %w", err)
+	}
 	fmt.Println("  files: created and saved plain note")
+
+	_ = sshRm(host, testEncNote)
 
 	if err := wsKey(ws, "2"); err != nil {
 		return err
@@ -191,6 +196,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 		return err
 	}
 	time.Sleep(stepPause)
+	// Files Encrypt UI when locked (PIN overlay), then server encrypt.
 	if st, _ := getVaultStatus(base); st.Locked {
 		if err := editorCmd(base, "filesencrypt", testNote); err != nil {
 			return err
@@ -202,17 +208,24 @@ func run(base, wsURL, host string, cleanup bool) error {
 			return err
 		}
 	}
-	if err := editorCmd(base, "filesencrypt", testNote); err != nil {
+	if st, _ := getVaultStatus(base); st.Locked {
+		if err := tabletReq(base, "unlockvault", initialPIN); err != nil {
+			return err
+		}
+		if err := waitVaultUnlocked(base, 8*time.Second); err != nil {
+			return err
+		}
+	}
+	if err := tabletReq(base, "encryptnote", testNote); err != nil {
 		return err
 	}
-	time.Sleep(stepPause)
-	if err := waitNoteExists(host, testEncNote, true); err != nil {
+	if err := waitNoteExists(host, testEncNote, true, 30*time.Second); err != nil {
 		return err
 	}
-	if err := waitNoteExists(host, testNote, false); err != nil {
+	if err := waitNoteExists(host, testNote, false, 5*time.Second); err != nil {
 		return err
 	}
-	fmt.Println("  files: encrypted note")
+	fmt.Println("  files: encrypted note (unlock via Files UI, encrypt confirmed)")
 
 	// Settings -> Change PIN via keyboard.
 	if err := wsKey(ws, "5"); err != nil {
@@ -318,17 +331,24 @@ func run(base, wsURL, host string, cleanup bool) error {
 			return err
 		}
 	}
-	if err := editorCmd(base, "filesdecrypt", testEncNote); err != nil {
+	if st, _ := getVaultStatus(base); st.Locked {
+		if err := tabletReq(base, "unlockvault", changedPIN); err != nil {
+			return err
+		}
+		if err := waitVaultUnlocked(base, 8*time.Second); err != nil {
+			return err
+		}
+	}
+	if err := tabletReq(base, "decryptnote", testEncNote); err != nil {
 		return err
 	}
-	time.Sleep(stepPause)
-	if err := waitNoteExists(host, testNote, true); err != nil {
+	if err := waitNoteExists(host, testNote, true, 15*time.Second); err != nil {
 		return err
 	}
-	if err := waitNoteExists(host, testEncNote, false); err != nil {
+	if err := waitNoteExists(host, testEncNote, false, 5*time.Second); err != nil {
 		return err
 	}
-	fmt.Println("  files: decrypted note")
+	fmt.Println("  files: decrypted note (unlock via Files UI, decrypt confirmed)")
 
 	if err := syncRun(base); err != nil {
 		return err
@@ -535,6 +555,40 @@ func waitEditing(base, name string, timeout time.Duration) error {
 	return fmt.Errorf("editing %s: isLobby=%d file=%q textLen=%d", name, st.IsLobby, st.CurrentFile, st.TextLen)
 }
 
+func waitNoteOnDisk(host, name string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		if err := noteExistsOnce(host, name, true); err == nil {
+			return nil
+		} else {
+			lastErr = err
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	if lastErr != nil {
+		return lastErr
+	}
+	return fmt.Errorf("%s missing on device", name)
+}
+
+func waitNoteOnServer(base, name string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	url := base + "/api/notes/" + name
+	for time.Now().Before(deadline) {
+		resp, err := client.Get(url)
+		if err == nil && resp.StatusCode == 200 {
+			resp.Body.Close()
+			return nil
+		}
+		if resp != nil {
+			resp.Body.Close()
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	return fmt.Errorf("%s not readable at %s", name, url)
+}
+
 func waitNoteListed(base, name string, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
@@ -556,7 +610,33 @@ func waitNoteListed(base, name string, timeout time.Duration) error {
 	return fmt.Errorf("%s not in note list", name)
 }
 
-func waitNoteExists(host, name string, want bool) error {
+func waitNoteExists(host, name string, want bool, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	var lastErr error
+	for time.Now().Before(deadline) {
+		if err := noteExistsOnce(host, name, want); err == nil {
+			return nil
+		} else {
+			lastErr = err
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	if lastErr != nil {
+		return lastErr
+	}
+	if want {
+		return fmt.Errorf("%s missing on device", name)
+	}
+	return fmt.Errorf("%s still on device", name)
+}
+
+func sshRm(host, name string) error {
+	path := "/home/root/Writerdeck-user-documents/" + name
+	cmd := exec.Command("ssh", "-o", "ConnectTimeout=8", "root@"+host, "sh", "-c", "rm -f "+path)
+	return cmd.Run()
+}
+
+func noteExistsOnce(host, name string, want bool) error {
 	path := "/home/root/Writerdeck-user-documents/" + name
 	op := "test -f"
 	if !want {
