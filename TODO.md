@@ -27,9 +27,7 @@ USB keyboard locales:
 
 `loadkeys` and `setxkbmap` do not work for Qt apps on rM — see [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1).
 
-Encrypted notes (shipped): [docs/todo-handoff-encryption.md](docs/todo-handoff-encryption.md).
-
-- [x] Vault, tablet UI, sync `secret/`, phone download unlock-wait.
+Encrypted notes (shipped): [decisions.md](docs/decisions.md) §31, [DONE.md](DONE.md). Verify: `bash scripts/test-vault.sh`; full UI + GitHub: `bash scripts/test-vault-e2e.sh` (sync on).
 
 ## Open question
 
@@ -38,6 +36,6 @@ Stay firmware-update-current? Each OTA resets the SSH password and may wipe the 
 ## Resume prompt
 
 > Project: reMarkable 1 Wi-Fi Markdown typewriter. Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Mac deploys; iPhone uses.
-> Shipped: [DONE.md](DONE.md). Next unchecked: Physical Home single input path ([handoff-physical-home-input.md](docs/handoff-physical-home-input.md)); Norwegian USB device test (æøå, AltGr — Alt+arrow fixed in qmap); Ctrl-K USB verify; power button device test; edit scroll/cursor patch deploy+verify. Phase 10 encryption: [improvements.md](docs/improvements.md). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) §21); after arrow/selection QML: `bash scripts/test-keyboard-harness.sh` (§22).
+> Shipped: [DONE.md](DONE.md). Next unchecked: Physical Home single input path ([handoff-physical-home-input.md](docs/handoff-physical-home-input.md)); Norwegian USB device test (æøå, AltGr — Alt+arrow fixed in qmap); Ctrl-K USB verify; power button device test; edit scroll/cursor patch deploy+verify. Encryption shipped ([decisions](docs/decisions.md) §31; verify `test-vault.sh`, `test-vault-e2e.sh`). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) §21); after arrow/selection QML: `bash scripts/test-keyboard-harness.sh` (§22).
 > Read: architecture, decisions, DONE, lessons, browser-vs-tablet, integrity-audit. Device: `secrets/remarkable.local.env` (`RM_HOST_WIFI`).
 > Constraints: no jailbreak/OTA/Toltec; `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`.

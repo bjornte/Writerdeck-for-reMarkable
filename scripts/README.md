@@ -41,6 +41,8 @@ Local Docker (Apple Silicon: `--platform linux/amd64` on both docker commands).
 | `test-edit-session.sh` | Writerdeck/QML regression — POST `/api/open` |
 | `test-keyboard-harness.sh` | Modifier+arrow and selection on device (WebSocket path). `GET /api/test/editor-state`. Default: one launch, `PUT` + `/api/reload` between scenarios — not `/api/open` (see [lessons.md](../docs/lessons.md)). `-s NAME`, `--list`, `--unit`, `--hard-reset`, `-v`. Logs: `docs/recon/test-keyboard-harness-*.txt`. After QML selection/arrow or daemon test API edits. |
 | `test-lobby-keyboard.sh` | Lobby keys after return from edit; Home-from-read must not quit. `POST /api/lobby`, `POST /api/test/home`. After Lobby, `handleHome`, or `lobbyFocus` QML changes ([decisions.md](../docs/decisions.md) §29). |
+| `test-vault.sh` | Loopback vault encrypt, lock, unlock, decrypt on device or `--local`. Resets vault for deterministic PIN. After `daemon/vault.go` or vault API edits. |
+| `test-vault-e2e.sh` | Tablet vault UI, keyboard PIN, Files encrypt/decrypt, GitHub `secret/` and note bytes. Needs sync on. Logs: `docs/recon/test-vault-e2e-*.txt`. After vault QML or E2E harness edits. |
 | `lobby.sh` / `wd` | Show Lobby on e-ink |
 | `install-service.sh` | Install systemd unit (manual enable) |
 | `install-alias.sh` | Mac aliases: `rmpush`, `rmkw`, `wd` |

@@ -212,6 +212,22 @@ func (e *syncEngine) pushNote(name string) error {
 		if !ok {
 			return nil
 		}
+		// Encrypted notes are opaque bytes and must carry the WDENC1 header.
+		// If an older buggy run wrote raw bytes without the header, re-wrap them
+		// before pushing so GitHub always stores valid WDENC1 blobs.
+		if !bytes.HasPrefix(data, []byte(vaultMagic)) {
+			if vaultLocked() {
+				return fmt.Errorf("cannot rewrap %s while vault locked", name)
+			}
+			rewrapped, err := encryptNoteBytes(data)
+			if err != nil {
+				return err
+			}
+			if p := notesSafe(name); p != "" {
+				_ = writeNoteFile(p, rewrapped)
+			}
+			data = rewrapped
+		}
 		meta, hasMeta := e.getMeta(name)
 		emptyHash := strHash("")
 		h := strHash(string(data))

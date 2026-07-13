@@ -26,6 +26,8 @@ Upload and download `.md` notes from the note list. Type mode when the tablet op
 
 PIN on the tablet each boot — 6 digits, 4 digits, or none (none warns that anyone on your Wi-Fi can connect). Five wrong guesses from one IP lock that IP for 60 seconds. Auth cookie until 04:00 local time.
 
+Optional private-note encryption: a second 6-digit vault PIN (tablet only), independent of the pairing PIN. Per-note Encrypt/Decrypt from Lobby Files; ciphertext as `.md.enc` with `WDENC1` on disk and on GitHub. Recovery material syncs to `secret/pin` and `secret/vault`. Phone download decrypts when the vault is unlocked; if locked, the tablet shows a PIN overlay and the phone waits. Details: [decisions.md](docs/decisions.md) §31.
+
 ## Settings and sync
 
 Reading font, PIN length, display rotation, and Exit Writerdeck live on the tablet Lobby Settings tab. GitHub sync lives in Notes sync setup on the phone (bar: Sync setup) — toggle, repo, token, Save, Sync. Connection indicator refreshes via status every five seconds. Token in phone browser and tablet RAM only; auto-restore after restart via WebSocket `needtoken`; `syncOn`, `syncRepo`, and `syncMeta` on disk.
@@ -46,6 +48,6 @@ Plain Markdown on disk, no silent overwrite of live edits, durable saves. Slices
 
 Static Go binary at `/home/root/Writerdeck-server`. Writerdeck built in CI. Cold-boot autostart via `writerdeck.service`. Keep-awake during editor sessions only. On-device layout: [docs/architecture.md](docs/architecture.md).
 
-Regression: `bash scripts/test-edit-session.sh` — POST `/api/open` must keep Writerdeck running, xochitl down, and editorActive true for several seconds. After Lobby or `handleHome` QML changes: `bash scripts/test-lobby-keyboard.sh` — lobby keys after return from edit, Home-from-read must not quit Writerdeck.
+Regression: `bash scripts/test-edit-session.sh` — POST `/api/open` must keep Writerdeck running, xochitl down, and editorActive true for several seconds. After Lobby or `handleHome` QML changes: `bash scripts/test-lobby-keyboard.sh` — lobby keys after return from edit, Home-from-read must not quit Writerdeck. After vault or encryption changes: `bash scripts/test-vault.sh` and `bash scripts/test-vault-e2e.sh` (sync on required for E2E).
 
 `/dev/uinput` is dead on this kernel. The editor is fed over a socket. Do not retry uinput.

@@ -186,6 +186,11 @@ func (e *editorConn) handleEditorLine(line []byte) {
 		broadcastOpenEdit(name)
 	case "saved", "ready":
 		if msg.T == "saved" && (msg.C == "home" || msg.C == "showlobby") {
+			// Returning to the Lobby means no note is "open" for sync purposes.
+			// Otherwise, sync would keep skipping the last edited note.
+			currentNoteMu.Lock()
+			currentNote = ""
+			currentNoteMu.Unlock()
 			vaultLockOnLobby()
 		}
 		e.signalAck(msg.T, msg.C)

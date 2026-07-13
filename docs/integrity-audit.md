@@ -1,6 +1,6 @@
 # Document integrity
 
-Last updated 2026-07-12. Contract: [architecture.md](architecture.md), [decisions.md](decisions.md). Shipped features: [../DONE.md](../DONE.md).
+Last updated 2026-07-13. Contract: [architecture.md](architecture.md), [decisions.md](decisions.md). Shipped features: [../DONE.md](../DONE.md).
 
 Writerdeck is a typewriter. Integrity means your words end up as real Markdown on the tablet, stay readable, and are not silently replaced, emptied, or forked without you noticing.
 
@@ -26,9 +26,9 @@ Clash handling keeps both copies but does not auto-reload the editor. Stale open
 
 PIN none on an untrusted LAN is a confidentiality and tampering risk, not just sync.
 
-`test-edit-session.sh` guards "editor stays up on Edit" — not save under load, clash while typing, or power sleep with an open note. `scripts/test-vault.sh` covers loopback vault setup, per-note encrypt, lock, unlock, and decrypt.
+`test-edit-session.sh` guards "editor stays up on Edit" — not save under load, clash while typing, or power sleep with an open note. `scripts/test-vault.sh` covers loopback vault setup, per-note encrypt, lock, unlock, and decrypt. `scripts/test-vault-e2e.sh` covers tablet PIN UI, Files encrypt/decrypt, PIN change, edit encrypted note, and GitHub sync (needs sync configured).
 
-Encrypted `.md.enc` files are opaque on disk; plaintext exists in the editor buffer only while the vault is unlocked. The UTF-8 Markdown contract applies to `.md` only.
+Encrypted `.md.enc` files are opaque on disk; plaintext exists in the editor buffer only while the vault is unlocked. The UTF-8 Markdown contract applies to `.md` only. Returning to the Lobby clears open-note tracking for sync so reconciles are not stuck skipping the last edited file.
 
 ## Unknown
 
