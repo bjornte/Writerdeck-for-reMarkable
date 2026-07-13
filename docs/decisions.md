@@ -118,7 +118,7 @@ Global rotation (0, 90, 180, 270) is stored in `.Writerdeck/settings.json`. On e
 
 Modifier+arrow and selection behaviour are tested on the device via `daemon/cmd/edit-harness` and `scripts/test-keyboard-harness.sh`, not by reading saved note bytes. Writerdeck publishes cursor/selection over the socket; the server exposes `GET /api/test/editor-state` and `POST /api/test/reset` (hard quit). Scenarios send keys over `/ws` like the phone UI.
 
-Default run uses soft reset: one editor launch per full suite, `PUT` plus `POST /api/reload` between scenarios so content changes are not overwritten by `saveAndLoad`. Unit coverage for `translate()` modifier masks stays in `daemon/editor_test.go`. The harness does not exercise USB evdev or `.qmap` — keep hardware checks for Norwegian Alt+arrow, AltGr, and national characters. Run after QML arrow/selection changes and after daemon test-handler changes.
+Default run uses soft reset: one editor launch per full suite, `PUT` plus `POST /api/reload` between scenarios so content changes are not overwritten by `saveAndLoad`. Unit coverage for `translate()` modifier masks stays in `daemon/editor_test.go`. The harness does not exercise USB evdev or `.qmap` — keep hardware checks for Norwegian Alt+arrow, AltGr, and national characters. Run after QML arrow/selection changes and after daemon test-handler changes. Harness notes use the `z-test-` prefix (decision 32).
 
 ## 23. On-device Writerdeck naming
 
@@ -156,7 +156,7 @@ Two independent PINs: the LAN pairing PIN (`pinDigits`, phone browser) and the v
 
 Encrypted notes use suffix `.md.enc` beside plain `.md` in `Writerdeck-user-documents/`. Crypto: AES-256-GCM per file with a random 32-byte data key; user PIN derives a KEK via scrypt (N=32768); settings store `encryptionEnabled`, `vaultSalt`, `vaultVerifier`, `wrappedDataKey` only. On-disk format: magic `WDENC1` + nonce + ciphertext+tag. Stdlib AES-GCM plus `golang.org/x/crypto/scrypt`; `CGO_ENABLED=0`.
 
-Unlocked means `dataKey` lives in server RAM. The vault locks on every return to Lobby (`isLobby` via editor state). Unlock is tablet-only: touch numpad or USB digits + Enter. Failed unlocks rate-limit like pairing PIN auth.
+Unlocked means `dataKey` lives in server RAM. The vault locks when the editor returns to the Lobby (`home` or `showlobby` save ack) — not on every editor-state snapshot while already in the Lobby. Unlock is tablet-only: touch numpad or USB digits + Enter. Failed unlocks rate-limit like pairing PIN auth. Files Encrypt/Decrypt while locked set a pending action; when `setVaultStatus` reports unlocked, the deferred op runs once.
 
 Per-note encrypt/decrypt from Lobby Files — no bulk encrypt on enable. GitHub sync treats `.md.enc` as opaque bytes and mirrors recovery material under `secret/pin` (plaintext PIN) and `secret/vault` (JSON wrap metadata). `secret/` is excluded from phone note APIs.
 
@@ -164,9 +164,11 @@ Phone download decrypts server-side when the vault is unlocked; if locked, the s
 
 UTF-8 Markdown integrity applies to `.md` only; `.md.enc` are opaque on disk. See [integrity-audit.md](integrity-audit.md).
 
+## 32. Device test harness note names
+
+Notes created or opened by device regression scripts (`test-edit-session.sh`, `test-keyboard-harness.sh`, `test-vault.sh`, `test-vault-e2e.sh`, and future harnesses) use the `z-test-` filename prefix so they sort last in the Lobby Files list and are easy to tell from user notes. Example: `z-test-keyboard-harness.md`, `z-test-vault-e2e.md`.
+
 ---
-
-
 
 ## Open risks
 

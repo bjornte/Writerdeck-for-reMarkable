@@ -158,9 +158,6 @@ func (e *editorConn) writeCmdWaitAck(cmd []byte, typ, cmdName string, timeout ti
 
 func (e *editorConn) handleEditorLine(line []byte) {
 	if st, ok := parseEditorState(line); ok {
-		if st.IsLobby == 1 {
-			vaultLockOnLobby()
-		}
 		e.deliverState(st)
 		return
 	}
@@ -188,6 +185,9 @@ func (e *editorConn) handleEditorLine(line []byte) {
 		currentNoteMu.Unlock()
 		broadcastOpenEdit(name)
 	case "saved", "ready":
+		if msg.T == "saved" && (msg.C == "home" || msg.C == "showlobby") {
+			vaultLockOnLobby()
+		}
 		e.signalAck(msg.T, msg.C)
 	case "rotation":
 		settingsMu.Lock()

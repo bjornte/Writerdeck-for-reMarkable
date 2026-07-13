@@ -10,7 +10,7 @@
 # Usage:
 #   bash scripts/test-lobby-keyboard.sh
 #   bash scripts/test-lobby-keyboard.sh 192.168.1.8
-#   bash scripts/test-lobby-keyboard.sh -note vetle.md
+#   bash scripts/test-lobby-keyboard.sh -note z-test-keyboard-harness.md
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=/dev/null
@@ -18,10 +18,10 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$DIR/.." && pwd)"
 
 TARGET="${RM_HOST}"
-NOTE="keyboard-harness.md"
+NOTE="z-test-keyboard-harness.md"
 while [ $# -gt 0 ]; do
   case "$1" in
-    -note) shift; NOTE="${1:-keyboard-harness.md}"; shift || true ;;
+    -note) shift; NOTE="${1:-z-test-keyboard-harness.md}"; shift || true ;;
     -h|--help)
       sed -n '2,14p' "$0"
       exit 0

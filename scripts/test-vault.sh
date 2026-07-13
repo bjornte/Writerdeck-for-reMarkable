@@ -50,26 +50,29 @@ code=$(curl -s -o /tmp/vault-setup.json -w '%{http_code}' -X POST "$BASE/api/tes
   -d '{"op":"setvaultpin","name":"123456"}')
 [[ "$code" == "200" ]] || fail "setvaultpin HTTP $code"
 
+TEST_NOTE="z-test-vault-plain.md"
+TEST_ENC="${TEST_NOTE%.md}.md.enc"
+
 if [[ -n "$LOCAL" ]]; then
-  echo "test note" >"$NOTES/plain.md"
+  echo "test note" >"$NOTES/$TEST_NOTE"
 else
   ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 "root@$RM_HOST" \
-    "echo 'test note' > $DEVICE_NOTES/plain.md"
+    "echo 'test note' > $DEVICE_NOTES/$TEST_NOTE"
 fi
 
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/test/tablet-req" \
   -H 'Content-Type: application/json' \
-  -d '{"op":"encryptnote","name":"plain.md"}')
+  -d "{\"op\":\"encryptnote\",\"name\":\"$TEST_NOTE\"}")
 [[ "$code" == "200" ]] || fail "encryptnote HTTP $code"
 
 if [[ -n "$LOCAL" ]]; then
-  [[ -f "$NOTES/plain.md.enc" ]] || fail "plain.md.enc missing"
-  [[ ! -f "$NOTES/plain.md" ]] || fail "plain.md should be gone"
+  [[ -f "$NOTES/$TEST_ENC" ]] || fail "$TEST_ENC missing"
+  [[ ! -f "$NOTES/$TEST_NOTE" ]] || fail "$TEST_NOTE should be gone"
 else
   ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 "root@$RM_HOST" \
-    "test -f $DEVICE_NOTES/plain.md.enc" || fail "plain.md.enc missing on device"
+    "test -f $DEVICE_NOTES/$TEST_ENC" || fail "$TEST_ENC missing on device"
   ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 "root@$RM_HOST" \
-    "test ! -f $DEVICE_NOTES/plain.md" || fail "plain.md should be gone on device"
+    "test ! -f $DEVICE_NOTES/$TEST_NOTE" || fail "$TEST_NOTE should be gone on device"
 fi
 
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/test/tablet-req" \
@@ -77,10 +80,10 @@ code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/test/tablet-req
 [[ "$code" == "200" ]] || fail "lockvault HTTP $code"
 
 if [[ -n "$LOCAL" ]]; then
-  code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/notes/plain.md.enc/download")
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/notes/$TEST_ENC/download")
   [[ "$code" == "423" ]] || fail "download while locked want 423 got $code"
 else
-  code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/notes/plain.md.enc/download")
+  code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/notes/$TEST_ENC/download")
   [[ "$code" == "401" || "$code" == "423" ]] || fail "download while locked want 401 or 423 got $code"
 fi
 
@@ -94,14 +97,14 @@ echo "$status" | grep -q '"enabled":true' || fail "vault not enabled after setup
 echo "$status" | grep -q '"locked":false' || fail "vault still locked after unlock"
 
 if [[ -n "$LOCAL" ]]; then
-  plain=$(curl -s "$BASE/api/notes/plain.md.enc")
+  plain=$(curl -s "$BASE/api/notes/$TEST_ENC")
   [[ "$plain" == *"test note"* ]] || fail "loopback GET decrypt failed: $plain"
 else
   # Loopback read is tablet-only; verify ciphertext is not plaintext on disk.
   ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 "root@$RM_HOST" \
-    "dd if=$DEVICE_NOTES/plain.md.enc bs=1 count=6 2>/dev/null | grep -q WDENC1" || fail "encrypted file missing WDENC1 magic"
+    "dd if=$DEVICE_NOTES/$TEST_ENC bs=1 count=6 2>/dev/null | grep -q WDENC1" || fail "encrypted file missing WDENC1 magic"
   ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 "root@$RM_HOST" \
-    "grep -q 'test note' $DEVICE_NOTES/plain.md.enc && exit 1 || exit 0" || fail "plaintext visible in .md.enc on disk"
+    "grep -q 'test note' $DEVICE_NOTES/$TEST_ENC && exit 1 || exit 0" || fail "plaintext visible in .md.enc on disk"
 fi
 
 echo "PASS: test-vault"

@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	harnessNote = "keyboard-harness.md"
+	harnessNote = "z-test-keyboard-harness.md"
 	keyPause    = 120 * time.Millisecond
 	stepPause   = 200 * time.Millisecond
 	httpTimeout = 30 * time.Second

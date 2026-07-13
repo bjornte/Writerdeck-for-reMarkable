@@ -14,7 +14,7 @@
 # Usage (repo root):
 #   bash scripts/test-edit-session.sh
 #   bash scripts/test-edit-session.sh 192.168.1.8
-#   bash scripts/test-edit-session.sh -s vetle.md   # note to open
+#   bash scripts/test-edit-session.sh -s z-test-edit-session.md   # note to open
 
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -22,11 +22,11 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$DIR/_env.sh"
 REPO="$(cd "$DIR/.." && pwd)"
 
-NOTE="vetle.md"
+NOTE="z-test-edit-session.md"
 TARGET="$RM_HOST"
 for arg in "$@"; do
     case "$arg" in
-        -s) shift; NOTE="${1:-vetle.md}"; shift || true ;;
+        -s) shift; NOTE="${1:-z-test-edit-session.md}"; shift || true ;;
         -*) echo "Unknown option: $arg" >&2; exit 2 ;;
         *)  TARGET="$arg" ;;
     esac
@@ -71,6 +71,7 @@ HOLD=$HOLD
 fail=0
 log=/tmp/test-edit-session-\$\$.log
 : > "\$log"
+echo "# edit session harness" > "/home/root/Writerdeck-user-documents/\$NOTE"
 
 echo "=== before ===" | tee -a "\$log"
 pidof Writerdeck 2>/dev/null || echo no-writerdeck | tee -a "\$log"

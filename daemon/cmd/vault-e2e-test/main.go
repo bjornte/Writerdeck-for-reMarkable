@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	testNoteStem = "vault-e2e-test"
+	testNoteStem = "z-test-vault-e2e"
 	testNote     = testNoteStem + ".md"
 	testEncNote  = testNoteStem + ".md.enc"
 	initialPIN   = "111111"
@@ -196,28 +196,17 @@ func run(base, wsURL, host string, cleanup bool) error {
 		return err
 	}
 	time.Sleep(stepPause)
-	// Files Encrypt UI when locked (PIN overlay), then server encrypt.
+	// Files Encrypt while vault is locked: unlock overlay, then deferred encrypt on unlock.
+	if err := editorCmd(base, "filesencrypt", testNote); err != nil {
+		return err
+	}
 	if st, _ := getVaultStatus(base); st.Locked {
-		if err := editorCmd(base, "filesencrypt", testNote); err != nil {
-			return err
-		}
 		if err := waitVaultOverlay(base, "unlock", 8*time.Second); err != nil {
 			return fmt.Errorf("encrypt unlock overlay: %w", err)
 		}
 		if err := enterPINAndUnlock(base, ws, initialPIN); err != nil {
 			return err
 		}
-	}
-	if st, _ := getVaultStatus(base); st.Locked {
-		if err := tabletReq(base, "unlockvault", initialPIN); err != nil {
-			return err
-		}
-		if err := waitVaultUnlocked(base, 8*time.Second); err != nil {
-			return err
-		}
-	}
-	if err := tabletReq(base, "encryptnote", testNote); err != nil {
-		return err
 	}
 	if err := waitNoteExists(host, testEncNote, true, 30*time.Second); err != nil {
 		return err
@@ -422,7 +411,7 @@ func ensureEditor(base string) error {
 	if st.EditorActive {
 		return nil
 	}
-	body, _ := json.Marshal(map[string]string{"name": "vetle.md"})
+	body, _ := json.Marshal(map[string]string{"name": testNote})
 	code, err := post(base+"/api/open", body)
 	if err != nil {
 		return err

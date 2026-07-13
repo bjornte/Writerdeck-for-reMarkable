@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	testNote    = "keyboard-harness.md"
+	testNote    = "z-test-keyboard-harness.md"
 	httpTimeout = 30 * time.Second
 )
 
