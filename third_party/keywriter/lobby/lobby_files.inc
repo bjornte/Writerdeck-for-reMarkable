@@ -30,7 +30,12 @@
                             ListView {
                                 id: lobbyFilesList
                                 width: parent.width
-                                height: parent.height - lobbyFilesBar.height - lobby.contentSpacing * 2
+                                height: {
+                                    var reserved = lobbyFilesBar.height + lobby.contentSpacing * 2
+                                    if (lobbyEncryptionEnabled && lobbyFilesMode === "")
+                                        reserved += lobbyFilesVaultBar.height + lobby.contentSpacing
+                                    return Math.max(lobby.rowHeight * 2, parent.height - reserved)
+                                }
                                 clip: true
                                 model: lobbyNotesModel
                                 currentIndex: lobbyFilesIndex

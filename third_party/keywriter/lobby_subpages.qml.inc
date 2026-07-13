@@ -166,7 +166,12 @@
                             ListView {
                                 id: lobbyFilesList
                                 width: parent.width
-                                height: parent.height - lobbyFilesBar.height - lobby.contentSpacing * 2
+                                height: {
+                                    var reserved = lobbyFilesBar.height + lobby.contentSpacing * 2
+                                    if (lobbyEncryptionEnabled && lobbyFilesMode === "")
+                                        reserved += lobbyFilesVaultBar.height + lobby.contentSpacing
+                                    return Math.max(lobby.rowHeight * 2, parent.height - reserved)
+                                }
                                 clip: true
                                 model: lobbyNotesModel
                                 currentIndex: lobbyFilesIndex
@@ -183,7 +188,7 @@
                                         anchors.verticalCenter: parent.verticalCenter
                                         anchors.left: parent.left
                                         anchors.leftMargin: 16
-                                        text: model.name
+                                        text: (model.encrypted ? "[lock] " : "") + model.name
                                         font.family: "Noto Mono"
                                         font.pointSize: 11
                                         color: "black"
@@ -237,6 +242,48 @@
                                                 else if (modelData === "Read") root.lobbyReadSelected()
                                                 else if (modelData === "Rename") root.lobbyFilesBeginRename()
                                                 else if (modelData === "Delete") root.lobbyFilesBeginDelete()
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Row {
+                                id: lobbyFilesVaultBar
+                                width: parent.width
+                                height: lobby.actionBtnHeight + 4
+                                spacing: lobby.tabSpacing
+                                visible: lobbyFilesMode === "" && lobbyEncryptionEnabled
+
+                                Repeater {
+                                    model: {
+                                        if (lobbyNotesModel.count === 0) return []
+                                        var row = lobbyNotesModel.get(lobbyFilesIndex)
+                                        if (!row) return []
+                                        if (row.encrypted) return ["Decrypt"]
+                                        return ["Encrypt", "New encrypted"]
+                                    }
+                                    delegate: Rectangle {
+                                        width: lobbyFilesVaultBar.model.length === 1
+                                            ? lobbyFilesVaultBar.width
+                                            : (lobbyFilesVaultBar.width - lobby.tabSpacing) / 2
+                                        height: lobby.actionBtnHeight
+                                        radius: 6
+                                        color: "#f0f0f0"
+                                        border.color: "#bbb"
+                                        border.width: 1
+                                        Text {
+                                            anchors.centerIn: parent
+                                            text: modelData
+                                            font.family: "Noto Sans"
+                                            font.pointSize: 11
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: {
+                                                if (modelData === "Encrypt") root.lobbyEncryptSelected()
+                                                else if (modelData === "Decrypt") root.lobbyDecryptSelected()
+                                                else if (modelData === "New encrypted") root.lobbyFilesBeginNewEncrypted()
                                             }
                                         }
                                     }
@@ -527,6 +574,91 @@
                                                     anchors.fill: parent
                                                     onClicked: writerdeck.setReadFont(modelData.id)
                                                 }
+                                            }
+                                        }
+                                    }
+
+                                    Text {
+                                        text: "\nPrivate notes"
+                                        font.pointSize: 12
+                                        font.family: "Noto Sans"
+                                        color: "black"
+                                        width: parent.width
+                                    }
+                                    Text {
+                                        text: lobbyEncryptionEnabled
+                                            ? (lobbyVaultLocked ? "On — locked (unlock to edit encrypted notes)" : "On — unlocked")
+                                            : "Off — optional encryption with a separate 6-digit PIN. Recovery via GitHub secret/pin when sync is on."
+                                        font.pointSize: 10
+                                        font.family: "Noto Sans"
+                                        color: "#666666"
+                                        width: parent.width
+                                        wrapMode: Text.WordWrap
+                                    }
+                                    Row {
+                                        width: parent.width
+                                        spacing: lobby.tabSpacing
+                                        visible: !lobbyEncryptionEnabled
+                                        Rectangle {
+                                            width: (parent.width - lobby.tabSpacing) / 2
+                                            height: lobby.actionBtnHeight
+                                            radius: 6
+                                            color: "#f0f0f0"
+                                            border.color: "#bbb"
+                                            border.width: 1
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "Enable"
+                                                font.family: "Noto Sans"
+                                                font.pointSize: 11
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: root.vaultBeginSetup()
+                                            }
+                                        }
+                                    }
+                                    Row {
+                                        width: parent.width
+                                        spacing: lobby.tabSpacing
+                                        visible: lobbyEncryptionEnabled
+                                        Rectangle {
+                                            width: (parent.width - lobby.tabSpacing) / 2
+                                            height: lobby.actionBtnHeight
+                                            radius: 6
+                                            color: "#f0f0f0"
+                                            border.color: "#bbb"
+                                            border.width: 1
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: lobbyVaultLocked ? "Unlock" : "Lock"
+                                                font.family: "Noto Sans"
+                                                font.pointSize: 11
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: {
+                                                    if (lobbyVaultLocked) root.vaultBeginUnlock("")
+                                                    else writerdeck.lockVault()
+                                                }
+                                            }
+                                        }
+                                        Rectangle {
+                                            width: (parent.width - lobby.tabSpacing) / 2
+                                            height: lobby.actionBtnHeight
+                                            radius: 6
+                                            color: "#f0f0f0"
+                                            border.color: "#bbb"
+                                            border.width: 1
+                                            Text {
+                                                anchors.centerIn: parent
+                                                text: "Change PIN"
+                                                font.family: "Noto Sans"
+                                                font.pointSize: 11
+                                            }
+                                            MouseArea {
+                                                anchors.fill: parent
+                                                onClicked: root.vaultBeginChangePIN()
                                             }
                                         }
                                     }
