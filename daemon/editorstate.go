@@ -8,12 +8,14 @@ import (
 
 // EditorState is a cursor/selection snapshot from the tablet TextEdit.
 type EditorState struct {
-	Cursor   int `json:"cursor"`
-	SelStart int `json:"selStart"`
-	SelEnd   int `json:"selEnd"`
-	TextLen  int `json:"textLen"`
-	Mode     int `json:"mode"`    // 0=preview, 1=edit
-	IsLobby  int `json:"isLobby"` // 1=Lobby visible
+	Cursor       int    `json:"cursor"`
+	SelStart     int    `json:"selStart"`
+	SelEnd       int    `json:"selEnd"`
+	TextLen      int    `json:"textLen"`
+	Mode         int    `json:"mode"`         // 0=preview, 1=edit
+	IsLobby      int    `json:"isLobby"`      // 1=Lobby visible
+	VaultOverlay string `json:"vaultOverlay"` // numpad mode when non-empty
+	CurrentFile  string `json:"currentFile"`
 }
 
 const stateQueryTimeout = 3 * time.Second
@@ -70,24 +72,28 @@ func queryEditorState() (EditorState, error) {
 
 func parseEditorState(line []byte) (EditorState, bool) {
 	var raw struct {
-		T        string `json:"t"`
-		Cursor   int    `json:"cursor"`
-		SelStart int    `json:"selStart"`
-		SelEnd   int    `json:"selEnd"`
-		TextLen  int    `json:"textLen"`
-		Mode     int    `json:"mode"`
-		IsLobby  int    `json:"isLobby"`
+		T            string `json:"t"`
+		Cursor       int    `json:"cursor"`
+		SelStart     int    `json:"selStart"`
+		SelEnd       int    `json:"selEnd"`
+		TextLen      int    `json:"textLen"`
+		Mode         int    `json:"mode"`
+		IsLobby      int    `json:"isLobby"`
+		VaultOverlay string `json:"vaultOverlay"`
+		CurrentFile  string `json:"currentFile"`
 	}
 	if err := json.Unmarshal(line, &raw); err != nil || raw.T != "state" {
 		return EditorState{}, false
 	}
 	return EditorState{
-		Cursor:   raw.Cursor,
-		SelStart: raw.SelStart,
-		SelEnd:   raw.SelEnd,
-		TextLen:  raw.TextLen,
-		Mode:     raw.Mode,
-		IsLobby:  raw.IsLobby,
+		Cursor:       raw.Cursor,
+		SelStart:     raw.SelStart,
+		SelEnd:       raw.SelEnd,
+		TextLen:      raw.TextLen,
+		Mode:         raw.Mode,
+		IsLobby:      raw.IsLobby,
+		VaultOverlay: raw.VaultOverlay,
+		CurrentFile:  raw.CurrentFile,
 	}, true
 }
 

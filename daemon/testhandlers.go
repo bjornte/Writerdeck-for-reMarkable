@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -109,5 +110,40 @@ func testTabletReqHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unsupported op", http.StatusBadRequest)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// testEditorCmdHandler forwards {"t":"cmd","c":"..."} to the editor socket (harness UI triggers).
+func testEditorCmdHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		return
+	}
+	if !checkAuth(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if globalEC == nil || !globalEC.ready() {
+		http.Error(w, "no active editor session", http.StatusConflict)
+		return
+	}
+	var req struct {
+		C    string `json:"c"`
+		Name string `json:"name,omitempty"`
+	}
+	if json.NewDecoder(r.Body).Decode(&req) != nil || req.C == "" {
+		http.Error(w, "bad request: need {c}", http.StatusBadRequest)
+		return
+	}
+	var line string
+	if req.Name != "" {
+		line = fmt.Sprintf(`{"t":"cmd","c":%q,"name":%q}`, req.C, req.Name)
+	} else {
+		line = fmt.Sprintf(`{"t":"cmd","c":%q}`, req.C)
+	}
+	globalEC.write([]byte(line))
 	w.WriteHeader(http.StatusOK)
 }

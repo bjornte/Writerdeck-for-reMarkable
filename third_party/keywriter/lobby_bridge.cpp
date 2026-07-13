@@ -159,7 +159,8 @@ void LobbyBridge::createEncryptedNote(const QString &name)
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
 }
 
-void LobbyBridge::publishState(int cursor, int selStart, int selEnd, int textLen, int mode, int isLobby)
+void LobbyBridge::publishState(int cursor, int selStart, int selEnd, int textLen, int mode, int isLobby,
+                               const QString &vaultOverlay, const QString &currentFile)
 {
     QJsonObject o;
     o[QStringLiteral("t")] = QStringLiteral("state");
@@ -169,6 +170,8 @@ void LobbyBridge::publishState(int cursor, int selStart, int selEnd, int textLen
     o[QStringLiteral("textLen")] = textLen;
     o[QStringLiteral("mode")] = mode;
     o[QStringLiteral("isLobby")] = isLobby;
+    o[QStringLiteral("vaultOverlay")] = vaultOverlay;
+    o[QStringLiteral("currentFile")] = currentFile;
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
 }
 
