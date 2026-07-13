@@ -11,8 +11,6 @@ Keystrokes reach the editor over `/run/Writerdeck.sock`, not uinput ([docs/decis
 1. Physical Home — single input path. Handoff: [docs/todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md).
 2. Edit scroll/cursor — patch is in `build-keywriter.sh`; run `test-keyboard-harness.sh` and spot-check last-line typing on e-ink.
 
-Encryption regression (not open work): [docs/todo-handoff-encryption.md](docs/todo-handoff-encryption.md) — `test-vault.sh`, `test-vault-e2e.sh` (sync on).
-
 ## Open question
 
 Stay firmware-update-current? Each OTA resets the SSH password and may wipe the systemd unit — re-deploy and re-enable ([docs/decisions.md](docs/decisions.md) open risks).
