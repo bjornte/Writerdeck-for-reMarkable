@@ -32,7 +32,7 @@
                                 width: parent.width
                                 height: {
                                     var reserved = lobbyFilesBar.height + lobby.contentSpacing * 2
-                                    if (lobbyEncryptionEnabled && lobbyFilesMode === "")
+                                    if (lobbyEncryptionEnabled && lobbyFilesMode === "" && lobbyNotesModel.count > 0)
                                         reserved += lobbyFilesVaultBar.height + lobby.contentSpacing
                                     return Math.max(lobby.rowHeight * 2, parent.height - reserved)
                                 }
@@ -117,39 +117,69 @@
                                 width: parent.width
                                 height: lobby.actionBtnHeight + 4
                                 spacing: lobby.tabSpacing
-                                visible: lobbyFilesMode === "" && lobbyEncryptionEnabled
+                                visible: lobbyFilesMode === "" && lobbyEncryptionEnabled && lobbyNotesModel.count > 0
 
-                                Repeater {
-                                    model: {
-                                        if (lobbyNotesModel.count === 0) return []
-                                        var row = lobbyNotesModel.get(lobbyFilesIndex)
-                                        if (!row) return []
-                                        if (row.encrypted) return ["Decrypt"]
-                                        return ["Encrypt", "New encrypted"]
+                                property bool selectedEncrypted: {
+                                    if (lobbyNotesModel.count === 0) return false
+                                    var row = lobbyNotesModel.get(lobbyFilesIndex)
+                                    return row && row.encrypted
+                                }
+
+                                Rectangle {
+                                    visible: !lobbyFilesVaultBar.selectedEncrypted
+                                    width: (lobbyFilesVaultBar.width - lobby.tabSpacing) / 2
+                                    height: lobby.actionBtnHeight
+                                    radius: 6
+                                    color: "#f0f0f0"
+                                    border.color: "#bbb"
+                                    border.width: 1
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "Encrypt"
+                                        font.family: "Noto Sans"
+                                        font.pointSize: 11
                                     }
-                                    delegate: Rectangle {
-                                        width: lobbyFilesVaultBar.model.length === 1
-                                            ? lobbyFilesVaultBar.width
-                                            : (lobbyFilesVaultBar.width - lobby.tabSpacing) / 2
-                                        height: lobby.actionBtnHeight
-                                        radius: 6
-                                        color: "#f0f0f0"
-                                        border.color: "#bbb"
-                                        border.width: 1
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: modelData
-                                            font.family: "Noto Sans"
-                                            font.pointSize: 11
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: {
-                                                if (modelData === "Encrypt") root.lobbyEncryptSelected()
-                                                else if (modelData === "Decrypt") root.lobbyDecryptSelected()
-                                                else if (modelData === "New encrypted") root.lobbyFilesBeginNewEncrypted()
-                                            }
-                                        }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: root.lobbyEncryptSelected()
+                                    }
+                                }
+                                Rectangle {
+                                    visible: !lobbyFilesVaultBar.selectedEncrypted
+                                    width: (lobbyFilesVaultBar.width - lobby.tabSpacing) / 2
+                                    height: lobby.actionBtnHeight
+                                    radius: 6
+                                    color: "#f0f0f0"
+                                    border.color: "#bbb"
+                                    border.width: 1
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "New encrypted"
+                                        font.family: "Noto Sans"
+                                        font.pointSize: 11
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: root.lobbyFilesBeginNewEncrypted()
+                                    }
+                                }
+                                Rectangle {
+                                    visible: lobbyFilesVaultBar.selectedEncrypted
+                                    width: lobbyFilesVaultBar.width
+                                    height: lobby.actionBtnHeight
+                                    radius: 6
+                                    color: "#f0f0f0"
+                                    border.color: "#bbb"
+                                    border.width: 1
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "Decrypt"
+                                        font.family: "Noto Sans"
+                                        font.pointSize: 11
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        onClicked: root.lobbyDecryptSelected()
                                     }
                                 }
                             }
