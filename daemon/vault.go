@@ -39,8 +39,8 @@ const (
 
 var (
 	vaultMu          sync.Mutex
-	vaultDataKey     []byte // nil when locked; 32-byte AES key when unlocked
-	vaultCurrentPIN  string // RAM only — for secret/pin sync after setup/change/unlock
+	vaultDataKey     []byte // nil unless a note-editing session or one-shot crypto op is active
+	vaultCurrentPIN  string // RAM only — for secret/pin sync after setup/change PIN
 	vaultUnlockFails = map[string]*pinAttempt{}
 )
 
@@ -194,7 +194,10 @@ func vaultClearUnlockFails() {
 	vaultMu.Unlock()
 }
 
-func vaultUnlock(pin string) error {
+// vaultVerifyPIN checks the vault PIN and stores the data key in RAM.
+// keepSession=true keeps the key for note editing (cleared on Lobby return);
+// keepSession=false keeps it only until the caller or a one-shot op clears it.
+func vaultVerifyPIN(pin string, keepSession bool) error {
 	if !vaultEnabled() {
 		return errors.New("encryption not enabled")
 	}
@@ -213,28 +216,35 @@ func vaultUnlock(pin string) error {
 	}
 	vaultMu.Lock()
 	vaultDataKey = dataKey
-	vaultCurrentPIN = pin
 	vaultMu.Unlock()
 	vaultClearUnlockFails()
-	vaultNotifyUnlocked()
-	pushLobbyInfo()
+	pushVaultPINOK()
+	vaultNotifyPINGranted()
+	if !keepSession {
+		// One-shot ops (encrypt/decrypt/download) clear the key themselves.
+	}
 	return nil
 }
 
-func vaultLock() bool {
+func vaultClearSession() {
 	vaultMu.Lock()
-	wasOpen := vaultDataKey != nil
 	vaultDataKey = nil
 	vaultMu.Unlock()
-	if wasOpen {
-		pushLobbyInfo()
-		return true
-	}
-	return false
 }
 
-func vaultLockOnLobby() {
-	vaultLock()
+func vaultClearSessionOnLobby() {
+	vaultClearSession()
+}
+
+// vaultClearSessionIfIdle drops the data key when no encrypted note is open for editing.
+func vaultClearSessionIfIdle() {
+	currentNoteMu.Lock()
+	open := currentNote
+	currentNoteMu.Unlock()
+	if open != "" && isEncryptedNoteName(open) {
+		return
+	}
+	vaultClearSession()
 }
 
 func vaultSetupPIN(pin string) error {
@@ -278,7 +288,6 @@ func vaultSetupPIN(pin string) error {
 	settingsMu.Unlock()
 
 	vaultMu.Lock()
-	vaultDataKey = dataKey
 	vaultCurrentPIN = pin
 	vaultUnlockFails = map[string]*pinAttempt{}
 	vaultMu.Unlock()
@@ -331,7 +340,6 @@ func vaultChangePIN(oldPIN, newPIN string) error {
 	settingsMu.Unlock()
 
 	vaultMu.Lock()
-	vaultDataKey = dataKey
 	vaultCurrentPIN = newPIN
 	vaultMu.Unlock()
 
@@ -364,7 +372,7 @@ func encryptNoteBytes(plaintext []byte) ([]byte, error) {
 	dk := vaultDataKey
 	vaultMu.Unlock()
 	if dk == nil {
-		return nil, errors.New("vault locked")
+		return nil, errors.New("vault PIN required")
 	}
 	sealed, err := aesGCMSeal(dk, plaintext)
 	if err != nil {
@@ -384,14 +392,14 @@ func decryptNoteBytes(ciphertext []byte) ([]byte, error) {
 	dk := vaultDataKey
 	vaultMu.Unlock()
 	if dk == nil {
-		return nil, errors.New("vault locked")
+		return nil, errors.New("vault PIN required")
 	}
 	return aesGCMOpen(dk, ciphertext[len(vaultMagic):])
 }
 
 func vaultEncryptNote(name string) error {
 	if vaultLocked() {
-		return errors.New("vault locked")
+		return errors.New("vault PIN required")
 	}
 	p := notesSafe(name)
 	base := filepath.Base(p)
@@ -434,14 +442,14 @@ func vaultEncryptNote(name string) error {
 	}
 	pushLobbyInfo()
 	pushNotesList()
-	notifyTabletCrud("deletenote", base, "")
-	notifyTabletCrud("createnote", encName, "")
+	notifyTabletCrud("renamenote", encName, base)
+	vaultClearSessionIfIdle()
 	return nil
 }
 
 func vaultDecryptNote(name string) error {
 	if vaultLocked() {
-		return errors.New("vault locked")
+		return errors.New("vault PIN required")
 	}
 	p := notesSafe(name)
 	base := filepath.Base(p)
@@ -481,8 +489,8 @@ func vaultDecryptNote(name string) error {
 	}
 	pushLobbyInfo()
 	pushNotesList()
-	notifyTabletCrud("deletenote", base, "")
-	notifyTabletCrud("createnote", plainName, "")
+	notifyTabletCrud("renamenote", plainName, base)
+	vaultClearSessionIfIdle()
 	return nil
 }
 
@@ -549,7 +557,7 @@ func vaultApplySecretPin(pin string) {
 	vaultMu.Unlock()
 }
 
-// --- vault unlock wait (phone download) ---
+// --- vault PIN wait (phone download) ---
 
 var (
 	vaultWaitMu sync.Mutex
@@ -575,14 +583,14 @@ func vaultUnregisterWaiter(ch chan struct{}) {
 	}
 }
 
-func vaultNotifyUnlocked() {
+func vaultNotifyPINGranted() {
 	vaultWaitMu.Lock()
 	waiters := vaultWaitCh
 	vaultWaitCh = nil
 	vaultWaitMu.Unlock()
 	msg, _ := json.Marshal(struct {
 		Type string `json:"type"`
-	}{"vaultunlocked"})
+	}{"vaultpingranted"})
 	broadcast(msg)
 	for _, ch := range waiters {
 		select {
@@ -592,7 +600,7 @@ func vaultNotifyUnlocked() {
 	}
 }
 
-func waitVaultUnlocked(timeout time.Duration) bool {
+func waitVaultPINGranted(timeout time.Duration) bool {
 	if !vaultLocked() {
 		return true
 	}
@@ -606,7 +614,52 @@ func waitVaultUnlocked(timeout time.Duration) bool {
 	}
 }
 
-func pushRequestVaultUnlock(reason, name string) {
+func pushVaultPINOK() {
+	if globalEC == nil {
+		return
+	}
+	globalEC.write([]byte(`{"t":"cmd","c":"vaultpinok"}` + "\n"))
+}
+
+// vaultOpErrMsg turns vault encrypt/decrypt errors into short tablet copy.
+func vaultOpErrMsg(op string, err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := err.Error()
+	switch {
+	case strings.Contains(msg, "message authentication failed"),
+		strings.Contains(msg, "ciphertext too short"),
+		strings.Contains(msg, "not an encrypted note"):
+		if op == "decrypt" {
+			return "Cannot decrypt: file may be corrupted or not encrypted."
+		}
+		return "Encrypt failed: invalid note data."
+	case strings.Contains(msg, "already exists"):
+		return "A note with that name already exists."
+	case strings.Contains(msg, "vault PIN required"):
+		return "Enter PIN first."
+	default:
+		if op == "decrypt" {
+			return "Decrypt failed: " + msg
+		}
+		return "Encrypt failed: " + msg
+	}
+}
+
+func pushVaultOpFailed(msg string) {
+	if globalEC == nil || msg == "" {
+		return
+	}
+	cmd, _ := json.Marshal(struct {
+		T   string `json:"t"`
+		C   string `json:"c"`
+		Msg string `json:"msg"`
+	}{"cmd", "vaultopfailed", msg})
+	globalEC.write(append(cmd, '\n'))
+}
+
+func pushRequestVaultPIN(reason, name string) {
 	if globalEC == nil {
 		return
 	}
@@ -615,7 +668,7 @@ func pushRequestVaultUnlock(reason, name string) {
 		C      string `json:"c"`
 		Reason string `json:"reason"`
 		Name   string `json:"name"`
-	}{"cmd", "requestvaultunlock", reason, name})
+	}{"cmd", "requestvaultpin", reason, name})
 	globalEC.write(cmd)
 }
 

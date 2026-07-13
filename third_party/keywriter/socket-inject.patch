@@ -274,7 +274,7 @@
 +                }, Qt::QueuedConnection);
 +            }
 +        }
-+        else if (cmd == "requestvaultunlock" && g_rootObj) {
++        else if (cmd == "requestvaultpin" && g_rootObj) {
 +            std::string reason, note;
 +            auto r_p = line.find("\"reason\":\"");
 +            if (r_p != std::string::npos) {
@@ -290,10 +290,27 @@
 +                if (n_q != std::string::npos)
 +                    note = line.substr(n_p, n_q - n_p);
 +            }
-+            QMetaObject::invokeMethod(g_rootObj, "requestVaultUnlock",
++            QMetaObject::invokeMethod(g_rootObj, "requestVaultPIN",
 +                Qt::QueuedConnection,
 +                Q_ARG(QVariant, QString::fromStdString(reason)),
 +                Q_ARG(QVariant, QString::fromStdString(note)));
++        }
++        else if (cmd == "vaultpinok" && g_rootObj) {
++            QMetaObject::invokeMethod(g_rootObj, "vaultOnPINAccepted",
++                Qt::QueuedConnection);
++        }
++        else if (cmd == "vaultopfailed" && g_rootObj) {
++            std::string errMsg = "Operation failed";
++            auto m_p = line.find("\"msg\":\"");
++            if (m_p != std::string::npos) {
++                m_p += 7;
++                auto m_q = line.find('\"', m_p);
++                if (m_q != std::string::npos)
++                    errMsg = line.substr(m_p, m_q - m_p);
++            }
++            QMetaObject::invokeMethod(g_rootObj, "vaultOpFailed",
++                Qt::QueuedConnection,
++                Q_ARG(QVariant, QString::fromStdString(errMsg)));
 +        }
 +        else if (cmd == "rotate" && g_rootObj)
 +            // {"t":"cmd","c":"rotate"} -> bump root.rotation 90 CW (any mode).
@@ -364,7 +381,6 @@
 +                        pinDigits = line.substr(pd_p, pd_q - pd_p);
 +                }
 +                bool encryptionEnabled = line.find("\"encryptionEnabled\":true") != std::string::npos;
-+                bool vaultLocked = line.find("\"vaultLocked\":true") != std::string::npos;
 +                QMetaObject::invokeMethod(g_rootObj, "setLobbyInfo",
 +                    Qt::QueuedConnection,
 +                    Q_ARG(QVariant, QString::fromStdString(ip)),
@@ -377,10 +393,9 @@
 +                    Q_ARG(QVariant, syncing),
 +                    Q_ARG(QVariant, QString::fromStdString(keyboardLayout)),
 +                    Q_ARG(QVariant, QString::fromStdString(pinDigits)));
-+                QMetaObject::invokeMethod(g_rootObj, "setVaultStatus",
++                QMetaObject::invokeMethod(g_rootObj, "setEncryptionEnabled",
 +                    Qt::QueuedConnection,
-+                    Q_ARG(QVariant, encryptionEnabled),
-+                    Q_ARG(QVariant, vaultLocked));
++                    Q_ARG(QVariant, encryptionEnabled));
 +                QMetaObject::invokeMethod(g_rootObj, "setLobbySyncStatus",
 +                    Qt::QueuedConnection,
 +                    Q_ARG(QVariant, QString::fromStdString(syncError)),

@@ -167,6 +167,7 @@ func (e *editorConn) handleEditorLine(line []byte) {
 		Op      string `json:"op"`
 		Name    string `json:"name"`
 		Old     string `json:"old"`
+		Mode    string `json:"mode"`
 		Degrees int    `json:"degrees"`
 	}
 	if json.Unmarshal(line, &msg) != nil {
@@ -184,6 +185,17 @@ func (e *editorConn) handleEditorLine(line []byte) {
 		currentNote = name
 		currentNoteMu.Unlock()
 		broadcastOpenEdit(name)
+	case "openread":
+		name := filepath.Base(msg.Name)
+		if notesSafe(name) == "" {
+			return
+		}
+		currentNoteMu.Lock()
+		currentNote = name
+		currentNoteMu.Unlock()
+		broadcastOpenRead(name)
+	case "lobbyinput":
+		broadcastLobbyInput(msg.Mode)
 	case "saved", "ready":
 		if msg.T == "saved" && (msg.C == "home" || msg.C == "showlobby") {
 			// Returning to the Lobby means no note is "open" for sync purposes.
@@ -191,7 +203,7 @@ func (e *editorConn) handleEditorLine(line []byte) {
 			currentNoteMu.Lock()
 			currentNote = ""
 			currentNoteMu.Unlock()
-			vaultLockOnLobby()
+			vaultClearSessionOnLobby()
 		}
 		e.signalAck(msg.T, msg.C)
 	case "rotation":
@@ -462,19 +474,20 @@ func handleEditorReq(op, name, oldName string) {
 		if err := vaultChangePIN(oldName, name); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: changevaultpin: %v\n", err)
 		}
-	case "unlockvault":
-		if err := vaultUnlock(name); err != nil {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: unlockvault: %v\n", err)
+	case "verifyvaultpin":
+		keepSession := oldName == "session"
+		if err := vaultVerifyPIN(name, keepSession); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: verifyvaultpin: %v\n", err)
 		}
-	case "lockvault":
-		vaultLock()
 	case "encryptnote":
 		if err := vaultEncryptNote(name); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: encryptnote: %v\n", err)
+			pushVaultOpFailed(vaultOpErrMsg("encrypt", err))
 		}
 	case "decryptnote":
 		if err := vaultDecryptNote(name); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: decryptnote: %v\n", err)
+			pushVaultOpFailed(vaultOpErrMsg("decrypt", err))
 		}
 	case "disablevault":
 		if err := vaultDisable(); err != nil {

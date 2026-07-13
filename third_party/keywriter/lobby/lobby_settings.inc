@@ -78,7 +78,7 @@
                                     }
                                     Text {
                                         text: lobbyEncryptionEnabled
-                                            ? (lobbyVaultLocked ? "On — locked (unlock to edit encrypted notes)" : "On — unlocked")
+                                            ? "On — encrypted notes require PIN to open, read, or edit"
                                             : "Off — optional encryption with a separate 6-digit PIN. Recovery via GitHub secret/pin when sync is on."
                                         font.pointSize: 10
                                         font.family: "Noto Sans"
@@ -114,28 +114,7 @@
                                         spacing: lobby.tabSpacing
                                         visible: lobbyEncryptionEnabled
                                         Rectangle {
-                                            width: (parent.width - lobby.tabSpacing) / 2
-                                            height: lobby.actionBtnHeight
-                                            radius: 6
-                                            color: "#f0f0f0"
-                                            border.color: "#bbb"
-                                            border.width: 1
-                                            Text {
-                                                anchors.centerIn: parent
-                                                text: lobbyVaultLocked ? "Unlock" : "Lock"
-                                                font.family: "Noto Sans"
-                                                font.pointSize: 11
-                                            }
-                                            MouseArea {
-                                                anchors.fill: parent
-                                                onClicked: {
-                                                    if (lobbyVaultLocked) root.vaultBeginUnlock("")
-                                                    else writerdeck.lockVault()
-                                                }
-                                            }
-                                        }
-                                        Rectangle {
-                                            width: (parent.width - lobby.tabSpacing) / 2
+                                            width: parent.width
                                             height: lobby.actionBtnHeight
                                             radius: 6
                                             color: "#f0f0f0"

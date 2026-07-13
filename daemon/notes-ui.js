@@ -6,6 +6,18 @@ import { grab, send, applyMode } from './connection.js';
 
 var currentTypingFile = ''; // phone-view-only; clears on phone-back
 
+var TYPING_BODY_HTML =
+  '<p>Open notes on the tablet Files tab.</p>' +
+  '<p>Type here — your words appear on e-ink.</p>' +
+  '<p>Press Home on the tablet when done.</p>';
+
+var LOBBY_INPUT_LABELS = {
+  'new': 'Type the new note name on the tablet keyboard.',
+  'rename': 'Type the new name on the tablet keyboard.',
+  'new-encrypted': 'Type the encrypted note name on the tablet keyboard.',
+  'confirm-delete': 'Delete on tablet: Enter confirms, Esc cancels.'
+};
+
 // ---- Notes API ----
 
 export function loadNotes() {
@@ -39,7 +51,7 @@ export function renderNotes(notes) {
     var nameEl = document.createElement('span');
     nameEl.className = 'note-name';
     if (note.encrypted) {
-      nameEl.textContent = (note.locked ? '[locked] ' : '[private] ') + displayName;
+      nameEl.textContent = note.encrypted ? '[private] ' + displayName : displayName;
     } else {
       nameEl.textContent = displayName;
     }
@@ -48,7 +60,7 @@ export function renderNotes(notes) {
     var dlBtn = document.createElement('button');
     dlBtn.className = 'note-btn';
     dlBtn.textContent = 'Download';
-    dlBtn.disabled = !!(note.encrypted && note.locked);
+    dlBtn.disabled = false;
     dlBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       downloadNote(note.name);
@@ -72,14 +84,65 @@ export function showList(e) {
 export function followTabletOpen(filename) {
   if (!filename) return;
   if (state.typingMode && currentTypingFile === filename) return;
-  showTypingView(filename.replace(/\.md$/, ''), filename);
+  showTypingView(filename.replace(/\.md(\.enc)?$/, ''), filename);
+}
+
+function displayName(filename) {
+  return (filename || '').replace(/\.md(\.enc)?$/, '');
+}
+
+function resetTypingBody() {
+  document.getElementById('typing-body').innerHTML = TYPING_BODY_HTML;
+  document.getElementById('typing-paste').style.display = '';
+}
+
+export function clearRemoteKeys() {
+  state.remoteKeys = '';
+  var banner = document.getElementById('remote-keys-banner');
+  if (banner) banner.style.display = 'none';
+  resetTypingBody();
+  applyMode();
+}
+
+export function showReadKeyView(filename) {
+  if (!filename) return;
+  state.remoteKeys = 'read';
+  state.tabletOpenNote = filename;
+  currentTypingFile = '';
+  state.typingMode = false;
+  document.getElementById('notes').style.display = 'none';
+  document.getElementById('typing-note').textContent = displayName(filename);
+  document.getElementById('typing-body').innerHTML =
+    '<p>Reading on the tablet.</p>' +
+    '<p>Press Esc on your keyboard to switch to edit mode.</p>';
+  document.getElementById('typing-paste').style.display = 'none';
+  document.getElementById('typing').style.display = 'block';
+  applyMode();
+}
+
+export function showLobbyKeyView(mode) {
+  if (!mode) {
+    clearRemoteKeys();
+    return;
+  }
+  state.remoteKeys = 'lobby';
+  state.typingMode = false;
+  currentTypingFile = '';
+  document.getElementById('typing').style.display = 'none';
+  document.getElementById('notes').style.display = '';
+  var banner = document.getElementById('remote-keys-banner');
+  banner.textContent = LOBBY_INPUT_LABELS[mode] || 'Keys go to the tablet.';
+  banner.style.display = 'block';
+  applyMode();
 }
 
 // showTypingView: hide everything else, show the "typing on the tablet" panel.
 // noteName is the display name (without .md) shown in the header.
 export function showTypingView(noteName, filename) {
+  clearRemoteKeys();
   document.getElementById('notes').style.display = 'none';
   document.getElementById('typing-note').textContent = noteName;
+  resetTypingBody();
   document.getElementById('typing').style.display = 'block';
   currentTypingFile = filename || '';
   state.tabletOpenNote = filename || '';
@@ -93,6 +156,7 @@ export function hideTypingView(e) {
   if (e) e.stopPropagation();
   currentTypingFile = '';
   state.typingMode = false;
+  clearRemoteKeys();
   applyMode();
   document.getElementById('typing').style.display = 'none';
   document.getElementById('notes').style.display = '';
@@ -106,8 +170,8 @@ function downloadNote(filename) {
       if (r.status === 401) { deps.showPinScreen(); return null; }
       if (r.status === 423) {
         alert('Enter private PIN on tablet');
-        return waitForVaultUnlock().then(function(ok) {
-          if (!ok) { alert('Timed out waiting for tablet unlock.'); return null; }
+        return waitForVaultPIN().then(function(ok) {
+          if (!ok) { alert('Timed out waiting for tablet PIN.'); return null; }
           return fetch(url, { credentials: 'same-origin' });
         });
       }
@@ -128,7 +192,7 @@ function downloadNote(filename) {
     .catch(function() { alert('Could not reach server.'); });
 }
 
-function waitForVaultUnlock() {
+function waitForVaultPIN() {
   return new Promise(function(resolve) {
     var deadline = Date.now() + 120000;
     function poll() {

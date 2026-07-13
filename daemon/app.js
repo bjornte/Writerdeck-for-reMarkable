@@ -7,7 +7,8 @@ import { deps } from './deps.js';
 import { initConnection, connect, grab, applyMode } from './connection.js';
 import {
   loadNotes, hideTypingView, followTabletOpen, uploadFile,
-  showPasteModal, hidePasteModal, submitPaste
+  showPasteModal, hidePasteModal, submitPaste,
+  showReadKeyView, showLobbyKeyView, clearRemoteKeys
 } from './notes-ui.js';
 import {
   showSync, hideSync, showPinScreen,
@@ -17,6 +18,9 @@ import {
 deps.loadNotes = loadNotes;
 deps.hideTypingView = hideTypingView;
 deps.followTabletOpen = followTabletOpen;
+deps.showReadKeyView = showReadKeyView;
+deps.showLobbyKeyView = showLobbyKeyView;
+deps.clearRemoteKeys = clearRemoteKeys;
 deps.showPinScreen = showPinScreen;
 deps.connect = connect;
 

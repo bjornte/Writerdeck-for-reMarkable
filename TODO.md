@@ -27,7 +27,7 @@ USB keyboard locales:
 
 `loadkeys` and `setxkbmap` do not work for Qt apps on rM — see [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1).
 
-Encrypted notes (shipped): [decisions.md](docs/decisions.md) §31, [DONE.md](DONE.md). Verify: `bash scripts/test-vault.sh`; full UI + GitHub: `bash scripts/test-vault-e2e.sh` (sync on).
+Encrypted notes (round 1 shipped): [decisions.md](docs/decisions.md) §31, [DONE.md](DONE.md), verify checklist [todo-handoff-encryption.md](docs/todo-handoff-encryption.md). `bash scripts/test-vault.sh`; full UI + GitHub: `bash scripts/test-vault-e2e.sh` (sync on).
 
 ## Open question
 

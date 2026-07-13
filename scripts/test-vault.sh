@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/test-vault.sh -- loopback vault encrypt/save/lock/unlock on device or local.
+# scripts/test-vault.sh -- loopback vault encrypt/save/PIN session on device or local.
 #
 # Usage (repo root):
 #   bash scripts/test-vault.sh
@@ -67,6 +67,11 @@ fi
 
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/test/tablet-req" \
   -H 'Content-Type: application/json' \
+  -d '{"op":"verifyvaultpin","name":"123456","old":"once"}')
+[[ "$code" == "200" ]] || fail "verifyvaultpin HTTP $code"
+
+code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/test/tablet-req" \
+  -H 'Content-Type: application/json' \
   -d "{\"op\":\"encryptnote\",\"name\":\"$TEST_NOTE\"}")
 [[ "$code" == "200" ]] || fail "encryptnote HTTP $code"
 
@@ -80,26 +85,22 @@ else
     "test ! -f $DEVICE_NOTES/$TEST_NOTE" || fail "$TEST_NOTE should be gone on device"
 fi
 
-code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/test/tablet-req" \
-  -H 'Content-Type: application/json' -d '{"op":"lockvault"}')
-[[ "$code" == "200" ]] || fail "lockvault HTTP $code"
-
 if [[ -n "$LOCAL" ]]; then
   code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/notes/$TEST_ENC/download")
-  [[ "$code" == "423" ]] || fail "download while locked want 423 got $code"
+  [[ "$code" == "423" ]] || fail "download without PIN want 423 got $code"
 else
   code=$(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/notes/$TEST_ENC/download")
-  [[ "$code" == "401" || "$code" == "423" ]] || fail "download while locked want 401 or 423 got $code"
+  [[ "$code" == "401" || "$code" == "423" ]] || fail "download without PIN want 401 or 423 got $code"
 fi
 
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$BASE/api/test/tablet-req" \
   -H 'Content-Type: application/json' \
-  -d '{"op":"unlockvault","name":"123456"}')
-[[ "$code" == "200" ]] || fail "unlockvault HTTP $code"
+  -d '{"op":"verifyvaultpin","name":"123456","old":"once"}')
+[[ "$code" == "200" ]] || fail "verifyvaultpin for download HTTP $code"
 
 status=$(curl -s "$BASE/api/vault/status")
 echo "$status" | grep -q '"enabled":true' || fail "vault not enabled after setup"
-echo "$status" | grep -q '"locked":false' || fail "vault still locked after unlock"
+echo "$status" | grep -q '"locked":false' || fail "vault still needs PIN after verify"
 
 if [[ -n "$LOCAL" ]]; then
   plain=$(curl -s "$BASE/api/notes/$TEST_ENC")

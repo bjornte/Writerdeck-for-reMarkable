@@ -132,7 +132,6 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var notes []noteInfo
-		locked := vaultEnabled() && vaultLocked()
 		for _, e := range entries {
 			if e.IsDir() || !isNoteListName(e.Name()) {
 				continue
@@ -147,7 +146,6 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 				Size:      info.Size(),
 				Modified:  info.ModTime().Format(time.RFC3339),
 				Encrypted: enc,
-				Locked:    enc && locked,
 			})
 		}
 		if notes == nil {
@@ -244,10 +242,10 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			if !editorLocal {
 				if download {
 					if vaultLocked() {
-						pushRequestVaultUnlock("download", filepath.Base(p))
+						pushRequestVaultPIN("download", filepath.Base(p))
 						w.Header().Set("Content-Type", "application/json")
 						w.WriteHeader(http.StatusLocked)
-						w.Write([]byte(`{"error":"vault locked","message":"Enter private PIN on tablet"}` + "\n")) //nolint:errcheck
+						w.Write([]byte(`{"error":"vault pin required","message":"Enter private PIN on tablet"}` + "\n")) //nolint:errcheck
 						return
 					}
 					plain, err := decryptNoteBytes(data)
@@ -256,12 +254,13 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					data = plain
+					vaultClearSessionIfIdle()
 				} else {
 					http.Error(w, "encrypted note", http.StatusForbidden)
 					return
 				}
 			} else if vaultLocked() {
-				http.Error(w, "vault locked", http.StatusLocked)
+				http.Error(w, "vault PIN required", http.StatusLocked)
 				return
 			} else {
 				plain, err := decryptNoteBytes(data)
@@ -308,7 +307,7 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if enc && vaultLocked() {
-			http.Error(w, "vault locked", http.StatusLocked)
+			http.Error(w, "vault PIN required", http.StatusLocked)
 			return
 		}
 		writeBytes := []byte(putReq.Content)
@@ -363,7 +362,6 @@ func readAllNotes() []noteInfo {
 		return nil
 	}
 	var notes []noteInfo
-	locked := vaultEnabled() && vaultLocked()
 	for _, e := range entries {
 		if e.IsDir() || !isNoteListName(e.Name()) {
 			continue
@@ -378,7 +376,6 @@ func readAllNotes() []noteInfo {
 			Size:      info.Size(),
 			Modified:  info.ModTime().Format(time.RFC3339),
 			Encrypted: enc,
-			Locked:    enc && locked,
 		})
 	}
 	if notes == nil {
@@ -391,11 +388,10 @@ func readAllNotes() []noteInfo {
 func pushNotesList() {
 	notes := readAllNotes()
 	msg, _ := json.Marshal(struct {
-		T              string     `json:"t"`
-		Items          []noteInfo `json:"items"`
-		EncryptionEnabled bool    `json:"encryptionEnabled"`
-		VaultLocked       bool    `json:"vaultLocked"`
-	}{"notes", notes, vaultEnabled(), vaultLocked()})
+		T                 string     `json:"t"`
+		Items             []noteInfo `json:"items"`
+		EncryptionEnabled bool       `json:"encryptionEnabled"`
+	}{"notes", notes, vaultEnabled()})
 	if globalEC != nil {
 		globalEC.write(msg)
 	}

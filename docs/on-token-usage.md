@@ -1,0 +1,1 @@
+Before encryption: Cursor consumption at 61%, after 75%

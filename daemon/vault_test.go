@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -30,18 +32,20 @@ func TestVaultKDFAndWrap(t *testing.T) {
 	if !vaultEnabled() {
 		t.Fatal("expected encryption enabled")
 	}
-	if vaultLocked() {
-		t.Fatal("expected unlocked after setup")
-	}
-
-	vaultLock()
 	if !vaultLocked() {
-		t.Fatal("expected locked")
+		t.Fatal("expected no session key after setup")
 	}
-	if err := vaultUnlock("123456"); err != nil {
-		t.Fatalf("unlock: %v", err)
+	if err := vaultVerifyPIN("123456", true); err != nil {
+		t.Fatalf("verify PIN: %v", err)
 	}
-	if err := vaultUnlock("000000"); err == nil {
+	if vaultLocked() {
+		t.Fatal("expected session key after verify")
+	}
+	vaultClearSession()
+	if !vaultLocked() {
+		t.Fatal("expected no session key after clear")
+	}
+	if err := vaultVerifyPIN("000000", true); err == nil {
 		t.Fatal("wrong PIN should fail")
 	}
 }
@@ -55,6 +59,9 @@ func TestVaultEncryptRoundtrip(t *testing.T) {
 	if err := vaultSetupPIN("654321"); err != nil {
 		t.Fatal(err)
 	}
+	if err := vaultVerifyPIN("654321", true); err != nil {
+		t.Fatal(err)
+	}
 
 	plain := []byte("# secret\n\nhello vault\n")
 	enc, err := encryptNoteBytes(plain)
@@ -65,11 +72,11 @@ func TestVaultEncryptRoundtrip(t *testing.T) {
 		t.Fatal("missing magic")
 	}
 
-	vaultLock()
+	vaultClearSession()
 	if _, err := decryptNoteBytes(enc); err == nil {
-		t.Fatal("decrypt while locked should fail")
+		t.Fatal("decrypt without session key should fail")
 	}
-	if err := vaultUnlock("654321"); err != nil {
+	if err := vaultVerifyPIN("654321", true); err != nil {
 		t.Fatal(err)
 	}
 	out, err := decryptNoteBytes(enc)
@@ -90,12 +97,16 @@ func TestVaultChangePINReWrap(t *testing.T) {
 	if err := vaultSetupPIN("111111"); err != nil {
 		t.Fatal(err)
 	}
+	if err := vaultVerifyPIN("111111", true); err != nil {
+		t.Fatal(err)
+	}
 	plain := []byte("keep me")
 	enc, err := encryptNoteBytes(plain)
 	if err != nil {
 		t.Fatal(err)
 	}
 	wrappedBefore := curSettings.WrappedDataKey
+	vaultClearSession()
 
 	if err := vaultChangePIN("111111", "222222"); err != nil {
 		t.Fatal(err)
@@ -103,8 +114,7 @@ func TestVaultChangePINReWrap(t *testing.T) {
 	if curSettings.WrappedDataKey == wrappedBefore {
 		t.Fatal("wrapped key should change after PIN change")
 	}
-	vaultLock()
-	if err := vaultUnlock("222222"); err != nil {
+	if err := vaultVerifyPIN("222222", true); err != nil {
 		t.Fatal(err)
 	}
 	out, err := decryptNoteBytes(enc)
@@ -137,6 +147,9 @@ func TestVaultEncryptNoteFile(t *testing.T) {
 	if err := vaultSetupPIN("333333"); err != nil {
 		t.Fatal(err)
 	}
+	if err := vaultVerifyPIN("333333", true); err != nil {
+		t.Fatal(err)
+	}
 	plainPath := filepath.Join(dir, "note.md")
 	if err := os.WriteFile(plainPath, []byte("# hi"), 0644); err != nil {
 		t.Fatal(err)
@@ -152,11 +165,23 @@ func TestVaultEncryptNoteFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := vaultVerifyPIN("333333", true); err != nil {
+		t.Fatal(err)
+	}
 	dec, err := decryptNoteBytes(data)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if string(dec) != "# hi" {
 		t.Fatalf("got %q", dec)
+	}
+}
+
+func TestVaultOpErrMsg(t *testing.T) {
+	if got := vaultOpErrMsg("decrypt", errors.New("cipher: message authentication failed")); got == "" {
+		t.Fatal("expected decrypt auth failure message")
+	}
+	if got := vaultOpErrMsg("decrypt", errors.New("not an encrypted note")); !strings.Contains(got, "corrupted") {
+		t.Fatalf("got %q", got)
 	}
 }

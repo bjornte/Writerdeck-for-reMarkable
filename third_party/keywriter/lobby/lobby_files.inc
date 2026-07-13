@@ -20,11 +20,21 @@
 
                             Text {
                                 visible: lobbyFilesMode === "new" || lobbyFilesMode === "rename"
-                                text: lobbyFilesInput + "_"
+                                text: lobbyFilesInputDisplay()
                                 font.family: "Noto Mono"
                                 font.pointSize: 12
                                 color: "#333"
                                 width: parent.width
+                            }
+
+                            Text {
+                                visible: lobbyVaultError !== "" && lobbyFilesMode === ""
+                                text: lobbyVaultError
+                                font.family: "Noto Sans"
+                                font.pointSize: 11
+                                color: "#aa0000"
+                                width: parent.width
+                                wrapMode: Text.WordWrap
                             }
 
                             ListView {

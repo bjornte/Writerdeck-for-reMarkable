@@ -16,10 +16,15 @@ var trap = document.getElementById('trap');
 var buf = '';
 var ws;
 // state.typingMode: false=Browse (list, no capture), true=Type (capture + echo).
+// state.remoteKeys: '' | 'read' | 'lobby' -- forward BT keys without full Type UI.
+function keysActive() {
+  return state.typingMode || state.remoteKeys !== '';
+}
+
 export function applyMode() {
-  document.getElementById('foot').style.display = state.typingMode ? 'block' : 'none';
+  document.getElementById('foot').style.display = keysActive() ? 'block' : 'none';
   document.body.classList.toggle('typing-dark', state.typingMode);
-  if (state.typingMode) { grab(); }
+  if (keysActive()) { grab(); }
 }
 
 function setStatus(cls, text) {
@@ -144,8 +149,8 @@ function send(key, shift, ctrl, alt, meta) {
 }
 
 function onKey(e) {
-  // Only capture keys in Type mode; in Browse mode let the browser handle them.
-  if (!state.typingMode) { return; }
+  // Capture keys in Type mode and when the tablet asked for remote input (read/lobby).
+  if (!keysActive()) { return; }
   // Pass browser-navigation shortcuts through so the page stays manageable
   // (Cmd/Ctrl + R=reload, T=new tab, W=close, N=new window, L=address bar).
   // Everything else -- including Ctrl/Cmd+C/V/X/A/Z/K and modifier+arrows --
@@ -171,7 +176,7 @@ function overlayUp() {
 }
 
 function grab() {
-  if (!state.typingMode) { return; }
+  if (!keysActive()) { return; }
   if (overlayUp()) return;
   trap.focus();
 }
@@ -225,10 +230,20 @@ function connect() {
         if (state.tabletOpenNote && !overlayUp()) {
           deps.followTabletOpen(state.tabletOpenNote);
         }
+      } else if (data.type === 'openread') {
+        state.tabletOpenNote = data.name || '';
+        if (state.tabletOpenNote && !overlayUp()) {
+          deps.showReadKeyView(state.tabletOpenNote);
+        }
+      } else if (data.type === 'lobbyinput') {
+        if (!overlayUp()) {
+          deps.showLobbyKeyView(data.mode || '');
+        }
       } else if (data.type === 'exitedit') {
         state.tabletOpenNote = '';
         state.editorDiskHash = '';
         if (state.typingMode) { deps.hideTypingView(); }
+        else { deps.clearRemoteKeys(); }
       } else if (data.type === 'tabletcrud') {
         if (data.op === 'deletenote' && state.tabletOpenNote === data.name) {
           state.tabletOpenNote = '';
@@ -242,7 +257,7 @@ function connect() {
         notifyDiskChanged(data.name || '');
       } else if (data.type === 'needtoken') {
         respondToNeedToken();
-      } else if (data.type === 'vaultunlocked') {
+      } else if (data.type === 'vaultpingranted') {
         deps.loadNotes();
       }
       // Unknown types are silently ignored -- forward-compatible.

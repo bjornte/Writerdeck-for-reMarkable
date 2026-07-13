@@ -30,4 +30,4 @@ While editing on e-ink, show the open note rendered as Markdown on the phone —
 
 ## Browser (future)
 
-Bulk select and multi-delete; search across titles and bodies; HTTPS for native Share sheet; encrypted-folder unlock UI paired with tablet encryption above.
+Bulk select and multi-delete; search across titles and bodies; HTTPS for native Share sheet; phone-side vault unlock UI (tablet unlock flow is shipped — [decisions.md](decisions.md) §31).

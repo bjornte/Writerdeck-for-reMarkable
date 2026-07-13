@@ -57,6 +57,22 @@ void LobbyBridge::notifyOpen(const QString &name)
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
 }
 
+void LobbyBridge::notifyReadOpen(const QString &name)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("openread");
+    o[QStringLiteral("name")] = name;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
+void LobbyBridge::notifyLobbyInput(const QString &mode)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("lobbyinput");
+    o[QStringLiteral("mode")] = mode;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
 void LobbyBridge::syncNow()
 {
     sendReq(QStringLiteral("{\"t\":\"req\",\"op\":\"syncnow\"}"));
@@ -113,18 +129,14 @@ void LobbyBridge::changeVaultPin(const QString &oldPin, const QString &newPin)
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
 }
 
-void LobbyBridge::unlockVault(const QString &pin)
+void LobbyBridge::verifyVaultPin(const QString &pin, bool keepSession)
 {
     QJsonObject o;
     o[QStringLiteral("t")] = QStringLiteral("req");
-    o[QStringLiteral("op")] = QStringLiteral("unlockvault");
+    o[QStringLiteral("op")] = QStringLiteral("verifyvaultpin");
     o[QStringLiteral("name")] = pin;
+    o[QStringLiteral("old")] = keepSession ? QStringLiteral("session") : QStringLiteral("once");
     sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
-}
-
-void LobbyBridge::lockVault()
-{
-    sendReq(QStringLiteral("{\"t\":\"req\",\"op\":\"lockvault\"}"));
 }
 
 void LobbyBridge::encryptNote(const QString &name)

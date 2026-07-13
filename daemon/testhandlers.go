@@ -103,7 +103,7 @@ func testTabletReqHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	switch req.Op {
 	case "setreadfont", "setpindigits", "setkeyboardlayout",
-		"setvaultpin", "changevaultpin", "unlockvault", "lockvault",
+		"setvaultpin", "changevaultpin", "verifyvaultpin",
 		"encryptnote", "decryptnote", "disablevault":
 		handleEditorReq(req.Op, req.Name, req.Old)
 	default:

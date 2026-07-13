@@ -98,6 +98,27 @@ func broadcastOpenEdit(name string) {
 	broadcast(msg)
 }
 
+// broadcastOpenRead tells phone clients to forward keys while the tablet shows preview.
+func broadcastOpenRead(name string) {
+	if name == "" {
+		return
+	}
+	msg, _ := json.Marshal(struct {
+		Type string `json:"type"`
+		Name string `json:"name"`
+	}{"openread", name})
+	broadcast(msg)
+}
+
+// broadcastLobbyInput tells phone clients to forward keys for Lobby Files prompts.
+func broadcastLobbyInput(mode string) {
+	msg, _ := json.Marshal(struct {
+		Type string `json:"type"`
+		Mode string `json:"mode"`
+	}{"lobbyinput", mode})
+	broadcast(msg)
+}
+
 // broadcast pushes msg to every registered browser client.
 func broadcast(msg []byte) {
 	wsClientsMu.Lock()

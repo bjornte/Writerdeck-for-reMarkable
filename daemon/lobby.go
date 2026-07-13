@@ -110,8 +110,7 @@ func pushLobbyInfo() {
 		KeyboardLayout    string `json:"keyboardLayout"`
 		PinDigits         string `json:"pinDigits"`
 		EncryptionEnabled bool   `json:"encryptionEnabled"`
-		VaultLocked       bool   `json:"vaultLocked"`
-	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, syncErr, wifi, keyboardLayout, pinDigits, vaultEnabled(), vaultLocked()})
+	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, syncErr, wifi, keyboardLayout, pinDigits, vaultEnabled()})
 	if globalEC != nil {
 		globalEC.write(infoMsg)
 	}

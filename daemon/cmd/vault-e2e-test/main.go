@@ -196,22 +196,17 @@ func run(base, wsURL, host string, cleanup bool) error {
 		return err
 	}
 	time.Sleep(stepPause)
-	// Lock vault so Files Encrypt always exercises unlock overlay + deferred encrypt.
-	if err := tabletReq(base, "lockvault", ""); err != nil {
-		return fmt.Errorf("lockvault before encrypt: %w", err)
-	}
-	time.Sleep(stepPause)
 	if err := editorCmd(base, "filesencrypt", testNote); err != nil {
 		return err
 	}
-	if err := waitVaultOverlay(base, "unlock", 8*time.Second); err != nil {
-		return fmt.Errorf("encrypt unlock overlay: %w", err)
+	if err := waitVaultOverlay(base, "pin", 8*time.Second); err != nil {
+		return fmt.Errorf("encrypt PIN overlay: %w", err)
 	}
-	if err := enterPINAndUnlock(base, ws, initialPIN); err != nil {
+	if err := enterPINAndGrant(base, ws, initialPIN); err != nil {
 		return err
 	}
 	if err := waitNoteListed(base, testEncNote, 90*time.Second); err != nil {
-		if err := tabletReq(base, "unlockvault", initialPIN); err == nil {
+		if err := tabletReqSession(base, "verifyvaultpin", initialPIN); err == nil {
 			_ = tabletReq(base, "encryptnote", testNote)
 		}
 		if err2 := waitNoteListed(base, testEncNote, 15*time.Second); err2 != nil {
@@ -221,7 +216,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	if err := waitNoteAbsent(base, testNote, 10*time.Second); err != nil {
 		return err
 	}
-	fmt.Println("  files: encrypted note (unlock via Files UI, encrypt confirmed)")
+	fmt.Println("  files: encrypted note (PIN via Files UI, encrypt confirmed)")
 
 	// Settings -> Change PIN via keyboard.
 	if err := wsKey(ws, "5"); err != nil {
@@ -284,7 +279,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	if err := goLobby(base); err != nil {
 		return err
 	}
-	fmt.Println("  edit: encrypted note unlocked and edited")
+	fmt.Println("  edit: encrypted note opened with PIN and edited")
 
 	if err := syncRun(base); err != nil {
 		return err
@@ -307,35 +302,30 @@ func run(base, wsURL, host string, cleanup bool) error {
 		return err
 	}
 	time.Sleep(stepPause)
-	if st, _ := getVaultStatus(base); st.Locked {
-		if err := editorCmd(base, "filesdecrypt", testEncNote); err != nil {
-			return err
-		}
-		if err := waitVaultOverlay(base, "unlock", 8*time.Second); err != nil {
-			return fmt.Errorf("decrypt unlock overlay: %w", err)
-		}
-		if err := enterPINAndUnlock(base, ws, changedPIN); err != nil {
-			return err
-		}
+	if err := editorCmd(base, "filesdecrypt", testEncNote); err != nil {
+		return err
 	}
-	if st, _ := getVaultStatus(base); st.Locked {
-		if err := tabletReq(base, "unlockvault", changedPIN); err != nil {
-			return err
-		}
-		if err := waitVaultUnlocked(base, 8*time.Second); err != nil {
-			return err
-		}
+	if err := waitVaultOverlay(base, "pin", 8*time.Second); err != nil {
+		return fmt.Errorf("decrypt PIN overlay: %w", err)
 	}
-	if err := tabletReq(base, "decryptnote", testEncNote); err != nil {
+	if err := enterPINAndGrant(base, ws, changedPIN); err != nil {
 		return err
 	}
 	if err := waitNoteListed(base, testNote, 15*time.Second); err != nil {
-		return err
+		if err := tabletReqOnce(base, "verifyvaultpin", changedPIN); err != nil {
+			return err
+		}
+		if err := tabletReq(base, "decryptnote", testEncNote); err != nil {
+			return err
+		}
+		if err2 := waitNoteListed(base, testNote, 15*time.Second); err2 != nil {
+			return err
+		}
 	}
 	if err := waitNoteAbsent(base, testEncNote, 10*time.Second); err != nil {
 		return err
 	}
-	fmt.Println("  files: decrypted note (unlock via Files UI, decrypt confirmed)")
+	fmt.Println("  files: decrypted note (PIN via Files UI, decrypt confirmed)")
 
 	if err := syncRun(base); err != nil {
 		return err
@@ -360,15 +350,15 @@ func resetVault(base, host string) error {
 				if pin, err := ghFileText(token, syncSt.SyncRepo, "secret/pin"); err == nil {
 					pin = strings.TrimSpace(pin)
 					if pin != "" {
-						_ = tabletReq(base, "unlockvault", pin)
+						_ = tabletReqOnce(base, "verifyvaultpin", pin)
 						time.Sleep(stepPause)
 					}
 				}
 			}
 		}
-		_ = tabletReq(base, "unlockvault", legacyPIN)
-		_ = tabletReq(base, "unlockvault", initialPIN)
-		_ = tabletReq(base, "unlockvault", changedPIN)
+		_ = tabletReqOnce(base, "verifyvaultpin", legacyPIN)
+		_ = tabletReqOnce(base, "verifyvaultpin", initialPIN)
+		_ = tabletReqOnce(base, "verifyvaultpin", changedPIN)
 		_ = tabletReq(base, "disablevault", "")
 		time.Sleep(stepPause)
 	}
@@ -462,17 +452,17 @@ func enterPIN(ws *websocket.Conn, base, pin string) error {
 	return nil
 }
 
-// enterPINAndUnlock types the PIN on the tablet overlay, then falls back to the
-// trusted socket op if the vault is still locked (WebSocket digit routing can lag).
-func enterPINAndUnlock(base string, ws *websocket.Conn, pin string) error {
+// enterPINAndGrant types the PIN on the tablet overlay, then falls back to the
+// trusted socket op if the session key is still absent (WebSocket digit routing can lag).
+func enterPINAndGrant(base string, ws *websocket.Conn, pin string) error {
 	if err := enterPIN(ws, base, pin); err != nil {
 		return err
 	}
-	if err := waitVaultUnlocked(base, 4*time.Second); err != nil {
-		if err := tabletReq(base, "unlockvault", pin); err != nil {
+	if err := waitVaultPINGranted(base, 4*time.Second); err != nil {
+		if err := tabletReqOnce(base, "verifyvaultpin", pin); err != nil {
 			return err
 		}
-		return waitVaultUnlocked(base, 8*time.Second)
+		return waitVaultPINGranted(base, 8*time.Second)
 	}
 	return waitVaultOverlayClear(base, 8*time.Second)
 }
@@ -503,7 +493,7 @@ func waitVaultOverlayClear(base string, timeout time.Duration) error {
 	return fmt.Errorf("vault overlay still %q", st.VaultOverlay)
 }
 
-func waitVaultUnlocked(base string, timeout time.Duration) error {
+func waitVaultPINGranted(base string, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
 		st, err := getVaultStatus(base)
@@ -513,7 +503,7 @@ func waitVaultUnlocked(base string, timeout time.Duration) error {
 		time.Sleep(200 * time.Millisecond)
 	}
 	st, _ := getVaultStatus(base)
-	return fmt.Errorf("vault still locked: %+v", st)
+	return fmt.Errorf("vault PIN not granted: %+v", st)
 }
 
 func waitVaultEnabled(base string, enabled bool, timeout time.Duration) error {
@@ -540,8 +530,8 @@ func openEncryptedForEdit(base string, ws *websocket.Conn, name, pin string) err
 			time.Sleep(200 * time.Millisecond)
 			continue
 		}
-		if st.VaultOverlay == "unlock" {
-			if err := enterPINAndUnlock(base, ws, pin); err != nil {
+		if st.VaultOverlay == "pin" {
+			if err := enterPINAndGrant(base, ws, pin); err != nil {
 				return err
 			}
 			time.Sleep(stepPause)
@@ -552,7 +542,7 @@ func openEncryptedForEdit(base string, ws *websocket.Conn, name, pin string) err
 		}
 		if st.IsLobby == 0 && st.CurrentFile == name && st.TextLen == 0 {
 			if vst, _ := getVaultStatus(base); vst.Locked {
-				_ = tabletReq(base, "unlockvault", pin)
+				_ = tabletReqSession(base, "verifyvaultpin", pin)
 				_ = editorCmd(base, "open", name)
 			}
 		}
@@ -819,6 +809,32 @@ func getStatus(base string) (struct{ EditorActive bool }, error) {
 
 func tabletReq(base, op, name string) error {
 	body, _ := json.Marshal(map[string]string{"op": op, "name": name})
+	code, err := post(base+"/api/test/tablet-req", body)
+	if err != nil {
+		return err
+	}
+	if code != 200 {
+		return fmt.Errorf("%s HTTP %d", op, code)
+	}
+	time.Sleep(200 * time.Millisecond)
+	return nil
+}
+
+func tabletReqOnce(base, op, pin string) error {
+	body, _ := json.Marshal(map[string]string{"op": op, "name": pin, "old": "once"})
+	code, err := post(base+"/api/test/tablet-req", body)
+	if err != nil {
+		return err
+	}
+	if code != 200 {
+		return fmt.Errorf("%s HTTP %d", op, code)
+	}
+	time.Sleep(200 * time.Millisecond)
+	return nil
+}
+
+func tabletReqSession(base, op, pin string) error {
+	body, _ := json.Marshal(map[string]string{"op": op, "name": pin, "old": "session"})
 	code, err := post(base+"/api/test/tablet-req", body)
 	if err != nil {
 		return err

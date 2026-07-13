@@ -217,7 +217,7 @@ func (e *syncEngine) pushNote(name string) error {
 		// before pushing so GitHub always stores valid WDENC1 blobs.
 		if !bytes.HasPrefix(data, []byte(vaultMagic)) {
 			if vaultLocked() {
-				return fmt.Errorf("cannot rewrap %s while vault locked", name)
+				return fmt.Errorf("cannot rewrap %s without vault PIN", name)
 			}
 			rewrapped, err := encryptNoteBytes(data)
 			if err != nil {

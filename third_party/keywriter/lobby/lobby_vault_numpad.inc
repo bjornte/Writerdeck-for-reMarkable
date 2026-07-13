@@ -23,7 +23,7 @@
                         : vaultOverlayMode === "change-new" ? "Enter new private PIN"
                         : vaultOverlayMode === "change-confirm" ? "Confirm new private PIN"
                         : vaultOverlayReason !== "" ? vaultOverlayReason
-                        : "Enter private PIN to unlock"
+                        : "Enter private PIN"
                 }
 
                 Text {
@@ -32,7 +32,7 @@
                     font.family: "Noto Mono"
                     font.pointSize: 18
                     color: "#333"
-                    text: vaultPinInput.length > 0 ? "*".repeat(vaultPinInput.length) : "_"
+                    text: vaultPinDisplay()
                 }
 
                 Grid {
