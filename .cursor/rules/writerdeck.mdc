@@ -36,6 +36,12 @@ After `daemon/`, `build-keywriter.sh`, or `lobby/` changes:
 
 Run all applicable steps every time without being asked. Do not declare done with known gaps ("not yet on tablet", "should work").
 
+## Time budget while debugging
+
+No built-in task timer. Estimate elapsed time from message timestamps and shell command durations (deploy logs, harness runs).
+
+After about 20 minutes on one task without reaching sign-off, stop implementing. Report to the user: what you tried, what consumed time, whether you followed cheapest-proof-first and iterate-vs-sign-off ([lessons.md](docs/lessons.md) § Device verify and iteration), and what you would do next. Ask before another full deploy+E2E cycle.
+
 Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server). On-device naming: `docs/architecture.md`, `docs/decisions.md` #23.
 
 ## Constraints

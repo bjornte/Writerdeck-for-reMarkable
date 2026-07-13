@@ -2,6 +2,20 @@
 
 Operational gotchas from building Writerdeck. Why things are the way they are: [decisions.md](decisions.md). What's shipped: [../DONE.md](../DONE.md).
 
+## Device verify and iteration
+
+Debugging and shipping are different jobs. While iterating, use the cheapest check that could disprove your guess. Before calling work done, run the full verify path in the project rules.
+
+Rank checks by cost: unit/API, device harness, browser UI, full E2E with sync. Climb only when the cheaper step passes.
+
+When something fails mid-flow, test from that step — not the whole story. Use harness scoping (`-s`, `--skip-cleanup`) and the script that matches the layer you changed.
+
+Verify rules are for sign-off. While fixing: server → `deploy-rmkbd.sh` + API/harness; QML → `deploy-keywriter.sh -b` + targeted harness; phone UI and sync → full pipeline last.
+
+A failed run updates one hypothesis. Ask a sharper question; don't rerun the world to learn the same thing again.
+
+After about 20 minutes on one task without sign-off, stop and report methodology (see [.cursor/rules/writerdeck.mdc](../.cursor/rules/writerdeck.mdc) § Time budget while debugging).
+
 ## Deploy and staleness
 
 Three separate ways a change can look like it did nothing: the CI keywriter binary lags the git push; the browser caches the capture page (serve with `Cache-Control: no-store`); a live editor session keeps the old binary until you respawn it.
