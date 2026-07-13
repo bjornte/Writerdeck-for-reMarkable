@@ -205,10 +205,34 @@
 +            QMetaObject::invokeMethod(g_rootObj, "vaultBeginSetup", Qt::QueuedConnection);
 +        else if (cmd == "vaultchangepin" && g_rootObj)
 +            QMetaObject::invokeMethod(g_rootObj, "vaultBeginChangePIN", Qt::QueuedConnection);
-+        else if (cmd == "filesencrypt" && g_rootObj)
-+            QMetaObject::invokeMethod(g_rootObj, "lobbyEncryptSelected", Qt::QueuedConnection);
-+        else if (cmd == "filesdecrypt" && g_rootObj)
-+            QMetaObject::invokeMethod(g_rootObj, "lobbyDecryptSelected", Qt::QueuedConnection);
++        else if (cmd == "filesencrypt" && g_rootObj) {
++            auto np = line.find("\"name\":\"");
++            if (np != std::string::npos) {
++                np += 8;
++                auto nq = line.find('"', np);
++                std::string name = (nq != std::string::npos) ? line.substr(np, nq - np) : "";
++                if (!name.empty())
++                    QMetaObject::invokeMethod(g_rootObj, "encryptNoteByName",
++                        Qt::BlockingQueuedConnection,
++                        Q_ARG(QVariant, QString::fromStdString(name)));
++            } else {
++                QMetaObject::invokeMethod(g_rootObj, "lobbyEncryptSelected", Qt::QueuedConnection);
++            }
++        }
++        else if (cmd == "filesdecrypt" && g_rootObj) {
++            auto np = line.find("\"name\":\"");
++            if (np != std::string::npos) {
++                np += 8;
++                auto nq = line.find('"', np);
++                std::string name = (nq != std::string::npos) ? line.substr(np, nq - np) : "";
++                if (!name.empty())
++                    QMetaObject::invokeMethod(g_rootObj, "decryptNoteByName",
++                        Qt::BlockingQueuedConnection,
++                        Q_ARG(QVariant, QString::fromStdString(name)));
++            } else {
++                QMetaObject::invokeMethod(g_rootObj, "lobbyDecryptSelected", Qt::QueuedConnection);
++            }
++        }
 +        else if (cmd == "selectnote" && g_rootObj) {
 +            auto np = line.find("\"name\":\"");
 +            if (np != std::string::npos) {
