@@ -275,18 +275,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 		return err
 	}
 	time.Sleep(stepPause)
-	if err := editorCmd(base, "open", testEncNote); err != nil {
-		return err
-	}
-	if st, _ := getVaultStatus(base); st.Locked {
-		if err := waitVaultOverlay(base, "unlock", 8*time.Second); err != nil {
-			return err
-		}
-		if err := enterPINAndUnlock(base, ws, changedPIN); err != nil {
-			return err
-		}
-	}
-	if err := waitEditing(base, testEncNote, 10*time.Second); err != nil {
+	if err := openEncryptedForEdit(base, ws, testEncNote, changedPIN); err != nil {
 		return err
 	}
 	if err := wsType(ws, editLine); err != nil {
@@ -538,6 +527,40 @@ func waitVaultEnabled(base string, enabled bool, timeout time.Duration) error {
 	}
 	st, _ := getVaultStatus(base)
 	return fmt.Errorf("vault enabled want %v got %+v", enabled, st)
+}
+
+func openEncryptedForEdit(base string, ws *websocket.Conn, name, pin string) error {
+	if err := editorCmd(base, "open", name); err != nil {
+		return err
+	}
+	deadline := time.Now().Add(25 * time.Second)
+	for time.Now().Before(deadline) {
+		st, err := queryState(base)
+		if err != nil {
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+		if st.VaultOverlay == "unlock" {
+			if err := enterPINAndUnlock(base, ws, pin); err != nil {
+				return err
+			}
+			time.Sleep(stepPause)
+			continue
+		}
+		if st.IsLobby == 0 && st.CurrentFile == name && st.TextLen > 0 {
+			return nil
+		}
+		if st.IsLobby == 0 && st.CurrentFile == name && st.TextLen == 0 {
+			if vst, _ := getVaultStatus(base); vst.Locked {
+				_ = tabletReq(base, "unlockvault", pin)
+				_ = editorCmd(base, "open", name)
+			}
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	st, _ := queryState(base)
+	return fmt.Errorf("editing %s: isLobby=%d file=%q textLen=%d overlay=%q",
+		name, st.IsLobby, st.CurrentFile, st.TextLen, st.VaultOverlay)
 }
 
 func waitEditing(base, name string, timeout time.Duration) error {
