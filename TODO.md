@@ -1,6 +1,6 @@
 # TODO
 
-Writerdeck for reMarkable 1 turns a first-gen tablet into a Wi-Fi Markdown typewriter. Phases 0–8, integrity slices 1–11, and server-side GitHub sync are shipped — see [DONE.md](DONE.md).
+Writerdeck for reMarkable 1 turns a first-gen tablet into a Wi-Fi Markdown typewriter. Phases 0–8, integrity slices 1–11, server-side GitHub sync, and encryption round 1 are shipped — see [DONE.md](DONE.md).
 
 How: [docs/architecture.md](docs/architecture.md). Why: [docs/decisions.md](docs/decisions.md). Gotchas: [docs/lessons.md](docs/lessons.md).
 
@@ -8,26 +8,10 @@ Keystrokes reach the editor over `/run/Writerdeck.sock`, not uinput ([docs/decis
 
 ## Next unchecked
 
-1. Physical Home — single input path. Full handoff: [docs/handoff-physical-home-input.md](docs/handoff-physical-home-input.md).
-2. USB Norwegian keyboard — æ ø å Æ Ø Å, AltGr, `@`, `{` `}` on a physical NO keyboard. Qmaps and Lobby picker are shipped; Alt+Left/Right no longer flip to preview ([lessons.md](docs/lessons.md)). Remaining checks are hardware-only.
-3. Lobby Ctrl-K on USB keyboard — device verify.
-4. Power button sleep/wake — device verify. Implementation is in [DONE.md](DONE.md); test is outstanding.
-5. Edit scroll/cursor patch — in `build-keywriter.sh`; push, `fetch-keywriter-dist.sh`, `deploy-keywriter.sh -b`, then `test-keyboard-harness.sh` and manual last-line typing on device.
+1. Physical Home — single input path. Handoff: [docs/todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md).
+2. Edit scroll/cursor — patch is in `build-keywriter.sh`; run `test-keyboard-harness.sh` and spot-check last-line typing on e-ink.
 
-## Phase 10 — locales and protection
-
-Design notes: [docs/improvements.md](docs/improvements.md).
-
-USB keyboard locales:
-
-- [x] `no.qmap` and `us.qmap` via ckbcomp and kmap2qmap; ship in `keymaps/`.
-- [x] `Writerdeck-launcher.sh` reads `keyboardLayout` from settings.
-- [x] Hotplug-safe keyboard path; Lobby Keyboard tab picker.
-- [ ] Device test (item 2 above).
-
-`loadkeys` and `setxkbmap` do not work for Qt apps on rM — see [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1).
-
-Encrypted notes (round 1 shipped): [decisions.md](docs/decisions.md) §31, [DONE.md](DONE.md), verify checklist [todo-handoff-encryption.md](docs/todo-handoff-encryption.md). `bash scripts/test-vault.sh`; full UI + GitHub: `bash scripts/test-vault-e2e.sh` (sync on).
+Encryption regression (not open work): [docs/todo-handoff-encryption.md](docs/todo-handoff-encryption.md) — `test-vault.sh`, `test-vault-e2e.sh` (sync on).
 
 ## Open question
 
@@ -36,6 +20,6 @@ Stay firmware-update-current? Each OTA resets the SSH password and may wipe the 
 ## Resume prompt
 
 > Project: reMarkable 1 Wi-Fi Markdown typewriter. Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Mac deploys; iPhone uses.
-> Shipped: [DONE.md](DONE.md). Next unchecked: Physical Home single input path ([handoff-physical-home-input.md](docs/handoff-physical-home-input.md)); Norwegian USB device test (æøå, AltGr — Alt+arrow fixed in qmap); Ctrl-K USB verify; power button device test; edit scroll/cursor patch deploy+verify. Encryption shipped ([decisions](docs/decisions.md) §31; verify `test-vault.sh`, `test-vault-e2e.sh`). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) §21); after arrow/selection QML: `bash scripts/test-keyboard-harness.sh` (§22).
+> Shipped: [DONE.md](DONE.md). Next unchecked: Physical Home ([todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md)); edit scroll/cursor device verify. Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `test-edit-session.sh` (§21); after arrow/selection QML: `test-keyboard-harness.sh` (§22).
 > Read: architecture, decisions, DONE, lessons, browser-vs-tablet, integrity-audit. Device: `secrets/remarkable.local.env` (`RM_HOST_WIFI`).
 > Constraints: no jailbreak/OTA/Toltec; `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`.

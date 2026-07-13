@@ -118,7 +118,7 @@ Global rotation (0, 90, 180, 270) is stored in `.Writerdeck/settings.json`. On e
 
 Modifier+arrow and selection behaviour are tested on the device via `daemon/cmd/edit-harness` and `scripts/test-keyboard-harness.sh`, not by reading saved note bytes. Writerdeck publishes cursor/selection over the socket; the server exposes `GET /api/test/editor-state` and `POST /api/test/reset` (hard quit). Scenarios send keys over `/ws` like the phone UI.
 
-Default run uses soft reset: one editor launch per full suite, `PUT` plus `POST /api/reload` between scenarios so content changes are not overwritten by `saveAndLoad`. Unit coverage for `translate()` modifier masks stays in `daemon/editor_test.go`. The harness does not exercise USB evdev or `.qmap` — keep hardware checks for Norwegian Alt+arrow, AltGr, and national characters. Run after QML arrow/selection changes and after daemon test-handler changes. Harness notes use the `z-test-` prefix (decision 32).
+Default run uses soft reset: one editor launch per full suite, `PUT` plus `POST /api/reload` between scenarios so content changes are not overwritten by `saveAndLoad`. Unit coverage for `translate()` modifier masks stays in `daemon/editor_test.go`. The harness does not exercise USB evdev or `.qmap` — re-check Norwegian Alt+arrow, AltGr, and national characters on hardware after qmap changes (baseline verified on device). Run after QML arrow/selection changes and after daemon test-handler changes. Harness notes use the `z-test-` prefix (decision 32).
 
 ## 23. On-device Writerdeck naming
 
@@ -176,4 +176,4 @@ Notes created or opened by device regression scripts (`test-edit-session.sh`, `t
 
 ## Open risks
 
-Firmware OTA may wipe the systemd unit and regenerate the SSH password — recovery is re-deploy and re-enable. USB keyboard locales need qmaps for national layouts; the browser path already resolves Norwegian via the phone OS. Encrypted notes subset is implemented (decisions.md §31). Integrity residuals: [integrity-audit.md](integrity-audit.md). uinput is closed — see decision 1. Go must be on the Mac. Rootfs is about 96% full; everything we ship lives on `/home/root/`. Do not resize rootfs — A/B OTA scheme, brick risk.
+Firmware OTA may wipe the systemd unit and regenerate the SSH password — recovery is re-deploy and re-enable. USB `us`/`no` qmaps and Lobby layout picker are shipped and device-verified. Encrypted notes subset is implemented (decisions.md §31). Integrity residuals: [integrity-audit.md](integrity-audit.md). uinput is closed — see decision 1. Go must be on the Mac. Rootfs is about 96% full; everything we ship lives on `/home/root/`. Do not resize rootfs — A/B OTA scheme, brick risk.

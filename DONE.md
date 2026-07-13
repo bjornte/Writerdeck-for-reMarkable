@@ -16,7 +16,7 @@ Six-tab pager on e-ink: Home, Files, Keyboard, Sync, Settings, Shortcuts. Touch 
 
 The Files tab lists notes from the server over a trusted socket. New, Edit, Read, Rename, and Delete work by touch or USB keys (`n`, Enter, `v`, `r`, `d`). With private notes on, a second row offers Encrypt, New encrypted, or Decrypt by touch (USB `x` / `y` on Files). Edit opens the note in type mode; Read opens preview on e-ink. A second tap on an already-selected row opens Edit. Lobby new/rename uses an inline prompt with a movable cursor (arrow keys, Home/End). Failed encrypt or decrypt shows a red error on the Files tab. After Home from edit, Lobby keyboard focus stays on `lobbyFocus` so USB and WebSocket keys keep working. Home from read returns to the Lobby (not quit). Show PIN on tablet (phone button) drops back to the Lobby when a second device needs the PIN.
 
-Launch from stock UI: Mac `wd` or `bash scripts/lobby.sh`; on tablet SSH, `~/wd`; USB Esc; L+R page buttons.
+Launch from stock UI: Mac `wd` or `bash scripts/lobby.sh`; on tablet SSH, `~/wd`; USB Esc; L+R page buttons. Ctrl-K note switcher works from the editor on USB keyboard (device verified).
 
 ## Phone companion
 
@@ -34,7 +34,7 @@ Reading font, PIN length, display rotation, and Exit Writerdeck live on the tabl
 
 ## Editor
 
-Built from upstream remarkable-keywriter, deployed as Writerdeck, patched for socket input. Full-panel via linuxfb. Norwegian and other Unicode via the browser path. Reading fonts: Inter, Literata, EB Garamond, DejaVu. Page up and down in read and edit. Block cursor hides while typing. Ctrl-K note switcher. Mac-style navigation in edit. Power button saves, shows a sleep screen, suspends; press again to wake. USB Esc from stock UI launches to Lobby. Rotation in settings, pushed on connect.
+Built from upstream remarkable-keywriter, deployed as Writerdeck, patched for socket input. Full-panel via linuxfb. Norwegian and other Unicode via the browser path; USB Norwegian (`no.qmap`) verified on hardware — æ ø å, AltGr, `@`, `{` `}`. Reading fonts: Inter, Literata, EB Garamond, DejaVu. Page up and down in read and edit. Block cursor hides while typing. Ctrl-K note switcher. Mac-style navigation in edit. Power button saves, shows a sleep screen, suspends; press again to wake (device verified). USB Esc from stock UI launches to Lobby. Rotation in settings, pushed on connect.
 
 ## GitHub sync
 
