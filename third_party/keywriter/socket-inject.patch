@@ -229,27 +229,27 @@
 +            }
 +        }
 +        else if (cmd == "requestvaultunlock" && g_rootObj) {
-            std::string reason, note;
-            auto r_p = line.find("\"reason\":\"");
-            if (r_p != std::string::npos) {
-                r_p += 10;
-                auto r_q = line.find('"', r_p);
-                if (r_q != std::string::npos)
-                    reason = line.substr(r_p, r_q - r_p);
-            }
-            auto n_p = line.find("\"name\":\"");
-            if (n_p != std::string::npos) {
-                n_p += 8;
-                auto n_q = line.find('"', n_p);
-                if (n_q != std::string::npos)
-                    note = line.substr(n_p, n_q - n_p);
-            }
-            QMetaObject::invokeMethod(g_rootObj, "requestVaultUnlock",
-                Qt::QueuedConnection,
-                Q_ARG(QVariant, QString::fromStdString(reason)),
-                Q_ARG(QVariant, QString::fromStdString(note)));
-        }
-        else if (cmd == "rotate" && g_rootObj)
++            std::string reason, note;
++            auto r_p = line.find("\"reason\":\"");
++            if (r_p != std::string::npos) {
++                r_p += 10;
++                auto r_q = line.find('"', r_p);
++                if (r_q != std::string::npos)
++                    reason = line.substr(r_p, r_q - r_p);
++            }
++            auto n_p = line.find("\"name\":\"");
++            if (n_p != std::string::npos) {
++                n_p += 8;
++                auto n_q = line.find('"', n_p);
++                if (n_q != std::string::npos)
++                    note = line.substr(n_p, n_q - n_p);
++            }
++            QMetaObject::invokeMethod(g_rootObj, "requestVaultUnlock",
++                Qt::QueuedConnection,
++                Q_ARG(QVariant, QString::fromStdString(reason)),
++                Q_ARG(QVariant, QString::fromStdString(note)));
++        }
++        else if (cmd == "rotate" && g_rootObj)
 +            // {"t":"cmd","c":"rotate"} -> bump root.rotation 90 CW (any mode).
 +            QMetaObject::invokeMethod(qApp, []() {
 +                if (!g_rootObj) return;
