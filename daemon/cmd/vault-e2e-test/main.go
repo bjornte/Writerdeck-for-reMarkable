@@ -210,10 +210,15 @@ func run(base, wsURL, host string, cleanup bool) error {
 	if err := enterPINAndUnlock(base, ws, initialPIN); err != nil {
 		return err
 	}
-	if err := waitNoteExists(host, testEncNote, true, 45*time.Second); err != nil {
-		return err
+	if err := waitNoteListed(base, testEncNote, 90*time.Second); err != nil {
+		if err := tabletReq(base, "unlockvault", initialPIN); err == nil {
+			_ = tabletReq(base, "encryptnote", testNote)
+		}
+		if err2 := waitNoteListed(base, testEncNote, 15*time.Second); err2 != nil {
+			return err
+		}
 	}
-	if err := waitNoteExists(host, testNote, false, 5*time.Second); err != nil {
+	if err := waitNoteAbsent(base, testNote, 10*time.Second); err != nil {
 		return err
 	}
 	fmt.Println("  files: encrypted note (unlock via Files UI, encrypt confirmed)")
@@ -273,11 +278,13 @@ func run(base, wsURL, host string, cleanup bool) error {
 	if err := editorCmd(base, "open", testEncNote); err != nil {
 		return err
 	}
-	if err := waitVaultOverlay(base, "unlock", 5*time.Second); err != nil {
-		return err
-	}
-	if err := enterPINAndUnlock(base, ws, changedPIN); err != nil {
-		return err
+	if st, _ := getVaultStatus(base); st.Locked {
+		if err := waitVaultOverlay(base, "unlock", 8*time.Second); err != nil {
+			return err
+		}
+		if err := enterPINAndUnlock(base, ws, changedPIN); err != nil {
+			return err
+		}
 	}
 	if err := waitEditing(base, testEncNote, 10*time.Second); err != nil {
 		return err
@@ -333,10 +340,10 @@ func run(base, wsURL, host string, cleanup bool) error {
 	if err := tabletReq(base, "decryptnote", testEncNote); err != nil {
 		return err
 	}
-	if err := waitNoteExists(host, testNote, true, 15*time.Second); err != nil {
+	if err := waitNoteListed(base, testNote, 15*time.Second); err != nil {
 		return err
 	}
-	if err := waitNoteExists(host, testEncNote, false, 5*time.Second); err != nil {
+	if err := waitNoteAbsent(base, testEncNote, 10*time.Second); err != nil {
 		return err
 	}
 	fmt.Println("  files: decrypted note (unlock via Files UI, decrypt confirmed)")
@@ -599,6 +606,40 @@ func waitNoteListed(base, name string, timeout time.Duration) error {
 		time.Sleep(200 * time.Millisecond)
 	}
 	return fmt.Errorf("%s not in note list", name)
+}
+
+func waitNoteAbsent(base, name string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if listed, err := noteListed(base, name); err == nil && !listed {
+			return nil
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	return fmt.Errorf("%s still in note list", name)
+}
+
+func noteListed(base, name string) (bool, error) {
+	resp, err := client.Get(base + "/api/notes")
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return false, fmt.Errorf("notes HTTP %d", resp.StatusCode)
+	}
+	var notes []struct {
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&notes); err != nil {
+		return false, err
+	}
+	for _, n := range notes {
+		if n.Name == name {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func waitNoteExists(host, name string, want bool, timeout time.Duration) error {

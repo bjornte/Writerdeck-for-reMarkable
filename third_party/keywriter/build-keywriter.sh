@@ -282,6 +282,31 @@ new3b = (
 assert old3b in s, "function saveAndLoad not found (edit 3b)"
 s = s.replace(old3b, new3b, 1)
 
+# 3d. saveAndLoad must match Lobby Files Edit: encrypted + locked -> unlock overlay.
+old3d = (
+    '    function saveAndLoad(name) {\n'
+    '        isLobby = false\n'
+    '        if (mode == 1) doc = query.text\n'
+    '        saveFile()\n'
+    '        doLoad(name)\n'
+    '    }\n'
+)
+new3d = (
+    '    function saveAndLoad(name) {\n'
+    '        if (name && name.indexOf(".md.enc") >= 0 && lobbyVaultLocked) {\n'
+    '            vaultPendingLoad = name\n'
+    '            vaultBeginUnlock("Unlock to edit encrypted note")\n'
+    '            return\n'
+    '        }\n'
+    '        isLobby = false\n'
+    '        if (mode == 1) doc = query.text\n'
+    '        saveFile()\n'
+    '        doLoad(name)\n'
+    '    }\n'
+)
+assert old3d in s, "saveAndLoad body not found (edit 3d)"
+s = s.replace(old3d, new3d, 1)
+
 # 3c. Omni z-order above Lobby so Open/Ctrl-K from Lobby never exposes stale doc.
 old3c = '        Rectangle {\n            id: quick\n'
 new3c = '        Rectangle {\n            id: quick\n            z: isOmni ? 10 : 0\n'
