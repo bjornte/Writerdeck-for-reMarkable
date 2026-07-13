@@ -8,7 +8,9 @@ The phone is a keyboard bridge, import/export helper, and GitHub token entry sur
 
 Connect with the PIN, then use the note list for **Upload** and **Download** only — not for reading or opening notes. **Upload** imports an external `.md`, `.markdown`, or `.txt` as a new note on disk. **Download** saves one note to the phone via `Content-Disposition: attachment`. There is no plaintext preview and no phone-initiated Edit.
 
-Open a note on the tablet (Files → Edit, Enter, or second tap on a row). The server sends WebSocket `openedit` and the phone enters **Type mode**: keystrokes forward to e-ink with an echo footer. In Type mode, **Paste from phone** (or "Paste from here" on iPad) opens a modal, reads the clipboard, and replays the text at the current tablet cursor through the existing keystroke path — it does not create a note and is not Upload.
+Open a note on the tablet for **edit** (Files → Edit, Enter, or second tap on a row). The server sends WebSocket `openedit` and the phone enters **Type mode**: keystrokes forward to e-ink with an echo footer. In Type mode, **Paste from phone** (or "Paste from here" on iPad) opens a modal, reads the clipboard, and replays the text at the current tablet cursor through the existing keystroke path — it does not create a note and is not Upload.
+
+Bluetooth keyboards pair to the phone, not the tablet. Besides Type mode, the phone also captures keys when the tablet is in **read preview** (`openread` — Esc toggles to edit), **Files new/rename** (`lobbyinput`), or **delete confirm** (Enter/Esc). Read mode shows a minimal typing panel; lobby prompts show a banner over the note list.
 
 Also on the phone: GitHub sync in Notes sync setup (bar: Sync setup); connection status; Show PIN on tablet. Keystroke layout resolves in the phone OS (Norwegian works today).
 

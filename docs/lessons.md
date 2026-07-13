@@ -102,6 +102,8 @@ Writerdeck deploy needs a fresh binary; QML lives inside it. After lobby edits: 
 
 Lobby Files vault row: when private notes is on, the note `ListView` must reserve height for the second button row — otherwise Encrypt/Decrypt renders below the visible area. Use explicit half-width `Rectangle` buttons (same pattern as Settings); a `Repeater` that sizes delegates with `parentRow.model.length` fails because `Row` has no `model` — labels draw at x=0 with zero-width chrome and overlap.
 
+Lobby Files inline rename/new: handle printable keys on key release only in `lobbyHandleKey` — a parallel `Keys.onPressed` insert duplicates characters from the phone WebSocket path (press and release both carry text). Rename strips `.md.enc` before `.md` for the editable basename; re-append `.md.enc` on submit for encrypted notes. Use `lobbyFilesInputPos` for arrow/Home/End cursor movement in the prompt.
+
 ## Sync
 
 Destructive sync needs per-note 404 confirmation — a failed remote list must not become mass-delete. Never push empty over a previously-synced note.

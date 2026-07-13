@@ -14,19 +14,19 @@ Home from the editor saves and returns to the Lobby. Home from the Lobby quits t
 
 Six-tab pager on e-ink: Home, Files, Keyboard, Sync, Settings, Shortcuts. Touch the tabs or use Tab, arrows, or digits 1–6. On socket connect the server pushes IP, PIN, sync state, note count, and formatted last sync; it re-pushes when wlan0 gets an address, a reconcile finishes, or notes change.
 
-The Files tab lists notes from the server over a trusted socket. New, Edit, Read, Rename, and Delete work by touch or USB keys (`n`, Enter, `v`, `r`, `d`). With private notes on, a second row offers Encrypt, New encrypted, or Decrypt by touch (USB `x` / `y` on Files). Edit opens the note in type mode; Read opens preview on e-ink. A second tap on an already-selected row opens Edit. After Home from edit, Lobby keyboard focus stays on `lobbyFocus` so USB and WebSocket keys keep working. Home from read returns to the Lobby (not quit). Show PIN on tablet (phone button) drops back to the Lobby when a second device needs the PIN.
+The Files tab lists notes from the server over a trusted socket. New, Edit, Read, Rename, and Delete work by touch or USB keys (`n`, Enter, `v`, `r`, `d`). With private notes on, a second row offers Encrypt, New encrypted, or Decrypt by touch (USB `x` / `y` on Files). Edit opens the note in type mode; Read opens preview on e-ink. A second tap on an already-selected row opens Edit. Lobby new/rename uses an inline prompt with a movable cursor (arrow keys, Home/End). Failed encrypt or decrypt shows a red error on the Files tab. After Home from edit, Lobby keyboard focus stays on `lobbyFocus` so USB and WebSocket keys keep working. Home from read returns to the Lobby (not quit). Show PIN on tablet (phone button) drops back to the Lobby when a second device needs the PIN.
 
 Launch from stock UI: Mac `wd` or `bash scripts/lobby.sh`; on tablet SSH, `~/wd`; USB Esc; L+R page buttons.
 
 ## Phone companion
 
-Upload and download `.md` notes from the note list. Type mode when the tablet opens a note (Files, Ctrl-K, or reconnect) via WebSocket `openedit` — keystrokes to e-ink with an echo footer. **Paste from phone** in Type mode inserts clipboard text at the tablet cursor (keystroke replay, not a new file). Home on the tablet drops the phone back to the list. Dark type mode for OLED phones. No phone preview, Edit, or file CRUD — tablet Lobby Files tab.
+Upload and download `.md` notes from the note list. Type mode when the tablet opens a note for edit (Files, Ctrl-K, or reconnect) via WebSocket `openedit` — keystrokes to e-ink with an echo footer. When the tablet is in read preview, new/rename, or delete confirm, the server broadcasts `openread` or `lobbyinput` so a Bluetooth keyboard paired to the phone still forwards keys (read view or a green banner over the list). **Paste from phone** in Type mode inserts clipboard text at the tablet cursor (keystroke replay, not a new file). Home on the tablet drops the phone back to the list. Dark type mode for OLED phones. No phone preview, Edit, or file CRUD — tablet Lobby Files tab.
 
 ## Security
 
 PIN on the tablet each boot — 6 digits, 4 digits, or none (none warns that anyone on your Wi-Fi can connect). Five wrong guesses from one IP lock that IP for 60 seconds. Auth cookie until 04:00 local time.
 
-Optional private-note encryption: a second 6-digit vault PIN (tablet only), independent of the pairing PIN. Per-note Encrypt/Decrypt from Lobby Files; ciphertext as `.md.enc` with `WDENC1` on disk and on GitHub. PIN required for each open, read, edit, encrypt, or decrypt — no persistent unlocked state. Recovery material syncs to `secret/pin` and `secret/vault`. Phone download decrypts after the tablet enters its PIN; the phone waits. Details: [decisions.md](docs/decisions.md) §31.
+Optional private-note encryption: a second 6-digit vault PIN (tablet only), independent of the pairing PIN. Per-note Encrypt/Decrypt from Lobby Files; ciphertext as `.md.enc` with `WDENC1` on disk and on GitHub. PIN required for each open, read, edit, encrypt, or decrypt — no persistent unlocked state. Failed encrypt/decrypt surfaces an error on the Files tab (corrupt ciphertext, wrong format, name clash). Recovery material syncs to `secret/pin` and `secret/vault`. Phone download decrypts after the tablet enters its PIN; the phone waits. Details: [decisions.md](docs/decisions.md) §31.
 
 ## Settings and sync
 

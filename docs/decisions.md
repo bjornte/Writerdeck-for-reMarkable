@@ -140,7 +140,11 @@ RichText in edit mode was tried upstream and in early patches; reading formatted
 
 ## 27. Lobby Files: Edit and Read
 
-The Files tab offers Edit and Read instead of a single Open. Edit runs `saveAndLoad()` — type mode; the server broadcasts `openedit` and the phone enters Type mode. Read runs `doLoad()` in preview (`mode=0`) without `openedit`. USB: Enter edits, `v` reads. Touch: double-tap or a second tap on the already-selected row opens Edit.
+The Files tab offers Edit and Read instead of a single Open. Edit runs `saveAndLoad()` — type mode; the server broadcasts `openedit` and the phone enters Type mode. Read runs `doLoad()` in preview (`mode=0`) and broadcasts `openread` so a Bluetooth keyboard on the phone can still send Esc to toggle edit. USB: Enter edits, `v` reads. Touch: double-tap or a second tap on the already-selected row opens Edit.
+
+## 33. Bluetooth remote key capture on the phone
+
+Bluetooth keyboards pair to the phone; keystrokes reach the tablet over the same WebSocket inject path as Type mode. The phone only captures when the tablet asks: `openedit` (full Type mode), `openread` (read preview — Esc to edit), or `lobbyinput` (Files new, rename, new-encrypted, or delete confirm). The tablet signals via `notifyReadOpen` / `notifyLobbyInput` on the editor socket; the server fans out to browsers. Do not capture in plain Browse mode — browser shortcuts must still work.
 
 ## 28. Physical Home duplicate delivery (interim)
 
@@ -158,7 +162,7 @@ Encrypted notes use suffix `.md.enc` beside plain `.md` in `Writerdeck-user-docu
 
 Unlocked state is gone: the data key lives in server RAM only during an active note-editing session (one encrypted note) or briefly for a one-shot Files encrypt/decrypt or phone download. PIN every time you open, read, edit, encrypt, or decrypt — including note switches. Edit/read toggle on the same note does not re-prompt; save on Lobby exit does not re-prompt while that session key is held. Returning to the Lobby clears the session key. PIN entry is tablet-only: touch numpad or USB digits + Enter. Failed attempts rate-limit like pairing PIN auth. Files Encrypt/Decrypt and New encrypted show the PIN overlay first; after a correct PIN the deferred op runs once via `vaultpinok`.
 
-Per-note encrypt/decrypt from Lobby Files — no bulk encrypt on enable. With private notes on, Files shows a second touch row (Encrypt and New encrypted on plain notes, Decrypt on `.md.enc`); Settings is enable and change PIN only. GitHub sync treats `.md.enc` as opaque bytes and mirrors recovery material under `secret/pin` (plaintext PIN) and `secret/vault` (JSON wrap metadata). `secret/` is excluded from phone note APIs.
+Per-note encrypt/decrypt from Lobby Files — no bulk encrypt on enable. With private notes on, Files shows a second touch row (Encrypt and New encrypted on plain notes, Decrypt on `.md.enc`); Settings is enable and change PIN only. Failed encrypt/decrypt pushes `vaultopfailed` to the tablet — a red message on the Files tab (corrupt ciphertext, bad format, name clash). GitHub sync treats `.md.enc` as opaque bytes and mirrors recovery material under `secret/pin` (plaintext PIN) and `secret/vault` (JSON wrap metadata). `secret/` is excluded from phone note APIs.
 
 Phone download decrypts server-side after the tablet enters its PIN; if no session key is present, the server returns 423, pushes `requestvaultpin` to the tablet, and the phone waits. No encryption PIN UI on the phone. Forgotten PIN: recover from `secret/pin` on GitHub after re-deploy.
 
