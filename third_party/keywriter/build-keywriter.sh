@@ -428,7 +428,7 @@ s = s.replace(old6b, new6b, 1)
 #    the Key_Home path only (fromPhysicalCmd=false).
 old7 = '    function initFile(name) {'
 new7 = (
-    '    function setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing, keyboardLayout, pinDigits, encryptionEnabled, vaultLocked) {\n'
+    '    function setLobbyInfo(ip, pin, syncOn, syncRepo, noteCount, lastSync, syncReady, syncing, keyboardLayout, pinDigits) {\n'
     '        lobbyIP = ip\n'
     '        lobbyPIN = pin\n'
     '        lobbySyncOn = !!syncOn\n'
@@ -439,6 +439,9 @@ new7 = (
     '        lobbySyncing = !!syncing\n'
     '        lobbyKeyboardLayout = keyboardLayout || "us"\n'
     '        lobbyPinDigits = pinDigits || "6"\n'
+    '    }\n'
+    '\n'
+    '    function setVaultStatus(encryptionEnabled, vaultLocked) {\n'
     '        lobbyEncryptionEnabled = !!encryptionEnabled\n'
     '        lobbyVaultLocked = !!vaultLocked\n'
     '    }\n'

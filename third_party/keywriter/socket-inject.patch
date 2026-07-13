@@ -330,7 +330,9 @@
 +                    Q_ARG(QVariant, syncReady),
 +                    Q_ARG(QVariant, syncing),
 +                    Q_ARG(QVariant, QString::fromStdString(keyboardLayout)),
-+                    Q_ARG(QVariant, QString::fromStdString(pinDigits)),
++                    Q_ARG(QVariant, QString::fromStdString(pinDigits)));
++                QMetaObject::invokeMethod(g_rootObj, "setVaultStatus",
++                    Qt::QueuedConnection,
 +                    Q_ARG(QVariant, encryptionEnabled),
 +                    Q_ARG(QVariant, vaultLocked));
 +                QMetaObject::invokeMethod(g_rootObj, "setLobbySyncStatus",
