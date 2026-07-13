@@ -50,11 +50,7 @@ export function renderNotes(notes) {
 
     var nameEl = document.createElement('span');
     nameEl.className = 'note-name';
-    if (note.encrypted) {
-      nameEl.textContent = note.encrypted ? '[private] ' + displayName : displayName;
-    } else {
-      nameEl.textContent = displayName;
-    }
+    nameEl.textContent = note.encrypted ? displayName + ' [private]' : displayName;
     nameEl.title = note.name;
 
     var dlBtn = document.createElement('button');

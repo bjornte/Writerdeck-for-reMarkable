@@ -156,11 +156,21 @@
 
                             Text {
                                 visible: lobbyFilesMode === "new" || lobbyFilesMode === "rename"
-                                text: lobbyFilesInput + "_"
+                                text: lobbyFilesInputDisplay()
                                 font.family: "Noto Mono"
                                 font.pointSize: 12
                                 color: "#333"
                                 width: parent.width
+                            }
+
+                            Text {
+                                visible: lobbyVaultError !== "" && lobbyFilesMode === ""
+                                text: lobbyVaultError
+                                font.family: "Noto Sans"
+                                font.pointSize: 11
+                                color: "#aa0000"
+                                width: parent.width
+                                wrapMode: Text.WordWrap
                             }
 
                             ListView {
@@ -188,7 +198,7 @@
                                         anchors.verticalCenter: parent.verticalCenter
                                         anchors.left: parent.left
                                         anchors.leftMargin: 16
-                                        text: (model.encrypted ? "[lock] " : "") + model.name
+                                        text: lobbyFilesStripSuffix(model.name) + (model.encrypted ? " [private]" : "")
                                         font.family: "Noto Mono"
                                         font.pointSize: 11
                                         color: "black"

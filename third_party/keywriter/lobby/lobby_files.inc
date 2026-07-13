@@ -62,7 +62,7 @@
                                         anchors.verticalCenter: parent.verticalCenter
                                         anchors.left: parent.left
                                         anchors.leftMargin: 16
-                                        text: (model.encrypted ? "[lock] " : "") + model.name
+                                        text: lobbyFilesStripSuffix(model.name) + (model.encrypted ? " [private]" : "")
                                         font.family: "Noto Mono"
                                         font.pointSize: 11
                                         color: "black"
