@@ -152,7 +152,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 		return err
 	}
 	time.Sleep(stepPause)
-	if err := wsKey(ws, "n"); err != nil {
+	if err := editorCmd(base, "filesnew", ""); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -163,11 +163,10 @@ func run(base, wsURL, host string, cleanup bool) error {
 		return err
 	}
 	time.Sleep(stepPause)
-	if err := editorCmd(base, "selectnote", testNote); err != nil {
+	if err := waitNoteListed(base, testNote, 10*time.Second); err != nil {
 		return err
 	}
-	time.Sleep(stepPause)
-	if err := wsKey(ws, "Enter"); err != nil {
+	if err := editorCmd(base, "open", testNote); err != nil {
 		return err
 	}
 	if err := waitEditing(base, testNote, 8*time.Second); err != nil {
@@ -264,7 +263,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 		return err
 	}
 	time.Sleep(stepPause)
-	if err := wsKey(ws, "Enter"); err != nil {
+	if err := editorCmd(base, "open", testEncNote); err != nil {
 		return err
 	}
 	if err := waitVaultOverlay(base, "unlock", 5*time.Second); err != nil {
@@ -475,6 +474,27 @@ func waitEditing(base, name string, timeout time.Duration) error {
 	}
 	st, _ := queryState(base)
 	return fmt.Errorf("editing %s: isLobby=%d file=%q textLen=%d", name, st.IsLobby, st.CurrentFile, st.TextLen)
+}
+
+func waitNoteListed(base, name string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		resp, err := client.Get(base + "/api/notes")
+		if err == nil && resp.StatusCode == 200 {
+			var notes []struct {
+				Name string `json:"name"`
+			}
+			_ = json.NewDecoder(resp.Body).Decode(&notes)
+			resp.Body.Close()
+			for _, n := range notes {
+				if n.Name == name {
+					return nil
+				}
+			}
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	return fmt.Errorf("%s not in note list", name)
 }
 
 func waitNoteExists(host, name string, want bool) error {
