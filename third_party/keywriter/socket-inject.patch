@@ -228,7 +228,28 @@
 +                }, Qt::QueuedConnection);
 +            }
 +        }
-+        else if (cmd == "rotate" && g_rootObj)
++        else if (cmd == "requestvaultunlock" && g_rootObj) {
+            std::string reason, note;
+            auto r_p = line.find("\"reason\":\"");
+            if (r_p != std::string::npos) {
+                r_p += 10;
+                auto r_q = line.find('"', r_p);
+                if (r_q != std::string::npos)
+                    reason = line.substr(r_p, r_q - r_p);
+            }
+            auto n_p = line.find("\"name\":\"");
+            if (n_p != std::string::npos) {
+                n_p += 8;
+                auto n_q = line.find('"', n_p);
+                if (n_q != std::string::npos)
+                    note = line.substr(n_p, n_q - n_p);
+            }
+            QMetaObject::invokeMethod(g_rootObj, "requestVaultUnlock",
+                Qt::QueuedConnection,
+                Q_ARG(QVariant, QString::fromStdString(reason)),
+                Q_ARG(QVariant, QString::fromStdString(note)));
+        }
+        else if (cmd == "rotate" && g_rootObj)
 +            // {"t":"cmd","c":"rotate"} -> bump root.rotation 90 CW (any mode).
 +            QMetaObject::invokeMethod(qApp, []() {
 +                if (!g_rootObj) return;
@@ -296,6 +317,8 @@
 +                    if (pd_q != std::string::npos)
 +                        pinDigits = line.substr(pd_p, pd_q - pd_p);
 +                }
++                bool encryptionEnabled = line.find("\"encryptionEnabled\":true") != std::string::npos;
++                bool vaultLocked = line.find("\"vaultLocked\":true") != std::string::npos;
 +                QMetaObject::invokeMethod(g_rootObj, "setLobbyInfo",
 +                    Qt::QueuedConnection,
 +                    Q_ARG(QVariant, QString::fromStdString(ip)),
@@ -307,7 +330,9 @@
 +                    Q_ARG(QVariant, syncReady),
 +                    Q_ARG(QVariant, syncing),
 +                    Q_ARG(QVariant, QString::fromStdString(keyboardLayout)),
-+                    Q_ARG(QVariant, QString::fromStdString(pinDigits)));
++                    Q_ARG(QVariant, QString::fromStdString(pinDigits)),
++                    Q_ARG(QVariant, encryptionEnabled),
++                    Q_ARG(QVariant, vaultLocked));
 +                QMetaObject::invokeMethod(g_rootObj, "setLobbySyncStatus",
 +                    Qt::QueuedConnection,
 +                    Q_ARG(QVariant, QString::fromStdString(syncError)),
@@ -326,6 +351,7 @@
 +            m[QStringLiteral("name")] = o.value(QStringLiteral("name")).toString();
 +            m[QStringLiteral("size")] = o.value(QStringLiteral("size")).toInt();
 +            m[QStringLiteral("modified")] = o.value(QStringLiteral("modified")).toString();
++            m[QStringLiteral("encrypted")] = o.value(QStringLiteral("encrypted")).toBool();
 +            items.append(m);
 +        }
 +        g_lobbyBridge.deliverNotesList(items);

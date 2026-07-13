@@ -32,18 +32,23 @@ export function renderNotes(notes) {
   }
   el.innerHTML = '';
   notes.forEach(function(note) {
-    var displayName = note.name.replace(/\.md$/, '');
+    var displayName = note.name.replace(/\.md\.enc$/, '').replace(/\.md$/, '');
     var row = document.createElement('div');
     row.className = 'note-row';
 
     var nameEl = document.createElement('span');
     nameEl.className = 'note-name';
-    nameEl.textContent = displayName;
+    if (note.encrypted) {
+      nameEl.textContent = (note.locked ? '[locked] ' : '[private] ') + displayName;
+    } else {
+      nameEl.textContent = displayName;
+    }
     nameEl.title = note.name;
 
     var dlBtn = document.createElement('button');
     dlBtn.className = 'note-btn';
     dlBtn.textContent = 'Download';
+    dlBtn.disabled = !!(note.encrypted && note.locked);
     dlBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       downloadNote(note.name);
@@ -95,12 +100,52 @@ export function hideTypingView(e) {
 }
 
 function downloadNote(filename) {
-  var a = document.createElement('a');
-  a.href = '/api/notes/' + encodeURIComponent(filename) + '/download';
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  var url = '/api/notes/' + encodeURIComponent(filename) + '/download';
+  fetch(url, { credentials: 'same-origin' })
+    .then(function(r) {
+      if (r.status === 401) { deps.showPinScreen(); return null; }
+      if (r.status === 423) {
+        alert('Enter private PIN on tablet');
+        return waitForVaultUnlock().then(function(ok) {
+          if (!ok) { alert('Timed out waiting for tablet unlock.'); return null; }
+          return fetch(url, { credentials: 'same-origin' });
+        });
+      }
+      if (!r.ok) { alert('Download failed.'); return null; }
+      return r.blob();
+    })
+    .then(function(blob) {
+      if (!blob) return;
+      var a = document.createElement('a');
+      var dlName = filename.replace(/\.enc$/, '');
+      a.href = URL.createObjectURL(blob);
+      a.download = dlName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    })
+    .catch(function() { alert('Could not reach server.'); });
+}
+
+function waitForVaultUnlock() {
+  return new Promise(function(resolve) {
+    var deadline = Date.now() + 120000;
+    function poll() {
+      fetch('/api/vault/status', { credentials: 'same-origin' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(st) {
+          if (st && st.enabled && !st.locked) { resolve(true); return; }
+          if (Date.now() > deadline) { resolve(false); return; }
+          setTimeout(poll, 1500);
+        })
+        .catch(function() {
+          if (Date.now() > deadline) resolve(false);
+          else setTimeout(poll, 1500);
+        });
+    }
+    poll();
+  });
 }
 
 export function uploadFile(file) {

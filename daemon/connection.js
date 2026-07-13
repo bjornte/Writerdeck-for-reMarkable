@@ -242,6 +242,8 @@ function connect() {
         notifyDiskChanged(data.name || '');
       } else if (data.type === 'needtoken') {
         respondToNeedToken();
+      } else if (data.type === 'vaultunlocked') {
+        deps.loadNotes();
       }
       // Unknown types are silently ignored -- forward-compatible.
     } catch (e) {}

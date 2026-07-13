@@ -4,9 +4,7 @@ Wish-list and design notes — not tracked work. Shipped: [../DONE.md](../DONE.m
 
 ## Encrypted note subset
 
-Today one global PIN gates the whole notes API. The goal is a protected subset — for example a `private/` folder — with its own passphrase, distinct from the LAN PIN.
-
-Leading option: encrypted subfolder, AES-GCM in Go, key derived with scrypt or argon2id. Passphrase never stored on tablet. List API returns locked entries without body. GitHub sync excludes the folder by default. Write the ADR before implementation — see [../TODO.md](../TODO.md) Phase 10.
+Today one global PIN gates the whole notes API. Shipped: optional per-note encryption with a separate 6-digit vault PIN (tablet only), `.md.enc` files, and GitHub `secret/` recovery — see [decisions.md](decisions.md) §31.
 
 ## USB keyboard locales
 

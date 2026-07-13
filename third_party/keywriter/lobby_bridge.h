@@ -22,6 +22,13 @@ public slots:
     Q_INVOKABLE void setReadFont(const QString &font);
     Q_INVOKABLE void setPinDigits(const QString &digits);
     Q_INVOKABLE void exitWriterdeck();
+    Q_INVOKABLE void setVaultPin(const QString &pin);
+    Q_INVOKABLE void changeVaultPin(const QString &oldPin, const QString &newPin);
+    Q_INVOKABLE void unlockVault(const QString &pin);
+    Q_INVOKABLE void lockVault();
+    Q_INVOKABLE void encryptNote(const QString &name);
+    Q_INVOKABLE void decryptNote(const QString &name);
+    Q_INVOKABLE void createEncryptedNote(const QString &name);
     Q_INVOKABLE void publishState(int cursor, int selStart, int selEnd, int textLen, int mode, int isLobby);
 
     // Called from the socket thread when the server pushes a notes list.

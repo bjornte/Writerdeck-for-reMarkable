@@ -29,6 +29,10 @@ type settingsData struct {
 	LastSyncAt int64                      `json:"lastSyncAt,omitempty"` // unix seconds of last reconcile
 	SyncMeta   map[string]noteSyncMeta    `json:"syncMeta,omitempty"` // per-note GitHub SHA + local hash (non-secret)
 	PendingSync []pendingSyncOp           `json:"pendingSync,omitempty"` // tablet CRUD awaiting sync (legacy drain)
+	EncryptionEnabled bool                `json:"encryptionEnabled,omitempty"`
+	VaultSalt         string              `json:"vaultSalt,omitempty"`
+	VaultVerifier     string              `json:"vaultVerifier,omitempty"`
+	WrappedDataKey    string              `json:"wrappedDataKey,omitempty"`
 }
 
 // pendingSyncOp is one queued tablet file op for the phone browser to mirror on GitHub.

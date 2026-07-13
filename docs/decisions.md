@@ -150,10 +150,24 @@ gpio-keys on `/dev/input/event1` reaches both Writerdeck-server (`cmd home`) and
 
 After Home from edit, `lobbyFocus` must keep USB and WebSocket keys working — a bare `FocusScope` without `Keys` handlers stole focus. `scripts/test-lobby-keyboard.sh` opens a note, drops to Lobby via `POST /api/lobby`, sends Files-tab keys over WebSocket, reopens the note, and asserts Home-from-read does not quit Writerdeck (`POST /api/test/home`). Run after Lobby or `handleHome` QML changes alongside `test-edit-session.sh`.
 
+## 31. Optional at-rest encryption (private notes)
+
+Two independent PINs: the LAN pairing PIN (`pinDigits`, phone browser) and the vault encryption PIN (tablet only). `pinDigits: none` does not disable encryption.
+
+Encrypted notes use suffix `.md.enc` beside plain `.md` in `Writerdeck-user-documents/`. Crypto: AES-256-GCM per file with a random 32-byte data key; user PIN derives a KEK via scrypt (N=32768); settings store `encryptionEnabled`, `vaultSalt`, `vaultVerifier`, `wrappedDataKey` only. On-disk format: magic `WDENC1` + nonce + ciphertext+tag. Stdlib AES-GCM plus `golang.org/x/crypto/scrypt`; `CGO_ENABLED=0`.
+
+Unlocked means `dataKey` lives in server RAM. The vault locks on every return to Lobby (`isLobby` via editor state). Unlock is tablet-only: touch numpad or USB digits + Enter. Failed unlocks rate-limit like pairing PIN auth.
+
+Per-note encrypt/decrypt from Lobby Files — no bulk encrypt on enable. GitHub sync treats `.md.enc` as opaque bytes and mirrors recovery material under `secret/pin` (plaintext PIN) and `secret/vault` (JSON wrap metadata). `secret/` is excluded from phone note APIs.
+
+Phone download decrypts server-side when the vault is unlocked; if locked, the server returns 423, pushes `requestvaultunlock` to the tablet, and the phone waits. No encryption PIN UI on the phone. Forgotten PIN: recover from `secret/pin` on GitHub after re-deploy.
+
+UTF-8 Markdown integrity applies to `.md` only; `.md.enc` are opaque on disk. See [integrity-audit.md](integrity-audit.md).
+
 ---
 
 
 
 ## Open risks
 
-Firmware OTA may wipe the systemd unit and regenerate the SSH password — recovery is re-deploy and re-enable. USB keyboard locales need qmaps for national layouts; the browser path already resolves Norwegian via the phone OS. Encrypted note subset is design-only. Integrity residuals: [integrity-audit.md](integrity-audit.md). uinput is closed — see decision 1. Go must be on the Mac. Rootfs is about 96% full; everything we ship lives on `/home/root/`. Do not resize rootfs — A/B OTA scheme, brick risk.
+Firmware OTA may wipe the systemd unit and regenerate the SSH password — recovery is re-deploy and re-enable. USB keyboard locales need qmaps for national layouts; the browser path already resolves Norwegian via the phone OS. Encrypted notes subset is implemented (decisions.md §31). Integrity residuals: [integrity-audit.md](integrity-audit.md). uinput is closed — see decision 1. Go must be on the Mac. Rootfs is about 96% full; everything we ship lives on `/home/root/`. Do not resize rootfs — A/B OTA scheme, brick risk.

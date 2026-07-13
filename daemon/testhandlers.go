@@ -94,14 +94,17 @@ func testTabletReqHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Op   string `json:"op"`
 		Name string `json:"name"`
+		Old  string `json:"old"`
 	}
 	if json.NewDecoder(r.Body).Decode(&req) != nil || req.Op == "" {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
 	switch req.Op {
-	case "setreadfont", "setpindigits", "setkeyboardlayout":
-		handleEditorReq(req.Op, req.Name, "")
+	case "setreadfont", "setpindigits", "setkeyboardlayout",
+		"setvaultpin", "changevaultpin", "unlockvault", "lockvault",
+		"encryptnote", "decryptnote", "disablevault":
+		handleEditorReq(req.Op, req.Name, req.Old)
 	default:
 		http.Error(w, "unsupported op", http.StatusBadRequest)
 		return

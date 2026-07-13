@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -95,13 +96,12 @@ func (e *syncEngine) openNote() string {
 }
 
 func readNoteContent(name string) (string, bool) {
-	p := notesSafe(name)
-	if p == "" {
+	data, ok := readNoteBytes(name)
+	if !ok {
 		return "", false
 	}
-	data, err := os.ReadFile(p)
-	if err != nil {
-		return "", false
+	if isEncryptedNoteName(name) {
+		return string(data), true
 	}
 	return string(data), true
 }
@@ -111,10 +111,16 @@ func writeNoteContentSync(name, content string) error {
 	if p == "" {
 		return fmt.Errorf("invalid name")
 	}
-	if rejectsHtmlNoteContent(content) {
-		return fmt.Errorf("refusing HTML payload")
+	var data []byte
+	if isEncryptedNoteName(name) {
+		data = []byte(content)
+	} else {
+		if rejectsHtmlNoteContent(content) {
+			return fmt.Errorf("refusing HTML payload")
+		}
+		data = []byte(content)
 	}
-	if err := writeNoteFile(p, []byte(content)); err != nil {
+	if err := writeNoteFile(p, data); err != nil {
 		return err
 	}
 	maybeBroadcastDiskChanged(filepath.Base(p))
@@ -130,11 +136,68 @@ func listLocalNoteNames() []string {
 	}
 	var names []string
 	for _, ent := range entries {
-		if !ent.IsDir() && strings.HasSuffix(ent.Name(), ".md") {
+		if !ent.IsDir() && isNoteListName(ent.Name()) {
 			names = append(names, ent.Name())
 		}
 	}
 	return names
+}
+
+func readNoteBytes(name string) ([]byte, bool) {
+	p := notesSafe(name)
+	if p == "" {
+		return nil, false
+	}
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return nil, false
+	}
+	return data, true
+}
+
+func noteContentHash(name string, data []byte) string {
+	return strHash(string(data))
+}
+
+func (e *syncEngine) handleClashBytes(name string, tabletData []byte) error {
+	gh, _, err := e.ghGetFile(name)
+	if err != nil || gh == nil {
+		return err
+	}
+	ghData, err := ghDecodeBytes(gh.Content)
+	if err != nil {
+		return err
+	}
+	if bytes.Equal(ghData, tabletData) {
+		e.setMeta(name, gh.SHA, strHash(string(tabletData)))
+		return nil
+	}
+	if len(tabletData) == 0 && len(ghData) > 0 {
+		p := notesSafe(name)
+		if p == "" {
+			return fmt.Errorf("invalid name")
+		}
+		if err := writeNoteFile(p, ghData); err != nil {
+			return err
+		}
+		maybeBroadcastDiskChanged(name)
+		pushLobbyInfo()
+		pushNotesList()
+		e.setMeta(name, gh.SHA, strHash(string(ghData)))
+		return nil
+	}
+	copyBase := strings.TrimSuffix(name, ".md.enc") + " (tablet copy).md.enc"
+	if !isEncryptedNoteName(name) {
+		copyBase = strings.TrimSuffix(name, ".md") + " (tablet copy).md"
+	}
+	_ = writeNoteFile(notesSafe(copyBase), tabletData)
+	if err := writeNoteFile(notesSafe(name), ghData); err != nil {
+		return err
+	}
+	e.setMeta(name, gh.SHA, strHash(string(ghData)))
+	fmt.Fprintf(os.Stderr, "writerdeck-server: sync clash on %s — tablet copy saved as %s\n", name, copyBase)
+	broadcastClash(name, copyBase)
+	return nil
 }
 
 func (e *syncEngine) pushNote(name string) error {
@@ -142,6 +205,29 @@ func (e *syncEngine) pushNote(name string) error {
 		return nil
 	}
 	if name == e.openNote() {
+		return nil
+	}
+	if isEncryptedNoteName(name) {
+		data, ok := readNoteBytes(name)
+		if !ok {
+			return nil
+		}
+		meta, hasMeta := e.getMeta(name)
+		emptyHash := strHash("")
+		h := strHash(string(data))
+		if len(data) == 0 && hasMeta && meta.LocalHash != "" && meta.LocalHash != emptyHash {
+			return nil
+		}
+		sha := meta.SHA
+		newSHA, status, err := e.ghPutBytes(name, data, sha)
+		if err != nil {
+			if status == 409 || status == 422 {
+				return e.handleClashBytes(name, data)
+			}
+			return err
+		}
+		e.setMeta(name, newSHA, h)
+		e.setLastError("")
 		return nil
 	}
 	content, ok := readNoteContent(name)
@@ -179,6 +265,24 @@ func (e *syncEngine) pullNote(name string) error {
 	}
 	meta, _ := e.getMeta(name)
 	if meta.SHA == gh.SHA {
+		return nil
+	}
+	if isEncryptedNoteName(name) {
+		raw, err := ghDecodeBytes(gh.Content)
+		if err != nil {
+			return err
+		}
+		p := notesSafe(name)
+		if p == "" {
+			return fmt.Errorf("invalid name")
+		}
+		if err := writeNoteFile(p, raw); err != nil {
+			return err
+		}
+		maybeBroadcastDiskChanged(name)
+		pushLobbyInfo()
+		pushNotesList()
+		e.setMeta(name, gh.SHA, strHash(string(raw)))
 		return nil
 	}
 	ghContent, err := ghDecodeContent(gh.Content)
@@ -385,10 +489,15 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 
 	remoteMap := map[string]string{}
 	for _, ent := range entries {
-		if ent.Type == "file" && strings.HasSuffix(ent.Name, ".md") {
+		if ent.Type != "file" {
+			continue
+		}
+		if strings.HasSuffix(ent.Name, ".md.enc") || (strings.HasSuffix(ent.Name, ".md") && !strings.HasSuffix(ent.Name, ".md.enc")) {
 			remoteMap[ent.Name] = ent.SHA
 		}
 	}
+
+	e.syncVaultSecrets(remoteMap)
 
 	names := map[string]bool{}
 	for n := range remoteMap {
@@ -472,3 +581,61 @@ func startSyncBackground() {
 
 // mirrorPhoneCreate pushes a newly uploaded note to GitHub.
 func mirrorPhoneCreate(name string) { syncEng.tryPushNote(name) }
+
+func (e *syncEngine) tryPushVaultSecrets() {
+	if !e.ready() || !vaultEnabled() {
+		return
+	}
+	go func() { _ = e.pushVaultSecrets() }()
+}
+
+func (e *syncEngine) pushVaultSecrets() error {
+	if !e.ready() || !vaultEnabled() {
+		return nil
+	}
+	if pin, ok := vaultSecretPinBytes(); ok {
+		meta, _ := e.getMeta(secretPinPath)
+		sha, _, err := e.ghPutBytes(secretPinPath, pin, meta.SHA)
+		if err == nil {
+			e.setMeta(secretPinPath, sha, strHash(string(pin)))
+		}
+	}
+	if vaultJSON, ok := vaultSecretVaultJSON(); ok {
+		meta, _ := e.getMeta(secretVaultPath)
+		sha, _, err := e.ghPutBytes(secretVaultPath, vaultJSON, meta.SHA)
+		if err == nil {
+			e.setMeta(secretVaultPath, sha, strHash(string(vaultJSON)))
+		}
+	}
+	return nil
+}
+
+func (e *syncEngine) syncVaultSecrets(remoteMap map[string]string) {
+	if !e.ready() {
+		return
+	}
+	_ = remoteMap
+	if vaultEnabled() {
+		_ = e.pushVaultSecrets()
+	}
+	if gh, _, err := e.ghGetFile(secretVaultPath); err == nil && gh != nil {
+		meta, _ := e.getMeta(secretVaultPath)
+		if meta.SHA != gh.SHA {
+			raw, err := ghDecodeBytes(gh.Content)
+			if err == nil {
+				_ = vaultApplySecretVault(raw)
+				e.setMeta(secretVaultPath, gh.SHA, strHash(string(raw)))
+			}
+		}
+	}
+	if gh, _, err := e.ghGetFile(secretPinPath); err == nil && gh != nil {
+		meta, _ := e.getMeta(secretPinPath)
+		if meta.SHA != gh.SHA {
+			raw, err := ghDecodeBytes(gh.Content)
+			if err == nil {
+				vaultApplySecretPin(strings.TrimSpace(string(raw)))
+				e.setMeta(secretPinPath, gh.SHA, strHash(string(raw)))
+			}
+		}
+	}
+}

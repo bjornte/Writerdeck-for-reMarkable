@@ -27,9 +27,9 @@ USB keyboard locales:
 
 `loadkeys` and `setxkbmap` do not work for Qt apps on rM — see [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1).
 
-Encrypted notes (signed off): [docs/todo-encryption.md](docs/todo-encryption.md).
+Encrypted notes (shipped): [docs/todo-handoff-encryption.md](docs/todo-handoff-encryption.md).
 
-- [ ] Implement per that file (ADR §31, vault, tablet UI, sync `secret/`, phone download).
+- [x] Vault, tablet UI, sync `secret/`, phone download unlock-wait.
 
 ## Open question
 

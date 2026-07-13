@@ -145,6 +145,7 @@ func main() {
 	http.HandleFunc("/state.js", func(w http.ResponseWriter, r *http.Request) { serveJS(w, stateJS) })
 	http.HandleFunc("/sync.js", func(w http.ResponseWriter, r *http.Request) { serveJS(w, syncJS) })
 	http.HandleFunc("/ws", wsHandler(ec, *verbose))
+	http.HandleFunc("/api/vault/status", vaultStatusHandler)
 	http.HandleFunc("/api/pin", pinHandler)
 	http.HandleFunc("/api/launch", launchHandler)
 	http.HandleFunc("/api/open", openHandler)

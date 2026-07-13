@@ -128,13 +128,54 @@ func (e *syncEngine) ghGetFile(filename string) (*ghContentFile, int, error) {
 	return &f, resp.StatusCode, nil
 }
 
-func ghDecodeContent(b64 string) (string, error) {
+func ghDecodeBytes(b64 string) ([]byte, error) {
 	b64 = strings.ReplaceAll(b64, "\n", "")
-	raw, err := base64.StdEncoding.DecodeString(b64)
+	return base64.StdEncoding.DecodeString(b64)
+}
+
+func ghDecodeContent(b64 string) (string, error) {
+	raw, err := ghDecodeBytes(b64)
 	if err != nil {
 		return "", err
 	}
 	return string(raw), nil
+}
+
+func (e *syncEngine) ghPutBytes(filename string, data []byte, sha string) (string, int, error) {
+	payload := map[string]string{
+		"message": "Writerdeck: " + filename,
+		"content": base64.StdEncoding.EncodeToString(data),
+	}
+	if sha != "" {
+		payload["sha"] = sha
+	}
+	body, _ := json.Marshal(payload)
+	req, err := http.NewRequest(http.MethodPut, e.ghContentsURL(filename), bytes.NewReader(body))
+	if err != nil {
+		return "", 0, err
+	}
+	req.Header = e.ghHeaders()
+	resp, err := e.ghClient().Do(req)
+	if err != nil {
+		return "", 0, err
+	}
+	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode == http.StatusConflict || resp.StatusCode == 422 {
+		return "", resp.StatusCode, fmt.Errorf("clash")
+	}
+	if resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden {
+		e.setLastError("GitHub token rejected")
+		return "", resp.StatusCode, fmt.Errorf("auth rejected")
+	}
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return "", resp.StatusCode, fmt.Errorf("github PUT %d", resp.StatusCode)
+	}
+	var out ghPutResponse
+	if err := json.Unmarshal(respBody, &out); err != nil {
+		return "", resp.StatusCode, err
+	}
+	return out.Content.SHA, resp.StatusCode, nil
 }
 
 func (e *syncEngine) ghPutFile(filename, content, sha string) (string, int, error) {

@@ -94,6 +94,71 @@ void LobbyBridge::exitWriterdeck()
     sendReq(QStringLiteral("{\"t\":\"req\",\"op\":\"shutdown\"}"));
 }
 
+void LobbyBridge::setVaultPin(const QString &pin)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("req");
+    o[QStringLiteral("op")] = QStringLiteral("setvaultpin");
+    o[QStringLiteral("name")] = pin;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
+void LobbyBridge::changeVaultPin(const QString &oldPin, const QString &newPin)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("req");
+    o[QStringLiteral("op")] = QStringLiteral("changevaultpin");
+    o[QStringLiteral("old")] = oldPin;
+    o[QStringLiteral("name")] = newPin;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
+void LobbyBridge::unlockVault(const QString &pin)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("req");
+    o[QStringLiteral("op")] = QStringLiteral("unlockvault");
+    o[QStringLiteral("name")] = pin;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
+void LobbyBridge::lockVault()
+{
+    sendReq(QStringLiteral("{\"t\":\"req\",\"op\":\"lockvault\"}"));
+}
+
+void LobbyBridge::encryptNote(const QString &name)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("req");
+    o[QStringLiteral("op")] = QStringLiteral("encryptnote");
+    o[QStringLiteral("name")] = name;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
+void LobbyBridge::decryptNote(const QString &name)
+{
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("req");
+    o[QStringLiteral("op")] = QStringLiteral("decryptnote");
+    o[QStringLiteral("name")] = name;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
+void LobbyBridge::createEncryptedNote(const QString &name)
+{
+    QString base = name.trimmed();
+    if (base.isEmpty())
+        return;
+    if (!base.endsWith(QStringLiteral(".md.enc")))
+        base += QStringLiteral(".md.enc");
+    QJsonObject o;
+    o[QStringLiteral("t")] = QStringLiteral("req");
+    o[QStringLiteral("op")] = QStringLiteral("createnote");
+    o[QStringLiteral("name")] = base;
+    sendReq(QString::fromUtf8(QJsonDocument(o).toJson(QJsonDocument::Compact)));
+}
+
 void LobbyBridge::publishState(int cursor, int selStart, int selEnd, int textLen, int mode, int isLobby)
 {
     QJsonObject o;

@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// countNotes returns the number of .md files in the notes directory.
+// countNotes returns the number of .md and .md.enc files in the notes directory.
 func countNotes() int {
 	entries, err := os.ReadDir(notesDirPath)
 	if err != nil {
@@ -20,7 +20,7 @@ func countNotes() int {
 	}
 	n := 0
 	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".md") {
+		if !e.IsDir() && isNoteListName(e.Name()) {
 			n++
 		}
 	}
@@ -96,20 +96,22 @@ func pushLobbyInfo() {
 		syncErr = "No Wi-Fi - cannot reach GitHub"
 	}
 	infoMsg, _ := json.Marshal(struct {
-		T              string `json:"t"`
-		IP             string `json:"ip"`
-		PIN            string `json:"pin"`
-		SyncOn         bool   `json:"syncOn"`
-		SyncRepo       string `json:"syncRepo"`
-		NoteCount      int    `json:"noteCount"`
-		LastSync       string `json:"lastSync"`
-		SyncReady      bool   `json:"syncReady"`
-		Syncing        bool   `json:"syncing"`
-		SyncError      string `json:"syncError"`
-		Wifi           bool   `json:"wifi"`
-		KeyboardLayout string `json:"keyboardLayout"`
-		PinDigits      string `json:"pinDigits"`
-	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, syncErr, wifi, keyboardLayout, pinDigits})
+		T                 string `json:"t"`
+		IP                string `json:"ip"`
+		PIN               string `json:"pin"`
+		SyncOn            bool   `json:"syncOn"`
+		SyncRepo          string `json:"syncRepo"`
+		NoteCount         int    `json:"noteCount"`
+		LastSync          string `json:"lastSync"`
+		SyncReady         bool   `json:"syncReady"`
+		Syncing           bool   `json:"syncing"`
+		SyncError         string `json:"syncError"`
+		Wifi              bool   `json:"wifi"`
+		KeyboardLayout    string `json:"keyboardLayout"`
+		PinDigits         string `json:"pinDigits"`
+		EncryptionEnabled bool   `json:"encryptionEnabled"`
+		VaultLocked       bool   `json:"vaultLocked"`
+	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, syncErr, wifi, keyboardLayout, pinDigits, vaultEnabled(), vaultLocked()})
 	if globalEC != nil {
 		globalEC.write(infoMsg)
 	}

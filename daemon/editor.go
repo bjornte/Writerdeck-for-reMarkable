@@ -158,6 +158,9 @@ func (e *editorConn) writeCmdWaitAck(cmd []byte, typ, cmdName string, timeout ti
 
 func (e *editorConn) handleEditorLine(line []byte) {
 	if st, ok := parseEditorState(line); ok {
+		if st.IsLobby == 1 {
+			vaultLockOnLobby()
+		}
 		e.deliverState(st)
 		return
 	}
@@ -445,6 +448,32 @@ func handleEditorReq(op, name, oldName string) {
 	case "setpindigits":
 		if !applyPinDigits(name) {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: editor setpindigits: invalid %q\n", name)
+		}
+	case "setvaultpin":
+		if err := vaultSetupPIN(name); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: setvaultpin: %v\n", err)
+		}
+	case "changevaultpin":
+		if err := vaultChangePIN(oldName, name); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: changevaultpin: %v\n", err)
+		}
+	case "unlockvault":
+		if err := vaultUnlock(name); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: unlockvault: %v\n", err)
+		}
+	case "lockvault":
+		vaultLock()
+	case "encryptnote":
+		if err := vaultEncryptNote(name); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: encryptnote: %v\n", err)
+		}
+	case "decryptnote":
+		if err := vaultDecryptNote(name); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: decryptnote: %v\n", err)
+		}
+	case "disablevault":
+		if err := vaultDisable(); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: disablevault: %v\n", err)
 		}
 	case "shutdown":
 		requestShutdown("tablet Settings")

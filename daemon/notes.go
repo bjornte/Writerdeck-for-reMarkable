@@ -22,21 +22,37 @@ var notesDirPath = "/home/root/Writerdeck-user-documents"
 
 // noteInfo is the JSON shape returned by GET /api/notes.
 type noteInfo struct {
-	Name     string `json:"name"`
-	Size     int64  `json:"size"`
-	Modified string `json:"modified"`
+	Name      string `json:"name"`
+	Size      int64  `json:"size"`
+	Modified  string `json:"modified"`
+	Encrypted bool   `json:"encrypted,omitempty"`
+	Locked    bool   `json:"locked,omitempty"`
 }
 
 // notesSafe validates a filename and returns its full path, or "".
-// Rejects empty names, slashes, "..", and appends ".md" if absent.
+// Rejects empty names, slashes, "..". Appends ".md" if no suffix given.
+// Accepts flat basenames ending in .md or .md.enc.
 func notesSafe(name string) string {
 	if name == "" || strings.Contains(name, "/") || strings.Contains(name, "..") {
 		return ""
 	}
-	if !strings.HasSuffix(name, ".md") {
-		name += ".md"
+	if strings.HasSuffix(name, ".md.enc") {
+		return filepath.Join(notesDirPath, name)
 	}
-	return filepath.Join(notesDirPath, name)
+	if strings.HasSuffix(name, ".md") {
+		return filepath.Join(notesDirPath, name)
+	}
+	return filepath.Join(notesDirPath, name+".md")
+}
+
+func isNoteListName(name string) bool {
+	if strings.HasSuffix(name, ".md.enc") {
+		return true
+	}
+	if strings.HasSuffix(name, ".md") && !strings.HasSuffix(name, ".md.enc") {
+		return true
+	}
+	return false
 }
 
 // rejectsHtmlNoteContent reports Qt qrichtext / HTML accidentally saved as .md.
@@ -116,18 +132,22 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var notes []noteInfo
+		locked := vaultEnabled() && vaultLocked()
 		for _, e := range entries {
-			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			if e.IsDir() || !isNoteListName(e.Name()) {
 				continue
 			}
 			info, err := e.Info()
 			if err != nil {
 				continue
 			}
+			enc := isEncryptedNoteName(e.Name())
 			notes = append(notes, noteInfo{
-				Name:     e.Name(),
-				Size:     info.Size(),
-				Modified: info.ModTime().Format(time.RFC3339),
+				Name:      e.Name(),
+				Size:      info.Size(),
+				Modified:  info.ModTime().Format(time.RFC3339),
+				Encrypted: enc,
+				Locked:    enc && locked,
 			})
 		}
 		if notes == nil {
@@ -159,6 +179,10 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		if _, err := os.Stat(p); err == nil {
 			http.Error(w, "already exists", http.StatusConflict)
+			return
+		}
+		if isEncryptedNoteName(filepath.Base(p)) {
+			http.Error(w, "cannot create encrypted note from phone", http.StatusForbidden)
 			return
 		}
 		content := req.Content
@@ -214,8 +238,45 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			http.NotFound(w, r)
 			return
 		}
+		editorLocal := isLoopback(r)
+		enc := isEncryptedNoteName(filepath.Base(p))
+		if enc {
+			if !editorLocal {
+				if download {
+					if vaultLocked() {
+						pushRequestVaultUnlock("download", filepath.Base(p))
+						w.Header().Set("Content-Type", "application/json")
+						w.WriteHeader(http.StatusLocked)
+						w.Write([]byte(`{"error":"vault locked","message":"Enter private PIN on tablet"}` + "\n")) //nolint:errcheck
+						return
+					}
+					plain, err := decryptNoteBytes(data)
+					if err != nil {
+						http.Error(w, "cannot decrypt", http.StatusInternalServerError)
+						return
+					}
+					data = plain
+				} else {
+					http.Error(w, "encrypted note", http.StatusForbidden)
+					return
+				}
+			} else if vaultLocked() {
+				http.Error(w, "vault locked", http.StatusLocked)
+				return
+			} else {
+				plain, err := decryptNoteBytes(data)
+				if err != nil {
+					http.Error(w, "cannot decrypt", http.StatusInternalServerError)
+					return
+				}
+				data = plain
+			}
+		}
 		if download {
 			base := filepath.Base(p)
+			if enc {
+				base = strings.TrimSuffix(base, ".enc")
+			}
 			w.Header().Set("Content-Disposition", `attachment; filename="`+base+`"`)
 			w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
 		} else {
@@ -240,8 +301,26 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "refusing HTML/qrichtext payload", http.StatusUnsupportedMediaType)
 			return
 		}
-		existing, err := os.ReadFile(p)
 		editorLocal := isLoopback(r)
+		enc := isEncryptedNoteName(filepath.Base(p))
+		if enc && !editorLocal {
+			http.Error(w, "encrypted notes are tablet-only", http.StatusForbidden)
+			return
+		}
+		if enc && vaultLocked() {
+			http.Error(w, "vault locked", http.StatusLocked)
+			return
+		}
+		writeBytes := []byte(putReq.Content)
+		if enc {
+			var err error
+			writeBytes, err = encryptNoteBytes(writeBytes)
+			if err != nil {
+				http.Error(w, "encrypt failed", http.StatusInternalServerError)
+				return
+			}
+		}
+		existing, err := os.ReadFile(p)
 		if err == nil {
 			if !editorLocal {
 				etag := noteETag(existing)
@@ -256,21 +335,25 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "read failed", http.StatusInternalServerError)
 			return
 		}
-		if err := writeNoteFile(p, []byte(putReq.Content)); err != nil {
+		if err := writeNoteFile(p, writeBytes); err != nil {
 			http.Error(w, "write failed", http.StatusInternalServerError)
 			return
 		}
 		if !editorLocal {
 			maybeBroadcastDiskChanged(filepath.Base(p))
 		}
-		w.Header().Set("ETag", noteETag([]byte(putReq.Content)))
+		etagBytes := writeBytes
+		if enc && editorLocal {
+			etagBytes = []byte(putReq.Content)
+		}
+		w.Header().Set("ETag", noteETag(etagBytes))
 		w.WriteHeader(http.StatusOK)
 
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
 }
-// readAllNotes returns metadata for every .md file in the notes directory.
+// readAllNotes returns metadata for every note file in the notes directory.
 func readAllNotes() []noteInfo {
 	entries, err := os.ReadDir(notesDirPath)
 	if err != nil {
@@ -280,18 +363,22 @@ func readAllNotes() []noteInfo {
 		return nil
 	}
 	var notes []noteInfo
+	locked := vaultEnabled() && vaultLocked()
 	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+		if e.IsDir() || !isNoteListName(e.Name()) {
 			continue
 		}
 		info, err := e.Info()
 		if err != nil {
 			continue
 		}
+		enc := isEncryptedNoteName(e.Name())
 		notes = append(notes, noteInfo{
-			Name:     e.Name(),
-			Size:     info.Size(),
-			Modified: info.ModTime().Format(time.RFC3339),
+			Name:      e.Name(),
+			Size:      info.Size(),
+			Modified:  info.ModTime().Format(time.RFC3339),
+			Encrypted: enc,
+			Locked:    enc && locked,
 		})
 	}
 	if notes == nil {
@@ -304,9 +391,11 @@ func readAllNotes() []noteInfo {
 func pushNotesList() {
 	notes := readAllNotes()
 	msg, _ := json.Marshal(struct {
-		T     string     `json:"t"`
-		Items []noteInfo `json:"items"`
-	}{"notes", notes})
+		T              string     `json:"t"`
+		Items          []noteInfo `json:"items"`
+		EncryptionEnabled bool    `json:"encryptionEnabled"`
+		VaultLocked       bool    `json:"vaultLocked"`
+	}{"notes", notes, vaultEnabled(), vaultLocked()})
 	if globalEC != nil {
 		globalEC.write(msg)
 	}
@@ -322,7 +411,10 @@ func createNoteFile(name, content string) error {
 		return fmt.Errorf("already exists")
 	}
 	if content == "" {
-		content = "# " + strings.TrimSuffix(filepath.Base(p), ".md") + "\n"
+		base := filepath.Base(p)
+		title := strings.TrimSuffix(base, ".md.enc")
+		title = strings.TrimSuffix(title, ".md")
+		content = "# " + title + "\n"
 	}
 	if rejectsHtmlNoteContent(content) {
 		return fmt.Errorf("refusing HTML/qrichtext payload")

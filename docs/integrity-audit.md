@@ -26,7 +26,9 @@ Clash handling keeps both copies but does not auto-reload the editor. Stale open
 
 PIN none on an untrusted LAN is a confidentiality and tampering risk, not just sync.
 
-`test-edit-session.sh` guards "editor stays up on Edit" — not save under load, clash while typing, or power sleep with an open note.
+`test-edit-session.sh` guards "editor stays up on Edit" — not save under load, clash while typing, or power sleep with an open note. `scripts/test-vault.sh` covers loopback vault setup, per-note encrypt, lock, unlock, and decrypt.
+
+Encrypted `.md.enc` files are opaque on disk; plaintext exists in the editor buffer only while the vault is unlocked. The UTF-8 Markdown contract applies to `.md` only.
 
 ## Unknown
 
