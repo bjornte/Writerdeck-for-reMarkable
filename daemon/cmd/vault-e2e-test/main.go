@@ -196,19 +196,21 @@ func run(base, wsURL, host string, cleanup bool) error {
 		return err
 	}
 	time.Sleep(stepPause)
-	// Files Encrypt while vault is locked: unlock overlay, then deferred encrypt on unlock.
+	// Lock vault so Files Encrypt always exercises unlock overlay + deferred encrypt.
+	if err := tabletReq(base, "lockvault", ""); err != nil {
+		return fmt.Errorf("lockvault before encrypt: %w", err)
+	}
+	time.Sleep(stepPause)
 	if err := editorCmd(base, "filesencrypt", testNote); err != nil {
 		return err
 	}
-	if st, _ := getVaultStatus(base); st.Locked {
-		if err := waitVaultOverlay(base, "unlock", 8*time.Second); err != nil {
-			return fmt.Errorf("encrypt unlock overlay: %w", err)
-		}
-		if err := enterPINAndUnlock(base, ws, initialPIN); err != nil {
-			return err
-		}
+	if err := waitVaultOverlay(base, "unlock", 8*time.Second); err != nil {
+		return fmt.Errorf("encrypt unlock overlay: %w", err)
 	}
-	if err := waitNoteExists(host, testEncNote, true, 30*time.Second); err != nil {
+	if err := enterPINAndUnlock(base, ws, initialPIN); err != nil {
+		return err
+	}
+	if err := waitNoteExists(host, testEncNote, true, 45*time.Second); err != nil {
 		return err
 	}
 	if err := waitNoteExists(host, testNote, false, 5*time.Second); err != nil {

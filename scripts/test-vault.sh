@@ -44,6 +44,11 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 
 echo "=== test-vault base=$BASE ==="
 
+# Deterministic PIN: reset vault so a prior E2E run cannot leave a different PIN.
+curl -s -o /dev/null -X POST "$BASE/api/test/tablet-req" \
+  -H 'Content-Type: application/json' \
+  -d '{"op":"disablevault"}'
+
 # Setup vault via test tablet-req endpoint
 code=$(curl -s -o /tmp/vault-setup.json -w '%{http_code}' -X POST "$BASE/api/test/tablet-req" \
   -H 'Content-Type: application/json' \
