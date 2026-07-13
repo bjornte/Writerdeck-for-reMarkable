@@ -13,7 +13,6 @@ Keystrokes reach the editor over `/run/Writerdeck.sock`, not uinput ([docs/decis
 3. Lobby Ctrl-K on USB keyboard — device verify.
 4. Power button sleep/wake — device verify. Implementation is in [DONE.md](DONE.md); test is outstanding.
 5. Edit scroll/cursor patch — in `build-keywriter.sh`; push, `fetch-keywriter-dist.sh`, `deploy-keywriter.sh -b`, then `test-keyboard-harness.sh` and manual last-line typing on device.
-6. Phone file-manager dedup — tablet Files is complete; retire duplicate list/create/rename/delete on the phone once touch Read and second-tap open are verified on e-ink. Design: [improvements.md](docs/improvements.md).
 
 ## Phase 10 — locales and protection
 
@@ -28,10 +27,9 @@ USB keyboard locales:
 
 `loadkeys` and `setxkbmap` do not work for Qt apps on rM — see [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1).
 
-Encrypted note subset:
+Encrypted notes (signed off): [docs/todo-encryption.md](docs/todo-encryption.md).
 
-- [ ] Design ADR: encrypted subfolder, passphrase-derived key, session unlock, sync exclusion.
-- [ ] Implement after sign-off.
+- [ ] Implement per that file (ADR §31, vault, tablet UI, sync `secret/`, phone download).
 
 ## Open question
 
@@ -40,6 +38,6 @@ Stay firmware-update-current? Each OTA resets the SSH password and may wipe the 
 ## Resume prompt
 
 > Project: reMarkable 1 Wi-Fi Markdown typewriter. Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Mac deploys; iPhone uses.
-> Shipped: [DONE.md](DONE.md). Next unchecked: Physical Home single input path ([handoff-physical-home-input.md](docs/handoff-physical-home-input.md)); Norwegian USB device test (æøå, AltGr — Alt+arrow fixed in qmap); Ctrl-K USB verify; power button device test; edit scroll/cursor patch deploy+verify; phone file-manager dedup after e-ink touch verify. Phase 10 encryption: [improvements.md](docs/improvements.md). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) §21); after arrow/selection QML: `bash scripts/test-keyboard-harness.sh` (§22).
+> Shipped: [DONE.md](DONE.md). Next unchecked: Physical Home single input path ([handoff-physical-home-input.md](docs/handoff-physical-home-input.md)); Norwegian USB device test (æøå, AltGr — Alt+arrow fixed in qmap); Ctrl-K USB verify; power button device test; edit scroll/cursor patch deploy+verify. Phase 10 encryption: [improvements.md](docs/improvements.md). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `bash scripts/test-edit-session.sh` ([decisions](docs/decisions.md) §21); after arrow/selection QML: `bash scripts/test-keyboard-harness.sh` (§22).
 > Read: architecture, decisions, DONE, lessons, browser-vs-tablet, integrity-audit. Device: `secrets/remarkable.local.env` (`RM_HOST_WIFI`).
 > Constraints: no jailbreak/OTA/Toltec; `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# scripts/test-edit-session.sh -- regression: Edit from browser keeps Writerdeck up.
+# scripts/test-edit-session.sh -- regression: POST /api/open keeps Writerdeck up.
 #
-# Calls POST /api/open (same as phone Edit), then asserts:
+# Calls POST /api/open (tablet Files Edit uses the same server path), then asserts:
 #   - Writerdeck process stays running for the hold window
 #   - xochitl stays stopped while editing
 #   - /api/status reports editorActive=true

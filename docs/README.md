@@ -8,7 +8,7 @@ Reference for the project. Test script output goes in `recon/` — gitignored te
 
 `lessons.md` — operational gotchas.
 
-`browser-vs-tablet.md` — what the phone vs tablet can do.
+`browser-vs-tablet.md` — phone vs tablet; upload vs download vs paste-at-cursor.
 
 `integrity-audit.md` — integrity status and open risks.
 

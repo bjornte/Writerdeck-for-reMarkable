@@ -26,9 +26,9 @@ WYSIWYG Markdown in edit mode (large headings, bold, italic without visible `**`
 
 Scroll/cursor niceties in `build-keywriter.sh` (visual last-line detection via `positionToRectangle`, edge-threshold `ensureVisible`) are patched but need CI rebuild and device verify after deploy.
 
-## Phone file manager dedup (future)
+## Phone Markdown mirror (future)
 
-Tablet Files already supports New, Edit, Read, Rename, and Delete over the trusted socket ([decisions.md](decisions.md) §24). The phone still mirrors full list/create/rename/delete. Once tablet-first workflows are verified on hardware (touch Read, second-tap open), trim duplicate phone controls and document what stays browser-only (upload, download, copy, paste, GitHub token entry). See [browser-vs-tablet.md](browser-vs-tablet.md).
+While editing on e-ink, show the open note rendered as Markdown on the phone — read-only context, not a second editor. Tapping a word in that view could move the tablet cursor there and scroll that section into view on e-ink. Depends on cursor position over the socket (already published for the keyboard harness) and a rendered Markdown pane on the phone.
 
 ## Browser (future)
 

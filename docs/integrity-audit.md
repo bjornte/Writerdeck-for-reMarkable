@@ -12,7 +12,7 @@ What is still open: sudden death — pull power or kill the process hard and you
 
 ## What shipped
 
-Edit lease: reconcile skips the note the tablet is editing. Plain-markdown save contract with HTML guard and toggleMode fix. Phone rename/delete of the open file notifies the editor. Reconcile gated on `openNote` in status. ETag and If-Match on PUT. Atomic server writes via temp and rename. Tablet CRUD pairs to GitHub on the server. Disk drift WebSocket, phone banner, and reload endpoint. Forty-five-second autosave while editing. Tablet saves via loopback PUT. Save before deploy and stop via flush-save and graceful shutdown.
+Edit lease: reconcile skips the note the tablet is editing. Plain-markdown save contract with HTML guard and toggleMode fix. Tablet rename/delete of the open file notifies the editor. Reconcile gated on `openNote` in status. ETag and If-Match on PUT. Atomic server writes via temp and rename. Tablet CRUD pairs to GitHub on the server. Disk drift WebSocket, phone banner, and reload endpoint. Forty-five-second autosave while editing. Tablet saves via loopback PUT. Save before deploy and stop via flush-save and graceful shutdown.
 
 Also under contract: empty-push guard, Lobby Home wipe fix, server-side sync engine.
 
