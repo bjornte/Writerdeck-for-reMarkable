@@ -1476,6 +1476,8 @@ new7n_fn = (
     '    function socketRouteKey(key, mods) {\n'
     '        if (mode != 1 || isLobby) return\n'
     '        query.forceActiveFocus()\n'
+    '        key = parseInt(key)\n'
+    '        mods = parseInt(mods)\n'
     '        var event = { key: key, modifiers: mods, accepted: false }\n'
     '        if (handleMacEditKeys(event)) return\n'
     '        if (handleMacUndo(event)) return\n'
