@@ -71,6 +71,9 @@ func TestStepNeedsModifiedPrime(t *testing.T) {
 	if !stepNeedsModifiedPrime(Step{Keys: []Key{{Name: "ArrowRight", Ctrl: true}}}) {
 		t.Fatal("ctrl+right from 0 should prime")
 	}
+	if stepNeedsModifiedPrime(Step{Keys: []Key{{Name: "ArrowRight", Shift: true}}}) {
+		t.Fatal("shift-only arrow should not prime")
+	}
 }
 
 func TestKeyModifiedNav(t *testing.T) {

@@ -61,7 +61,8 @@ func stepNeedsModifiedPrime(step Step) bool {
 		if k.Ctrl && k.Name == "Home" && !k.Shift && !k.Alt {
 			continue
 		}
-		if k.isModifiedNav() {
+		// Shift-only arrows extend selection; End-prime jumps to EOF first (breaks shift-right-from-home).
+		if k.isModifiedNav() && (k.Alt || k.Ctrl) {
 			return true
 		}
 	}

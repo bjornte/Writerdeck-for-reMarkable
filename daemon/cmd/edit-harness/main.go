@@ -73,6 +73,7 @@ type EditorState struct {
 	SelStart    int    `json:"selStart"`
 	SelEnd      int    `json:"selEnd"`
 	TextLen     int    `json:"textLen"`
+	Text        string `json:"text,omitempty"` // live edit buffer when present
 	Mode        int    `json:"mode"`
 	IsLobby     int    `json:"isLobby"`
 	CurrentFile string `json:"currentFile"`
@@ -663,6 +664,17 @@ func (h *Harness) dialWS() (*websocket.Conn, error) {
 }
 
 func (h *Harness) queryNoteText() (string, error) {
+	st, err := h.queryState()
+	if err != nil {
+		return "", err
+	}
+	if st.TextLen == 0 {
+		return "", nil
+	}
+	if len(st.Text) == st.TextLen {
+		return st.Text, nil
+	}
+	// Fallback: older Writerdeck without live text in editor-state.
 	resp, err := harnessHTTP.Get(h.base + "/api/notes/" + harnessNote)
 	if err != nil {
 		return "", err

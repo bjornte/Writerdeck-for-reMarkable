@@ -12,7 +12,8 @@ type EditorState struct {
 	SelStart     int    `json:"selStart"`
 	SelEnd       int    `json:"selEnd"`
 	TextLen      int    `json:"textLen"`
-	Mode         int    `json:"mode"`         // 0=preview, 1=edit
+	Text         string `json:"text,omitempty"` // live edit buffer (harness text asserts)
+	Mode         int    `json:"mode"`           // 0=preview, 1=edit
 	IsLobby      int    `json:"isLobby"`      // 1=Lobby visible
 	VaultOverlay string `json:"vaultOverlay"` // numpad mode when non-empty
 	CurrentFile  string `json:"currentFile"`
@@ -77,6 +78,7 @@ func parseEditorState(line []byte) (EditorState, bool) {
 		SelStart     int    `json:"selStart"`
 		SelEnd       int    `json:"selEnd"`
 		TextLen      int    `json:"textLen"`
+		Text         string `json:"text"`
 		Mode         int    `json:"mode"`
 		IsLobby      int    `json:"isLobby"`
 		VaultOverlay string `json:"vaultOverlay"`
@@ -90,6 +92,7 @@ func parseEditorState(line []byte) (EditorState, bool) {
 		SelStart:     raw.SelStart,
 		SelEnd:       raw.SelEnd,
 		TextLen:      raw.TextLen,
+		Text:         raw.Text,
 		Mode:         raw.Mode,
 		IsLobby:      raw.IsLobby,
 		VaultOverlay: raw.VaultOverlay,
