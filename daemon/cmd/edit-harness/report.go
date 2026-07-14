@@ -116,10 +116,10 @@ func formatContaminationReport(results []scenarioResult) string {
 			lines = append(lines, fmt.Sprintf("CASCADE_SUSPECT %s (prepare failed after %s failed)", r.Name, r.ContaminatedBy))
 		}
 		if r.Kind == outcomePrepareFail && r.PrepareRecovered {
-			lines = append(lines, fmt.Sprintf("RECOVERED %s (hard-reset cleared dirty session)", r.Name))
+			lines = append(lines, fmt.Sprintf("PREPARE_RETRIES %s (prepare failed after retries)", r.Name))
 		}
 		if r.PrepareRecovered && r.Kind != outcomePrepareFail {
-			lines = append(lines, fmt.Sprintf("PREPARE_RECOVERY %s (hard-reset before run; result=%s)", r.Name, r.label()))
+			lines = append(lines, fmt.Sprintf("PREPARE_RETRY %s (needed %d prepare retries; result=%s)", r.Name, 1, r.label()))
 		}
 	}
 	if len(lines) == 0 {
@@ -131,7 +131,7 @@ func formatContaminationReport(results []scenarioResult) string {
 		b.WriteString(line)
 		b.WriteByte('\n')
 	}
-	b.WriteString("Re-check POISON_SUSPECT / CASCADE_SUSPECT with: bash scripts/test-keyboard-harness.sh -s NAME --hard-reset\n")
+	b.WriteString("Re-check POISON_SUSPECT / CASCADE_SUSPECT with: bash scripts/test-keyboard-harness.sh -s NAME --fast\n")
 	return b.String()
 }
 

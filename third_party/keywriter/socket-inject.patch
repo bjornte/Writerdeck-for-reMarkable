@@ -213,7 +213,31 @@
 +            QMetaObject::invokeMethod(g_rootObj, "harnessSetWidth",
 +                Qt::BlockingQueuedConnection, Q_ARG(QVariant, w));
 +        }
-+        else if (cmd == "filesnew" && g_rootObj)
++        else if (cmd == "harnessopen" && g_rootObj) {
++            auto np = line.find("\"name\":\"");
++            if (np != std::string::npos) {
++                np += 8;
++                auto nq = line.find('"', np);
++                std::string name = (nq != std::string::npos) ? line.substr(np, nq - np) : "";
++                if (!name.empty())
++                    QMetaObject::invokeMethod(g_rootObj, "harnessOpenNote",
++                        Qt::BlockingQueuedConnection,
++                        Q_ARG(QVariant, QString::fromStdString(name)));
++            }
++        }
++        else if (cmd == "harnessprepare" && g_rootObj) {
++            int w = 0;
++            auto wp = line.find("\"w\":");
++            if (wp != std::string::npos) {
++                wp += 4;
++                while (wp < line.size() && (line[wp] == ' ' || line[wp] == '\t')) wp++;
++                w = atoi(line.c_str() + wp);
++            }
++            QMetaObject::invokeMethod(g_rootObj, "harnessSandboxReset",
++                Qt::BlockingQueuedConnection, Q_ARG(QVariant, w));
++            QMetaObject::invokeMethod(g_rootObj, "publishEditorState", Qt::BlockingQueuedConnection);
++        }
+         else if (cmd == "filesnew" && g_rootObj)
 +            QMetaObject::invokeMethod(g_rootObj, "lobbyFilesBeginNew", Qt::QueuedConnection);
 +        else if (cmd == "vaultsetup" && g_rootObj)
 +            QMetaObject::invokeMethod(g_rootObj, "vaultBeginSetup", Qt::QueuedConnection);

@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-// testResetHandler quits the active editor session (hard reset). The harness
-// normally uses soft reset (PUT + reload + Home) and calls this only once per run.
+// testResetHandler quits the active editor session. The keyboard harness does not
+// use this; it sandbox-resets in-process via harnessprepare instead.
 func testResetHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodOptions {
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -157,5 +157,16 @@ func testEditorCmdHandler(w http.ResponseWriter, r *http.Request) {
 		line = fmt.Sprintf(`{"t":"cmd","c":%q}`, req.C)
 	}
 	globalEC.write([]byte(line))
+	if req.C == "harnessopen" && req.Name != "" {
+		currentNoteMu.Lock()
+		currentNote = req.Name
+		currentNoteMu.Unlock()
+	}
+	if req.C == "harnessprepare" {
+		if _, err := queryEditorState(); err != nil {
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
+			return
+		}
+	}
 	w.WriteHeader(http.StatusOK)
 }
