@@ -1557,6 +1557,7 @@ new7n_fn = (
     '        return lineUpPos(head, text)\n'
     '    }\n'
     '\n'
+    '    function moveCursorVertical(down) {\n'
     '        var pos = query.cursorPosition\n'
     '        var text = query.text\n'
     '        if (down && cursorOnLastLine()) {\n'
