@@ -1,6 +1,6 @@
 --- a/main.cpp
 +++ b/main.cpp
-@@ -10,4 +10,102 @@
+@@ -10,4 +10,104 @@
  #include "edit_utils.h"
  #include <QtQml>
  
@@ -18,7 +18,7 @@
 +#include <QWindow>
 +#include <QQuickWindow>
 +#include <QQuickItem>
- #include <QVariant>
++#include <QVariant>
 +#include <QTimer>
 +#include <QJsonDocument>
 +#include <QJsonArray>
