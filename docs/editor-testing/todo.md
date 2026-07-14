@@ -6,7 +6,7 @@ Read: [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) 
 
 ## Fresh agent — start here
 
-**Baseline (62 core):** `docs/recon/test-keyboard-harness-2026-07-14T23-24-42.md` → **37 pass / 25 fail**, single session, no restarts.
+**Baseline (62 core):** `docs/recon/harness-runs.md` → **37 pass / 25 fail** @ `2026-07-14T23-24-42`, single session, no restarts. Latest combo tag: **9/13** @ `22ad701`.
 
 **Suite size:** 83 scenarios (62 core + 15 gap + 6 extra wrap). Sign-off: **83/83 PASS** with `--fast`.
 

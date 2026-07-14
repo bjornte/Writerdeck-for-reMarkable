@@ -1,6 +1,6 @@
 # LLM handoff: keyboard testing methodology review
 
-**Current state (2026-07-14):** For implementation work, read [todo.md](todo.md) § Fresh agent first — not the historical review below. Baseline **37 pass / 25 fail** on 62 scenarios, sandbox-prepare, single session. Latest report: `docs/recon/test-keyboard-harness-2026-07-14T23-24-42.md`. Sign-off: `bash scripts/test-keyboard-harness.sh --fast` → 62/62 PASS.
+**Current state (2026-07-15):** For implementation work, read [todo.md](todo.md) § Fresh agent first. Run history: `docs/recon/harness-runs.md`. Baseline **37/25** on core 62 @ `2026-07-14T23-24-42`; best full 83 **38/44** @ `00-08-41`; combo tag **9/13** @ `22ad701`. Sign-off: `bash scripts/test-keyboard-harness.sh --fast` → 83/83 PASS.
 
 Hand this file to a fresh agent with no prior context. Project: Writerdeck for reMarkable 1 — Markdown editor on tablet, keystrokes over WebSocket/phone path, QML in `third_party/keywriter/build-keywriter.sh`, device harness in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.
 
