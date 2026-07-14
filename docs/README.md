@@ -16,6 +16,10 @@ Reference for the project. Test script output goes in `recon/` — gitignored te
 
 `handoff-physical-home-input.md` — agent handoff for exclusive gpio grab (remove `suppressNextHomeKey`).
 
+`todo-install-onboarding.md` — visitor install friction: README, releases, preflight/install scripts.
+
+`editor-testing/` — keyboard harness handoff, scenario cookbook (CodeMirror/Qt ports).
+
 `server-sync-implementation.md` — shipped server-side GitHub sync reference (token restore, `needtoken`, log verification).
 
 `manual-cleanup-tersify-prompts-at-intervals.md` — periodic doc cleanup prompts.

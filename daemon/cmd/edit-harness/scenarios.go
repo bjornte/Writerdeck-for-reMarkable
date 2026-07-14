@@ -1,8 +1,14 @@
 package main
 
+import "strings"
+
 // AllScenarios returns keyboard/selection integration scenarios.
 // Each step can send keys and/or assert editor state via /api/test/editor-state.
 func AllScenarios() []Scenario {
+	return append(coreScenarios(), regressionScenarios()...)
+}
+
+func coreScenarios() []Scenario {
 	return []Scenario{
 		{
 			Name:    "load-cursor-at-start",
@@ -113,4 +119,14 @@ func findScenario(name string) (Scenario, bool) {
 		}
 	}
 	return Scenario{}, false
+}
+
+func findScenariosByPrefix(substr string) ([]Scenario, bool) {
+	var out []Scenario
+	for _, sc := range AllScenarios() {
+		if strings.Contains(sc.Name, substr) {
+			out = append(out, sc)
+		}
+	}
+	return out, len(out) > 0
 }

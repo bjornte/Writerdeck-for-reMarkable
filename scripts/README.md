@@ -39,9 +39,10 @@ Local Docker (Apple Silicon: `--platform linux/amd64` on both docker commands).
 | `Writerdeck-launcher.sh` | Qt linuxfb launch env |
 | `test-e2e.sh` | Full pipeline test (`-s` skips server rebuild) |
 | `test-edit-session.sh` | Writerdeck/QML regression — POST `/api/open` |
-| `test-keyboard-harness.sh` | Modifier+arrow and selection on device (WebSocket path). `GET /api/test/editor-state`. Default: one launch, `PUT` + `/api/reload` between scenarios — not `/api/open` (see [lessons.md](../docs/lessons.md)). `-s NAME`, `--list`, `--unit`, `--hard-reset`, `-v`. Logs: `docs/recon/test-keyboard-harness-*.txt`. After QML selection/arrow or daemon test API edits. |
+| `test-keyboard-harness.sh` | Modifier+arrow and selection on device (WebSocket path). Scenarios: [editor-testing/scenario-cookbook.md](../docs/editor-testing/scenario-cookbook.md). `-s NAME`, `-m PREFIX`, `--list`, `--unit`, `--fast`, `--no-prepare`, `--hard-reset`, `-v`. |
 | `test-lobby-keyboard.sh` | Lobby keys after return from edit; Home-from-read must not quit. `POST /api/lobby`, `POST /api/test/home`. After Lobby, `handleHome`, or `lobbyFocus` QML changes ([decisions.md](../docs/decisions.md) §29). |
 | `test-vault.sh` | Loopback vault encrypt, lock, unlock, decrypt on device or `--local`. Resets vault for deterministic PIN. After `daemon/vault.go` or vault API edits. |
+| `recover-orphaned-vault-notes.sh` | Re-wrap `.md.enc` notes after a vault key rotation. Needs `--old-vault-ref` from GitHub `secret/vault` history, `--notes`, `--pin`. |
 | `test-vault-e2e.sh` | Tablet vault UI, keyboard PIN, Files encrypt/decrypt, GitHub `secret/` and note bytes. Needs sync on. Logs: `docs/recon/test-vault-e2e-*.txt`. After vault QML or E2E harness edits. |
 | `lobby.sh` / `wd` | Show Lobby on e-ink |
 | `install-service.sh` | Install systemd unit (manual enable) |

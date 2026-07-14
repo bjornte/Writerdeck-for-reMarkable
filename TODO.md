@@ -9,7 +9,8 @@ Keystrokes reach the editor over `/run/Writerdeck.sock`, not uinput ([docs/decis
 ## Next unchecked
 
 1. Physical Home — single input path. Handoff: [docs/todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md).
-2. Edit scroll/cursor — patch is in `build-keywriter.sh`; run `test-keyboard-harness.sh` and spot-check last-line typing on e-ink.
+2. Keyboard editing bugs — harness-driven fixes. Handoff: [docs/editor-testing/todo.md](docs/editor-testing/todo.md).
+3. Edit scroll/cursor — patch is in `build-keywriter.sh`; run `test-keyboard-harness.sh` and spot-check last-line typing on e-ink.
 
 ## Open question
 

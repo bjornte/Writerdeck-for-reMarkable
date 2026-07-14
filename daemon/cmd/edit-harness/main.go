@@ -16,10 +16,17 @@ import (
 )
 
 const (
-	harnessNote = "z-test-keyboard-harness.md"
-	keyPause    = 120 * time.Millisecond
-	stepPause   = 200 * time.Millisecond
-	httpTimeout = 30 * time.Second
+	harnessNote   = "z-test-keyboard-harness.md"
+	defaultKeyMs  = 120
+	defaultStepMs = 200
+	fastKeyMs     = 40
+	fastStepMs    = 80
+	httpTimeout   = 30 * time.Second
+)
+
+var (
+	keyPause  = defaultKeyMs * time.Millisecond
+	stepPause = defaultStepMs * time.Millisecond
 )
 
 var harnessHTTP = &http.Client{Timeout: httpTimeout}
@@ -36,6 +43,7 @@ type StateExpect struct {
 	Cursor   *int `json:"cursor,omitempty"`
 	SelStart *int `json:"selStart,omitempty"`
 	SelEnd   *int `json:"selEnd,omitempty"`
+	SelLen   *int `json:"selLen,omitempty"`
 	TextLen  *int `json:"textLen,omitempty"`
 	Mode     *int `json:"mode,omitempty"`
 }
@@ -62,21 +70,32 @@ type EditorState struct {
 }
 
 type Harness struct {
-	base    string
-	host    string
-	port    int
-	verbose bool
+	base       string
+	host       string
+	port       int
+	verbose    bool
+	noPrepare  bool
+	reloadPoll time.Duration
+	resetWait  time.Duration
 }
 
 func main() {
 	host := flag.String("host", "127.0.0.1", "tablet host")
 	port := flag.Int("port", 8000, "server port")
-	scenario := flag.String("scenario", "", "run one scenario by name")
+	scenario := flag.String("scenario", "", "run one scenario by exact name")
+	match := flag.String("match", "", "run scenarios whose name contains this substring")
 	list := flag.Bool("list", false, "list scenario names")
 	verbose := flag.Bool("v", false, "verbose step output")
 	unit := flag.Bool("unit", false, "run translate unit tests only (no device)")
 	hardReset := flag.Bool("hard-reset", false, "quit editor before each scenario (slow; default is one hard reset then soft reloads)")
+	fast := flag.Bool("fast", false, "shorter key/step pauses for dev iteration")
+	noPrepare := flag.Bool("no-prepare", false, "skip note PUT/reload (reuse open buffer; same scenario only)")
 	flag.Parse()
+
+	if *fast {
+		keyPause = fastKeyMs * time.Millisecond
+		stepPause = fastStepMs * time.Millisecond
+	}
 
 	if *unit {
 		fmt.Println("Run: go test -run TestTranslate ./...")
@@ -84,10 +103,17 @@ func main() {
 	}
 
 	h := &Harness{
-		base:    fmt.Sprintf("http://%s:%d", *host, *port),
-		host:    *host,
-		port:    *port,
-		verbose: *verbose,
+		base:       fmt.Sprintf("http://%s:%d", *host, *port),
+		host:       *host,
+		port:       *port,
+		verbose:    *verbose,
+		noPrepare:  *noPrepare,
+		reloadPoll: 200 * time.Millisecond,
+		resetWait:  800 * time.Millisecond,
+	}
+	if *fast {
+		h.reloadPoll = 100 * time.Millisecond
+		h.resetWait = 400 * time.Millisecond
 	}
 
 	names := scenarioNames()
@@ -98,15 +124,28 @@ func main() {
 		return
 	}
 
+	if *scenario != "" && *match != "" {
+		fmt.Fprintln(os.Stderr, "use -scenario or -match, not both")
+		os.Exit(2)
+	}
+
 	var run []Scenario
-	if *scenario != "" {
+	switch {
+	case *scenario != "":
 		sc, ok := findScenario(*scenario)
 		if !ok {
 			fmt.Fprintf(os.Stderr, "unknown scenario %q\n", *scenario)
 			os.Exit(2)
 		}
 		run = []Scenario{sc}
-	} else {
+	case *match != "":
+		var ok bool
+		run, ok = findScenariosByPrefix(*match)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "no scenarios match %q\n", *match)
+			os.Exit(2)
+		}
+	default:
 		run = AllScenarios()
 	}
 
@@ -151,8 +190,10 @@ func main() {
 }
 
 func (h *Harness) RunScenario(sc Scenario) error {
-	if err := h.softPrepare(sc.Content); err != nil {
-		return err
+	if !h.noPrepare {
+		if err := h.softPrepare(sc.Content); err != nil {
+			return err
+		}
 	}
 
 	ws, err := h.dialWS()
@@ -243,7 +284,7 @@ func (h *Harness) hardResetEditor() error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(800 * time.Millisecond)
+	time.Sleep(h.resetWait)
 	return nil
 }
 
@@ -373,7 +414,7 @@ func (h *Harness) reloadHarnessNote(content string) error {
 		if err == nil && st.TextLen == len(content) {
 			return nil
 		}
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(h.reloadPoll)
 	}
 	return fmt.Errorf("post-reload: textLen want %d", len(content))
 }
@@ -461,6 +502,12 @@ func matchExpect(got EditorState, exp StateExpect) error {
 	check("selEnd", exp.SelEnd, got.SelEnd)
 	check("textLen", exp.TextLen, got.TextLen)
 	check("mode", exp.Mode, got.Mode)
+	if exp.SelLen != nil {
+		have := got.selLen()
+		if *exp.SelLen != have {
+			errs = append(errs, fmt.Sprintf("selLen want %d got %d", *exp.SelLen, have))
+		}
+	}
 	if len(errs) > 0 {
 		return fmt.Errorf("%s; state=%v", strings.Join(errs, "; "), got)
 	}
@@ -468,3 +515,13 @@ func matchExpect(got EditorState, exp StateExpect) error {
 }
 
 func intp(v int) *int { return &v }
+
+func (s EditorState) selLen() int {
+	if s.SelStart == s.SelEnd {
+		return 0
+	}
+	if s.SelStart < s.SelEnd {
+		return s.SelEnd - s.SelStart
+	}
+	return s.SelStart - s.SelEnd
+}

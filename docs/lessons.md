@@ -72,6 +72,8 @@ After QML selection or arrow-handler edits: rebuild Writerdeck, relaunch, run `b
 
 Soft reset (default): one hard quit at the start of a full run, then `PUT` note content and `POST /api/reload` between scenarios. Do not use `POST /api/open` to reload the harness note — `saveAndLoad` writes the stale in-memory buffer over the `PUT` first. `--hard-reset` quits the editor per scenario (slow). Single scenario: `bash scripts/test-keyboard-harness.sh -s NAME`.
 
+Fast dev loop: [editor-testing/](editor-testing/) — add scenario, `--unit`, `-s NAME --fast --no-prepare`. Harness changes need no server redeploy unless `/api/test/*` changed.
+
 `TextEdit.moveCursorSelection` takes a character index, not `TextEdit.Down` / `TextEdit.Up`. Passing direction enums selects toward a low position and breaks shift+vertical. Use `lineDownPos` / `lineUpPos` and explicit anchor math (same model as horizontal `extendSelectionHorizontal`). Setting `query.cursorPosition` after `query.select()` collapses the selection.
 
 Saved-file guessing for selection tests was unreliable. Assert `cursor`, `selStart`, `selEnd`, and `textLen` from the editor-state probe instead.
