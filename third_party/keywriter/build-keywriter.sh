@@ -459,25 +459,6 @@ new6b = 'focus: !isOmni && !isLobby'
 assert old6b in s, "query focus binding not found (edit 6b)"
 s = s.replace(old6b, new6b, 1)
 
-# 6c. Route Mac-style keys on the focused TextEdit (phone/USB path); parent Keys
-#     does not see events while query has activeFocus.
-old6c = 'focus: !isOmni && !isLobby'
-new6c = (
-    'focus: !isOmni && !isLobby\n'
-    '                Keys.onPressed: {\n'
-    '                    if (mode == 1) {\n'
-    '                        if (root.handleMacUndo(event))\n'
-    '                            return\n'
-    '                        if (root.handleMacBackspace(event))\n'
-    '                            return\n'
-    '                        if (root.handleMacArrow(event))\n'
-    '                            return\n'
-    '                    }\n'
-    '                }'
-)
-assert old6c in s, "query focus binding not found (edit 6c)"
-s = s.replace(old6c, new6c, 1)
-
 # 7. Add setLobbyInfo() and handleHome() before initFile.
 #    setLobbyInfo: called from C++ via invokeMethod when rmkbd connects, so the
 #    Lobby shows the current IP and PIN without hardcoding anything.
