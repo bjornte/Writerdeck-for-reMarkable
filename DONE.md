@@ -34,7 +34,7 @@ Reading font, PIN length, display rotation, and Exit Writerdeck live on the tabl
 
 ## Editor
 
-Built from upstream remarkable-keywriter, deployed as Writerdeck, patched for socket input. Full-panel via linuxfb. Norwegian and other Unicode via the browser path; USB Norwegian (`no.qmap`) verified on hardware — æ ø å, AltGr, `@`, `{` `}`. Reading fonts: Inter, Literata, EB Garamond, DejaVu. Page up and down in read and edit. Block cursor hides while typing. Ctrl-K note switcher. Mac-style navigation in edit. Power button saves, shows a sleep screen, suspends; press again to wake (device verified). USB Esc from stock UI launches to Lobby. Rotation in settings, pushed on connect.
+Built from upstream remarkable-keywriter, deployed as Writerdeck, patched for socket input. Full-panel via linuxfb. Norwegian and other Unicode via the browser path; USB Norwegian (`no.qmap`) verified on hardware — æ ø å, AltGr, `@`, `{` `}`. Reading fonts: Inter, Literata, EB Garamond, DejaVu. Page up and down in read and edit. Block cursor hides while typing. Ctrl-K note switcher. Mac-style navigation in edit — word/line delete (Alt/Ctrl+Backspace), shift selection extend/shrink, logical line down; device harness in `scenarios.go` and `scenarios_regression.go` (`test-keyboard-harness.sh`). Power button saves, shows a sleep screen, suspends; press again to wake (device verified). USB Esc from stock UI launches to Lobby. Rotation in settings, pushed on connect.
 
 ## GitHub sync
 
@@ -48,6 +48,6 @@ Plain Markdown on disk, no silent overwrite of live edits, durable saves. Slices
 
 Static Go binary at `/home/root/Writerdeck-server`. Writerdeck built in CI. Cold-boot autostart via `writerdeck.service`. Keep-awake during editor sessions only. On-device layout: [docs/architecture.md](docs/architecture.md).
 
-Regression: `bash scripts/test-edit-session.sh` — POST `/api/open` must keep Writerdeck running, xochitl down, and editorActive true for several seconds. After Lobby or `handleHome` QML changes: `bash scripts/test-lobby-keyboard.sh` — lobby keys after return from edit, Home-from-read must not quit Writerdeck. After vault or encryption changes: `bash scripts/test-vault.sh` and `bash scripts/test-vault-e2e.sh` (sync on required for E2E).
+Regression: `bash scripts/test-edit-session.sh` — POST `/api/open` must keep Writerdeck running, xochitl down, and editorActive true for several seconds. After arrow, selection, or `handleKey` QML changes: `bash scripts/test-keyboard-harness.sh` (sign-off with `--fast --hard-reset`). After Lobby or `handleHome` QML changes: `bash scripts/test-lobby-keyboard.sh` — lobby keys after return from edit, Home-from-read must not quit Writerdeck. After vault or encryption changes: `bash scripts/test-vault.sh` and `bash scripts/test-vault-e2e.sh` (sync on required for E2E).
 
 `/dev/uinput` is dead on this kernel. The editor is fed over a socket. Do not retry uinput.

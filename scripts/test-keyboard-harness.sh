@@ -4,6 +4,15 @@
 # Requires Writerdeck with publishEditorState (build-keywriter.sh) and a
 # Writerdeck-server build with /api/test/editor-state (deploy-rmkbd.sh).
 #
+# Dev workflow (see docs/editor-testing/todo.md, docs/lessons.md):
+#   1. --unit, then --fast --hard-reset once (triage all failures from docs/recon/)
+#   2. Confirm each FAIL with -s NAME --fast on the same binary (no deploy between)
+#   3. Batch harness fixes locally; batch QML fixes; at most one Writerdeck deploy
+#   4. Sign-off: full suite --fast --hard-reset
+#
+# Soft reset (default full run) can cascade: later scenarios may fail prepare while
+# -s NAME alone passes. Use --hard-reset for reliable sign-off, not only debugging.
+#
 # Usage:
 #   bash scripts/test-keyboard-harness.sh              # all scenarios (soft reset)
 #   bash scripts/test-keyboard-harness.sh -s NAME      # one scenario
@@ -12,7 +21,7 @@
 #   bash scripts/test-keyboard-harness.sh --unit       # translate + scenario lint (no device)
 #   bash scripts/test-keyboard-harness.sh --fast       # shorter pauses (dev loop)
 #   bash scripts/test-keyboard-harness.sh --no-prepare # skip PUT/reload (same scenario re-run)
-#   bash scripts/test-keyboard-harness.sh --hard-reset # quit editor per scenario
+#   bash scripts/test-keyboard-harness.sh --hard-reset # quit editor per scenario (sign-off)
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=/dev/null
@@ -34,7 +43,7 @@ while [ $# -gt 0 ]; do
     --no-prepare) EXTRA+=(-no-prepare); shift ;;
     -v) EXTRA+=(-v); shift ;;
     -h|--help)
-      sed -n '2,15p' "$0"
+      sed -n '2,24p' "$0"
       exit 0
       ;;
     *) TARGET="$1"; shift ;;

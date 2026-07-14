@@ -5,7 +5,7 @@ import "strings"
 // AllScenarios returns keyboard/selection integration scenarios.
 // Each step can send keys and/or assert editor state via /api/test/editor-state.
 func AllScenarios() []Scenario {
-	return append(coreScenarios(), regressionScenarios()...)
+	return append(append(coreScenarios(), regressionScenarios()...), undoScenarios()...)
 }
 
 func coreScenarios() []Scenario {

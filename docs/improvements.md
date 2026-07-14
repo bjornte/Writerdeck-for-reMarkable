@@ -2,15 +2,9 @@
 
 Wish-list and design notes — not tracked work. Shipped: [../DONE.md](../DONE.md). Actionable verify items: [../TODO.md](../TODO.md). Capability split: [browser-vs-tablet.md](browser-vs-tablet.md).
 
-## USB keyboard locales
+## USB keyboard locales (future)
 
-Browser to WebSocket resolves layout in the phone OS — Norwegian works today. USB uses Qt evdev with shipped `us` and `no` qmaps and a Lobby Keyboard tab picker; Norwegian national characters and AltGr verified on hardware ([DONE.md](../DONE.md)).
-
-Alt+Left/Right on standard Linux kmaps become fake Escape in Qt — see [lessons.md](lessons.md). `writerdeck-alt-arrows.inc` keeps them as arrows in `no` and `us` qmaps.
-
-Qt ignores `loadkeys` and `setxkbmap`. Use `QT_QPA_EVDEV_KEYBOARD_PARAMETERS` and a qmap file — [remarkable-keywriter#1](https://github.com/dps/remarkable-keywriter/issues/1).
-
-Regenerate with `bash keymaps/generate.sh`. Phone-path selection regressions use `scripts/test-keyboard-harness.sh`; that path does not exercise evdev — re-check qmaps on hardware after qmap edits.
+`us` and `no` qmaps ship today with a Lobby Keyboard tab picker ([DONE.md](../DONE.md)). Additional layouts: add kmap sources under `keymaps/src/`, run `bash keymaps/generate.sh`, verify on hardware (phone path does not exercise evdev — see [lessons.md](lessons.md) § Keyboard and selection).
 
 ## Edit view (future)
 
@@ -25,3 +19,7 @@ While editing on e-ink, show the open note rendered as Markdown on the phone —
 ## Browser (future)
 
 Bulk select and multi-delete; search across titles and bodies; HTTPS for native Share sheet; phone-side vault PIN UI (tablet-only PIN entry is shipped — [decisions.md](decisions.md) §31).
+
+## Install and onboarding (future)
+
+First-time setup still assumes SSH, systemd, and optional `gh`. Checklist: [todo-install-onboarding.md](todo-install-onboarding.md).

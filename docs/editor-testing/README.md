@@ -4,7 +4,7 @@ Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path
 
 | File | Purpose |
 |------|---------|
-| [todo.md](todo.md) | Open bugs, harness loop, acceptance, resume prompt |
+| [todo.md](todo.md) | Remaining harness verify (undo), dev loop reference |
 | [scenario-cookbook.md](scenario-cookbook.md) | Scenarios borrowed from CodeMirror and Qt; port into `scenarios_regression.go` |
 
-Code: `daemon/cmd/edit-harness/`, `scripts/test-keyboard-harness.sh`. Policy: [decisions.md](../decisions.md) §22. Gotchas: [lessons.md](../lessons.md) § Keyboard and selection.
+Code: `daemon/cmd/edit-harness/`, `scripts/test-keyboard-harness.sh`. Policy: [decisions.md](../decisions.md) §22. Gotchas and batch workflow: [lessons.md](../lessons.md) § Keyboard and selection.

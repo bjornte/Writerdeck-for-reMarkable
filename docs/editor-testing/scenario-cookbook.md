@@ -41,6 +41,20 @@ Run: `bash scripts/test-keyboard-harness.sh -s cookbook-short-name --fast`
 | `alt-backspace-deletes-word` | CodeMirror `deleteGroupBackward` | Mac Alt+Backspace |
 | `ctrl-backspace-deletes-line` | CodeMirror `deleteLineBoundaryBackward` | Mac Mod+Backspace |
 
+## Undo / redo (in `scenarios_undo.go`)
+
+Sources: Qt `tst_qplaintextedit` (`undoRedo`, `undoRedoShouldRepositionTextEditCursor`), CodeMirror `test-history.ts`, Ace redo-stack clearing.
+
+| Harness name | Source | Notes |
+|--------------|--------|-------|
+| `undo-redo-len` | Qt `undoRedo` | delete all, Ctrl+Z, Ctrl+Y |
+| `undo-cursor-reposition` | Qt `undoRedoShouldRepositionTextEditCursor` | type at start, undo/redo cursor |
+| `undo-mid-line-delete` | — | delete line2, undo restores cursor |
+| `redo-cleared-by-new-edit` | Ace #4024 | edit after undo kills redo |
+| `undo-after-select-delete` | CodeMirror selection restore | shift+home, delete, undo |
+
+Single-character steps use the WebSocket text path (`Key{Name:"a"}`). Run: `bash scripts/test-keyboard-harness.sh -s undo-redo-len --fast`.
+
 ## CodeMirror — vertical motion (port next)
 
 Content uses `\n` for line breaks. Positions counted from 0.

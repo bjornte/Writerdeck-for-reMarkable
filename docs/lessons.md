@@ -8,7 +8,9 @@ Debugging and shipping are different jobs. While iterating, use the cheapest che
 
 Rank checks by cost: unit/API, device harness, browser UI, full E2E with sync. Climb only when the cheaper step passes.
 
-When something fails mid-flow, test from that step — not the whole story. Use harness scoping (`-s`, `--skip-cleanup`) and the script that matches the layer you changed.
+When something fails mid-flow, test from that step — not the whole story. Use harness scoping (`-s`, `-m`, `--no-prepare`) and the script that matches the layer you changed.
+
+For keyboard harness work specifically: one full run to collect all failures, then batch fixes by layer (harness vs QML). Do not interleave push/CI/deploy with single-scenario retries. See [editor-testing/todo.md](editor-testing/todo.md) § Dev loop.
 
 Verify rules are for sign-off. While fixing: server → `deploy-rmkbd.sh` + API/harness; QML → `deploy-keywriter.sh -b` + targeted harness; phone UI and sync → full pipeline last.
 
@@ -70,9 +72,25 @@ Three tiers: `go test -C daemon -run TestTranslate` for modifier masks in `trans
 
 After QML selection or arrow-handler edits: rebuild Writerdeck, relaunch, run `bash scripts/test-keyboard-harness.sh`. After server test API edits: `deploy-rmkbd.sh` too. Logs land in `docs/recon/test-keyboard-harness-*.txt`.
 
-Soft reset (default): one hard quit at the start of a full run, then `PUT` note content and `POST /api/reload` between scenarios. Do not use `POST /api/open` to reload the harness note — `saveAndLoad` writes the stale in-memory buffer over the `PUT` first. `--hard-reset` quits the editor per scenario (slow). Single scenario: `bash scripts/test-keyboard-harness.sh -s NAME`.
+Soft reset (default): one hard quit at the start of a full run, then `PUT` note content and `POST /api/reload` between scenarios. Do not use `POST /api/open` to reload the harness note — `saveAndLoad` writes the stale in-memory buffer over the `PUT` first. `--hard-reset` quits the editor per scenario (slow; use for sign-off). Single scenario: `bash scripts/test-keyboard-harness.sh -s NAME`.
 
-Fast dev loop: [editor-testing/](editor-testing/) — add scenario, `--unit`, `-s NAME --fast --no-prepare`. Harness changes need no server redeploy unless `/api/test/*` changed.
+Fast dev loop: [editor-testing/](editor-testing/) — add scenario, `--unit`, full triage run, batch fix, one deploy. Per-scenario: `-s NAME --fast --no-prepare` on the same binary. Harness changes need no Writerdeck deploy unless `/api/test/*` changed.
+
+### Harness batch workflow
+
+A keyboard harness session should produce one failure list, not a deploy per guess.
+
+1. `--unit`, then `--fast --hard-reset` once. Read `docs/recon/test-keyboard-harness-*.txt`.
+2. Confirm each FAIL with `-s NAME --fast` on the current binary (no deploy between).
+3. Fix all harness/prepare failures in `edit-harness` — no push for QML yet.
+4. Batch QML fixes in one `build-keywriter.sh` diff. One push/CI/deploy for that batch.
+5. Rerun failing names or full suite; `--hard-reset` for sign-off.
+
+Deploy budget while iterating: at most one Writerdeck binary deploy per agent session unless the tablet binary failed to launch (QML parse error, editor never connects). Harness-only and daemon-only changes never need `fetch-keywriter-dist.sh`.
+
+Soft reset between scenarios in a full run can cascade (later scenarios see stale `textLen`). Failures that pass with `-s` alone may be prepare bleed, not QML bugs. Sign-off always uses `--hard-reset`.
+
+Anti-pattern that wasted a full session: fix one scenario → push → CI → deploy → `-s` one scenario → repeat. Correct pattern: triage all → batch fix → one deploy → rerun all failures.
 
 `TextEdit.moveCursorSelection` takes a character index, not `TextEdit.Down` / `TextEdit.Up`. Passing direction enums selects toward a low position and breaks shift+vertical. Use `lineDownPos` / `lineUpPos` and explicit anchor math (same model as horizontal `extendSelectionHorizontal`). Setting `query.cursorPosition` after `query.select()` collapses the selection.
 

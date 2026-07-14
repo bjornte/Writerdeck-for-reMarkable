@@ -177,6 +177,32 @@ func TestVaultEncryptNoteFile(t *testing.T) {
 	}
 }
 
+func TestVaultDisableRefusesUserNotes(t *testing.T) {
+	resetVaultTestState()
+	dir := t.TempDir()
+	settingsFilePath = filepath.Join(dir, "settings.json")
+	notesDirPath = dir
+
+	if err := vaultSetupPIN("123456"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "til 1.md.enc"), []byte("WDENC1fake"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := vaultDisable(true); err == nil {
+		t.Fatal("expected disable to refuse user encrypted note")
+	}
+	if err := os.Remove(filepath.Join(dir, "til 1.md.enc")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "z-test-vault.md.enc"), []byte("WDENC1fake"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := vaultDisable(true); err != nil {
+		t.Fatalf("expected disable with z-test only: %v", err)
+	}
+}
+
 func TestVaultOpErrMsg(t *testing.T) {
 	if got := vaultOpErrMsg("decrypt", errors.New("cipher: message authentication failed")); got == "" {
 		t.Fatal("expected decrypt auth failure message")

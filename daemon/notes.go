@@ -265,6 +265,9 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 			} else {
 				plain, err := decryptNoteBytes(data)
 				if err != nil {
+					if editorLocal {
+						pushVaultOpFailed(vaultOpErrMsg("decrypt", err))
+					}
 					http.Error(w, "cannot decrypt", http.StatusInternalServerError)
 					return
 				}

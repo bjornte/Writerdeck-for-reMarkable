@@ -14,7 +14,7 @@ What is still open: sudden death — pull power or kill the process hard and you
 
 Edit lease: reconcile skips the note the tablet is editing. Plain-markdown save contract with HTML guard and toggleMode fix. Tablet rename/delete of the open file notifies the editor. Reconcile gated on `openNote` in status. ETag and If-Match on PUT. Atomic server writes via temp and rename. Tablet CRUD pairs to GitHub on the server. Disk drift WebSocket, phone banner, and reload endpoint. Forty-five-second autosave while editing. Tablet saves via loopback PUT. Save before deploy and stop via flush-save and graceful shutdown.
 
-Also under contract: empty-push guard, Lobby Home wipe fix, server-side sync engine.
+Also under contract: empty-push guard, Lobby Home wipe fix, server-side sync engine. Vault disable refuses while user `.md.enc` notes exist; sync will not apply a foreign `secret/vault` that would orphan them. Failed encrypted-note load shows a Files-tab error instead of a blank editor.
 
 ## Residual risks
 
@@ -28,7 +28,7 @@ PIN none on an untrusted LAN is a confidentiality and tampering risk, not just s
 
 `test-edit-session.sh` guards "editor stays up on Edit" — not save under load, clash while typing, or power sleep with an open note. `scripts/test-vault.sh` covers loopback vault setup, per-note encrypt, and decrypt. `scripts/test-vault-e2e.sh` covers tablet PIN UI, Files encrypt/decrypt, PIN change, edit encrypted note, and GitHub sync (needs sync configured).
 
-Encrypted `.md.enc` files are opaque on disk; plaintext exists in the editor buffer only while a vault session key is held. The UTF-8 Markdown contract applies to `.md` only. Returning to the Lobby clears open-note tracking for sync so reconciles are not stuck skipping the last edited file.
+Encrypted `.md.enc` files are opaque on disk; plaintext exists in the editor buffer only while a vault session key is held. The UTF-8 Markdown contract applies to `.md` only. Returning to the Lobby clears open-note tracking for sync so reconciles are not stuck skipping the last edited file. Orphaned ciphertext after a vault key rotation (disable+setup, or sync applying the wrong `secret/vault`) is recoverable via `scripts/recover-orphaned-vault-notes.sh` and GitHub `secret/vault` history — not by the current PIN alone.
 
 ## Unknown
 

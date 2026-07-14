@@ -31,7 +31,7 @@ After `daemon/`, `build-keywriter.sh`, or `lobby/` changes:
 1. Rebuild Writerdeck if QML changed → `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`
 2. SSH → `journalctl -u writerdeck -n 30` — fail on QML parse errors or instant `editor process exited`
 3. `bash scripts/test-edit-session.sh` after Writerdeck/QML deploy
-4. `bash scripts/test-keyboard-harness.sh` after QML arrow, selection, or `handleKey` changes (see `docs/decisions.md` #22)
+4. `bash scripts/test-keyboard-harness.sh` after QML arrow, selection, or `handleKey` changes (see `docs/decisions.md` #22). Sign-off: `--fast --hard-reset`. While iterating keyboard bugs, triage all failures before deploying — at most one Writerdeck binary deploy per session unless QML fails to launch (see `docs/editor-testing/todo.md`, `docs/lessons.md` § Harness batch workflow).
 5. `bash scripts/test-lobby-keyboard.sh` after Lobby, `handleHome`, or `lobbyFocus` changes (see `docs/decisions.md` #29)
 
 Run all applicable steps every time without being asked. Do not declare done with known gaps ("not yet on tablet", "should work").
@@ -40,7 +40,7 @@ Run all applicable steps every time without being asked. Do not declare done wit
 
 No built-in task timer. Estimate elapsed time from message timestamps and shell command durations (deploy logs, harness runs).
 
-After about 20 minutes on one task without reaching sign-off, stop implementing. Report to the user: what you tried, what consumed time, whether you followed cheapest-proof-first and iterate-vs-sign-off ([lessons.md](docs/lessons.md) § Device verify and iteration), and what you would do next. Ask before another full deploy+E2E cycle.
+After about 20 minutes on one task without reaching sign-off, stop implementing. Report to the user: what you tried, what consumed time, whether you followed cheapest-proof-first and iterate-vs-sign-off ([lessons.md](docs/lessons.md) § Device verify and iteration), and what you would do next. Ask before another full deploy+E2E cycle. Keyboard harness iteration: one triage run, batch fixes, one Writerdeck deploy — not push/deploy per scenario.
 
 Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server). On-device naming: `docs/architecture.md`, `docs/decisions.md` #23.
 

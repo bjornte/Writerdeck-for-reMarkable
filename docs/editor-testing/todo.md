@@ -1,64 +1,32 @@
-# TODO: Keyboard editing bugs + harness loop
+# Keyboard harness — remaining verify
 
-Fix flaky Mac-style editing in Writerdeck (Qt `TextEdit` + custom `handleKey` in `build-keywriter.sh`). Drive fixes through the device keyboard harness — not manual Lobby typing.
+Mac-style editing over the phone/WebSocket path is covered by `scenarios.go` and `scenarios_regression.go` (device PASS with `--fast --hard-reset` as of 2026-07). This file tracks what is still open and how to extend the harness.
 
-Read first: [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) § Keyboard and selection, [decisions.md](../decisions.md) §22, `.cursor/rules/writerdeck.mdc`.
+Read: [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) § Keyboard and selection, [decisions.md](../decisions.md) §22.
 
-## Reported bugs
+## Open
 
-- Alt+Backspace should delete word before cursor, not line or wrong span
-- Ctrl+Backspace should delete line
-- Arrow Down in a multiline paragraph should move one visual/logical line, not jump paragraph or end-of-line
-- Shift+Down then Shift+Up should shrink downward selection; currently expands upward
-- Repeated Shift+Left should extend selection; currently stuck at one word/char
-- Ctrl+Z undo sometimes does the wrong thing
+- Undo/redo — five scenarios in `scenarios_undo.go` need device PASS (`bash scripts/test-keyboard-harness.sh -m undo --fast --hard-reset`).
 
-Phone/WebSocket path is in scope for harness; USB/qmap is spot-check only after qmap changes ([lessons.md](../lessons.md)).
-
-## Harness (extend, don't reinvent)
+## Harness layout
 
 | Piece | Path |
 |-------|------|
 | Scenarios (core) | `daemon/cmd/edit-harness/scenarios.go` |
 | Scenarios (regressions) | `daemon/cmd/edit-harness/scenarios_regression.go` |
+| Scenarios (undo) | `daemon/cmd/edit-harness/scenarios_undo.go` |
 | Runner | `daemon/cmd/edit-harness/main.go` |
 | Shell wrapper | `scripts/test-keyboard-harness.sh` |
-| Editor state API | `GET /api/test/editor-state` |
 | QML key logic | `third_party/keywriter/build-keywriter.sh` |
 
-### Dev loop (fast)
+## Dev loop (batch first)
 
-1. Pick or add scenario — [scenario-cookbook.md](scenario-cookbook.md) or `scenarios_regression.go`.
-2. Lint: `bash scripts/test-keyboard-harness.sh --unit` (no tablet).
-3. QML changed → deploy Writerdeck.
-4. `bash scripts/test-keyboard-harness.sh -s NAME --fast` then `--no-prepare` on repeats.
+Debugging and sign-off are different jobs. See [lessons.md](../lessons.md) § Device verify and iteration and § Harness batch workflow.
 
-See [README.md](README.md) for flags (`-m`, `--fast`, `--no-prepare`).
+Triage once: `--unit`, then `--fast --hard-reset`. Classify FAILs from `docs/recon/test-keyboard-harness-*.txt`. Confirm with `-s NAME --fast` on the same binary — no deploy between. Batch harness fixes locally; batch QML fixes; at most one Writerdeck deploy per session before the next full rerun. Sign-off: full suite `--hard-reset`, `test-edit-session.sh`, clean `journalctl`.
 
-### Regression scenarios in repo (may FAIL until fixed)
-
-- `down-one-logical-line`
-- `shift-down-then-up-shrinks`
-- `shift-left-repeat-from-end`
-- `alt-backspace-deletes-word`
-- `ctrl-backspace-deletes-line`
-
-Cookbook lists additional scenarios not yet coded — port as needed.
-
-## Implementation notes
-
-Custom selection/cursor math in `handleMacArrow` likely fights Qt defaults. Wrapped lines need visual-line logic, not `\n`-only math. Do not swap editors in this task.
-
-## Acceptance
-
-- All `scenarios.go` and `scenarios_regression.go` PASS on device.
-- `--unit` PASS on Mac.
-- After QML deploy: `test-edit-session.sh` PASS; `journalctl -u writerdeck -n 30` clean.
-
-## Out of scope
-
-Editor replacement, USB evdev harness, phone browser UI.
+Port new cases from [scenario-cookbook.md](scenario-cookbook.md) into `scenarios_regression.go` or `scenarios_undo.go`, then `--unit`.
 
 ## Resume prompt
 
-> Read `docs/editor-testing/todo.md` and `scenario-cookbook.md`. Pick one failing scenario, run `bash scripts/test-keyboard-harness.sh -s NAME --fast`, fix `handleKey` in `build-keywriter.sh`, redeploy Writerdeck, re-run until PASS. Add cookbook scenarios before fixing new bugs.
+> Read this file and `scenario-cookbook.md`. Run `bash scripts/test-keyboard-harness.sh -m undo --fast --hard-reset`. Fix QML or scenarios in batch; one deploy max. Sign-off: full suite `--hard-reset`, `test-edit-session.sh`, clean journalctl.

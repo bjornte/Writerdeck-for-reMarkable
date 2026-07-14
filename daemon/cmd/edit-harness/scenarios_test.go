@@ -25,12 +25,16 @@ func TestScenarioContentValid(t *testing.T) {
 			if step.Expect == nil {
 				continue
 			}
+			maxPos := n
+			if step.Expect.TextLen != nil && *step.Expect.TextLen > maxPos {
+				maxPos = *step.Expect.TextLen
+			}
 			check := func(field string, v *int) {
 				if v == nil {
 					return
 				}
-				if *v < 0 || *v > n {
-					t.Fatalf("%s step %d: %s=%d out of range for content len %d", sc.Name, i, field, *v, n)
+				if *v < 0 || *v > maxPos {
+					t.Fatalf("%s step %d: %s=%d out of range for content len %d (max %d)", sc.Name, i, field, *v, n, maxPos)
 				}
 			}
 			check("cursor", step.Expect.Cursor)

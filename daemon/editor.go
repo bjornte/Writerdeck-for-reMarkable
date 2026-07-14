@@ -490,7 +490,7 @@ func handleEditorReq(op, name, oldName string) {
 			pushVaultOpFailed(vaultOpErrMsg("decrypt", err))
 		}
 	case "disablevault":
-		if err := vaultDisable(); err != nil {
+		if err := vaultDisable(true); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: disablevault: %v\n", err)
 		}
 	case "shutdown":

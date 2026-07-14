@@ -44,6 +44,14 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 
 echo "=== test-vault base=$BASE ==="
 
+# Remove harness notes before vault reset (disable refuses user .md.enc on disk).
+if [[ -n "$LOCAL" ]]; then
+  rm -f "$NOTES"/z-test-vault-plain.md "$NOTES"/z-test-vault-plain.md.enc
+else
+  ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 "root@$RM_HOST" \
+    "rm -f $DEVICE_NOTES/z-test-vault-plain.md $DEVICE_NOTES/z-test-vault-plain.md.enc"
+fi
+
 # Deterministic PIN: reset vault so a prior E2E run cannot leave a different PIN.
 curl -s -o /dev/null -X POST "$BASE/api/test/tablet-req" \
   -H 'Content-Type: application/json' \

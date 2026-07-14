@@ -125,8 +125,11 @@ func loadVaultSalt() ([]byte, error) {
 	return base64.StdEncoding.DecodeString(b64)
 }
 
-func unwrapDataKey(pin string) ([]byte, error) {
-	salt, err := loadVaultSalt()
+func unwrapDataKeyFromSecret(pin, saltB64, wrappedB64, verifierB64 string) ([]byte, error) {
+	if saltB64 == "" || wrappedB64 == "" || verifierB64 == "" {
+		return nil, errors.New("incomplete vault secret")
+	}
+	salt, err := base64.StdEncoding.DecodeString(saltB64)
 	if err != nil {
 		return nil, err
 	}
@@ -134,10 +137,6 @@ func unwrapDataKey(pin string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	settingsMu.Lock()
-	wrappedB64 := curSettings.WrappedDataKey
-	verifierB64 := curSettings.VaultVerifier
-	settingsMu.Unlock()
 	wrapped, err := base64.StdEncoding.DecodeString(wrappedB64)
 	if err != nil {
 		return nil, err
@@ -158,6 +157,66 @@ func unwrapDataKey(pin string) ([]byte, error) {
 		return nil, errors.New("invalid data key")
 	}
 	return dataKey, nil
+}
+
+func unwrapDataKey(pin string) ([]byte, error) {
+	settingsMu.Lock()
+	saltB64 := curSettings.VaultSalt
+	wrappedB64 := curSettings.WrappedDataKey
+	verifierB64 := curSettings.VaultVerifier
+	settingsMu.Unlock()
+	return unwrapDataKeyFromSecret(pin, saltB64, wrappedB64, verifierB64)
+}
+
+// listEncryptedNoteBasenames returns flat .md.enc names in notesDirPath.
+func listEncryptedNoteBasenames() ([]string, error) {
+	entries, err := os.ReadDir(notesDirPath)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		if isEncryptedNoteName(e.Name()) {
+			out = append(out, e.Name())
+		}
+	}
+	return out, nil
+}
+
+func hasUserEncryptedNotes() (bool, error) {
+	names, err := listEncryptedNoteBasenames()
+	if err != nil {
+		return false, err
+	}
+	for _, n := range names {
+		if !strings.HasPrefix(n, "z-test-") {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func vaultRewrapNote(name string, oldKey, newKey []byte) error {
+	p := notesSafe(name)
+	if p == "" || !isEncryptedNoteName(filepath.Base(p)) {
+		return fmt.Errorf("invalid encrypted name")
+	}
+	data, err := os.ReadFile(p)
+	if err != nil {
+		return err
+	}
+	plain, err := decryptNoteBytesWithKey(data, oldKey)
+	if err != nil {
+		return err
+	}
+	enc, err := encryptNoteBytesWithKey(plain, newKey)
+	if err != nil {
+		return err
+	}
+	return writeNoteFile(p, enc)
 }
 
 func vaultCheckUnlockThrottle() error {
@@ -348,9 +407,23 @@ func vaultChangePIN(oldPIN, newPIN string) error {
 	return nil
 }
 
-func vaultDisable() error {
+func vaultDisable(testHarness bool) error {
 	if !vaultEnabled() {
 		return nil
+	}
+	enc, err := listEncryptedNoteBasenames()
+	if err != nil {
+		return err
+	}
+	if len(enc) > 0 {
+		if !testHarness {
+			return fmt.Errorf("cannot disable vault: %d encrypted note(s) on disk", len(enc))
+		}
+		for _, n := range enc {
+			if !strings.HasPrefix(n, "z-test-") {
+				return fmt.Errorf("cannot disable vault: user encrypted note %s", n)
+			}
+		}
 	}
 	settingsMu.Lock()
 	curSettings.EncryptionEnabled = false
@@ -367,14 +440,11 @@ func vaultDisable() error {
 	return nil
 }
 
-func encryptNoteBytes(plaintext []byte) ([]byte, error) {
-	vaultMu.Lock()
-	dk := vaultDataKey
-	vaultMu.Unlock()
-	if dk == nil {
+func encryptNoteBytesWithKey(plaintext, dataKey []byte) ([]byte, error) {
+	if dataKey == nil {
 		return nil, errors.New("vault PIN required")
 	}
-	sealed, err := aesGCMSeal(dk, plaintext)
+	sealed, err := aesGCMSeal(dataKey, plaintext)
 	if err != nil {
 		return nil, err
 	}
@@ -384,17 +454,28 @@ func encryptNoteBytes(plaintext []byte) ([]byte, error) {
 	return out, nil
 }
 
-func decryptNoteBytes(ciphertext []byte) ([]byte, error) {
+func decryptNoteBytesWithKey(ciphertext, dataKey []byte) ([]byte, error) {
 	if len(ciphertext) < len(vaultMagic) || string(ciphertext[:len(vaultMagic)]) != vaultMagic {
 		return nil, errors.New("not an encrypted note")
 	}
+	if dataKey == nil {
+		return nil, errors.New("vault PIN required")
+	}
+	return aesGCMOpen(dataKey, ciphertext[len(vaultMagic):])
+}
+
+func encryptNoteBytes(plaintext []byte) ([]byte, error) {
 	vaultMu.Lock()
 	dk := vaultDataKey
 	vaultMu.Unlock()
-	if dk == nil {
-		return nil, errors.New("vault PIN required")
-	}
-	return aesGCMOpen(dk, ciphertext[len(vaultMagic):])
+	return encryptNoteBytesWithKey(plaintext, dk)
+}
+
+func decryptNoteBytes(ciphertext []byte) ([]byte, error) {
+	vaultMu.Lock()
+	dk := vaultDataKey
+	vaultMu.Unlock()
+	return decryptNoteBytesWithKey(ciphertext, dk)
 }
 
 func vaultEncryptNote(name string) error {
@@ -536,6 +617,18 @@ func vaultApplySecretVault(data []byte) error {
 		return errors.New("incomplete vault secret")
 	}
 	settingsMu.Lock()
+	oldWrap := curSettings.WrappedDataKey
+	settingsMu.Unlock()
+	if oldWrap != "" && v.WrappedDataKey != oldWrap {
+		userEnc, err := hasUserEncryptedNotes()
+		if err != nil {
+			return err
+		}
+		if userEnc {
+			return errors.New("refusing vault sync: would orphan encrypted notes")
+		}
+	}
+	settingsMu.Lock()
 	curSettings.EncryptionEnabled = true
 	curSettings.VaultSalt = v.Salt
 	curSettings.WrappedDataKey = v.WrappedDataKey
@@ -632,7 +725,7 @@ func vaultOpErrMsg(op string, err error) string {
 		strings.Contains(msg, "ciphertext too short"),
 		strings.Contains(msg, "not an encrypted note"):
 		if op == "decrypt" {
-			return "Cannot decrypt: file may be corrupted or not encrypted."
+			return "Cannot decrypt: wrong vault key or corrupted file. If vault was reset, recover from GitHub secret/vault history."
 		}
 		return "Encrypt failed: invalid note data."
 	case strings.Contains(msg, "already exists"):
@@ -657,6 +750,36 @@ func pushVaultOpFailed(msg string) {
 		Msg string `json:"msg"`
 	}{"cmd", "vaultopfailed", msg})
 	globalEC.write(append(cmd, '\n'))
+}
+
+// vaultRewrapFromOldSecret re-encrypts notes that were sealed with a prior vault key.
+func vaultRewrapFromOldSecret(oldVaultJSON, pin string, notes []string) error {
+	if !validVaultPIN(pin) {
+		return errors.New("PIN must be 6 digits")
+	}
+	if !vaultEnabled() {
+		return errors.New("encryption not enabled")
+	}
+	var v secretVaultJSON
+	if err := json.Unmarshal([]byte(oldVaultJSON), &v); err != nil {
+		return err
+	}
+	oldKey, err := unwrapDataKeyFromSecret(pin, v.Salt, v.WrappedDataKey, v.Verifier)
+	if err != nil {
+		return fmt.Errorf("old vault: %w", err)
+	}
+	newKey, err := unwrapDataKey(pin)
+	if err != nil {
+		return fmt.Errorf("current vault: %w", err)
+	}
+	for _, name := range notes {
+		if err := vaultRewrapNote(name, oldKey, newKey); err != nil {
+			return fmt.Errorf("%s: %w", name, err)
+		}
+		syncEng.tryPushNote(name)
+	}
+	pushNotesList()
+	return nil
 }
 
 func pushRequestVaultPIN(reason, name string) {
