@@ -6,30 +6,41 @@ Read: [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) 
 
 ## Fresh agent — start here
 
-**Baseline (62 core):** `docs/recon/harness-runs.md` → **37 pass / 25 fail** @ `2026-07-14T23-24-42`, single session, no restarts. Latest combo tag: **9/13** @ `22ad701`.
+**Scores:** [milestone-runs.md](milestone-runs.md) (update after each full `--fast` run). Detail: [harness-runs.md](../recon/harness-runs.md).
 
-**Suite size:** 83 scenarios (62 core + 15 gap + 6 extra wrap). Sign-off: **83/83 PASS** with `--fast`.
+| Milestone | Pass / fail | Commit / note |
+|-----------|-------------|---------------|
+| Core 62 baseline | 37 / 25 | `23-24-42` |
+| Best full 83 | 38 / 44 | `00-08-41` pre-QML |
+| Latest full 83 | 35 / 45 | `00-56-17` (`0a339c9`) |
+| Combo tag | 9 / 13 | `01-25-41` (`22ad701`) — no full 83 on that build yet |
 
-**Deploy:** `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Harness-only: local `go test`, no Writerdeck deploy unless `/api/test/*` changed (`deploy-rmkbd.sh`).
+**Suite:** 83 scenarios (62 core + 15 gap + 6 wrap). Sign-off: **83/83 PASS** with `--fast`.
+
+**Deploy:** `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Harness-only: local `go test`, no Writerdeck deploy unless `/api/test/*` changed (`deploy-rmkbd.sh`). `systemctl restart writerdeck` if deploy-rmkbd stops the server.
 
 **One Writerdeck deploy per debugging session** unless QML fails to launch. Batch kernel fixes, one push/CI/fetch/deploy, then full harness.
 
-### Failure clusters (baseline 25 on core 62)
+### Open failure clusters (post-`22ad701`)
 
 | Cluster | Count | Likely fix |
 |---------|------:|------------|
-| Modified key from cursor 0 | ~15 | Harness End-prime poll + QML sandbox nav prime; socket route nav to focus item |
-| CM selection / goal-col | 5 | Goal column + `extendSelectionVertical` |
-| Undo | 3 | `handleMacUndo` cursor restore |
+| Shift+Ctrl/Alt combos | ~10 | `socketRouteKey` + `extendSelectionHorizontal` for modified shift paths |
+| Wrap visual-line down | ~11 | `visualLineDownPos` / harness width 320 calibration |
+| CM goal-col / selection | 5 | Goal column + `extendSelectionVertical` |
+| Undo cursor/text | 3–5 | `handleMacUndo` restore |
+| Alt-only from cursor 0 | 2–3 | Alt fast-path in `socketRouteKey` (Ctrl path done @ `22ad701`) |
 | Word nav off-by-one | 1 | `wordLeftPos` |
-| Wrap up | 1 | `visualLineUpPos` / `lineUpPos` |
+
+Plain **Ctrl+nav from cursor 0** fixed @ `22ad701` (`socketRouteKey` from inject thread, block Ctrl/Alt nav releases).
 
 ### Do not retry
 
 - Separate WebSocket wake after prepare — does not unblock modified keys.
-- End-only prime before every modified scenario — wiped docs.
+- End-prime before modified scenarios — wiped `query.text` / jumped to EOF.
+- Nested `invokeMethod` for `socketRouteKey` on the GUI thread — deadlock (504 on editor-state).
 - Duplicate `Keys.onPressed` on query TextEdit — QML crash loop.
-- Routing only modified nav to focus item — plain Backspace/Delete dropped on window.
+- Routing only modified nav to focus item without `socketRouteKey` — Qt release poisoned buffer.
 - Redundant `Ctrl+Home` in scenario setup when prime already positions.
 
 ### Harness inventory (83 scenarios)

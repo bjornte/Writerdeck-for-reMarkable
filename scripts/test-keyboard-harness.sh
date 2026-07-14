@@ -5,10 +5,10 @@
 # and Writerdeck-server with /api/test/editor-state (deploy-rmkbd.sh).
 #
 # Dev workflow (see docs/editor-testing/todo.md, docs/lessons.md):
-#   1. --unit, then --fast once (triage all failures from docs/recon/)
+#   1. --unit, then --fast once (triage all failures; update milestone-runs.md)
 #   2. Confirm each FAIL with -s NAME --fast on the same binary (no deploy between)
 #   3. Batch harness fixes locally; batch QML fixes; at most one Writerdeck deploy
-#   4. Sign-off: full suite --fast
+#   4. Sign-off: full suite --fast; add row to docs/editor-testing/milestone-runs.md
 #
 # Writes docs/recon/test-keyboard-harness-TIMESTAMP.txt and .md (results table).
 # Full suite: 83 scenarios in one editor session (no quit/relaunch between tests).

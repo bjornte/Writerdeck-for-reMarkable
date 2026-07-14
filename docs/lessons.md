@@ -70,7 +70,7 @@ Phone path and USB path are different inputs. The harness (`daemon/cmd/edit-harn
 
 Three tiers: `go test -C daemon -run TestTranslate` for modifier masks in `translate()`; the device harness for cursor/selection via `GET /api/test/editor-state` (Writerdeck publishes `editorstate` over the socket); manual USB checks after qmap or launcher changes.
 
-After QML selection or arrow-handler edits: rebuild Writerdeck, relaunch, run `bash scripts/test-keyboard-harness.sh`. After server test API edits: `deploy-rmkbd.sh` too. Logs land in `docs/recon/test-keyboard-harness-*.txt`.
+After QML selection or arrow-handler edits: rebuild Writerdeck, relaunch, run `bash scripts/test-keyboard-harness.sh`. After server test API edits: `deploy-rmkbd.sh` too. Per-run logs: `docs/recon/test-keyboard-harness-*.{md,txt}` (each run); consolidated history: [recon/harness-runs.md](recon/harness-runs.md); milestone table: [editor-testing/milestone-runs.md](editor-testing/milestone-runs.md).
 
 Sandbox-prepare (default): one editor launch per full run; between scenarios `PUT` note content plus `harnessprepare` (in-process reset, no quit). Do not use `POST /api/open` to reload the harness note — `saveAndLoad` writes the stale in-memory buffer over the `PUT` first. `--hard-reset` was removed from `test-keyboard-harness.sh`. Single scenario: `bash scripts/test-keyboard-harness.sh -s NAME --fast`.
 
@@ -80,21 +80,21 @@ Fast dev loop: [editor-testing/](editor-testing/) — add scenario, `--unit`, fu
 
 A keyboard harness session should produce one failure list, not a deploy per guess.
 
-1. `--unit`, then `--fast` once (full suite, single session). Read `docs/recon/test-keyboard-harness-*.md`.
+1. `--unit`, then `--fast` once (full suite, single session). Read per-run report; update [milestone-runs.md](editor-testing/milestone-runs.md).
 2. Confirm each FAIL with `-s NAME --fast` on the current binary (no deploy between).
 3. Fix all harness/prepare failures in `edit-harness` — no push for QML yet.
 4. Batch QML fixes in one `build-keywriter.sh` diff. One push/CI/deploy for that batch.
-5. Rerun full suite `--fast`; compare to baseline in [editor-testing/todo.md](editor-testing/todo.md).
+5. Rerun full suite `--fast`; compare to [milestone-runs.md](editor-testing/milestone-runs.md).
 
 Deploy budget while iterating: at most one Writerdeck binary deploy per agent session unless the tablet binary failed to launch (QML parse error, editor never connects). Harness-only and daemon-only changes never need `fetch-keywriter-dist.sh`.
 
-Modified key as the first step after sandbox-prepare often no-ops (`cursor want X got 0`); a plain `End` on the **same scenario WebSocket** before the modified key unblocks it (see `combo-ctrl-left` vs `combo-ctrl-right`). Wake on a separate WebSocket does not help.
+Edit-mode socket keys must reach `handleMacArrow` via QML `socketRouteKey()` invoked from the **inject thread** (`BlockingQueuedConnection`, same as `harnessprepare`). Routing `QKeyEvent` to `activeFocusItem` or nesting `invokeMethod` on the GUI thread dropped keys or deadlocked. Block **Ctrl/Alt nav releases** — Qt TextEdit defaults wiped `query.text` while the file on disk stayed intact.
+
+Harness `primeModifiedKeys` uses ArrowUp wake only — never End (EOF poison). Plain Ctrl+nav from cursor 0 is fixed in kernel (`22ad701`), not by scenario End steps.
 
 Plain `Key_Home` **release** in edit mode used to call `handleHome()` → lobby and break `combo-shift-end-line`; skip lobby when `mode==1 && !isLobby` on Home release (line-start is press via `handleMacArrow`).
 
 Never add a second `Keys.onPressed` on query TextEdit — patch 6c caused `Property value set multiple times` and a crash loop. Mac key routing belongs in patch 7o prepended to query's existing handler.
-
-Do not prime with `End` before every modified scenario from harness prepare — it wiped document content in one session run.
 
 Anti-pattern that wasted a full session: fix one scenario → push → CI → deploy → `-s` one scenario → repeat. Correct pattern: triage all → batch fix → one deploy → rerun all failures.
 

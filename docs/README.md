@@ -18,7 +18,7 @@ Reference for the project. Test script output goes in `recon/` — gitignored te
 
 `todo-install-onboarding.md` — visitor install friction: README, releases, preflight/install scripts.
 
-`editor-testing/` — keyboard harness handoff, scenario cookbook (CodeMirror/Qt ports).
+`editor-testing/` — scenario catalog ([scenario-catalog.md](editor-testing/scenario-catalog.md)), harness handoff ([todo.md](editor-testing/todo.md)), scoreboard ([milestone-runs.md](editor-testing/milestone-runs.md)), run history ([recon/harness-runs.md](recon/harness-runs.md)).
 
 `server-sync-implementation.md` — shipped server-side GitHub sync reference (token restore, `needtoken`, log verification).
 

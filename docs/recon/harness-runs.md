@@ -58,6 +58,8 @@ Sign-off gate: **83/83 PASS** (`bash scripts/test-keyboard-harness.sh --fast`).
 
 ## Milestone full suites
 
+Canonical table: [docs/editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md) (update after each full `--fast` run).
+
 | Run | Suite | Pass | Fail | Prep | vs prior | Context |
 |-----|-------|------|------|------|----------|---------|
 | 2026-07-14T20-15-40 | 62 | 26 | 36 | 0 | +6 | early session, pre-harness |
@@ -173,4 +175,4 @@ Best full-suite score so far: **38/44** @ `00-08-41` (harness fixes, pre-`df2f85
 
 Best combo tag: **9/13** @ `01-25-41` (`22ad701` socketRouteKey + Ctrl fast-path). No full 83 run on that build yet.
 
-Do not wholesale revert editor — socket routing on current head fixes a real delivery bug. Re-run full `--fast` suite on `22ad701` to see if 38+ is recoverable with combo gains.
+Do not wholesale revert editor — socket routing on current head (`22ad701`) fixes a real delivery bug. Re-run full `--fast` on that build and add a row to [milestone-runs.md](../editor-testing/milestone-runs.md).

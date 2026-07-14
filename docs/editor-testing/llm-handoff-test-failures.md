@@ -1,12 +1,14 @@
 # LLM handoff: keyboard testing methodology review
 
-**Current state (2026-07-15):** For implementation work, read [todo.md](todo.md) § Fresh agent first. Run history: `docs/recon/harness-runs.md`. Baseline **37/25** on core 62 @ `2026-07-14T23-24-42`; best full 83 **38/44** @ `00-08-41`; combo tag **9/13** @ `22ad701`. Sign-off: `bash scripts/test-keyboard-harness.sh --fast` → 83/83 PASS.
+**Current state (2026-07-15):** For implementation work, read [todo.md](todo.md) § Fresh agent first. Scores: [milestone-runs.md](milestone-runs.md); detail: [harness-runs.md](../recon/harness-runs.md). Baseline **37/25** core 62; best full 83 **38/44**; combo tag **9/13** @ `22ad701`. Sign-off: `bash scripts/test-keyboard-harness.sh --fast` → **83/83 PASS**.
 
 Hand this file to a fresh agent with no prior context. Project: Writerdeck for reMarkable 1 — Markdown editor on tablet, keystrokes over WebSocket/phone path, QML in `third_party/keywriter/build-keywriter.sh`, device harness in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.
 
 Related: [todo.md](todo.md), [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) § Keyboard and selection.
 
 ---
+
+*Historical review below — predates 83-scenario suite, wrap/combo coverage, and `socketRouteKey` fixes. Use [todo.md](todo.md) and [milestone-runs.md](milestone-runs.md) for current state.*
 
 ## Prompt for the reviewing LLM
 
@@ -152,12 +154,13 @@ Soft-reset full suite had known cascade failures (scenarios pass in isolation wi
 
 | Artifact | What to look for |
 |----------|------------------|
-| `docs/recon/test-keyboard-harness-*.txt` | Which scenarios ran, PASS/FAIL, flags used |
-| `daemon/cmd/edit-harness/scenarios_regression.go` | All content uses `\n`; no long unbroken wrap strings |
-| `daemon/cmd/edit-harness/scenarios_undo.go` | Added 2026-07; device status unknown |
+| `docs/editor-testing/milestone-runs.md` | Full-suite scoreboard — update after each `--fast` run |
+| `docs/recon/harness-runs.md` | Consolidated run log and per-scenario matrix |
+| `docs/recon/test-keyboard-harness-*.{md,txt}` | Per-run reports from each harness invocation; pre-2026-07-15 batch consolidated in harness-runs.md |
+| `daemon/cmd/edit-harness/scenarios_*.go` | 83 scenarios across core, combo, wrap, gap, undo |
 | `third_party/keywriter/build-keywriter.sh` | `handleMacArrow`, `lineDownPos` vs `positionToRectangle` |
 | Git log around `1a77f7b`–`d5ab632` | QML fixes vs doc "shipped" claims |
-| `docs/editor-testing/scenario-cookbook.md` § Priority order | Compare to what was actually ported |
+| `docs/editor-testing/scenario-cookbook.md` § Priority order | Open kernel clusters vs ported scenarios |
 
 ### What would have been honest sign-off language
 
@@ -167,9 +170,11 @@ Instead: "13 `\n`-based harness scenarios PASS on device with `--hard-reset`. Wr
 
 ---
 
+*Historical — scenarios below were added 2026-07-14/15 (`scenarios_*.go`, `wrap_fixtures.go`, width pinning). Kept for traceability. Current failures and next kernel work: [todo.md](todo.md).*
+
 ## Required test scenarios (expanded from prior failures)
 
-The prior agent treated 13 passing `\n`-only scenarios as sign-off. The scenarios below are the missing acceptance surface. Add them before fixing QML; run all on device with `--fast --hard-reset` before pruning TODO or DONE.
+The prior agent treated 13 passing `\n`-only scenarios as sign-off. The scenarios below were the missing acceptance surface (now ported). Run all on device with `--fast` (sandbox-prepare) before pruning TODO or DONE.
 
 ### Bug → scenario traceability
 
@@ -294,7 +299,7 @@ Do not drop these when adding new files; soft-reset cascade failures may return 
 
 All of the following on one device run (`bash scripts/test-keyboard-harness.sh --fast`):
 
-1. All 62 scenarios PASS — baseline 2026-07-14: 37 pass, 25 fail (see [todo.md](todo.md))
+1. All **83** scenarios PASS — best so far **38/44** @ `00-08-41`; latest full 83 **35/45** @ `00-56-17`; combo tag **9/13** @ `22ad701` (see [todo.md](todo.md), [milestone-runs.md](milestone-runs.md))
 2. `test-edit-session.sh` PASS
 3. `journalctl -u writerdeck -n 30` clean
 

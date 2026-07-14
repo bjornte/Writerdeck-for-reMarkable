@@ -1,11 +1,14 @@
 # Editor testing
 
-Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path via `edit-harness`; USB is spot-check only.
+Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path via `edit-harness`; USB is spot-check only. Sign-off: **83/83 PASS** (`--fast`).
 
 | File | Purpose |
 |------|---------|
-| [todo.md](todo.md) | **Fresh agent handoff** — baseline 37/25, failure clusters, do-not-retry, next steps |
-| [scenario-cookbook.md](scenario-cookbook.md) | Scenario specs; most blocks now ported into `scenarios_*.go` |
+| [scenario-catalog.md](scenario-catalog.md) | **All 83 scenarios** — business-logic inventory |
+| [todo.md](todo.md) | **Fresh agent handoff** — scores, failure clusters, do-not-retry |
+| [milestone-runs.md](milestone-runs.md) | **Full-suite scoreboard** — update after each `--fast` full run (no `-s`/`--tag`) |
+| [harness-runs.md](../recon/harness-runs.md) | Consolidated run log and per-scenario matrix |
+| [scenario-cookbook.md](scenario-cookbook.md) | Source catalogs (CodeMirror/Qt) and porting notation |
 | [llm-handoff-test-failures.md](llm-handoff-test-failures.md) | Historical methodology review; see todo.md for current state |
 
 Code: `daemon/cmd/edit-harness/`, `scripts/test-keyboard-harness.sh`. Policy: [decisions.md](../decisions.md) §22. Gotchas and batch workflow: [lessons.md](../lessons.md) § Keyboard and selection.

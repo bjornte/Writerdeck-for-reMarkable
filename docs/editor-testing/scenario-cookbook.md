@@ -1,6 +1,6 @@
 # Scenario cookbook
 
-Portable keyboard/selection cases to port into `daemon/cmd/edit-harness/scenarios_regression.go`. Sources: [@codemirror/commands test-movement.ts](https://github.com/codemirror/commands/blob/main/test/test-movement.ts) (best catalog), Qt [tst_qplaintextedit.cpp](https://codebrowser.dev/qt5/qtbase/tests/auto/widgets/widgets/qplaintextedit/tst_qplaintextedit.cpp) (same text engine as keywriter).
+Portable keyboard/selection cases; full inventory of running tests: [scenario-catalog.md](scenario-catalog.md). Sources and notation below. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`.
 
 Scintilla `test/unit/testSelection.cxx` tests internal selection structs only — not useful here.
 
@@ -92,14 +92,11 @@ From `commands.ts` keymap: Alt+Backspace = word backward; Mod+Backspace = line b
 | `undoRedoShouldRepositionTextEditCursor` | edit mid-doc, undo | cursor returns — high value for Ctrl+Z bug |
 | `shiftDownInLineLastShouldSelectToEnd` | wrapped `Foo\nBar` | Shift+Down on last visual line selects to EOF — needs fixed widget width or long unbroken line |
 
-Wrapped-line Qt cases need a fixed `query.width` in QML or very long single-line content so wrap is deterministic on device.
+Wrapped-line cases use harness `Width` (320px) and calibrated byte offsets in `daemon/cmd/edit-harness/wrap_fixtures.go` via `harnessprepare`.
 
 ## Priority order
 
-1. Failures in existing `scenarios_regression.go`
-2. CodeMirror vertical selection block (`cm-select-*`, `cm-line-down-*`)
-3. Qt undo cursor reposition
-4. Wrapped-line cases once width is pinned in harness setup
+Fix open clusters in [todo.md](todo.md) first: Shift+Ctrl/Alt combos, wrap visual-line down, CM goal-col/selection, undo cursor restore, Alt-only nav from 0, `wordLeftPos`. Most cookbook blocks are already in `scenarios_*.go`; add a scenario only when a reported bug has no matching name in `bash scripts/test-keyboard-harness.sh --list`.
 
 ## What not to port
 
