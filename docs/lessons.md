@@ -92,6 +92,8 @@ Soft reset between scenarios in a full run can cascade (later scenarios see stal
 
 Anti-pattern that wasted a full session: fix one scenario → push → CI → deploy → `-s` one scenario → repeat. Correct pattern: triage all → batch fix → one deploy → rerun all failures.
 
+Do not mark keyboard editing done when only newline-based harness scenarios pass. Wrapped paragraphs and Shift+Alt/Ctrl+arrow combos were explicit scope; `\n`-only tests do not cover them.
+
 `TextEdit.moveCursorSelection` takes a character index, not `TextEdit.Down` / `TextEdit.Up`. Passing direction enums selects toward a low position and breaks shift+vertical. Use `lineDownPos` / `lineUpPos` and explicit anchor math (same model as horizontal `extendSelectionHorizontal`). Setting `query.cursorPosition` after `query.select()` collapses the selection.
 
 Saved-file guessing for selection tests was unreliable. Assert `cursor`, `selStart`, `selEnd`, and `textLen` from the editor-state probe instead.

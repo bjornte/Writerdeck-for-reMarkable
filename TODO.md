@@ -9,8 +9,7 @@ Keystrokes reach the editor over `/run/Writerdeck.sock`, not uinput ([docs/decis
 ## Next unchecked
 
 1. Physical Home — single input path. Handoff: [docs/todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md).
-2. Edit scroll/cursor — spot-check last-line typing on e-ink (harness covers logical line down; manual verify for auto-scroll feel).
-3. Undo/redo — device verify for `scenarios_undo.go`. Handoff: [docs/editor-testing/todo.md](docs/editor-testing/todo.md).
+2. Keyboard editing — Mac-style modifiers on device, including wrapped paragraphs (not just `\n` lines), Shift+Alt/Ctrl+arrows, undo/redo. Handoff: [docs/editor-testing/todo.md](docs/editor-testing/todo.md).
 
 ## Open question
 
@@ -19,6 +18,6 @@ Stay firmware-update-current? Each OTA resets the SSH password and may wipe the 
 ## Resume prompt
 
 > Project: reMarkable 1 Wi-Fi Markdown typewriter. Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Mac deploys; iPhone uses.
-> Shipped: [DONE.md](DONE.md). Next unchecked: Physical Home ([todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md)); edit scroll/cursor e-ink spot-check; undo harness device verify ([editor-testing/todo.md](docs/editor-testing/todo.md)). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `test-edit-session.sh` (§21); after arrow/selection QML: `test-keyboard-harness.sh` (§22).
+> Shipped: [DONE.md](DONE.md). Next unchecked: Physical Home; keyboard editing (wrapped lines, modifier combos, undo — [editor-testing/todo.md](docs/editor-testing/todo.md)). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `test-edit-session.sh` (§21); after arrow/selection QML: `test-keyboard-harness.sh` (§22).
 > Read: architecture, decisions, DONE, lessons, browser-vs-tablet, integrity-audit. Device: `secrets/remarkable.local.env` (`RM_HOST_WIFI`).
 > Constraints: no jailbreak/OTA/Toltec; `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`.

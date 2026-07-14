@@ -34,7 +34,7 @@ Reading font, PIN length, display rotation, and Exit Writerdeck live on the tabl
 
 ## Editor
 
-Built from upstream remarkable-keywriter, deployed as Writerdeck, patched for socket input. Full-panel via linuxfb. Norwegian and other Unicode via the browser path; USB Norwegian (`no.qmap`) verified on hardware — æ ø å, AltGr, `@`, `{` `}`. Reading fonts: Inter, Literata, EB Garamond, DejaVu. Page up and down in read and edit. Block cursor hides while typing. Ctrl-K note switcher. Mac-style navigation in edit — word/line delete (Alt/Ctrl+Backspace), shift selection extend/shrink, logical line down; device harness in `scenarios.go` and `scenarios_regression.go` (`test-keyboard-harness.sh`). Power button saves, shows a sleep screen, suspends; press again to wake (device verified). USB Esc from stock UI launches to Lobby. Rotation in settings, pushed on connect.
+Built from upstream remarkable-keywriter, deployed as Writerdeck, patched for socket input. Full-panel via linuxfb. Norwegian and other Unicode via the browser path; USB Norwegian (`no.qmap`) verified on hardware — æ ø å, AltGr, `@`, `{` `}`. Reading fonts: Inter, Literata, EB Garamond, DejaVu. Page up and down in read and edit. Block cursor hides while typing. Ctrl-K note switcher. Mac-style navigation in edit (partial — see [editor-testing/todo.md](docs/editor-testing/todo.md)). Power button saves, shows a sleep screen, suspends; press again to wake (device verified). USB Esc from stock UI launches to Lobby. Rotation in settings, pushed on connect.
 
 ## GitHub sync
 

@@ -1,32 +1,50 @@
-# Keyboard harness — remaining verify
+# TODO: Keyboard editing + harness
 
-Mac-style editing over the phone/WebSocket path is covered by `scenarios.go` and `scenarios_regression.go` (device PASS with `--fast --hard-reset` as of 2026-07). This file tracks what is still open and how to extend the harness.
+Mac-style editing in Writerdeck (`handleKey` / `handleMacArrow` in `build-keywriter.sh`). Drive fixes through the device keyboard harness — not manual Lobby typing.
 
 Read: [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) § Keyboard and selection, [decisions.md](../decisions.md) §22.
 
-## Open
+## Not done — do not sign off without these
 
-- Undo/redo — five scenarios in `scenarios_undo.go` need device PASS (`bash scripts/test-keyboard-harness.sh -m undo --fast --hard-reset`).
+Thirteen harness scenarios pass on device (`scenarios.go` + `scenarios_regression.go`), but they use explicit `\n` line breaks, not wrapped paragraphs. That is not the same as the reported bugs.
 
-## Harness layout
+Still open:
+
+- **Wrapped paragraphs** — Down/Up and Shift+Down/Up must move/select by visual line (`positionToRectangle`), not `lineDownPos` newline math. No harness scenario yet; cookbook priority #4.
+- **Shift+Alt / Shift+Ctrl arrows** — no scenarios, not device-verified (QML has code paths; unknown if correct).
+- **Undo/redo** — five scenarios in `scenarios_undo.go`; not device-verified.
+- **Auto-scroll on e-ink** — last wrapped line typing feel; manual spot-check after wrap logic lands.
+
+Original reported bugs (still the acceptance bar):
+
+- Alt+Backspace word delete — harness PASS on flat line only
+- Ctrl+Backspace line delete — harness PASS on `\n` lines only
+- Arrow Down in a **wrapped** multiline paragraph — not tested
+- Shift+Down then Shift+Up shrink on wrapped lines — not tested
+- Repeated Shift+Left — harness PASS on single line
+- Ctrl+Z undo — scenarios added, not verified
+
+## Harness
 
 | Piece | Path |
 |-------|------|
-| Scenarios (core) | `daemon/cmd/edit-harness/scenarios.go` |
-| Scenarios (regressions) | `daemon/cmd/edit-harness/scenarios_regression.go` |
-| Scenarios (undo) | `daemon/cmd/edit-harness/scenarios_undo.go` |
+| Core | `daemon/cmd/edit-harness/scenarios.go` |
+| Regressions | `daemon/cmd/edit-harness/scenarios_regression.go` |
+| Undo | `daemon/cmd/edit-harness/scenarios_undo.go` |
 | Runner | `daemon/cmd/edit-harness/main.go` |
-| Shell wrapper | `scripts/test-keyboard-harness.sh` |
-| QML key logic | `third_party/keywriter/build-keywriter.sh` |
+| Shell | `scripts/test-keyboard-harness.sh` |
+| QML | `third_party/keywriter/build-keywriter.sh` |
 
-## Dev loop (batch first)
+Wrapped-line scenarios need pinned `query.width` in harness setup or long unbroken content — see cookbook § Wrapped-line Qt cases.
 
-Debugging and sign-off are different jobs. See [lessons.md](../lessons.md) § Device verify and iteration and § Harness batch workflow.
+## Dev loop
 
-Triage once: `--unit`, then `--fast --hard-reset`. Classify FAILs from `docs/recon/test-keyboard-harness-*.txt`. Confirm with `-s NAME --fast` on the same binary — no deploy between. Batch harness fixes locally; batch QML fixes; at most one Writerdeck deploy per session before the next full rerun. Sign-off: full suite `--hard-reset`, `test-edit-session.sh`, clean `journalctl`.
+[lessons.md](../lessons.md) § Harness batch workflow. Triage once (`--unit`, `--fast --hard-reset`), batch fixes, one deploy max. Partial harness green is not sign-off.
 
-Port new cases from [scenario-cookbook.md](scenario-cookbook.md) into `scenarios_regression.go` or `scenarios_undo.go`, then `--unit`.
+## Acceptance
+
+Full suite PASS with `--fast --hard-reset`, including wrapped-line and modifier-combo scenarios not yet written. `test-edit-session.sh` PASS. Clean `journalctl`.
 
 ## Resume prompt
 
-> Read this file and `scenario-cookbook.md`. Run `bash scripts/test-keyboard-harness.sh -m undo --fast --hard-reset`. Fix QML or scenarios in batch; one deploy max. Sign-off: full suite `--hard-reset`, `test-edit-session.sh`, clean journalctl.
+> Read this file. Add wrapped-line and Shift+Alt/Ctrl scenarios first, then run full harness. Do not mark keyboard editing done until wrap and modifier combos pass on device.
