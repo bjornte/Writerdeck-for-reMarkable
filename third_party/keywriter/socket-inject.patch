@@ -94,9 +94,11 @@
 +            QKeyEvent press(QEvent::KeyPress, key, mods, text);
 +            QKeyEvent release(QEvent::KeyRelease, key, mods, text);
 +            QCoreApplication::sendEvent(win, &press);
-+            // Send release for modified keys unless Shift is held (Ctrl+Shift+Left
-+            // release can delete the buffer). Omitting release poisons later keys.
-+            if (mods == Qt::NoModifier || !(mods & Qt::ShiftModifier))
++            // Send release for modified keys unless both Shift and Ctrl are held
++            // (Ctrl+Shift+Left release can delete the buffer). Shift-only keys
++            // need release or the next key is poisoned (Shift+End -> lobby).
++            bool blockRelease = (mods & Qt::ShiftModifier) && (mods & Qt::ControlModifier);
++            if (!blockRelease)
 +                QCoreApplication::sendEvent(win, &release);
 +        }, Qt::QueuedConnection);
 +    };
