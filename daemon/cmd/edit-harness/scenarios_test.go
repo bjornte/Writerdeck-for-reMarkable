@@ -38,14 +38,36 @@ func TestScenarioContentValid(t *testing.T) {
 				}
 			}
 			check("cursor", step.Expect.Cursor)
+			check("cursorMin", step.Expect.CursorMin)
+			check("cursorMax", step.Expect.CursorMax)
 			check("selStart", step.Expect.SelStart)
 			check("selEnd", step.Expect.SelEnd)
+			if step.Expect.CursorMin != nil && step.Expect.CursorMax != nil && *step.Expect.CursorMin > *step.Expect.CursorMax {
+				t.Fatalf("%s step %d: cursorMin > cursorMax", sc.Name, i)
+			}
 			if step.Expect.TextLen != nil && *step.Expect.TextLen < 0 {
 				t.Fatalf("%s step %d: textLen=%d invalid", sc.Name, i, *step.Expect.TextLen)
 			}
 			if step.Expect.SelLen != nil && *step.Expect.SelLen < 0 {
 				t.Fatalf("%s step %d: selLen=%d invalid", sc.Name, i, *step.Expect.SelLen)
 			}
+			if step.Expect.SelLenMin != nil && *step.Expect.SelLenMin < 0 {
+				t.Fatalf("%s step %d: selLenMin=%d invalid", sc.Name, i, *step.Expect.SelLenMin)
+			}
+		}
+	}
+}
+
+func TestScenarioCount(t *testing.T) {
+	if n := len(AllScenarios()); n < 60 {
+		t.Fatalf("expected at least 60 scenarios, got %d", n)
+	}
+}
+
+func TestWrapScenariosHaveWidth(t *testing.T) {
+	for _, sc := range wrapScenarios() {
+		if sc.Width <= 0 {
+			t.Fatalf("wrap scenario %q missing Width", sc.Name)
 		}
 	}
 }

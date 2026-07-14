@@ -139,15 +139,21 @@ func testEditorCmdHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		C    string `json:"c"`
 		Name string `json:"name,omitempty"`
+		W    int    `json:"w,omitempty"`
 	}
 	if json.NewDecoder(r.Body).Decode(&req) != nil || req.C == "" {
 		http.Error(w, "bad request: need {c}", http.StatusBadRequest)
 		return
 	}
 	var line string
-	if req.Name != "" {
+	switch {
+	case req.Name != "" && req.W > 0:
+		line = fmt.Sprintf(`{"t":"cmd","c":%q,"name":%q,"w":%d}`, req.C, req.Name, req.W)
+	case req.Name != "":
 		line = fmt.Sprintf(`{"t":"cmd","c":%q,"name":%q}`, req.C, req.Name)
-	} else {
+	case req.W > 0:
+		line = fmt.Sprintf(`{"t":"cmd","c":%q,"w":%d}`, req.C, req.W)
+	default:
 		line = fmt.Sprintf(`{"t":"cmd","c":%q}`, req.C)
 	}
 	globalEC.write([]byte(line))

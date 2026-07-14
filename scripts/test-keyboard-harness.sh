@@ -10,8 +10,13 @@
 #   3. Batch harness fixes locally; batch QML fixes; at most one Writerdeck deploy
 #   4. Sign-off: full suite --fast --hard-reset
 #
+# Writes docs/recon/test-keyboard-harness-TIMESTAMP.txt and .md (results table).
+# Full suite: 60 scenarios (core, regression, cm, combo, bs, wrap, undo).
+#
 # Soft reset (default full run) can cascade: later scenarios may fail prepare while
-# -s NAME alone passes. Use --hard-reset for reliable sign-off, not only debugging.
+# -s NAME alone passes. The harness detects this (PREPARE_FAIL, POISON_SUSPECT,
+# CASCADE_SUSPECT in docs/recon/ log) and auto hard-resets once before each scenario.
+# Use --hard-reset for sign-off when you want zero recovery ambiguity.
 #
 # Usage:
 #   bash scripts/test-keyboard-harness.sh              # all scenarios (soft reset)
@@ -54,6 +59,7 @@ RECON_DIR="$REPO/docs/recon"
 mkdir -p "$RECON_DIR"
 TS="$(date +%Y-%m-%dT%H-%M-%S)"
 LOG="$RECON_DIR/test-keyboard-harness-$TS.txt"
+REPORT="$RECON_DIR/test-keyboard-harness-$TS.md"
 
 if printf '%s\n' "${EXTRA[@]}" | grep -q -- '-unit'; then
   {
@@ -63,7 +69,7 @@ if printf '%s\n' "${EXTRA[@]}" | grep -q -- '-unit'; then
   exit "${PIPESTATUS[0]}"
 fi
 
-ARGS=(-host "$TARGET" -port 8000)
+ARGS=(-host "$TARGET" -port 8000 -report-md "$REPORT")
 if [ -n "$SCENARIO" ]; then
   ARGS+=(-scenario "$SCENARIO")
 fi

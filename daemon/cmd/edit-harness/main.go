@@ -40,12 +40,15 @@ type Key struct {
 }
 
 type StateExpect struct {
-	Cursor   *int `json:"cursor,omitempty"`
-	SelStart *int `json:"selStart,omitempty"`
-	SelEnd   *int `json:"selEnd,omitempty"`
-	SelLen   *int `json:"selLen,omitempty"`
-	TextLen  *int `json:"textLen,omitempty"`
-	Mode     *int `json:"mode,omitempty"`
+	Cursor    *int `json:"cursor,omitempty"`
+	CursorMin *int `json:"cursorMin,omitempty"`
+	CursorMax *int `json:"cursorMax,omitempty"`
+	SelStart  *int `json:"selStart,omitempty"`
+	SelEnd    *int `json:"selEnd,omitempty"`
+	SelLen    *int `json:"selLen,omitempty"`
+	SelLenMin *int `json:"selLenMin,omitempty"`
+	TextLen   *int `json:"textLen,omitempty"`
+	Mode      *int `json:"mode,omitempty"`
 }
 
 type Step struct {
@@ -58,6 +61,7 @@ type Step struct {
 type Scenario struct {
 	Name    string `json:"name"`
 	Content string `json:"content"`
+	Width   int    `json:"width,omitempty"` // harness wrap width in pixels; 0 = default
 	Steps   []Step `json:"steps"`
 }
 
@@ -77,6 +81,7 @@ type Harness struct {
 	port       int
 	verbose    bool
 	noPrepare  bool
+	hardReset  bool
 	reloadPoll time.Duration
 	resetWait  time.Duration
 }
@@ -92,6 +97,7 @@ func main() {
 	hardReset := flag.Bool("hard-reset", false, "quit editor before each scenario (slow; default is one hard reset then soft reloads)")
 	fast := flag.Bool("fast", false, "shorter key/step pauses for dev iteration")
 	noPrepare := flag.Bool("no-prepare", false, "skip note PUT/reload (reuse open buffer; same scenario only)")
+	reportMD := flag.String("report-md", "", "write markdown results table to this path")
 	flag.Parse()
 
 	if *fast {
@@ -110,6 +116,7 @@ func main() {
 		port:       *port,
 		verbose:    *verbose,
 		noPrepare:  *noPrepare,
+		hardReset:  *hardReset,
 		reloadPoll: 200 * time.Millisecond,
 		resetWait:  800 * time.Millisecond,
 	}
@@ -159,31 +166,63 @@ func main() {
 		fmt.Println("mode: soft-reset (reload note in live editor)")
 	}
 
+	runStarted := time.Now()
+	modeLabel := "soft-reset (single launch)"
+	if *hardReset {
+		modeLabel = "hard-reset (editor quit per scenario)"
+	}
+
+	var setupDur time.Duration
 	// One cold start for a full suite; single-scenario runs rely on soft prepare
 	// to launch the editor if needed.
 	if !*hardReset && len(run) > 1 {
+		setupStart := time.Now()
 		if err := h.hardResetEditor(); err != nil {
 			fmt.Fprintf(os.Stderr, "FAIL setup: %v\n", err)
 			os.Exit(1)
 		}
+		setupDur = time.Since(setupStart)
 	}
 
-	failed := 0
+	var results []scenarioResult
 	for i, sc := range run {
-		if *hardReset {
-			if err := h.hardResetEditor(); err != nil {
-				fmt.Fprintf(os.Stderr, "FAIL %s: reset: %v\n", sc.Name, err)
-				failed++
-				continue
-			}
-		} else if i == 0 && len(run) == 1 {
-			// Fast path for -scenario: no quit unless the editor is not running yet.
+		res := h.runScenarioTimed(sc)
+		if i == 0 && setupDur > 0 {
+			res.Duration += setupDur
 		}
-		if err := h.RunScenario(sc); err != nil {
-			fmt.Fprintf(os.Stderr, "FAIL %s: %v\n", sc.Name, err)
-			failed++
+		results = append(results, res)
+		switch res.Kind {
+		case outcomePass:
+			fmt.Printf("PASS %s (%.1fs)\n", sc.Name, res.Duration.Seconds())
+		case outcomePrepareFail:
+			fmt.Fprintf(os.Stderr, "PREPARE_FAIL %s (%.1fs): %s\n", sc.Name, res.Duration.Seconds(), res.Err)
+		default:
+			fmt.Fprintf(os.Stderr, "FAIL %s (%.1fs): %s\n", sc.Name, res.Duration.Seconds(), res.Err)
+		}
+	}
+	if report := formatContaminationReport(results); report != "" {
+		fmt.Fprint(os.Stderr, report)
+	}
+	if *reportMD != "" {
+		meta := runMeta{
+			StartedAt:     runStarted,
+			Target:        fmt.Sprintf("%s:%d", *host, *port),
+			Mode:          modeLabel,
+			Fast:          *fast,
+			ScenarioCount: len(run),
+			SetupDuration: setupDur,
+		}
+		md := formatMarkdownReport(meta, results)
+		if err := os.WriteFile(*reportMD, []byte(md), 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "report-md: %v\n", err)
 		} else {
-			fmt.Printf("PASS %s\n", sc.Name)
+			fmt.Printf("report: %s\n", *reportMD)
+		}
+	}
+	failed := 0
+	for _, r := range results {
+		if r.Kind != outcomePass {
+			failed++
 		}
 	}
 	if failed > 0 {
@@ -191,13 +230,94 @@ func main() {
 	}
 }
 
-func (h *Harness) RunScenario(sc Scenario) error {
-	if !h.noPrepare {
-		if err := h.softPrepare(sc.Content); err != nil {
-			return err
+func (h *Harness) runScenarioTimed(sc Scenario) scenarioResult {
+	start := time.Now()
+	if h.hardReset {
+		resetStart := time.Now()
+		if err := h.hardResetEditor(); err != nil {
+			return scenarioResult{
+				Name:          sc.Name,
+				Kind:          outcomePrepareFail,
+				Err:           fmt.Sprintf("reset: %v", err),
+				Duration:      time.Since(start),
+				ResetDuration: time.Since(resetStart),
+			}
+		}
+		res := h.runScenarioTracked(sc)
+		res.Duration = time.Since(start)
+		res.ResetDuration = time.Since(resetStart)
+		return res
+	}
+	res := h.runScenarioTracked(sc)
+	res.Duration = time.Since(start)
+	return res
+}
+
+func (h *Harness) runScenarioTracked(sc Scenario) scenarioResult {
+	if h.noPrepare {
+		if err := h.RunScenario(sc); err != nil {
+			return scenarioResult{Name: sc.Name, Kind: outcomeFail, Err: err.Error()}
+		}
+		return scenarioResult{Name: sc.Name, Kind: outcomePass}
+	}
+	recovered, err := h.prepareWithRecovery(sc)
+	if err != nil {
+		return scenarioResult{
+			Name:             sc.Name,
+			Kind:             outcomePrepareFail,
+			Err:              err.Error(),
+			PrepareRecovered: recovered,
 		}
 	}
+	if err := h.RunScenario(sc); err != nil {
+		health := h.notePostScenarioHealth(sc.Name)
+		return scenarioResult{Name: sc.Name, Kind: outcomeFail, Err: err.Error(), PrepareRecovered: recovered, HealthNotes: health}
+	}
+	return scenarioResult{Name: sc.Name, Kind: outcomePass, PrepareRecovered: recovered}
+}
 
+// prepareWithRecovery loads scenario content and verifies a clean edit buffer.
+// On failure it hard-resets once (unless already in hard-reset mode) and retries.
+func (h *Harness) prepareWithRecovery(sc Scenario) (recovered bool, err error) {
+	if err := h.softPrepare(sc); err == nil {
+		return false, nil
+	} else if h.hardReset {
+		return false, err
+	}
+	if h.verbose {
+		fmt.Fprintf(os.Stderr, "  prepare dirty, hard-reset retry: %v\n", err)
+	}
+	if resetErr := h.hardResetEditor(); resetErr != nil {
+		return false, fmt.Errorf("prepare: %w; hard-reset: %v", err, resetErr)
+	}
+	if retryErr := h.softPrepare(sc); retryErr != nil {
+		return false, fmt.Errorf("prepare after hard-reset: %w (initial: %v)", retryErr, err)
+	}
+	return true, nil
+}
+
+func (h *Harness) notePostScenarioHealth(scenario string) []string {
+	st, err := h.queryState()
+	if err != nil {
+		msg := fmt.Sprintf("editor unreachable after fail: %v", err)
+		fmt.Fprintf(os.Stderr, "  HEALTH %s: %s\n", scenario, msg)
+		return []string{msg}
+	}
+	var notes []string
+	if st.IsLobby == 1 {
+		msg := "editor in lobby after fail"
+		fmt.Fprintf(os.Stderr, "  HEALTH %s: %s\n", scenario, msg)
+		notes = append(notes, msg)
+	}
+	if st.Mode != 1 {
+		msg := fmt.Sprintf("not in edit mode (mode=%d) after fail", st.Mode)
+		fmt.Fprintf(os.Stderr, "  HEALTH %s: %s\n", scenario, msg)
+		notes = append(notes, msg)
+	}
+	return notes
+}
+
+func (h *Harness) RunScenario(sc Scenario) error {
 	ws, err := h.dialWS()
 	if err != nil {
 		return fmt.Errorf("websocket: %w", err)
@@ -241,12 +361,21 @@ func (h *Harness) RunScenario(sc Scenario) error {
 }
 
 // softPrepare reloads harness content in the live editor and clears selection.
-func (h *Harness) softPrepare(content string) error {
+func (h *Harness) softPrepare(sc Scenario) error {
+	content := sc.Content
 	if err := h.writeNote(content); err != nil {
 		return fmt.Errorf("write: %w", err)
 	}
 	if err := h.reloadHarnessNote(content); err != nil {
 		return fmt.Errorf("reload: %w", err)
+	}
+	if sc.Width > 0 {
+		if err := h.setHarnessWidth(sc.Width); err != nil {
+			return fmt.Errorf("harnesswidth: %w", err)
+		}
+		if err := h.reloadHarnessNote(content); err != nil {
+			return fmt.Errorf("reload after width: %w", err)
+		}
 	}
 	ws, err := h.dialWS()
 	if err != nil {
@@ -268,6 +397,27 @@ func (h *Harness) softPrepare(content string) error {
 	}
 	if st.Cursor != 0 || st.SelStart != 0 || st.SelEnd != 0 {
 		return fmt.Errorf("after home: cursor/selection not clean: %v", st)
+	}
+	if st.Mode != 1 {
+		return fmt.Errorf("after home: want edit mode 1 got %d", st.Mode)
+	}
+	if st.IsLobby == 1 {
+		return fmt.Errorf("after home: editor still in lobby")
+	}
+	if st.CurrentFile != harnessNote {
+		return fmt.Errorf("after home: currentFile want %q got %q", harnessNote, st.CurrentFile)
+	}
+	return nil
+}
+
+func (h *Harness) setHarnessWidth(px int) error {
+	body, _ := json.Marshal(map[string]interface{}{"c": "harnesswidth", "w": px})
+	code, err := h.post("/api/test/editor-cmd", body)
+	if err != nil {
+		return err
+	}
+	if code != 200 {
+		return fmt.Errorf("harnesswidth HTTP %d", code)
 	}
 	return nil
 }
@@ -502,6 +652,12 @@ func matchExpect(got EditorState, exp StateExpect) error {
 		}
 	}
 	check("cursor", exp.Cursor, got.Cursor)
+	if exp.CursorMin != nil && got.Cursor < *exp.CursorMin {
+		errs = append(errs, fmt.Sprintf("cursorMin want >= %d got %d", *exp.CursorMin, got.Cursor))
+	}
+	if exp.CursorMax != nil && got.Cursor > *exp.CursorMax {
+		errs = append(errs, fmt.Sprintf("cursorMax want <= %d got %d", *exp.CursorMax, got.Cursor))
+	}
 	check("selStart", exp.SelStart, got.SelStart)
 	check("selEnd", exp.SelEnd, got.SelEnd)
 	check("textLen", exp.TextLen, got.TextLen)
@@ -510,6 +666,12 @@ func matchExpect(got EditorState, exp StateExpect) error {
 		have := got.selLen()
 		if *exp.SelLen != have {
 			errs = append(errs, fmt.Sprintf("selLen want %d got %d", *exp.SelLen, have))
+		}
+	}
+	if exp.SelLenMin != nil {
+		have := got.selLen()
+		if have < *exp.SelLenMin {
+			errs = append(errs, fmt.Sprintf("selLenMin want >= %d got %d", *exp.SelLenMin, have))
 		}
 	}
 	if len(errs) > 0 {

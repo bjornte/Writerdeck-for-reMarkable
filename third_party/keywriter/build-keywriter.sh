@@ -1308,7 +1308,9 @@ s = s.replace(
     '    property string readFont: "Inter"',
     '    property string readFont: "Inter"\n'
     '    property bool cursorStrong: true\n'
-    '    property string autosaveSnapshot: ""',
+    '    property string autosaveSnapshot: ""\n'
+    '    property int harnessTextWidth: 0\n'
+    '    property int harnessDefaultQueryWidth: 0',
     1
 )
 
@@ -1407,6 +1409,19 @@ s = s.replace(old7n_ku, new7n_ku, 1)
 
 old7n_fn = '    function showLobby() {'
 new7n_fn = (
+    '    function harnessSetWidth(w) {\n'
+    '        if (mode != 1) return\n'
+    '        if (harnessDefaultQueryWidth <= 0 && query.width > 0)\n'
+    '            harnessDefaultQueryWidth = query.width\n'
+    '        if (w > 0) {\n'
+    '            harnessTextWidth = w\n'
+    '            query.width = w\n'
+    '        } else if (harnessDefaultQueryWidth > 0) {\n'
+    '            harnessTextWidth = 0\n'
+    '            query.width = harnessDefaultQueryWidth\n'
+    '        }\n'
+    '    }\n'
+    '\n'
     '    function publishEditorState() {\n'
     '        writerdeck.publishState(query.cursorPosition, query.selectionStart,\n'
     '            query.selectionEnd, query.text.length, mode, isLobby ? 1 : 0,\n'

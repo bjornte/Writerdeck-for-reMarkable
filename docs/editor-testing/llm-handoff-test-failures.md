@@ -26,7 +26,7 @@ Deliver a structured assessment covering:
 4. **Cookbook use** — The project has a scenario cookbook sourced from CodeMirror/Qt. Was it used correctly? How should priority order be enforced so "port next" items are not skipped?
 5. **Process anti-patterns** — The prior session deployed Writerdeck many times (fix one scenario → push → CI → deploy). Propose a batch-triage workflow that still satisfies on-device verify rules.
 6. **Modifier matrix** — Writerdeck claims Mac-style bindings. Propose a minimal test matrix for Shift, Alt, Ctrl, and combinations on arrows, Home/End, Backspace — phone/WebSocket path only.
-7. **Concrete next steps** — Ordered list: scenarios to add first, harness infrastructure changes (e.g. pinned `query.width`), QML changes likely needed, and one device run plan.
+7. **Concrete next steps** — Ordered list: scenarios to add first, harness infrastructure changes (e.g. pinned `query.width`), QML changes likely needed, and one device run plan. Start from the "Required test scenarios" section at the bottom of this file — treat it as the acceptance backlog, not a suggestion list.
 
 Be specific. Reference file paths and function names. Do not mark anything shipped or done unless you can point to a passing device run that covers the user-reported bug class. Separate "harness exists" from "behavior verified on device."
 
@@ -162,3 +162,142 @@ Soft-reset full suite had known cascade failures (scenarios pass in isolation wi
 Not: "keyboard editing fixed, harness PASS."
 
 Instead: "13 `\n`-based harness scenarios PASS on device with `--hard-reset`. Wrapped-paragraph Down/Shift+vertical, Shift+Alt/Ctrl arrows, and undo scenarios not tested. QML may still use newline math for vertical motion; wrap bug likely open. Do not prune TODO."
+
+---
+
+## Required test scenarios (expanded from prior failures)
+
+The prior agent treated 13 passing `\n`-only scenarios as sign-off. The scenarios below are the missing acceptance surface. Add them before fixing QML; run all on device with `--fast --hard-reset` before pruning TODO or DONE.
+
+### Bug → scenario traceability
+
+| Reported bug | Existing scenario | Device status | Gap |
+|--------------|-------------------|---------------|-----|
+| Alt+Backspace word delete | `alt-backspace-deletes-word` | PASS (flat line) | No mid-line cursor; no selection-first |
+| Ctrl+Backspace line delete | `ctrl-backspace-deletes-line` | PASS (`\n` lines) | No wrapped paragraph; cursor not at line start |
+| Arrow Down in wrapped paragraph | `down-one-logical-line` | PASS but **wrong abstraction** | Mislabeled; only tests `\n`. Needs `wrap-*` |
+| Shift+Down then Shift+Up on wrap | `shift-down-then-up-shrinks` | PASS (`\n` only) | Same. Needs `wrap-shift-down-then-up` |
+| Repeated Shift+Left | `shift-left-repeat-from-end` | PASS (single line) | OK for flat line; add `\n` mid-doc variant |
+| Ctrl+Z undo wrong | `scenarios_undo.go` (×5) | **Never run on device** | Must PASS before sign-off |
+| Shift+Alt / Shift+Ctrl arrows | — | None | Full `combo-*` block below |
+| CodeMirror vertical block | — | None | `cm-*` from cookbook priority #2 |
+
+Rename or comment `down-one-logical-line` so future agents do not confuse it with wrapped-paragraph Down.
+
+### Harness infrastructure (blocks wrap scenarios)
+
+E-ink wrap is width-dependent. The prior agent never added pinning; wrap scenarios cannot be deterministic without it.
+
+1. Extend `Scenario` in `daemon/cmd/edit-harness/main.go` with optional `Width int` (pixels).
+2. Harness setup: WebSocket or REST hook sets `query.width` (or equivalent) before content load.
+3. QML in `build-keywriter.sh`: expose width override for harness sessions only (env flag or test API).
+4. Calibrate once on device: fixed width W, font metrics → record byte offsets for a canonical wrap string (store in scenario comments or a small `wrap_fixtures.go`).
+
+Until width pinning lands, long unbroken strings are a flaky fallback — do not sign off on them alone.
+
+### Wrapped-line scenarios (`scenarios_wrap.go` — new file)
+
+All use a single logical line (no `\n`) unless noted. Positions are placeholders until width W is calibrated; replace `???` after first device calibration run.
+
+| Name | Content sketch | Steps | Expected behavior | QML path |
+|------|----------------|-------|-------------------|----------|
+| `wrap-down-one-visual-line` | `"aaaa…"` (~40 chars, wraps to ≥2 visual lines at W) | Ctrl+Home; Down×1 | Cursor advances one **visual** row, not EOF or `\n` end | `moveCursorVertical` → must use `positionToRectangle`, not `lineDownPos` |
+| `wrap-down-goal-column` | short first visual line + longer second (same string, cursor col 2) | set cursor col 2 on line 1; Down | Column preserved on shorter visual line 2 | goal-column in visual space |
+| `wrap-down-last-visual-line` | wrapped paragraph, cursor on last visual line | Down | Cursor → end of paragraph (same logical line), not next `\n` block | `cursorOnLastLine()` edge |
+| `wrap-up-from-visual-line-2` | same as `wrap-down-one-visual-line` | Down to line 2; Up | Returns to same column on visual line 1 | `lineUpPos` vs visual up |
+| `wrap-shift-down-one-visual` | wrapped paragraph | col 0; Shift+Down | Selection spans one visual line down | `extendSelectionVertical` |
+| `wrap-shift-down-then-up-shrinks` | wrapped paragraph (≥3 visual lines) | mid doc; Shift+Down; Shift+Up | Downward selection shrinks (mirror of `shift-down-then-up-shrinks`) | main user bug class |
+| `wrap-shift-down-last-visual-to-eof` | Qt `shiftDownInLineLastShouldSelectToEnd` | cursor last visual line; Shift+Down | Select to EOF of logical line | Qt cookbook case |
+| `wrap-down-not-jump-paragraph` | `"word1 word2 … wordN"` wrapped | cursor start; Down | Must not jump to end-of-paragraph | regression for original report |
+
+Optional: `wrap-mixed-newline-and-wrap` — `"short\nlonglonglong…"` — Down from `\n` line into wrapped tail.
+
+### CodeMirror logical-line block (cookbook priority #2)
+
+Port into `scenarios_regression.go` or `scenarios_cm.go`. Positions from [scenario-cookbook.md](scenario-cookbook.md) § CodeMirror vertical motion.
+
+| Name | Status |
+|------|--------|
+| `cm-line-down-basic` | Not ported |
+| `cm-line-down-shorter` | Not ported |
+| `cm-line-down-last-line` | Not ported |
+| `cm-line-down-goal-col` | Not ported |
+| `cm-select-line-down` | Not ported |
+| `cm-select-line-down-mid` | Not ported |
+| `cm-select-down-up-doc-end` | Overlaps `shift-down-then-up-shrinks` — still run for EOF column |
+| `cm-select-up-basic` | Not ported |
+| `cm-select-up-mid` | Not ported |
+
+These prove `\n`-based vertical motion and selection; they do **not** replace `wrap-*`. Both blocks must PASS.
+
+### Modifier combo matrix (`scenarios_combo.go` — new file)
+
+`handleMacArrow` routes Shift+Alt and Shift+Ctrl through Alt/Ctrl branches with `moveCursorTo(newPos, !!shift)` ([build-keywriter.sh](../../third_party/keywriter/build-keywriter.sh) ~1671–1688). Zero device coverage today.
+
+Minimal matrix (phone/WebSocket path; Meta = Ctrl per decisions §2):
+
+| Name | Content | Keys | Expected |
+|------|---------|------|----------|
+| `combo-alt-left-word` | `hello world` | End; Alt+Left | cursor at space (word boundary) |
+| `combo-alt-right-word` | `hello world` | Home; Alt+Right | cursor after `hello` |
+| `combo-ctrl-left-line-start` | `hello world` | End; Ctrl+Left | cursor 0 |
+| `combo-ctrl-right-line-end` | `hello world` | Home; Ctrl+Right | cursor 11 |
+| `combo-shift-alt-left-word-select` | `hello world` | End; Shift+Alt+Left | sel 6–11 (` world`) |
+| `combo-shift-alt-right-word-select` | `hello world` | Home; Shift+Alt+Right | sel 0–6 (`hello `) |
+| `combo-shift-ctrl-left-line-select` | `hello world` | End; Shift+Ctrl+Left | sel 0–11 |
+| `combo-shift-ctrl-right-line-select` | `hello world` | Home; Shift+Ctrl+Right | sel 0–11 |
+| `combo-alt-up-paragraph` | `para1\n\npara2` | cursor in para2; Alt+Up | cursor to para1 |
+| `combo-alt-down-paragraph` | `para1\n\npara2` | cursor in para1; Alt+Down | cursor to para2 |
+| `combo-ctrl-up-doc-start` | `one\ntwo\nthree` | End; Ctrl+Up | cursor 0 |
+| `combo-ctrl-down-doc-end` | `one\ntwo\nthree` | Ctrl+Home; Ctrl+Down | cursor at EOF |
+| `combo-shift-ctrl-up-doc-select` | `one\ntwo\nthree` | End; Shift+Ctrl+Up | sel 0–EOF |
+| `combo-shift-ctrl-down-doc-select` | `one\ntwo\nthree` | Ctrl+Home; Shift+Ctrl+Down | sel 0–EOF |
+
+Home/End combos (Shift+Home/End already partially in core; extend):
+
+| Name | Content | Keys | Expected |
+|------|---------|------|----------|
+| `combo-shift-home-line-start` | `abc\ndef` | End on line2; Shift+Home | sel from line2 start to cursor |
+| `combo-ctrl-home-doc-start` | `abc\ndef` | Ctrl+Home | cursor 0 |
+| `combo-ctrl-end-doc-end` | `abc\ndef` | Ctrl+End | cursor EOF |
+
+### Backspace / delete extensions
+
+| Name | Content | Keys | Expected | Notes |
+|------|---------|------|----------|-------|
+| `cm-alt-bs-word-mid` | `hello world` | cursor 8; Alt+Backspace | deletes `wor`, cursor 5 | mid-line word |
+| `cm-mod-bs-line-start` | `line1\nline2` | line2 start; Ctrl+Backspace | deletes `line2` only | cursor at `\n`+1 |
+| `cm-shift-bs-with-selection` | `abcd` | Shift+Home; Shift+Backspace | selection cleared, text deleted | Qt `shiftBackspace` |
+| `backspace-no-modifier` | `abcd` | End; Backspace×2 | textLen 2 | baseline |
+
+### Undo block (exists — must run, not rewrite)
+
+Five scenarios in `scenarios_undo.go` were added without device verify. Sign-off requires all PASS:
+
+- `undo-redo-len`
+- `undo-cursor-reposition`
+- `undo-mid-line-delete`
+- `redo-cleared-by-new-edit`
+- `undo-after-select-delete`
+
+If any FAIL, fix QML undo/history handling before wrap work — undo bugs were in the original report.
+
+### Core scenarios — already PASS (keep in full suite)
+
+`load-cursor-at-start`, `home-clears-selection`, `shift-right-from-home`, `shift-left-from-end`, `shift-right-after-home-no-stale-anchor`, `shift-down-after-arrow-down`, `shift-up-after-arrow-down`, `ctrl-shift-left-select-line` — plus regression `\n` five above.
+
+Do not drop these when adding new files; soft-reset cascade failures may return — triage full suite, not `-s` subsets only.
+
+### Sign-off gate (explicit)
+
+All of the following on one device run (`bash scripts/test-keyboard-harness.sh --fast --hard-reset`):
+
+1. All core (8) + regression `\n` (5) — already green; re-run in full suite
+2. All undo (5) — **was skipped**
+3. All `cm-*` (9) — **not written**
+4. All `wrap-*` (8+) — **blocked on width pin**
+5. All `combo-*` (14+) — **not written**
+6. `test-edit-session.sh` PASS
+7. `journalctl -u writerdeck -n 30` clean — **was skipped once**
+
+Partial green is not sign-off. "Harness exists" ≠ "behavior verified on device."
