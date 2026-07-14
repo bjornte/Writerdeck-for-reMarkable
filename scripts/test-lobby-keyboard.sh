@@ -2,7 +2,7 @@
 # scripts/test-lobby-keyboard.sh -- lobby USB/WS keys after return from edit.
 #
 # Opens a note, POST /api/lobby (same isLobby transition as Home), sends
-# Files-tab + Enter over WebSocket, asserts the note reopens.
+# Enter over WebSocket (Files is the default tab), asserts the note reopens.
 #
 # Requires Writerdeck with publishEditorState and /api/test/editor-state.
 # Run after Writerdeck QML deploy (deploy-keywriter.sh -b).

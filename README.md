@@ -44,7 +44,7 @@ To set up the repo and enable syncing:
 
 ## How-to for users incl. shortcuts
 
-1. Power on the tablet — it boots into a Lobby showing the connect URL (`http://<ip>:8000`), PIN, and setup sections.
+1. Power on the tablet — it boots into the Lobby Files tab (connect URL and PIN also appear on the Home tab, digit 6).
 2. Open that address in the phone's browser, and enter the PIN.
 3. Pair a physical keyboard to your phone.
 4. Open a note on the tablet Files tab (Edit, Enter, or double-tap) — the phone enters Type mode and keystrokes land on e-ink. **Upload** and **Download** are on the phone note list. In Type mode, **Paste from phone** inserts clipboard text at the cursor. Reading font and PIN length live on the tablet Lobby Settings tab. Rotate the display there too (Ctrl-R or Ctrl-arrows).
@@ -64,7 +64,7 @@ Shortcuts:
 - Ctrl-K — switch note from within edit view; from the Lobby, opens the note picker.
 - Ctrl-R — rotate 90° clockwise in the Lobby (USB keyboard). Ctrl + side arrows rotate in preview/read mode and in the Lobby (angle is remembered across sessions).
 - Ctrl-Q — quit Writerdeck from the Lobby.
-- Home — from the editor: save and return to the Lobby; from the Lobby: exit to stock reMarkable UI.
+- Home — from the editor: save and return to the Lobby Files tab with that note selected; from the Lobby: exit to stock reMarkable UI.
 
 ## Getting started for devs
 

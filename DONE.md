@@ -8,11 +8,11 @@ Open work: [TODO.md](TODO.md). How: [docs/architecture.md](docs/architecture.md)
 
 Power on and the tablet boots into a distraction-free editor. Open `http://<tablet-ip>:8000/` on the phone for the keyboard bridge; open notes on the tablet Files tab. Keystrokes travel WebSocket to Writerdeck-server, which feeds Writerdeck over `/run/Writerdeck.sock`. No app to install on the phone.
 
-Home from the editor saves and returns to the Lobby. Home from the Lobby quits to the stock reMarkable UI. Writerdeck-server keeps serving port 8000 either way — relaunch from the tablet Files tab, Esc on a USB keyboard, or left and right page buttons together from stock UI.
+Home from the editor saves and returns to the Lobby on the Files tab with the note you were editing selected. Home from the Lobby quits to the stock reMarkable UI. Writerdeck-server keeps serving port 8000 either way — relaunch from the tablet Files tab, Esc on a USB keyboard, or left and right page buttons together from stock UI.
 
 ## Lobby
 
-Six-tab pager on e-ink: Home, Files, Keyboard, Sync, Settings, Shortcuts. Touch the tabs or use Tab, arrows, or digits 1–6. On socket connect the server pushes IP, PIN, sync state, note count, and formatted last sync; it re-pushes when wlan0 gets an address, a reconcile finishes, or notes change.
+Six-tab pager on e-ink: Files, Keyboard, Sync, Settings, Shortcuts, Home (digits 1–6). Boot and Home from edit open on Files. Touch the tabs or use Tab, arrows, or digits 1–6. On socket connect the server pushes IP, PIN, sync state, note count, and formatted last sync; it re-pushes when wlan0 gets an address, a reconcile finishes, or notes change.
 
 The Files tab lists notes from the server over a trusted socket. New, Edit, Read, Rename, and Delete work by touch or USB keys (`n`, Enter, `v`, `r`, `d`). With private notes on, a second row offers Encrypt, New encrypted, or Decrypt by touch (USB `x` / `y` on Files). Edit opens the note in type mode; Read opens preview on e-ink. A second tap on an already-selected row opens Edit. Lobby new/rename uses an inline prompt with a movable cursor (arrow keys, Home/End). Failed encrypt or decrypt shows a red error on the Files tab. After Home from edit, Lobby keyboard focus stays on `lobbyFocus` so USB and WebSocket keys keep working. Home from read returns to the Lobby (not quit). Show PIN on tablet (phone button) drops back to the Lobby when a second device needs the PIN.
 

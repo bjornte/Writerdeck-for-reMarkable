@@ -84,7 +84,7 @@ Immediate `editor process exited` after start is almost always a QML parse error
 
 Physical Home on gpio-keys delivers twice: Go sends `cmd home`, Qt sends `Key_Home`. Without `suppressNextHomeKey` pairing (or a future exclusive grab on event1), read → Home could quit Writerdeck instead of returning to the Lobby. See [decisions.md](decisions.md) §28 and [handoff-physical-home-input.md](handoff-physical-home-input.md).
 
-After Home from edit, Lobby USB keys failed when `lobbyFocus.forceActiveFocus()` hit a `FocusScope` with no `Keys` handlers — delegate to `handleKey` / `handleKeyDown` / `handleKeyUp`, and set `query.focus: !isLobby` so the editor does not compete.
+After Home from edit, Lobby USB keys failed when `lobbyFocus.forceActiveFocus()` hit a `FocusScope` with no `Keys` handlers — delegate to `handleKey` / `handleKeyDown` / `handleKeyUp`, and set `query.focus: !isLobby` so the editor does not compete. Files is tab 1; vault e2e sends digit `1` for Files and `4` for Settings — update harness key numbers when tab order changes.
 
 `cursorOnLastLine()` must use visual line position (`positionToRectangle`), not "no newline after cursor" — a wrapped last paragraph is one logical line but many visual lines; newline-only detection makes Down jump to end-of-line mid-paragraph. Auto-scroll via `ensureVisible` on every cursor move can feel like blanking or page-flips near the document end on e-ink; scroll only when the cursor nears the viewport edge.
 
@@ -103,6 +103,8 @@ Writerdeck deploy needs a fresh binary; QML lives inside it. After lobby edits: 
 Lobby Files vault row: when private notes is on, the note `ListView` must reserve height for the second button row — otherwise Encrypt/Decrypt renders below the visible area. Use explicit half-width `Rectangle` buttons (same pattern as Settings); a `Repeater` that sizes delegates with `parentRow.model.length` fails because `Row` has no `model` — labels draw at x=0 with zero-width chrome and overlap.
 
 Lobby Files inline rename/new: handle printable keys on key release only in `lobbyHandleKey` — a parallel `Keys.onPressed` insert duplicates characters from the phone WebSocket path (press and release both carry text). Rename strips `.md.enc` before `.md` for the editable basename; re-append `.md.enc` on submit for encrypted notes. Use `lobbyFilesInputPos` for arrow/Home/End cursor movement in the prompt.
+
+Vault disable+setup mints a new random data key. Same PIN afterward unlocks a different key — existing `.md.enc` files become unreadable without re-wrap. `disablevault` now refuses when non-`z-test-` encrypted notes exist; sync refuses to apply a different `secret/vault` wrap while user notes are on disk. Harnesses must delete `z-test-*.md.enc` before disable. Recovery: `bash scripts/recover-orphaned-vault-notes.sh` with an old `secret/vault` commit from GitHub. Failed decrypt on open must surface on the Files tab — a blank editor with no message is an integrity failure.
 
 ## Sync
 

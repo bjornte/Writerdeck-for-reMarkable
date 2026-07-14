@@ -152,7 +152,11 @@ gpio-keys on `/dev/input/event1` reaches both Writerdeck-server (`cmd home`) and
 
 ## 29. Lobby keyboard regression test
 
-After Home from edit, `lobbyFocus` must keep USB and WebSocket keys working — a bare `FocusScope` without `Keys` handlers stole focus. `scripts/test-lobby-keyboard.sh` opens a note, drops to Lobby via `POST /api/lobby`, sends Files-tab keys over WebSocket, reopens the note, and asserts Home-from-read does not quit Writerdeck (`POST /api/test/home`). Run after Lobby or `handleHome` QML changes alongside `test-edit-session.sh`.
+After Home from edit, `lobbyFocus` must keep USB and WebSocket keys working — a bare `FocusScope` without `Keys` handlers stole focus. `scripts/test-lobby-keyboard.sh` opens a note, drops to Lobby via `POST /api/lobby`, sends Enter over WebSocket (Files is the default tab), reopens the note, and asserts Home-from-read does not quit Writerdeck (`POST /api/test/home`). Run after Lobby or `handleHome` QML changes alongside `test-edit-session.sh`.
+
+## 33. Lobby tab order (Files first)
+
+Files is tab 1 so boot and Home from edit land on the note list, not the welcome Home screen (tab 6). Returning from edit saves the open filename in `lobbyLastEditedFile` and selects that row after the notes list refreshes. Ctrl-K from the Lobby still opens the note picker on Files. Vault e2e harnesses use digit `1` for Files and `4` for Settings.
 
 ## 31. Optional at-rest encryption (private notes)
 
@@ -162,7 +166,7 @@ Encrypted notes use suffix `.md.enc` beside plain `.md` in `Writerdeck-user-docu
 
 Unlocked state is gone: the data key lives in server RAM only during an active note-editing session (one encrypted note) or briefly for a one-shot Files encrypt/decrypt or phone download. PIN every time you open, read, edit, encrypt, or decrypt — including note switches. Edit/read toggle on the same note does not re-prompt; save on Lobby exit does not re-prompt while that session key is held. Returning to the Lobby clears the session key. PIN entry is tablet-only: touch numpad or USB digits + Enter. Failed attempts rate-limit like pairing PIN auth. Files Encrypt/Decrypt and New encrypted show the PIN overlay first; after a correct PIN the deferred op runs once via `vaultpinok`.
 
-Per-note encrypt/decrypt from Lobby Files — no bulk encrypt on enable. With private notes on, Files shows a second touch row (Encrypt and New encrypted on plain notes, Decrypt on `.md.enc`); Settings is enable and change PIN only. Failed encrypt/decrypt pushes `vaultopfailed` to the tablet — a red message on the Files tab (corrupt ciphertext, bad format, name clash). GitHub sync treats `.md.enc` as opaque bytes and mirrors recovery material under `secret/pin` (plaintext PIN) and `secret/vault` (JSON wrap metadata). `secret/` is excluded from phone note APIs.
+Per-note encrypt/decrypt from Lobby Files — no bulk encrypt on enable. With private notes on, Files shows a second touch row (Encrypt and New encrypted on plain notes, Decrypt on `.md.enc`); Settings is enable and change PIN only. Failed encrypt/decrypt pushes `vaultopfailed` to the tablet — a red message on the Files tab (corrupt ciphertext, bad format, name clash). Opening an encrypted note with the wrong vault key shows the same error path, not a blank editor. Disabling vault or applying a new `secret/vault` from sync is refused while non-test encrypted notes exist — `vaultChangePIN` re-wraps the same data key and is safe; `disablevault` plus fresh setup mints a new key and orphans old ciphertext unless notes are re-wrapped. GitHub sync treats `.md.enc` as opaque bytes and mirrors recovery material under `secret/pin` (plaintext PIN) and `secret/vault` (JSON wrap metadata). `secret/` is excluded from phone note APIs.
 
 Phone download decrypts server-side after the tablet enters its PIN; if no session key is present, the server returns 423, pushes `requestvaultpin` to the tablet, and the phone waits. No encryption PIN UI on the phone. Forgotten PIN: recover from `secret/pin` on GitHub after re-deploy.
 
