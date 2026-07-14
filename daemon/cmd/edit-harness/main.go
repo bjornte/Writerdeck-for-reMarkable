@@ -424,23 +424,15 @@ func (h *Harness) waitCursorMoved(from int, timeout time.Duration) (EditorState,
 	return st, nil
 }
 
-// primeModifiedKeys sends plain End on the scenario WebSocket (same pattern as
-// combo-ctrl-left), polls until cursor moves, then Ctrl+Home when the step
-// expects a cursor left of the post-End position.
+// primeModifiedKeys wakes the modified-key socket path on this WebSocket without
+// moving the cursor to EOF (plain End before Ctrl+Right poisoned text/position).
 func (h *Harness) primeModifiedKeys(ws *websocket.Conn, step Step) error {
-	st0, err := h.queryState()
-	if err != nil {
+	if err := h.sendKeyEvent(ws, Key{Name: "ArrowUp"}, false); err != nil {
 		return err
 	}
-	if err := h.sendKeyEvent(ws, Key{Name: "End"}, false); err != nil {
-		return err
-	}
-	st, err := h.waitCursorMoved(st0.Cursor, 3*time.Second)
-	if err != nil {
-		return fmt.Errorf("End prime: %w", err)
-	}
+	time.Sleep(stepPause)
 	want := stepExpectedCursor(step)
-	if want != nil && *want < st.Cursor {
+	if want != nil && *want == 0 {
 		if err := h.sendKeyEvent(ws, Key{Name: "Home", Ctrl: true}, false); err != nil {
 			return err
 		}

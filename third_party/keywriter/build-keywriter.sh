@@ -1022,6 +1022,8 @@ s = s.replace(old7, new7, 1)
 #     44 px ~= 5 mm at the panel's 226 dpi (kept after device-look; revert = 12).
 assert 'textMargin: 12' in s, "textMargin not found in main.qml"
 s = s.replace('textMargin: 12', 'textMargin: 44', 1)
+assert 'textMargin: 44' in s, "textMargin 44 not found (7b2)"
+s = s.replace('textMargin: 44', 'textMargin: 44\n        objectName: "writerdeckQuery"', 1)
 
 # 7c. Block cursor (half-width) instead of the thin underline. Upstream's
 #     cursorDelegate is an 18 px-wide Item holding a 2 px bottom-anchored bar.
@@ -1541,6 +1543,7 @@ new7n_fn = (
     '        pos--\n'
     '        while (pos > 0 && isSpaceChar(text.charAt(pos))) pos--\n'
     '        while (pos > 0 && !isSpaceChar(text.charAt(pos - 1))) pos--\n'
+    '        if (pos < text.length && isSpaceChar(text.charAt(pos)) && pos > 0) pos++\n'
     '        return pos\n'
     '    }\n'
     '\n'
@@ -1805,7 +1808,10 @@ new7n_fn = (
     '                    event.accepted = true\n'
     '                    return true\n'
     '                }\n'
-    '                return false\n'
+    '                cursorStrong = true\n'
+    '                cursorTimer.stop()\n'
+    '                event.accepted = true\n'
+    '                return true\n'
     '            }\n'
     '        }\n'
     '        var shift = mods & Qt.ShiftModifier\n'
@@ -1920,8 +1926,8 @@ new7n_fn = (
     '        var mods = event.modifiers\n'
     '        var cmd = mods & Qt.ControlModifier\n'
     '        if (cmd && !(mods & Qt.AltModifier) && event.key === Qt.Key_A) {\n'
-    '            query.select(0, query.text.length)\n'
-    '            query.cursorPosition = query.text.length\n'
+    '            var len = query.text.length\n'
+    '            query.select(0, len)\n'
     '            cursorStrong = true\n'
     '            cursorTimer.stop()\n'
     '            event.accepted = true\n'

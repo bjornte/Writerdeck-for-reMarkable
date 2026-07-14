@@ -73,6 +73,19 @@
 +    }
 +}
 +
++static QQuickItem *rmkbdEditQueryItem()
++{
++    if (!g_rootObj) return nullptr;
++    return g_rootObj->findChild<QQuickItem *>(QStringLiteral("writerdeckQuery"));
++}
++
++static bool rmkbdInEditMode()
++{
++    if (!g_rootObj) return false;
++    if (g_rootObj->property("isLobby").toBool()) return false;
++    return g_rootObj->property("mode").toInt() == 1;
++}
++
 +// Parse one NDJSON line and dispatch a synthetic QKeyEvent on the GUI thread.
 +// Supported events:
 +//   {"t":"text","cp":<codepoint>}          -- insert one Unicode codepoint
@@ -113,7 +126,11 @@
 +            if (!win) return;
 +            QObject *target = win;
 +            if (auto *qw = qobject_cast<QQuickWindow *>(win)) {
-+                if (QQuickItem *item = qw->activeFocusItem()) {
++                QQuickItem *queryItem = rmkbdInEditMode() ? rmkbdEditQueryItem() : nullptr;
++                if (queryItem && (rmkbdIsNavKey(key) || key == Qt::Key_Return || key == 0
++                        || (mods != Qt::NoModifier))) {
++                    target = queryItem;
++                } else if (QQuickItem *item = qw->activeFocusItem()) {
 +                    // Route edit/navigation/text keys to the focused TextEdit.
 +                    if (rmkbdIsNavKey(key) || key == Qt::Key_Return || key == 0
 +                            || (mods != Qt::NoModifier))
@@ -127,10 +144,10 @@
 +                return;
 +            }
 +            QCoreApplication::sendEvent(target, &press);
-+            // Send release for modified keys unless both Shift and Ctrl are held
-+            // (Ctrl+Shift+Left release can delete the buffer). Shift-only keys
-+            // need release or the next key is poisoned (Shift+End -> lobby).
-+            bool blockRelease = (mods & Qt::ShiftModifier) && (mods & Qt::ControlModifier);
++            // Ctrl/Alt nav releases can wipe query.text via Qt TextEdit defaults;
++            // Shift-only releases must still fire or the next key is poisoned.
++            bool blockRelease = rmkbdIsNavKey(key)
++                && (mods & (Qt::ControlModifier | Qt::AltModifier));
 +            if (!blockRelease)
 +                QCoreApplication::sendEvent(target, &release);
 +        }, Qt::QueuedConnection);
