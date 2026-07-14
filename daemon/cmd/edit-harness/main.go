@@ -274,15 +274,16 @@ func (h *Harness) sandboxPrepare(sc Scenario) error {
 	return h.wakeEditor()
 }
 
-// wakeEditor sends a no-op plain key so the first modified key after sandbox
-// prepare is not dropped (Qt focus / stuck-modifier state after reset).
+// wakeEditor sends a plain ArrowUp (no-op at doc start) so the first modified
+// key after sandbox prepare is not dropped. Plain Home poisons the next step:
+// its release triggers handleHome -> lobby.
 func (h *Harness) wakeEditor() error {
 	ws, err := h.dialWS()
 	if err != nil {
 		return fmt.Errorf("wake websocket: %w", err)
 	}
 	defer ws.Close()
-	if err := h.sendKey(ws, Key{Name: "ArrowLeft"}); err != nil {
+	if err := h.sendKey(ws, Key{Name: "ArrowUp"}); err != nil {
 		return fmt.Errorf("wake key: %w", err)
 	}
 	return nil
