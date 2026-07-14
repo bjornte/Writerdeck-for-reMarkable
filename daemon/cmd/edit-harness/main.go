@@ -62,11 +62,13 @@ type Scenario struct {
 }
 
 type EditorState struct {
-	Cursor   int `json:"cursor"`
-	SelStart int `json:"selStart"`
-	SelEnd   int `json:"selEnd"`
-	TextLen  int `json:"textLen"`
-	Mode     int `json:"mode"`
+	Cursor      int    `json:"cursor"`
+	SelStart    int    `json:"selStart"`
+	SelEnd      int    `json:"selEnd"`
+	TextLen     int    `json:"textLen"`
+	Mode        int    `json:"mode"`
+	IsLobby     int    `json:"isLobby"`
+	CurrentFile string `json:"currentFile"`
 }
 
 type Harness struct {
@@ -389,10 +391,13 @@ func (h *Harness) openNote() error {
 	return fmt.Errorf("open failed after retries")
 }
 
-// reloadHarnessNote loads disk content into the editor without saveAndLoad
-// (open would overwrite the PUT content with the stale in-memory buffer).
+// reloadHarnessNote loads disk content into the editor. Use reload when the
+// harness note is already open; use open from Lobby or another file (PUT first
+// so doLoad reads fresh disk — open while already on the harness note would
+// saveAndLoad the stale buffer over the PUT).
 func (h *Harness) reloadHarnessNote(content string) error {
-	if _, err := h.queryState(); err != nil {
+	st, err := h.queryState()
+	if err != nil || st.IsLobby == 1 || st.CurrentFile != harnessNote {
 		if err := h.openNote(); err != nil {
 			return err
 		}
@@ -402,9 +407,8 @@ func (h *Harness) reloadHarnessNote(content string) error {
 			return err
 		}
 		if code != 200 {
-			body, _ := json.Marshal(map[string]string{"name": harnessNote})
-			if code, err := h.post("/api/open", body); err != nil || code != 200 {
-				return fmt.Errorf("reload/open HTTP %d", code)
+			if err := h.openNote(); err != nil {
+				return fmt.Errorf("reload HTTP %d: %w", code, err)
 			}
 		}
 	}

@@ -8,7 +8,7 @@ func regressionScenarios() []Scenario {
 			Content: "aa\nbb",
 			Steps: []Step{
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Expect: &StateExpect{Cursor: intp(0), TextLen: intp(3)}},
+				{Expect: &StateExpect{Cursor: intp(0), TextLen: intp(5)}},
 				{Label: "down one line", Keys: []Key{{Name: "ArrowDown"}}},
 				{Expect: &StateExpect{Cursor: intp(3), SelStart: intp(3), SelEnd: intp(3)}},
 			},
@@ -32,8 +32,8 @@ func regressionScenarios() []Scenario {
 			Steps: []Step{
 				{Keys: []Key{{Name: "End"}}},
 				{Expect: &StateExpect{Cursor: intp(13)}},
-				{Label: "shift+left x3 crosses space", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 3},
-				{Expect: &StateExpect{Cursor: intp(13), SelStart: intp(7), SelEnd: intp(13), SelLen: intp(6)}},
+				{Label: "shift+left x3", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 3},
+				{Expect: &StateExpect{Cursor: intp(13), SelStart: intp(10), SelEnd: intp(13), SelLen: intp(3)}},
 			},
 		},
 		{
