@@ -112,9 +112,11 @@
 +            QWindow *win = QGuiApplication::focusWindow();
 +            if (!win) return;
 +            QObject *target = win;
-+            if (mods != Qt::NoModifier && rmkbdIsNavKey(key)) {
-+                if (auto *qw = qobject_cast<QQuickWindow *>(win)) {
-+                    if (QQuickItem *item = qw->activeFocusItem())
++            if (auto *qw = qobject_cast<QQuickWindow *>(win)) {
++                if (QQuickItem *item = qw->activeFocusItem()) {
++                    // Route edit/navigation/text keys to the focused TextEdit.
++                    if (rmkbdIsNavKey(key) || key == Qt::Key_Return || key == 0
++                            || (mods != Qt::NoModifier))
 +                        target = item;
 +                }
 +            }

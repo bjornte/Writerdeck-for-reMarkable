@@ -65,6 +65,9 @@ func TestStepNeedsModifiedPrime(t *testing.T) {
 	if stepNeedsModifiedPrime(Step{Keys: []Key{{Name: "Home", Ctrl: true}}}) {
 		t.Fatal("ctrl+home should not prime")
 	}
+	if !stepNeedsModifiedPrime(Step{Keys: []Key{{Name: "End", Ctrl: true}}}) {
+		t.Fatal("ctrl+end from 0 should prime")
+	}
 	if !stepNeedsModifiedPrime(Step{Keys: []Key{{Name: "ArrowRight", Ctrl: true}}}) {
 		t.Fatal("ctrl+right from 0 should prime")
 	}

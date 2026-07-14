@@ -75,7 +75,7 @@ func wrapScenarios() []Scenario {
 			Content: wp,
 			Width:   harnessWrapWidth,
 			Steps: []Step{
-				{Keys: []Key{{Name: "End"}}},
+				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Label: "down on last visual line", Keys: []Key{{Name: "ArrowDown"}}},
 				{Expect: &StateExpect{Cursor: intp(n), SelStart: intp(n), SelEnd: intp(n), TextLen: intp(n)}},
 			},
@@ -85,7 +85,7 @@ func wrapScenarios() []Scenario {
 			Content: wp,
 			Width:   harnessWrapWidth,
 			Steps: []Step{
-				{Keys: []Key{{Name: "End"}}},
+				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Label: "shift+down at wrap end", Keys: []Key{{Name: "ArrowDown", Shift: true}}},
 				{Expect: &StateExpect{Cursor: intp(n), SelEnd: intp(n), SelLenMin: intp(1), TextLen: intp(n)}},
 			},
@@ -117,7 +117,7 @@ func wrapScenarios() []Scenario {
 			Content: wp,
 			Width:   harnessWrapWidth,
 			Steps: []Step{
-				{Keys: []Key{{Name: "End"}}},
+				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Expect: &StateExpect{Cursor: intp(n), TextLen: intp(n)}},
 				{Label: "alt+left word on wrap", Keys: []Key{{Name: "ArrowLeft", Alt: true}}},
 				{Expect: &StateExpect{CursorMin: intp(1), CursorMax: intp(n - 1), TextLen: intp(n)}},
@@ -128,7 +128,7 @@ func wrapScenarios() []Scenario {
 			Content: wp,
 			Width:   harnessWrapWidth,
 			Steps: []Step{
-				{Keys: []Key{{Name: "End"}}},
+				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Expect: &StateExpect{Cursor: intp(n), TextLen: intp(n)}},
 				{Label: "ctrl+backspace wrapped line", Keys: []Key{{Name: "Backspace", Ctrl: true}}},
 				{Expect: &StateExpect{TextLen: intp(0), Cursor: intp(0), Text: strp("")}},

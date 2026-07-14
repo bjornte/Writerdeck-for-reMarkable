@@ -179,6 +179,11 @@ func main() {
 		run = AllScenarios()
 	}
 
+	if msg := validateAllScenarioKeys(); msg != "" {
+		fmt.Fprintf(os.Stderr, "invalid scenario key: %s\n", msg)
+		os.Exit(2)
+	}
+
 	if h.verbose {
 		fmt.Println("mode: sandbox-prepare (no editor restart)")
 	}
@@ -201,6 +206,14 @@ func main() {
 		}
 		if h.failFast && res.Kind == outcomeFail && len(res.HealthNotes) > 0 {
 			fmt.Fprintf(os.Stderr, "FAIL-FAST: editor unhealthy after %s — stopping suite\n", sc.Name)
+			stoppedEarly = true
+			break
+		}
+		linkContamination(results)
+		if h.failFast && len(results) >= 2 && results[len(results)-2].PossiblePoisoner &&
+			results[len(results)-1].Kind == outcomePrepareFail {
+			fmt.Fprintf(os.Stderr, "FAIL-FAST: %s poisoned prepare for %s — stopping suite\n",
+				results[len(results)-2].Name, sc.Name)
 			stoppedEarly = true
 			break
 		}
@@ -308,6 +321,10 @@ func (h *Harness) sandboxPrepare(sc Scenario) error {
 	if err := h.verifyPrepareState(sc.Content); err != nil {
 		return err
 	}
+	if sc.Width > 0 {
+		// Let TextEdit reflow at harness width before the first Down/End assertion.
+		time.Sleep(2 * stepPause)
+	}
 	return nil
 }
 
@@ -357,8 +374,8 @@ func (h *Harness) RunScenario(sc Scenario) error {
 				if h.verbose {
 					fmt.Printf("  %s: primed modified keys from cursor 0\n", label)
 				}
+				modKeyPrimed = true
 			}
-			modKeyPrimed = true
 		}
 		repeat := step.Repeat
 		if repeat <= 0 {
@@ -383,16 +400,43 @@ func (h *Harness) RunScenario(sc Scenario) error {
 	return nil
 }
 
-// primeModifiedKeys sends plain End on the scenario WebSocket, then Ctrl+Home when
-// the step expects a cursor left of the post-End position (modified keys from 0).
+// waitCursorMoved polls editorstate until cursor leaves from (or timeout).
+func (h *Harness) waitCursorMoved(from int, timeout time.Duration) (EditorState, error) {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		st, err := h.queryState()
+		if err != nil {
+			return st, err
+		}
+		if st.Cursor != from {
+			return st, nil
+		}
+		time.Sleep(h.reloadPoll)
+	}
+	st, err := h.queryState()
+	if err != nil {
+		return st, err
+	}
+	if st.Cursor == from {
+		return st, fmt.Errorf("cursor stuck at %d", from)
+	}
+	return st, nil
+}
+
+// primeModifiedKeys sends plain End on the scenario WebSocket (same pattern as
+// combo-ctrl-left), polls until cursor moves, then Ctrl+Home when the step
+// expects a cursor left of the post-End position.
 func (h *Harness) primeModifiedKeys(ws *websocket.Conn, step Step) error {
+	st0, err := h.queryState()
+	if err != nil {
+		return err
+	}
 	if err := h.sendKeyEvent(ws, Key{Name: "End"}, false); err != nil {
 		return err
 	}
-	time.Sleep(stepPause)
-	st, err := h.queryState()
+	st, err := h.waitCursorMoved(st0.Cursor, 3*time.Second)
 	if err != nil {
-		return err
+		return fmt.Errorf("End prime: %w", err)
 	}
 	want := stepExpectedCursor(step)
 	if want != nil && *want < st.Cursor {

@@ -56,24 +56,30 @@ func stepHasModifiedNav(step Step) bool {
 }
 
 func stepNeedsModifiedPrime(step Step) bool {
-	if !stepHasModifiedNav(step) {
-		return false
-	}
 	for _, k := range step.Keys {
-		switch k.Name {
-		case "Home", "End":
-			// Ctrl+Home/End are positioning; End-prime before them poisons/wipes state.
-			if k.Ctrl && !k.Shift && !k.Alt {
-				continue
-			}
+		// End-prime before Ctrl+Home poisons positioning steps that start at 0.
+		if k.Ctrl && k.Name == "Home" && !k.Shift && !k.Alt {
+			continue
+		}
+		if k.isModifiedNav() {
 			return true
-		case "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Backspace", "Delete":
-			if k.Alt || k.Ctrl {
-				return true
-			}
 		}
 	}
 	return false
+}
+
+// validateAllScenarioKeys returns the first invalid key in the suite.
+func validateAllScenarioKeys() string {
+	for _, sc := range AllScenarios() {
+		for _, step := range sc.Steps {
+			for _, k := range step.Keys {
+				if msg := validateScenarioKey(k); msg != "" {
+					return sc.Name + ": " + msg
+				}
+			}
+		}
+	}
+	return ""
 }
 
 func stepExpectedCursor(step Step) *int {
