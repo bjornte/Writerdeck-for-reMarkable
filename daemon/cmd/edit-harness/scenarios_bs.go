@@ -20,7 +20,7 @@ func bsScenarios() []Scenario {
 				{Keys: []Key{{Name: "ArrowDown"}}},
 				{Expect: &StateExpect{Cursor: intp(6), TextLen: intp(11)}},
 				{Label: "ctrl+backspace at line2 start", Keys: []Key{{Name: "Backspace", Ctrl: true}}},
-				{Expect: &StateExpect{Cursor: intp(6), TextLen: intp(6)}},
+				{Expect: &StateExpect{Cursor: intp(0), TextLen: intp(5)}},
 			},
 		},
 		{
