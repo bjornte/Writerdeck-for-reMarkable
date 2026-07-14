@@ -50,7 +50,8 @@ func regressionScenarios() []Scenario {
 			Name:    "ctrl-backspace-deletes-line",
 			Content: "line1\nline2",
 			Steps: []Step{
-				{Keys: []Key{{Name: "ArrowDown"}}, {Keys: []Key{{Name: "End"}}},
+				{Keys: []Key{{Name: "ArrowDown"}}},
+				{Keys: []Key{{Name: "End"}}},
 				{Expect: &StateExpect{Cursor: intp(11), TextLen: intp(11)}},
 				{Label: "ctrl+backspace", Keys: []Key{{Name: "Backspace", Ctrl: true}}},
 				{Expect: &StateExpect{TextLen: intp(6)}},

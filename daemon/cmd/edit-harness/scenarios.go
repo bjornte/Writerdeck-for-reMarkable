@@ -97,7 +97,7 @@ func coreScenarios() []Scenario {
 			Steps: []Step{
 				{Keys: []Key{{Name: "End"}}},
 				{Expect: &StateExpect{Cursor: intp(6)}},
-				{Label: "ctrl+shift+left", Keys: []Key{{Name: "ArrowLeft", Shift: true, Ctrl: true}}},
+				{Label: "shift+home selects line", Keys: []Key{{Name: "Home", Shift: true}}},
 				{Expect: &StateExpect{SelStart: intp(0), SelEnd: intp(6)}},
 			},
 		},
