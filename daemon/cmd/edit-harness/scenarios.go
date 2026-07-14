@@ -12,7 +12,8 @@ func AllScenarios() []Scenario {
 	out = append(out, bsScenarios()...)
 	out = append(out, wrapScenarios()...)
 	out = append(out, undoScenarios()...)
-	return out
+	out = append(out, gapScenarios()...)
+	return attachScenarioTags(out)
 }
 
 func coreScenarios() []Scenario {

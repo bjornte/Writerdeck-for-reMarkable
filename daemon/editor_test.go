@@ -17,6 +17,16 @@ func TestTranslateShiftArrow(t *testing.T) {
 			want: `{"t":"key","k":"ArrowDown","m":1}`,
 		},
 		{
+			name: "delete key",
+			ev:   wsMsg{Type: "key", Key: "Delete"},
+			want: `{"t":"key","k":"Delete"}`,
+		},
+		{
+			name: "shift end release",
+			ev:   wsMsg{Type: "key", Key: "End", Shift: true, Action: "release"},
+			want: `{"t":"key","k":"End","m":1,"u":1}`,
+		},
+		{
 			name: "ctrl shift arrow left",
 			ev:   wsMsg{Type: "key", Key: "ArrowLeft", Shift: true, Ctrl: true},
 			want: `{"t":"key","k":"ArrowLeft","m":3}`,
@@ -44,6 +54,17 @@ func TestTranslateShiftArrow(t *testing.T) {
 				t.Fatalf("translate() = %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestTranslateHarnessNamedKeys(t *testing.T) {
+	for browser, feed := range namedKeys {
+		ev := wsMsg{Type: "key", Key: browser}
+		got := string(translate(ev))
+		want := `{"t":"key","k":"` + feed + `"}`
+		if got != want {
+			t.Fatalf("translate(%q) = %q want %q", browser, got, want)
+		}
 	}
 }
 

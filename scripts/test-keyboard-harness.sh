@@ -11,16 +11,19 @@
 #   4. Sign-off: full suite --fast
 #
 # Writes docs/recon/test-keyboard-harness-TIMESTAMP.txt and .md (results table).
-# Full suite: 60 scenarios in one editor session (no quit/relaunch between tests).
+# Full suite: 83 scenarios in one editor session (no quit/relaunch between tests).
 #
 # Usage:
 #   bash scripts/test-keyboard-harness.sh              # all scenarios
 #   bash scripts/test-keyboard-harness.sh -s NAME      # one scenario
 #   bash scripts/test-keyboard-harness.sh -m PREFIX    # name substring match
+#   bash scripts/test-keyboard-harness.sh -t TAG       # tag filter (wrap, combo, gap, ...)
 #   bash scripts/test-keyboard-harness.sh --list       # scenario names
+#   bash scripts/test-keyboard-harness.sh --list-tags  # known tags
 #   bash scripts/test-keyboard-harness.sh --unit       # translate + scenario lint (no device)
 #   bash scripts/test-keyboard-harness.sh --fast       # shorter pauses (dev loop)
-#   bash scripts/test-keyboard-harness.sh --no-prepare # skip sandbox prepare (same scenario re-run)
+#   bash scripts/test-keyboard-harness.sh --no-prepare  # skip sandbox prepare (same scenario re-run)
+#   bash scripts/test-keyboard-harness.sh --no-fail-fast  # continue after poisoned editor
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=/dev/null
@@ -29,23 +32,27 @@ REPO="$(cd "$DIR/.." && pwd)"
 TARGET="${RM_HOST}"
 SCENARIO=""
 MATCH=""
+TAG=""
 EXTRA=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
     -s) shift; SCENARIO="${1:-}"; shift || true ;;
     -m|--match) shift; MATCH="${1:-}"; shift || true ;;
+    -t|--tag) shift; TAG="${1:-}"; shift || true ;;
     --list) EXTRA+=(-list); shift ;;
+    --list-tags) EXTRA+=(-list-tags); shift ;;
     --unit) EXTRA+=(-unit); shift ;;
     --fast) EXTRA+=(-fast); shift ;;
     --no-prepare) EXTRA+=(-no-prepare); shift ;;
+    --no-fail-fast) EXTRA+=(-fail-fast=false); shift ;;
     -v) EXTRA+=(-v); shift ;;
     --hard-reset)
       echo "ERROR: --hard-reset removed; harness uses sandbox-prepare without editor restart" >&2
       exit 2
       ;;
     -h|--help)
-      sed -n '2,24p' "$0"
+      sed -n '2,28p' "$0"
       exit 0
       ;;
     *) TARGET="$1"; shift ;;
@@ -72,6 +79,9 @@ if [ -n "$SCENARIO" ]; then
 fi
 if [ -n "$MATCH" ]; then
   ARGS+=(-match "$MATCH")
+fi
+if [ -n "$TAG" ]; then
+  ARGS+=(-tag "$TAG")
 fi
 if [ ${#EXTRA[@]} -gt 0 ]; then
   ARGS+=("${EXTRA[@]}")

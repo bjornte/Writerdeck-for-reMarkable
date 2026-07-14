@@ -40,15 +40,17 @@ type Key struct {
 }
 
 type StateExpect struct {
-	Cursor    *int `json:"cursor,omitempty"`
-	CursorMin *int `json:"cursorMin,omitempty"`
-	CursorMax *int `json:"cursorMax,omitempty"`
-	SelStart  *int `json:"selStart,omitempty"`
-	SelEnd    *int `json:"selEnd,omitempty"`
-	SelLen    *int `json:"selLen,omitempty"`
-	SelLenMin *int `json:"selLenMin,omitempty"`
-	TextLen   *int `json:"textLen,omitempty"`
-	Mode      *int `json:"mode,omitempty"`
+	Cursor    *int    `json:"cursor,omitempty"`
+	CursorMin *int    `json:"cursorMin,omitempty"`
+	CursorMax *int    `json:"cursorMax,omitempty"`
+	SelStart  *int    `json:"selStart,omitempty"`
+	SelEnd    *int    `json:"selEnd,omitempty"`
+	SelLen    *int    `json:"selLen,omitempty"`
+	SelLenMin *int    `json:"selLenMin,omitempty"`
+	TextLen   *int    `json:"textLen,omitempty"`
+	Text      *string `json:"text,omitempty"` // full note body from /api/notes
+	Mode      *int    `json:"mode,omitempty"`
+	IsLobby   *int    `json:"isLobby,omitempty"`
 }
 
 type Step struct {
@@ -59,10 +61,11 @@ type Step struct {
 }
 
 type Scenario struct {
-	Name    string `json:"name"`
-	Content string `json:"content"`
-	Width   int    `json:"width,omitempty"` // harness wrap width in pixels; 0 = default
-	Steps   []Step `json:"steps"`
+	Name    string   `json:"name"`
+	Content string   `json:"content"`
+	Width   int      `json:"width,omitempty"` // harness wrap width in pixels; 0 = default
+	Tags    []string `json:"tags,omitempty"`
+	Steps   []Step   `json:"steps"`
 }
 
 type EditorState struct {
@@ -81,6 +84,7 @@ type Harness struct {
 	port       int
 	verbose    bool
 	noPrepare  bool
+	failFast   bool
 	reloadPoll time.Duration
 }
 
@@ -89,11 +93,14 @@ func main() {
 	port := flag.Int("port", 8000, "server port")
 	scenario := flag.String("scenario", "", "run one scenario by exact name")
 	match := flag.String("match", "", "run scenarios whose name contains this substring")
+	tag := flag.String("tag", "", "run scenarios with this tag (wrap, combo, gap, undo, ...)")
 	list := flag.Bool("list", false, "list scenario names")
+	listTags := flag.Bool("list-tags", false, "list known scenario tags")
 	verbose := flag.Bool("v", false, "verbose step output")
 	unit := flag.Bool("unit", false, "run translate unit tests only (no device)")
 	fast := flag.Bool("fast", false, "shorter key/step pauses for dev iteration")
 	noPrepare := flag.Bool("no-prepare", false, "skip sandbox prepare (reuse open buffer; same scenario only)")
+	failFast := flag.Bool("fail-fast", true, "stop suite when editor is unhealthy after a failure")
 	reportMD := flag.String("report-md", "", "write markdown results table to this path")
 	flag.Parse()
 
@@ -113,6 +120,7 @@ func main() {
 		port:       *port,
 		verbose:    *verbose,
 		noPrepare:  *noPrepare,
+		failFast:   *failFast,
 		reloadPoll: 200 * time.Millisecond,
 	}
 	if *fast {
@@ -120,6 +128,18 @@ func main() {
 	}
 
 	names := scenarioNames()
+	if *listTags {
+		seen := map[string]bool{}
+		for _, sc := range AllScenarios() {
+			for _, t := range sc.Tags {
+				seen[t] = true
+			}
+		}
+		for _, t := range sortedTagNames(seen) {
+			fmt.Println(t)
+		}
+		return
+	}
 	if *list {
 		for _, n := range names {
 			fmt.Println(n)
@@ -127,8 +147,8 @@ func main() {
 		return
 	}
 
-	if *scenario != "" && *match != "" {
-		fmt.Fprintln(os.Stderr, "use -scenario or -match, not both")
+	if countSet(*scenario, *match, *tag) > 1 {
+		fmt.Fprintln(os.Stderr, "use only one of -scenario, -match, -tag")
 		os.Exit(2)
 	}
 
@@ -148,6 +168,13 @@ func main() {
 			fmt.Fprintf(os.Stderr, "no scenarios match %q\n", *match)
 			os.Exit(2)
 		}
+	case *tag != "":
+		var ok bool
+		run, ok = findScenariosByTag(*tag)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "no scenarios with tag %q\n", *tag)
+			os.Exit(2)
+		}
 	default:
 		run = AllScenarios()
 	}
@@ -160,6 +187,7 @@ func main() {
 	modeLabel := "sandbox-prepare (single session)"
 
 	var results []scenarioResult
+	stoppedEarly := false
 	for _, sc := range run {
 		res := h.runScenarioTimed(sc)
 		results = append(results, res)
@@ -171,6 +199,15 @@ func main() {
 		default:
 			fmt.Fprintf(os.Stderr, "FAIL %s (%.1fs): %s\n", sc.Name, res.Duration.Seconds(), res.Err)
 		}
+		if h.failFast && res.Kind == outcomeFail && len(res.HealthNotes) > 0 {
+			fmt.Fprintf(os.Stderr, "FAIL-FAST: editor unhealthy after %s — stopping suite\n", sc.Name)
+			stoppedEarly = true
+			break
+		}
+	}
+	if stoppedEarly {
+		fmt.Fprintf(os.Stderr, "Stopped early (%d/%d scenarios). Re-check with: bash scripts/test-keyboard-harness.sh -s NAME --fast\n",
+			len(results), len(run))
 	}
 	if report := formatContaminationReport(results); report != "" {
 		fmt.Fprint(os.Stderr, report)
@@ -302,10 +339,26 @@ func (h *Harness) RunScenario(sc Scenario) error {
 	}
 	defer ws.Close()
 
+	modKeyPrimed := false
 	for i, step := range sc.Steps {
 		label := step.Label
 		if label == "" {
 			label = fmt.Sprintf("step %d", i+1)
+		}
+		if !modKeyPrimed && len(step.Keys) > 0 && stepHasModifiedNav(step) {
+			st, err := h.queryState()
+			if err != nil {
+				return fmt.Errorf("%s: state before prime: %w", label, err)
+			}
+			if st.Cursor == 0 {
+				if err := h.primeModifiedKeys(ws, step); err != nil {
+					return fmt.Errorf("%s: prime modified keys: %w", label, err)
+				}
+				if h.verbose {
+					fmt.Printf("  %s: primed modified keys from cursor 0\n", label)
+				}
+			}
+			modKeyPrimed = true
 		}
 		repeat := step.Repeat
 		if repeat <= 0 {
@@ -322,18 +375,53 @@ func (h *Harness) RunScenario(sc Scenario) error {
 			time.Sleep(stepPause)
 		}
 		if step.Expect != nil {
-			st, err := h.queryState()
-			if err != nil {
-				return fmt.Errorf("%s: state: %w", label, err)
-			}
-			if h.verbose {
-				b, _ := json.Marshal(st)
-				fmt.Printf("  %s: got %s\n", label, b)
-			}
-			if err := matchExpect(st, *step.Expect); err != nil {
-				return fmt.Errorf("%s: %w", label, err)
+			if err := h.checkExpect(label, *step.Expect); err != nil {
+				return err
 			}
 		}
+	}
+	return nil
+}
+
+// primeModifiedKeys sends plain End on the scenario WebSocket, then Ctrl+Home when
+// the step expects a cursor left of the post-End position (modified keys from 0).
+func (h *Harness) primeModifiedKeys(ws *websocket.Conn, step Step) error {
+	if err := h.sendKeyEvent(ws, Key{Name: "End"}, false); err != nil {
+		return err
+	}
+	time.Sleep(stepPause)
+	st, err := h.queryState()
+	if err != nil {
+		return err
+	}
+	want := stepExpectedCursor(step)
+	if want != nil && *want < st.Cursor {
+		if err := h.sendKeyEvent(ws, Key{Name: "Home", Ctrl: true}, false); err != nil {
+			return err
+		}
+		time.Sleep(stepPause)
+	}
+	return nil
+}
+
+func (h *Harness) checkExpect(label string, exp StateExpect) error {
+	st, err := h.queryState()
+	if err != nil {
+		return fmt.Errorf("%s: state: %w", label, err)
+	}
+	if h.verbose {
+		b, _ := json.Marshal(st)
+		fmt.Printf("  %s: got %s\n", label, b)
+	}
+	var noteText string
+	if exp.Text != nil {
+		noteText, err = h.queryNoteText()
+		if err != nil {
+			return fmt.Errorf("%s: note text: %w", label, err)
+		}
+	}
+	if err := matchExpect(st, exp, noteText); err != nil {
+		return fmt.Errorf("%s: %w", label, err)
 	}
 	return nil
 }
@@ -530,10 +618,45 @@ func (h *Harness) dialWS() (*websocket.Conn, error) {
 	return conn, err
 }
 
+func (h *Harness) queryNoteText() (string, error) {
+	resp, err := harnessHTTP.Get(h.base + "/api/notes/" + harnessNote)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		b, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
+	var raw struct {
+		Content string `json:"content"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+		return "", err
+	}
+	return raw.Content, nil
+}
+
 func (h *Harness) sendKey(ws *websocket.Conn, k Key) error {
+	if err := h.sendKeyEvent(ws, k, false); err != nil {
+		return err
+	}
+	if k.needsExplicitRelease() {
+		time.Sleep(keyPause / 2)
+		if err := h.sendKeyEvent(ws, k, true); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h *Harness) sendKeyEvent(ws *websocket.Conn, k Key, release bool) error {
 	ev := map[string]interface{}{
 		"type": "key",
 		"key":  k.Name,
+	}
+	if release {
+		ev["action"] = "release"
 	}
 	if k.Shift {
 		ev["shift"] = true
@@ -554,7 +677,7 @@ func (h *Harness) sendKey(ws *websocket.Conn, k Key) error {
 	return nil
 }
 
-func matchExpect(got EditorState, exp StateExpect) error {
+func matchExpect(got EditorState, exp StateExpect, noteText string) error {
 	var errs []string
 	check := func(name string, want *int, have int) {
 		if want == nil {
@@ -575,6 +698,10 @@ func matchExpect(got EditorState, exp StateExpect) error {
 	check("selEnd", exp.SelEnd, got.SelEnd)
 	check("textLen", exp.TextLen, got.TextLen)
 	check("mode", exp.Mode, got.Mode)
+	check("isLobby", exp.IsLobby, got.IsLobby)
+	if exp.Text != nil && noteText != *exp.Text {
+		errs = append(errs, fmt.Sprintf("text want %q got %q", *exp.Text, noteText))
+	}
 	if exp.SelLen != nil {
 		have := got.selLen()
 		if *exp.SelLen != have {
@@ -593,7 +720,38 @@ func matchExpect(got EditorState, exp StateExpect) error {
 	return nil
 }
 
+func countSet(a, b, c string) int {
+	n := 0
+	if a != "" {
+		n++
+	}
+	if b != "" {
+		n++
+	}
+	if c != "" {
+		n++
+	}
+	return n
+}
+
+func sortedTagNames(seen map[string]bool) []string {
+	out := make([]string, 0, len(seen))
+	for t := range seen {
+		out = append(out, t)
+	}
+	for i := 0; i < len(out); i++ {
+		for j := i + 1; j < len(out); j++ {
+			if out[j] < out[i] {
+				out[i], out[j] = out[j], out[i]
+			}
+		}
+	}
+	return out
+}
+
 func intp(v int) *int { return &v }
+
+func strp(s string) *string { return &s }
 
 func (s EditorState) selLen() int {
 	if s.SelStart == s.SelEnd {

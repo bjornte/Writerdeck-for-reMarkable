@@ -66,7 +66,7 @@
 +{
 +    switch (key) {
 +    case Qt::Key_Left: case Qt::Key_Right: case Qt::Key_Up: case Qt::Key_Down:
-+    case Qt::Key_Home: case Qt::Key_End: case Qt::Key_Backspace:
++    case Qt::Key_Home: case Qt::Key_End: case Qt::Key_Backspace: case Qt::Key_Delete:
 +        return true;
 +    default:
 +        return false;
@@ -77,7 +77,8 @@
 +// Supported events:
 +//   {"t":"text","cp":<codepoint>}          -- insert one Unicode codepoint
 +//   {"t":"key","k":"<named>","m":<mask>}   -- named key + modifier bitmask
-+//     named: Escape|Return|Backspace|Tab|Home|End|ArrowUp|ArrowDown|ArrowLeft|ArrowRight
++//     named: Escape|Return|Backspace|Delete|Tab|Home|End|ArrowUp|ArrowDown|ArrowLeft|ArrowRight
++//     u:1 optional -- key-up (release) only
 +//     action: A-Z (Ctrl/Cmd+letter shortcut; daemon sends uppercase)
 +//     mask: Shift=1, Ctrl=2, Alt=4, Meta=8; Ctrl and Meta both -> Qt::ControlModifier
 +static void rmkbdInjectLine(const std::string &line)
@@ -90,29 +91,38 @@
 +        auto mp = line.find("\"m\":");
 +        if (mp != std::string::npos) mask = static_cast<int>(std::stol(line.substr(mp + 4)));
 +    }
++    int up = 0;
++    {
++        auto upp = line.find("\"u\":");
++        if (upp != std::string::npos) up = static_cast<int>(std::stol(line.substr(upp + 4)));
++    }
 +    Qt::KeyboardModifiers mods = Qt::NoModifier;
 +    if (mask & 1) mods |= Qt::ShiftModifier;
 +    if (mask & 2) mods |= Qt::ControlModifier;
 +    if (mask & 4) mods |= Qt::AltModifier;
 +    if (mask & 8) mods |= Qt::ControlModifier; // Meta/Cmd -> Ctrl on Linux Qt
 +
-+    auto dispatch = [](int key, const QString &text, Qt::KeyboardModifiers mods) {
++    auto dispatch = [up](int key, const QString &text, Qt::KeyboardModifiers mods) {
 +        // Read focus + build/send the events on the GUI thread (queue via invokeMethod).
 +        // Target the focus WINDOW (the QQuickWindow), not the focused item: this
 +        // replays the real key path -- window-level focus routing AND the QML
 +        // Keys.onPressed/onReleased handlers (keywriter toggles edit mode on the
 +        // Esc *release*). Sending straight to the item can bypass that routing.
-+        QMetaObject::invokeMethod(qApp, [key, text, mods]() {
++        QMetaObject::invokeMethod(qApp, [key, text, mods, up]() {
 +            QWindow *win = QGuiApplication::focusWindow();
 +            if (!win) return;
-+            QKeyEvent press(QEvent::KeyPress, key, mods, text);
-+            QKeyEvent release(QEvent::KeyRelease, key, mods, text);
 +            QObject *target = win;
 +            if (mods != Qt::NoModifier && rmkbdIsNavKey(key)) {
 +                if (auto *qw = qobject_cast<QQuickWindow *>(win)) {
 +                    if (QQuickItem *item = qw->activeFocusItem())
 +                        target = item;
 +                }
++            }
++            QKeyEvent press(QEvent::KeyPress, key, mods, text);
++            QKeyEvent release(QEvent::KeyRelease, key, mods, text);
++            if (up) {
++                QCoreApplication::sendEvent(target, &release);
++                return;
 +            }
 +            QCoreApplication::sendEvent(target, &press);
 +            // Send release for modified keys unless both Shift and Ctrl are held
@@ -148,6 +158,7 @@
 +        if      (k == "Escape")     key = Qt::Key_Escape;
 +        else if (k == "Return")     key = Qt::Key_Return;
 +        else if (k == "Backspace")  key = Qt::Key_Backspace;
++        else if (k == "Delete")     key = Qt::Key_Delete;
 +        else if (k == "Tab")        key = Qt::Key_Tab;
 +        else if (k == "Home")       key = Qt::Key_Home;
 +        else if (k == "End")        key = Qt::Key_End;

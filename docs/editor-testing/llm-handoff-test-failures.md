@@ -1,5 +1,7 @@
 # LLM handoff: keyboard testing methodology review
 
+**Current state (2026-07-14):** For implementation work, read [todo.md](todo.md) § Fresh agent first — not the historical review below. Baseline **37 pass / 25 fail** on 62 scenarios, sandbox-prepare, single session. Latest report: `docs/recon/test-keyboard-harness-2026-07-14T23-24-42.md`. Sign-off: `bash scripts/test-keyboard-harness.sh --fast` → 62/62 PASS.
+
 Hand this file to a fresh agent with no prior context. Project: Writerdeck for reMarkable 1 — Markdown editor on tablet, keystrokes over WebSocket/phone path, QML in `third_party/keywriter/build-keywriter.sh`, device harness in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.
 
 Related: [todo.md](todo.md), [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) § Keyboard and selection.
@@ -290,14 +292,10 @@ Do not drop these when adding new files; soft-reset cascade failures may return 
 
 ### Sign-off gate (explicit)
 
-All of the following on one device run (`bash scripts/test-keyboard-harness.sh --fast --hard-reset`):
+All of the following on one device run (`bash scripts/test-keyboard-harness.sh --fast`):
 
-1. All core (8) + regression `\n` (5) — already green; re-run in full suite
-2. All undo (5) — **was skipped**
-3. All `cm-*` (9) — **not written**
-4. All `wrap-*` (8+) — **blocked on width pin**
-5. All `combo-*` (14+) — **not written**
-6. `test-edit-session.sh` PASS
-7. `journalctl -u writerdeck -n 30` clean — **was skipped once**
+1. All 62 scenarios PASS — baseline 2026-07-14: 37 pass, 25 fail (see [todo.md](todo.md))
+2. `test-edit-session.sh` PASS
+3. `journalctl -u writerdeck -n 30` clean
 
 Partial green is not sign-off. "Harness exists" ≠ "behavior verified on device."

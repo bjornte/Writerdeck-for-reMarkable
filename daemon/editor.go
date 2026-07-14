@@ -49,12 +49,13 @@ const (
 
 // wsMsg is the JSON message received from the browser on keydown.
 type wsMsg struct {
-	Type  string `json:"type"`  // always "key"
-	Key   string `json:"key"`   // KeyboardEvent.key value
-	Shift bool   `json:"shift"` // event.shiftKey
-	Ctrl  bool   `json:"ctrl"`  // event.ctrlKey
-	Alt   bool   `json:"alt"`   // event.altKey
-	Meta  bool   `json:"meta"`  // event.metaKey (Cmd on Mac/iPhone)
+	Type   string `json:"type"`             // always "key"
+	Key    string `json:"key"`              // KeyboardEvent.key value
+	Shift  bool   `json:"shift"`            // event.shiftKey
+	Ctrl   bool   `json:"ctrl"`             // event.ctrlKey
+	Alt    bool   `json:"alt"`              // event.altKey
+	Meta   bool   `json:"meta"`             // event.metaKey (Cmd on Mac/iPhone)
+	Action string `json:"action,omitempty"` // "release" for key-up replay
 }
 
 // namedKeys maps browser KeyboardEvent.key values to keywriter named keys.
@@ -62,6 +63,7 @@ type wsMsg struct {
 var namedKeys = map[string]string{
 	"Enter":      "Return",
 	"Backspace":  "Backspace",
+	"Delete":     "Delete",
 	"Tab":        "Tab",
 	"Escape":     "Escape",
 	"Home":       "Home",
@@ -376,10 +378,17 @@ func translate(ev wsMsg) []byte {
 		mask |= 8
 	}
 
-	// Named control key (arrow, Enter, Backspace, Tab, Escape, Home, End)?
+	// Named control key (arrow, Enter, Backspace, Tab, Escape, Home, End, Delete)?
 	if kwKey, ok := namedKeys[key]; ok {
+		up := ev.Action == "release"
 		if mask != 0 {
+			if up {
+				return []byte(fmt.Sprintf(`{"t":"key","k":%q,"m":%d,"u":1}`, kwKey, mask))
+			}
 			return []byte(fmt.Sprintf(`{"t":"key","k":%q,"m":%d}`, kwKey, mask))
+		}
+		if up {
+			return []byte(fmt.Sprintf(`{"t":"key","k":%q,"u":1}`, kwKey))
 		}
 		return []byte(fmt.Sprintf(`{"t":"key","k":%q}`, kwKey))
 	}

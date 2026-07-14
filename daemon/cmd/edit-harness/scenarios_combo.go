@@ -22,7 +22,7 @@ func comboScenarios() []Scenario {
 			Name:    "combo-alt-right",
 			Content: helloWorld,
 			Steps: []Step{
-				// prepare leaves cursor at 0; skip Ctrl+Home (press-only poisons next modified key)
+				// prepare leaves cursor at 0; harness primes End then Ctrl+Home before modified key
 				{Keys: []Key{{Name: "ArrowRight", Alt: true}}},
 				{Expect: &StateExpect{Cursor: intp(6), SelStart: intp(6), SelEnd: intp(6)}},
 			},

@@ -18,6 +18,6 @@ Stay firmware-update-current? Each OTA resets the SSH password and may wipe the 
 ## Resume prompt
 
 > Project: reMarkable 1 Wi-Fi Markdown typewriter. Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Mac deploys; iPhone uses.
-> Shipped: [DONE.md](DONE.md). Next unchecked: Physical Home; keyboard editing (wrapped lines, modifier combos, undo — [editor-testing/todo.md](docs/editor-testing/todo.md)). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `test-edit-session.sh` (§21); after arrow/selection QML: `test-keyboard-harness.sh` (§22).
+> Shipped: [DONE.md](DONE.md). Next unchecked: Physical Home; keyboard editing — harness **37/62 PASS** ([editor-testing/todo.md](docs/editor-testing/todo.md)). Integrity: [integrity-audit.md](docs/integrity-audit.md). After QML edits: `test-edit-session.sh` (§21); after arrow/selection QML: `test-keyboard-harness.sh --fast` (§22).
 > Read: architecture, decisions, DONE, lessons, browser-vs-tablet, integrity-audit. Device: `secrets/remarkable.local.env` (`RM_HOST_WIFI`).
 > Constraints: no jailbreak/OTA/Toltec; `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`.

@@ -40,7 +40,7 @@ func bsScenarios() []Scenario {
 			Steps: []Step{
 				{Keys: []Key{{Name: "End"}}},
 				{Keys: []Key{{Name: "Backspace"}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(2), TextLen: intp(2)}},
+				{Expect: &StateExpect{Cursor: intp(2), TextLen: intp(2), Text: strp("ab")}},
 			},
 		},
 	}
