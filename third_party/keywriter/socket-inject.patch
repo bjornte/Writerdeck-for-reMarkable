@@ -124,6 +124,14 @@
 +        QMetaObject::invokeMethod(qApp, [key, text, mods, up]() {
 +            QWindow *win = QGuiApplication::focusWindow();
 +            if (!win) return;
++            if (!up && rmkbdInEditMode() && g_rootObj
++                    && (rmkbdIsNavKey(key) || key == Qt::Key_Return
++                        || (mods != Qt::NoModifier))) {
++                QMetaObject::invokeMethod(g_rootObj, "socketRouteKey",
++                    Qt::BlockingQueuedConnection,
++                    Q_ARG(QVariant, key), Q_ARG(QVariant, static_cast<int>(mods)));
++                return;
++            }
 +            QObject *target = win;
 +            if (auto *qw = qobject_cast<QQuickWindow *>(win)) {
 +                QQuickItem *queryItem = rmkbdInEditMode() ? rmkbdEditQueryItem() : nullptr;
@@ -139,6 +147,9 @@
 +            }
 +            QKeyEvent press(QEvent::KeyPress, key, mods, text);
 +            QKeyEvent release(QEvent::KeyRelease, key, mods, text);
++            if (up && rmkbdInEditMode()
++                    && (rmkbdIsNavKey(key) || (mods != Qt::NoModifier)))
++                return;
 +            if (up) {
 +                QCoreApplication::sendEvent(target, &release);
 +                return;
