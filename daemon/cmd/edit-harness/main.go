@@ -345,7 +345,7 @@ func (h *Harness) RunScenario(sc Scenario) error {
 		if label == "" {
 			label = fmt.Sprintf("step %d", i+1)
 		}
-		if !modKeyPrimed && len(step.Keys) > 0 && stepHasModifiedNav(step) {
+		if !modKeyPrimed && len(step.Keys) > 0 && stepNeedsModifiedPrime(step) {
 			st, err := h.queryState()
 			if err != nil {
 				return fmt.Errorf("%s: state before prime: %w", label, err)
@@ -628,13 +628,11 @@ func (h *Harness) queryNoteText() (string, error) {
 		b, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
 	}
-	var raw struct {
-		Content string `json:"content"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return "", err
 	}
-	return raw.Content, nil
+	return string(b), nil
 }
 
 func (h *Harness) sendKey(ws *websocket.Conn, k Key) error {

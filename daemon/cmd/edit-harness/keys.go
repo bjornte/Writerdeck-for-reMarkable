@@ -55,6 +55,27 @@ func stepHasModifiedNav(step Step) bool {
 	return false
 }
 
+func stepNeedsModifiedPrime(step Step) bool {
+	if !stepHasModifiedNav(step) {
+		return false
+	}
+	for _, k := range step.Keys {
+		switch k.Name {
+		case "Home", "End":
+			// Ctrl+Home/End are positioning; End-prime before them poisons/wipes state.
+			if k.Ctrl && !k.Shift && !k.Alt {
+				continue
+			}
+			return true
+		case "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Backspace", "Delete":
+			if k.Alt || k.Ctrl {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func stepExpectedCursor(step Step) *int {
 	if step.Expect == nil {
 		return nil

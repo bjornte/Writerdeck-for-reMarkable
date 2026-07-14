@@ -67,7 +67,7 @@ func cmScenarios() []Scenario {
 			Name:    "cm-select-down-up-doc-end",
 			Content: "one\ntwo\nthree",
 			Steps: []Step{
-				{Keys: []Key{{Name: "End"}}},
+				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Expect: &StateExpect{Cursor: intp(13)}},
 				{Keys: []Key{{Name: "ArrowDown", Shift: true}}},
 				{Keys: []Key{{Name: "ArrowUp", Shift: true}}},
@@ -78,7 +78,7 @@ func cmScenarios() []Scenario {
 			Name:    "cm-select-up-basic",
 			Content: "one\ntwo\nthree",
 			Steps: []Step{
-				{Keys: []Key{{Name: "End"}}},
+				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Label: "shift+up", Keys: []Key{{Name: "ArrowUp", Shift: true}}},
 				{Expect: &StateExpect{Cursor: intp(13), SelStart: intp(4), SelEnd: intp(13), SelLen: intp(9)}},
 			},

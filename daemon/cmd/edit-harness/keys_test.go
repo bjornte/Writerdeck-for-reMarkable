@@ -61,6 +61,15 @@ func TestFindScenariosByTag(t *testing.T) {
 	}
 }
 
+func TestStepNeedsModifiedPrime(t *testing.T) {
+	if stepNeedsModifiedPrime(Step{Keys: []Key{{Name: "Home", Ctrl: true}}}) {
+		t.Fatal("ctrl+home should not prime")
+	}
+	if !stepNeedsModifiedPrime(Step{Keys: []Key{{Name: "ArrowRight", Ctrl: true}}}) {
+		t.Fatal("ctrl+right from 0 should prime")
+	}
+}
+
 func TestKeyModifiedNav(t *testing.T) {
 	kAlt := Key{Name: "ArrowRight", Alt: true}
 	if !kAlt.isModifiedNav() {
