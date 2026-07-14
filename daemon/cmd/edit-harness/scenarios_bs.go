@@ -7,7 +7,6 @@ func bsScenarios() []Scenario {
 			Name:    "bs-alt-word-mid",
 			Content: "hello world",
 			Steps: []Step{
-				{Keys: []Key{{Name: "Home", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowRight"}}, Repeat: 8},
 				{Expect: &StateExpect{Cursor: intp(8), TextLen: intp(11)}},
 				{Label: "alt+backspace mid word", Keys: []Key{{Name: "Backspace", Alt: true}}},

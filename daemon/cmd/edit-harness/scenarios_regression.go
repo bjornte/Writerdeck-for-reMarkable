@@ -62,6 +62,7 @@ func regressionScenarios() []Scenario {
 			Name:    "shift-left-repeat-mid-doc",
 			Content: "abc\ndef ghij",
 			Steps: []Step{
+				{Keys: []Key{{Name: "ArrowDown"}}},
 				{Keys: []Key{{Name: "End"}}},
 				{Expect: &StateExpect{Cursor: intp(12)}},
 				{Label: "shift+left x3", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 3},

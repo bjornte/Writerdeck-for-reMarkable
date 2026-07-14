@@ -1518,6 +1518,7 @@ new7n_fn = (
     '        pos--\n'
     '        while (pos > 0 && isSpaceChar(text.charAt(pos))) pos--\n'
     '        while (pos > 0 && !isSpaceChar(text.charAt(pos - 1))) pos--\n'
+    '        while (pos < text.length && isSpaceChar(text.charAt(pos))) pos++\n'
     '        return pos\n'
     '    }\n'
     '\n'
