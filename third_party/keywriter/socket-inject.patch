@@ -94,7 +94,10 @@
 +            QKeyEvent press(QEvent::KeyPress, key, mods, text);
 +            QKeyEvent release(QEvent::KeyRelease, key, mods, text);
 +            QCoreApplication::sendEvent(win, &press);
-+            QCoreApplication::sendEvent(win, &release);
++            // Skip release for modified keys: Qt TextEdit shortcuts on release
++            // (e.g. Ctrl+Shift+Left after select-to-line) can delete the buffer.
++            if (mods == Qt::NoModifier)
++                QCoreApplication::sendEvent(win, &release);
 +        }, Qt::QueuedConnection);
 +    };
 +
