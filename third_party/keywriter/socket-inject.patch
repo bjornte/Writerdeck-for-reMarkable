@@ -128,7 +128,7 @@
 +                    && (rmkbdIsNavKey(key) || key == Qt::Key_Return
 +                        || (mods != Qt::NoModifier))) {
 +                QMetaObject::invokeMethod(g_rootObj, "socketRouteKey",
-+                    Qt::BlockingQueuedConnection,
++                    Qt::DirectConnection,
 +                    Q_ARG(QVariant, key), Q_ARG(QVariant, static_cast<int>(mods)));
 +                return;
 +            }
