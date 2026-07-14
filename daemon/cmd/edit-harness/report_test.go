@@ -85,3 +85,40 @@ func TestEscapeMDCell(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+func TestReportTableCellMaxLength(t *testing.T) {
+	long := strings.Repeat("x", 200)
+	got := reportTableCell(long)
+	if runeLen(got) > maxReportCellLen {
+		t.Fatalf("len %d want <= %d: %q", runeLen(got), maxReportCellLen, got)
+	}
+	if !strings.HasSuffix(got, "\u2026") {
+		t.Fatalf("expected ellipsis truncation, got %q", got)
+	}
+}
+
+func TestFormatMarkdownReportCellLimit(t *testing.T) {
+	meta := runMeta{
+		StartedAt: time.Date(2026, 7, 14, 19, 0, 0, 0, time.UTC),
+		Target:    "tablet:8000",
+		Mode:      "sandbox-prepare",
+	}
+	errMsg := strings.Repeat("cursor want 3 got 5; ", 20)
+	results := []scenarioResult{{
+		Name:    strings.Repeat("very-long-scenario-name-", 10),
+		Kind:    outcomeFail,
+		Duration: time.Second,
+		Err:     errMsg,
+	}}
+	got := formatMarkdownReport(meta, results)
+	assertReportTableCellLimits(got)
+}
+
+func TestAssertReportTableCellLimitsPanics(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for oversized cell")
+		}
+	}()
+	assertReportTableCellLimits("| Name | Comments |\n|------|----------|\n| ok | " + strings.Repeat("z", 141) + " |\n")
+}

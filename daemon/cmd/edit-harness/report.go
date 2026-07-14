@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const maxReportCellLen = 140
+
 type outcomeKind int
 
 const (
@@ -63,10 +65,10 @@ func (r scenarioResult) comments() string {
 		parts = append(parts, r.Err)
 	}
 	if r.PrepareRecovered {
-		parts = append(parts, "auto hard-reset before run")
+		parts = append(parts, "prepare retries")
 	}
 	if r.ResetDuration > 0 {
-		parts = append(parts, fmt.Sprintf("editor reset %.1fs", r.ResetDuration.Seconds()))
+		parts = append(parts, fmt.Sprintf("reset %.1fs", r.ResetDuration.Seconds()))
 	}
 	if r.ContaminatedBy != "" {
 		parts = append(parts, "cascade suspect after "+r.ContaminatedBy)
@@ -82,6 +84,68 @@ func escapeMDCell(s string) string {
 	s = strings.ReplaceAll(s, "|", "\\|")
 	s = strings.ReplaceAll(s, "\n", " ")
 	return s
+}
+
+// reportTableCell is the only allowed path for markdown table cell text.
+// Every table cell must pass through here; maxReportCellLen is a hard limit.
+func reportTableCell(s string) string {
+	s = escapeMDCell(s)
+	s = truncateRunes(s, maxReportCellLen)
+	if runeLen(s) > maxReportCellLen {
+		panic(fmt.Sprintf("reportTableCell: invariant violated (%d > %d)", runeLen(s), maxReportCellLen))
+	}
+	return s
+}
+
+func runeLen(s string) int {
+	return len([]rune(s))
+}
+
+func truncateRunes(s string, max int) string {
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	if max <= 1 {
+		return string(r[:max])
+	}
+	return string(r[:max-1]) + "\u2026"
+}
+
+// assertReportTableCellLimits verifies every data row in a markdown report table.
+// Called from formatMarkdownReport before return; tests may call directly.
+func assertReportTableCellLimits(md string) {
+	inTable := false
+	for _, line := range strings.Split(md, "\n") {
+		if !strings.HasPrefix(line, "|") {
+			continue
+		}
+		if strings.HasPrefix(line, "|---") || strings.HasPrefix(line, "| ----") {
+			inTable = true
+			continue
+		}
+		if !inTable {
+			continue
+		}
+		cells := splitMDTableRow(line)
+		for i, cell := range cells {
+			if runeLen(cell) > maxReportCellLen {
+				panic(fmt.Sprintf("report table cell %d exceeds %d chars: %q", i, maxReportCellLen, cell))
+			}
+		}
+	}
+}
+
+func splitMDTableRow(line string) []string {
+	line = strings.TrimSpace(line)
+	line = strings.TrimPrefix(line, "|")
+	line = strings.TrimSuffix(line, "|")
+	parts := strings.Split(line, "|")
+	cells := make([]string, len(parts))
+	for i, p := range parts {
+		cells[i] = strings.TrimSpace(p)
+	}
+	return cells
 }
 
 // linkContamination marks prepare failures and recovery-after-failure patterns.
@@ -179,14 +243,16 @@ func formatMarkdownReport(meta runMeta, results []scenarioResult) string {
 		if comments == "" {
 			comments = "—"
 		}
-		b.WriteString(fmt.Sprintf("| %s | %s | %.1f | %s | %s | %s |\n",
-			escapeMDCell(r.Name),
-			r.resultCell(),
-			r.Duration.Seconds(),
-			recovery,
-			escapeMDCell(cascade),
-			escapeMDCell(comments),
+		b.WriteString(fmt.Sprintf("| %s | %s | %s | %s | %s | %s |\n",
+			reportTableCell(r.Name),
+			reportTableCell(r.resultCell()),
+			reportTableCell(fmt.Sprintf("%.1f", r.Duration.Seconds())),
+			reportTableCell(recovery),
+			reportTableCell(cascade),
+			reportTableCell(comments),
 		))
 	}
-	return b.String()
+	out := b.String()
+	assertReportTableCellLimits(out)
+	return out
 }
