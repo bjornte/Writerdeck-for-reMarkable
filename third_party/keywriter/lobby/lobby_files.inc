@@ -1,6 +1,6 @@
                     // 1 Files
                     Item {
-                        visible: lobbyPage === 1
+                        visible: lobbyPage === 0
                         anchors.fill: parent
 
                         Column {

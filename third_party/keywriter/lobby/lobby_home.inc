@@ -1,6 +1,6 @@
                     // 0 Home
                     Item {
-                        visible: lobbyPage === 0
+                        visible: lobbyPage === 5
                         anchors.fill: parent
                         Flickable {
                             anchors.fill: parent
@@ -35,7 +35,7 @@
                                     wrapMode: Text.WordWrap
                                 }
                                 Text {
-                                    text: "Open the Files tab (2) or press Ctrl-K.\nUse Tab / arrows / 1-6 to switch pages."
+                                    text: "Open the Files tab (1) or press Ctrl-K.\nUse Tab / arrows / 1-6 to switch pages."
                                     color: "#888888"
                                     font.pointSize: 10
                                     font.family: "Noto Sans"

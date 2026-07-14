@@ -1,6 +1,6 @@
                     // 4 Settings
                     Item {
-                        visible: lobbyPage === 4
+                        visible: lobbyPage === 3
                         anchors.fill: parent
                         Flickable {
                             anchors.fill: parent

@@ -107,7 +107,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	if err := goLobby(base); err != nil {
 		return err
 	}
-	if err := wsKey(ws, "5"); err != nil {
+	if err := wsKey(ws, "4"); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -151,7 +151,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	fmt.Println("  github: secret/pin and secret/vault present")
 
 	// Files tab -> new note -> edit content -> encrypt.
-	if err := wsKey(ws, "2"); err != nil {
+	if err := wsKey(ws, "1"); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -188,7 +188,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 
 	_ = sshRm(host, testEncNote)
 
-	if err := wsKey(ws, "2"); err != nil {
+	if err := wsKey(ws, "1"); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -219,7 +219,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	fmt.Println("  files: encrypted note (PIN via Files UI, encrypt confirmed)")
 
 	// Settings -> Change PIN via keyboard.
-	if err := wsKey(ws, "5"); err != nil {
+	if err := wsKey(ws, "4"); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -262,7 +262,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	fmt.Println("  github: secret/pin updated")
 
 	// Edit encrypted note (unlock PIN on open).
-	if err := wsKey(ws, "2"); err != nil {
+	if err := wsKey(ws, "1"); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -294,7 +294,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	fmt.Println("  github: encrypted note synced as opaque bytes")
 
 	// Decrypt and verify plain on GitHub.
-	if err := wsKey(ws, "2"); err != nil {
+	if err := wsKey(ws, "1"); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -345,6 +345,11 @@ func run(base, wsURL, host string, cleanup bool) error {
 func resetVault(base, host string) error {
 	st, _ := getVaultStatus(base)
 	if st.Enabled {
+		notesDir := "/home/root/Writerdeck-user-documents"
+		for _, n := range []string{testNote, testEncNote} {
+			script := fmt.Sprintf("rm -f %s/%s", notesDir, n)
+			_ = exec.Command("ssh", "-o", "ConnectTimeout=8", "root@"+host, "sh", "-c", script).Run()
+		}
 		if token, err := getSyncToken(base); err == nil {
 			if syncSt, err := getSyncStatus(base); err == nil && syncSt.SyncRepo != "" {
 				if pin, err := ghFileText(token, syncSt.SyncRepo, "secret/pin"); err == nil {
@@ -361,11 +366,6 @@ func resetVault(base, host string) error {
 		_ = tabletReqOnce(base, "verifyvaultpin", changedPIN)
 		_ = tabletReq(base, "disablevault", "")
 		time.Sleep(stepPause)
-	}
-	notesDir := "/home/root/Writerdeck-user-documents"
-	for _, n := range []string{testNote, testEncNote} {
-		script := fmt.Sprintf("rm -f %s/%s", notesDir, n)
-		_ = exec.Command("ssh", "-o", "ConnectTimeout=8", "root@"+host, "sh", "-c", script).Run()
 	}
 	// Confirm vault is off before the UI setup step.
 	deadline := time.Now().Add(5 * time.Second)

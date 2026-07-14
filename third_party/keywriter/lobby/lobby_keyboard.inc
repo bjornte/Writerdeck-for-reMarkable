@@ -1,6 +1,6 @@
                     // 2 Keyboard
                     Item {
-                        visible: lobbyPage === 2
+                        visible: lobbyPage === 1
                         anchors.fill: parent
                         Flickable {
                             anchors.fill: parent

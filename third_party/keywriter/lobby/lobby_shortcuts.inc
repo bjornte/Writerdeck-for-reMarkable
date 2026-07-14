@@ -1,6 +1,6 @@
                     // 5 Shortcuts
                     Item {
-                        visible: lobbyPage === 5
+                        visible: lobbyPage === 4
                         anchors.fill: parent
                         Flickable {
                             anchors.fill: parent

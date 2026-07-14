@@ -119,7 +119,7 @@ func run(base, wsURL, note string) error {
 	}
 	defer ws.Close()
 
-	for _, k := range []string{"Tab", "Enter"} {
+	for _, k := range []string{"Enter"} {
 		if err := ws.WriteJSON(map[string]string{"type": "key", "key": k}); err != nil {
 			return fmt.Errorf("key %s: %w", k, err)
 		}

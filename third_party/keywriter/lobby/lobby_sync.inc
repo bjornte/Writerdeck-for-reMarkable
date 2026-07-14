@@ -1,6 +1,6 @@
                     // 3 Sync
                     Item {
-                        visible: lobbyPage === 3
+                        visible: lobbyPage === 2
                         anchors.fill: parent
                         Flickable {
                             anchors.fill: parent

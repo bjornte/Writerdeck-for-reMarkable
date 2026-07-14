@@ -81,7 +81,7 @@
 
                     // 0 Home
                     Item {
-                        visible: lobbyPage === 0
+                        visible: lobbyPage === 5
                         anchors.fill: parent
                         Flickable {
                             anchors.fill: parent
@@ -116,7 +116,7 @@
                                     wrapMode: Text.WordWrap
                                 }
                                 Text {
-                                    text: "Open the Files tab (2) or press Ctrl-K.\nUse Tab / arrows / 1-6 to switch pages."
+                                    text: "Open the Files tab (1) or press Ctrl-K.\nUse Tab / arrows / 1-6 to switch pages."
                                     color: "#888888"
                                     font.pointSize: 10
                                     font.family: "Noto Sans"
@@ -136,7 +136,7 @@
                     }
                     // 1 Files
                     Item {
-                        visible: lobbyPage === 1
+                        visible: lobbyPage === 0
                         anchors.fill: parent
 
                         Column {
@@ -333,7 +333,7 @@
                     }
                     // 2 Keyboard
                     Item {
-                        visible: lobbyPage === 2
+                        visible: lobbyPage === 1
                         anchors.fill: parent
                         Flickable {
                             anchors.fill: parent
@@ -417,7 +417,7 @@
                     }
                     // 3 Sync
                     Item {
-                        visible: lobbyPage === 3
+                        visible: lobbyPage === 2
                         anchors.fill: parent
                         Flickable {
                             anchors.fill: parent
@@ -549,7 +549,7 @@
                     }
                     // 4 Settings
                     Item {
-                        visible: lobbyPage === 4
+                        visible: lobbyPage === 3
                         anchors.fill: parent
                         Flickable {
                             anchors.fill: parent
@@ -818,7 +818,7 @@
                     }
                     // 5 Shortcuts
                     Item {
-                        visible: lobbyPage === 5
+                        visible: lobbyPage === 4
                         anchors.fill: parent
                         Flickable {
                             anchors.fill: parent
@@ -861,7 +861,7 @@
                     font.family: "Noto Mono"
                     font.pointSize: 9
                     color: "#888888"
-                    text: lobbyPage === 1 && lobbyFilesMode === ""
+                    text: lobbyPage === 0 && lobbyFilesMode === ""
                         ? "n new  Enter edit  v read  r rename  d delete"
                         : "Tab next page  1-6 jump  Ctrl-K files"
                 }
