@@ -2,7 +2,7 @@
 
 Hand-maintained scoreboard for full `bash scripts/test-keyboard-harness.sh --fast` sessions (no `-s`, no `--tag`). Update this table after every full-suite run — add a row with timestamp, pass/fail/prep, delta vs prior milestone, and one-line context (commit or what changed). Per-run reports: `docs/recon/test-keyboard-harness-*.{md,txt}` (new runs only; older files consolidated in [harness-runs.md](../recon/harness-runs.md)).
 
-Sign-off gate: **94/94 PASS**.
+Sign-off gate: **102/102 PASS** (suite rewritten 2026-07-16; pre-rewrite best was 89/94).
 
 | Run | Suite | Pass | Fail | Prep | vs prior | Context |
 |-----|-------|------|------|------|----------|---------|
@@ -20,5 +20,6 @@ Sign-off gate: **94/94 PASS**.
 | 2026-07-15T09-47-15 | 90 | 68 | 21 | 1 | +4 | f1ceaaa first full 90; combo/wrap 42/42; undo 0/7; touch 0/3; delete forward broken |
 | 2026-07-15T10-07-59 | 90 | 73 | 16 | 1 | +5 | 2ee3a92 goalX + delete cursor + shift+right repeat; critical 31/34 (undo only fails) |
 | 2026-07-15T23-53-00 | 90 | 80 | 9 | 1 | +7 | 11625d7 custom edit undo stack; undo 7/7 + critical 34/34; remaining: touch 0/3, plain L/R scroll, shift vertical shrink, goal-col |
+| 2026-07-16T00-37-27 | 94 | 89 | 4 | 1 | +9 | bdccee9 Left/Right caret + hw page cmds (contentY 0→1500→3000); touch 3/3; remaining: shift vertical shrink, goal-col, unicode prepare, alt-bs+sel |
 
-Combo-tag milestones (25 combo scenarios, `--tag combo`): 6/16 @ baseline → 9/13 @ `22ad701` → **25/25** @ `071f998` (`04-45-43`, 83-scenario suite). Wrap tag **17/17** same run. Full 90: **80/90** @ `11625d7` (`23-53-00`); critical **34/34** @ `11625d7` (`23-52-27`); report `docs/recon/test-keyboard-harness-2026-07-15T23-53-00.md`.
+Combo-tag milestones (25 combo scenarios, `--tag combo`): 6/16 @ baseline → 9/13 @ `22ad701` → **25/25** @ `071f998` (`04-45-43`, 83-scenario suite). Wrap tag **17/17** same run. Full 94: **89/94** @ `bdccee9` (`00-37-27`); critical includes plain Left/Right caret; report `docs/recon/test-keyboard-harness-2026-07-16T00-37-27.md`.

@@ -1,6 +1,6 @@
 # LLM handoff: keyboard testing methodology review
 
-**Current state (2026-07-15):** For implementation work, read [todo.md](todo.md) § Fresh agent first. Scores: [milestone-runs.md](milestone-runs.md); detail: [harness-runs.md](../recon/harness-runs.md). Sign-off: `bash scripts/test-keyboard-harness.sh --fast` → **90/90 PASS**. Historical baseline notes below may reference the 83-scenario suite.
+**Current state (2026-07-16):** Harness rewrite confirmed — **102** scenarios; no device run yet. Read [todo.md](todo.md). Pre-rewrite best full **89/94** @ `bdccee9`. Sign-off after device baseline: `bash scripts/test-keyboard-harness.sh --fast` → **102/102 PASS**. Historical notes below may reference older suite sizes.
 
 Hand this file to a fresh agent with no prior context. Project: Writerdeck for reMarkable 1 — Markdown editor on tablet, keystrokes over WebSocket/phone path, QML in `third_party/keywriter/build-keywriter.sh`, device harness in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.
 
@@ -157,7 +157,7 @@ Soft-reset full suite had known cascade failures (scenarios pass in isolation wi
 | `docs/editor-testing/milestone-runs.md` | Full-suite scoreboard — update after each `--fast` run |
 | `docs/recon/harness-runs.md` | Consolidated run log and per-scenario matrix |
 | `docs/recon/test-keyboard-harness-*.{md,txt}` | Per-run reports from each harness invocation; pre-2026-07-15 batch consolidated in harness-runs.md |
-| `daemon/cmd/edit-harness/scenarios_*.go` | 90 scenarios across core, combo, wrap, gap, undo, touch, selection |
+| `daemon/cmd/edit-harness/scenarios_*.go` | 102 scenarios across core, combo, wrap, gap, hw, read, undo, touch, selection |
 | `third_party/keywriter/build-keywriter.sh` | `handleMacArrow`, `lineDownPos` vs `positionToRectangle` |
 | Git log around `1a77f7b`–`d5ab632` | QML fixes vs doc "shipped" claims |
 | `docs/editor-testing/scenario-cookbook.md` § Priority order | Open kernel clusters vs ported scenarios |

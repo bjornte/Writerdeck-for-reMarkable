@@ -2,7 +2,7 @@
 
 Consolidated from per-run recon files on 2026-07-15. Individual `test-keyboard-harness-*.md` reports pruned.
 
-Sign-off gate: **90/90 PASS** (`bash scripts/test-keyboard-harness.sh --fast`). Run log below is mostly the **83-scenario** era; add a row after the first full **90** run.
+Sign-off gate: **102/102 PASS** (`bash scripts/test-keyboard-harness.sh --fast`). Pre-rewrite best full run: **89/94** @ `bdccee9` (`2026-07-16T00-37-27`). Scoreboard: [editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md). Older rows below are the 62/83/90-era log.
 
 ## Run log (all sessions)
 

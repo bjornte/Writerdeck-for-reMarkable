@@ -1,12 +1,12 @@
 # Scenario catalog
 
-All **94** device harness scenarios in implementation-agnostic terms. Each loads a note, performs keystrokes (Mac-style modifiers over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
+All **102** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac-style modifiers over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
 
-**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`), not character index within a logical line. Shift+arrow extends selection; plain arrow without Shift moves the caret (including Left/Right — one character). Alt = word/paragraph motion; Ctrl = document or line boundaries (Mac editing model). Hardware page-turn buttons are **not** keyboard arrows; harness injects `pageleft`/`pageright` cmds and asserts `contentY`.
+**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`), not character index within a logical line. Shift+arrow extends selection; plain arrow without Shift moves the caret (including Left/Right — one character). Alt = word/paragraph motion; Ctrl = document or line boundaries (Mac editing model). Hardware page-turn buttons are **not** keyboard arrows; harness injects `pageleft`/`pageright` cmds and asserts `contentY`. Reading-mode overscroll uses Esc → preview (`mode=0`) then the same page cmds.
 
-Filter critical scenarios: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**36** scenarios). These cover plain/shift navigation (including Left/Right), backspace/delete, enter, select-all, typing over selection, word and line delete, doc home/end, and undo/redo — the minimum bar from Microsoft, Obsidian, and macOS text-editing conventions. Failures here block basic editing.
+**Rewrite shape:** Motion, selection, page, and shrink/extend scenarios assert after **1, 3, and 7** presses and cover **both directions** (or grow-then-shrink). Shared prose includes æøå / accents and two bullet lists. Specialized Content remains for wrap geometry (W=320), empty document, goal-column shapes, and tall page-scroll bodies. Editor positions use QString/BMP indexing (`editorLen`), not Go UTF-8 byte lengths.
 
-Authoritative names: `bash scripts/test-keyboard-harness.sh --list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`.
+Filter critical scenarios: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**36** scenarios). Authoritative names: `bash scripts/test-keyboard-harness.sh --list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`.
 
 ## Critical (36)
 
@@ -23,158 +23,156 @@ Must pass for basic editing. Tag: `critical`. Grouped by function; each row is o
 | Undo / redo | `undo-redo-len`, `gap-undo-chain`, `gap-redo-shift-ctrl-z` |
 | Word nav | `combo-alt-left`, `combo-alt-right` |
 
-Not critical (still valuable): selection shrink on reverse (`shift-down-then-up-shrinks`, `shift-left-then-right-shrinks`), caret clamps at ends (`gap-plain-left-at-doc-start`, `gap-plain-right-at-doc-end`), hardware page scroll (`hw-page-*`), goal-column precision on shorter lines, touch tap placement, combo repeat, unicode word boundaries, most wrap/combo permutations.
+Not critical (still valuable): selection shrink on reverse (`shift-down-then-up-shrinks`, `shift-left-then-right-shrinks`, `shift-right-then-left-shrinks`), caret clamps at ends, hardware page scroll (`hw-page-*`), reading overscroll clamp (`read-overscroll-clamps`), goal-column precision, touch tap placement, combo repeat, unicode word boundaries, most wrap/combo permutations.
 
-## Core (8)
-
-| Scenario | Behavior |
-|----------|----------|
-| `load-cursor-at-start` | After open, caret at document start, no selection, full text present, edit mode. |
-| `home-clears-selection` | End then Home: caret at line start, selection cleared. |
-| `shift-right-from-home` | From doc start, Shift+Right ×3 selects characters 0–3 (anchor at start). |
-| `shift-left-from-end` | From doc end, Shift+Left ×3 selects last three characters (caret stays at end). |
-| `shift-right-after-home-no-stale-anchor` | Two Shift+Right steps from start grow one continuous selection from anchor 0. |
-| `shift-down-after-arrow-down` | Down ×2 to line 3, then Shift+Down: selection extends down one logical line. |
-| `shift-up-after-arrow-down` | Down ×2 to line 3, then Shift+Up: selection extends up to line 2. |
-| `ctrl-shift-left-select-line` | Shift+Home from end of line selects the whole line. |
-
-## Regression — logical newlines (6)
+## Core (9)
 
 | Scenario | Behavior |
 |----------|----------|
-| `down-one-logical-line` | Down once from first line moves to start of second line (`aa` / `bb`). |
-| `shift-down-then-up-shrinks` | Shift+Down extends selection; Shift+Up shrinks it (visual-x shrink). |
-| `shift-left-repeat-from-end` | Shift+Left ×3 from end of line selects the last three characters. |
-| `alt-backspace-deletes-word` | Alt+Backspace at end of `hello world` leaves `hello`. |
-| `ctrl-backspace-deletes-line` | Ctrl+Backspace on second line removes that line back to the newline. |
-| `shift-left-repeat-mid-doc` | Shift+Left ×3 from end of second line selects three characters correctly. |
+| `load-cursor-at-start` | After open, caret at document start, no selection, full prose present, edit mode. |
+| `home-clears-selection` | Mid horizontal line, End then Shift+Home then Home: selection cleared to line start. |
+| `shift-right-from-home` | From horizontal line start, Shift+Right at N=1/3/7 grows selection from fixed anchor. |
+| `shift-left-from-end` | From horizontal line end, Shift+Left at N=1/3/7 grows selection backward. |
+| `shift-right-after-home-no-stale-anchor` | Repeated Shift+Right keeps anchor at line start through N=7. |
+| `shift-left-after-end-no-stale-anchor` | Repeated Shift+Left keeps anchor at line end through N=7. |
+| `shift-down-after-arrow-down` | Mid vertical block, Shift+Down at N=1/3/7 extends selection downward. |
+| `shift-up-after-arrow-down` | Near bottom of vertical block, Shift+Up at N=1/3/7 extends selection upward. |
+| `ctrl-shift-left-select-line` | Shift+Home from horizontal line end selects the whole line. |
 
-## CodeMirror vertical — explicit newlines (9)
-
-| Scenario | Behavior |
-|----------|----------|
-| `cm-line-down-basic` | Down from doc start moves to start of second logical line. |
-| `cm-line-down-shorter` | Down from mid first line lands at closest x on a shorter second line (clamps to line end). |
-| `cm-line-down-last-line` | Down on the last line moves caret to document end. |
-| `cm-line-down-goal-col` | Down twice preserves visual x across a short middle line (not character offset). |
-| `cm-select-line-down` | Shift+Down from doc start selects through end of first line. |
-| `cm-select-line-down-mid` | Shift+Down from mid-line extends selection to target on next line. |
-| `cm-select-down-up-doc-end` | At doc end, Shift+Down then Shift+Up yields a bounded upward selection. |
-| `cm-select-up-basic` | Shift+Up from doc end selects upward one logical line. |
-| `cm-select-up-mid` | Shift+Up from mid line 3 selects upward to line 2 boundary. |
-
-## Modifier combos — Alt, Ctrl, Shift (25)
+## Regression — logical newlines (7)
 
 | Scenario | Behavior |
 |----------|----------|
-| `combo-alt-left` | Alt+Left from end moves back one word. |
-| `combo-alt-right` | Alt+Right from start moves forward one word. |
-| `combo-alt-up` | Alt+Up from end of second paragraph moves to doc start. |
-| `combo-alt-down` | Alt+Down from start moves to start of next paragraph. |
-| `combo-ctrl-left` | Ctrl+Left from end moves to doc start. |
-| `combo-ctrl-right` | Ctrl+Right from start moves to doc end. |
-| `combo-ctrl-up` | Ctrl+Up from doc end moves to doc start. |
-| `combo-ctrl-down` | Ctrl+Down from start moves to doc end. |
-| `combo-shift-alt-left` | Shift+Alt+Left from end selects back one word. |
-| `combo-shift-alt-left-repeat` | Shift+Alt+Left twice from end selects both words. |
-| `combo-shift-alt-right` | Shift+Alt+Right from start selects forward one word. |
-| `combo-shift-alt-right-repeat` | Shift+Alt+Right twice from start selects both words. |
-| `combo-shift-alt-up` | Shift+Alt+Up from doc end selects to previous paragraph start. |
-| `combo-shift-alt-down` | Shift+Alt+Down from start selects through next paragraph. |
-| `combo-shift-ctrl-left` | Shift+Ctrl+Left from end selects to line start (Mac ⌘⇧←). |
-| `combo-shift-ctrl-left-multiline` | Shift+Ctrl+Left on line 2 selects that line only (not whole doc). |
-| `combo-shift-ctrl-right` | Shift+Ctrl+Right from start selects to doc end. |
-| `combo-shift-ctrl-up` | Shift+Ctrl+Up from doc end selects to doc start. |
-| `combo-shift-ctrl-down` | Shift+Ctrl+Down from start selects to doc end. |
-| `combo-shift-home-line` | Shift+Home on line 2 selects from line start to caret. |
-| `combo-shift-end-line` | Shift+End on line 2 selects from caret to line end. |
-| `combo-ctrl-home` | Ctrl+Home on line 2 moves to doc start. |
-| `combo-ctrl-end` | Ctrl+End moves to doc end. |
-| `combo-shift-ctrl-home` | Shift+Ctrl+Home on line 2 selects from doc start through line start. |
-| `combo-shift-ctrl-end` | Shift+Ctrl+End on line 2 selects from line start through line end. |
+| `down-one-logical-line` | Down at N=1/3/7 across equal-width vertical lines. |
+| `up-one-logical-line` | Up at N=1/3/7 (reverse of down). |
+| `shift-down-then-up-shrinks` | Shift+Down extends; Shift+Up shrinks at N=1/3/7. |
+| `shift-left-repeat-from-end` | Shift+Left at N=1/3/7 from horizontal line end. |
+| `alt-backspace-deletes-word` | Alt+Backspace at N=1/3/7 from end of word line. |
+| `ctrl-backspace-deletes-line` | Ctrl+Backspace at N=1/3/7 from last vertical line. |
+| `shift-left-repeat-mid-doc` | Shift+Left at N=1/3/7 from mid vertical line end. |
 
-## Backspace extensions (4)
+## CodeMirror vertical (11)
 
 | Scenario | Behavior |
 |----------|----------|
-| `bs-alt-word-mid` | Alt+Backspace mid-word deletes the word before the caret. |
-| `bs-ctrl-line-start` | Ctrl+Backspace at start of line 2 deletes line 1 and newline. |
-| `bs-shift-with-selection` | Shift+Backspace with a full-line selection clears document. |
-| `bs-plain` | Backspace ×2 from end deletes last two characters. |
+| `cm-line-down-basic` | Down at N=1/3/7 on prose vertical block. |
+| `cm-line-up-basic` | Up at N=1/3/7 (reverse). |
+| `cm-line-down-shorter` | Down from mid longer line clamps onto shorter next line. |
+| `cm-line-up-shorter` | Up from longer line clamps onto shorter previous line. |
+| `cm-line-down-last-line` | Down on last line clamps at EOF through N=7. |
+| `cm-line-down-goal-col` | Down twice preserves visual x across a short middle line. |
+| `cm-select-line-down` | Shift+Down at N=1/3/7 from top of vertical block. |
+| `cm-select-line-down-mid` | Shift+Down from mid-line extends to next line. |
+| `cm-select-down-up-doc-end` | At EOF, Shift+Down clamps then Shift+Up yields bounded selection. |
+| `cm-select-up-basic` | Shift+Up at N=1/3/7 from end of vertical block. |
+| `cm-select-up-mid` | Shift+Up from mid last line selects upward. |
 
-## Wrapped paragraph (14)
+## Modifier combos (25)
 
-Fixed editor width (320px). Default fixture: one long unbroken paragraph (`word ` × 40) unless noted.
+Word jumps use the shared prose word line (`alfa…juliett`). Doc-bound jumps prove idempotent clamp at N=1/3/7.
 
 | Scenario | Behavior |
 |----------|----------|
-| `wrap-down-one-visual-line` | Down once moves to second visual row, not next paragraph. |
-| `wrap-down-not-jump-paragraph` | Down does not skip past the wrapped block in one step. |
-| `wrap-up-from-visual-line-2` | Up from second visual row returns to doc start. |
-| `wrap-shift-down-one-visual` | Shift+Down selects through first visual-line break. |
-| `wrap-shift-down-then-up-shrinks` | After moving down two visual rows, Shift+Down then Shift+Up shrinks selection. |
-| `wrap-down-last-visual-line` | Down on last visual row stays at document end. |
-| `wrap-shift-down-last-to-eof` | Shift+Down at last visual row selects through document end. |
-| `wrap-mixed-newline-and-wrap` | Down from short first line enters wrapped tail of second logical line. |
-| `wrap-down-goal-column` | Down preserves visual x across a wrapped visual line break. |
-| `wrap-combo-alt-left-word` | Alt+Left on wrapped paragraph moves back within text (word nav). |
-| `wrap-combo-ctrl-bs-line` | Ctrl+Backspace on wrapped paragraph clears entire logical line. |
-| `wrap-shift-left-across-wrap` | Shift+Left ×3 from second visual row selects backward across wrap. |
-| `wrap-home-on-visual-line` | Home on second visual row moves to that visual row’s start. |
-| `wrap-end-on-visual-line` | End on second visual row moves to that visual row’s end. |
+| `combo-alt-left` / `combo-alt-right` | Word motion at N=1/3/7 both directions. |
+| `combo-alt-up` / `combo-alt-down` | Paragraph motion + clamp at N=1/3/7. |
+| `combo-ctrl-left` / `combo-ctrl-right` | Doc start/end from mid-prose caret; clamp N=1/3/7. |
+| `combo-ctrl-up` / `combo-ctrl-down` | Doc start/end vertical; clamp N=1/3/7. |
+| `combo-shift-alt-left` / `combo-shift-alt-left-repeat` | Word select backward at N=1/3/7. |
+| `combo-shift-alt-right` / `combo-shift-alt-right-repeat` | Word select forward at N=1/3/7. |
+| `combo-shift-alt-up` / `combo-shift-alt-down` | Paragraph select. |
+| `combo-shift-ctrl-left` / `combo-shift-ctrl-right` | Line/doc select; clamp N=1/3/7. |
+| `combo-shift-ctrl-left-multiline` | Shift+Ctrl+Left on line 2 selects that line only. |
+| `combo-shift-ctrl-up` / `combo-shift-ctrl-down` | Whole-doc select; clamp N=1/3/7. |
+| `combo-shift-home-line` / `combo-shift-end-line` | Line select via Shift+Home/End. |
+| `combo-ctrl-home` / `combo-ctrl-end` | Doc Home/End from mid prose; clamp N=1/3/7. |
+| `combo-shift-ctrl-home` / `combo-shift-ctrl-end` | Shift+Ctrl+Home/End from mid two-line doc. |
+
+## Backspace extensions (5)
+
+| Scenario | Behavior |
+|----------|----------|
+| `bs-alt-word-mid` | Alt+Backspace mid-word on prose word line. |
+| `bs-ctrl-line-start` | Ctrl+Backspace at start of a vertical line merges upward. |
+| `bs-shift-with-selection` | Shift+Backspace clears a full-line selection. |
+| `bs-plain` | Backspace at N=1/3/7 from horizontal line end. |
+| `delete-repeat-forward` | Delete at N=1/3/7 from horizontal line start (reverse of bs-plain). |
+
+## Wrapped paragraph (15)
+
+Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry). N=3/N=7 visual-line offsets are provisional until re-calibrated on device.
+
+| Scenario | Behavior |
+|----------|----------|
+| `wrap-down-one-visual-line` | Down at N=1/3/7 through visual rows. |
+| `wrap-down-not-jump-paragraph` | Down stays inside the wrapped block. |
+| `wrap-up-from-visual-line-2` | Up at N=1/3/7 from deep visual row back to start. |
+| `wrap-shift-down-one-visual` | Shift+Down at N=1/3/7. |
+| `wrap-shift-down-then-up-shrinks` | Extend then shrink with Shift+Up at N=1/3. |
+| `wrap-down-last-visual-line` | Down at EOF clamps through N=7. |
+| `wrap-shift-down-last-to-eof` | Shift+Down on last visual row selects through EOF. |
+| `wrap-mixed-newline-and-wrap` | Down from short first line into wrapped second line. |
+| `wrap-down-goal-column` | Down preserves visual x across a wrap break. |
+| `wrap-combo-alt-left-word` / `wrap-combo-alt-right-word` | Alt word motion at N=1/3/7 both ways. |
+| `wrap-combo-ctrl-bs-line` | Ctrl+Backspace clears the wrapped logical line. |
+| `wrap-shift-left-across-wrap` | Shift+Left at N=1/3/7 across a wrap boundary. |
+| `wrap-home-on-visual-line` / `wrap-end-on-visual-line` | Home/End on second visual row. |
 
 ## Undo and redo (5)
 
 | Scenario | Behavior |
 |----------|----------|
-| `undo-redo-len` | Select all, delete, Undo restores text, Redo re-applies delete (empty). |
-| `undo-cursor-reposition` | Insert at doc start, Undo from end restores text and caret to insert point; Redo restores insert caret. |
-| `undo-mid-line-delete` | Delete line 2, Undo restores line and caret position. |
-| `redo-cleared-by-new-edit` | After Undo, a new edit clears the redo stack (Redo has no effect). |
-| `undo-after-select-delete` | Select-all via Shift+Home, delete, Undo restores text and collapsed caret at end. |
+| `undo-redo-len` | Select all, delete, Undo restores, Redo re-applies delete. |
+| `undo-cursor-reposition` | Insert at start, Undo from EOF restores caret; Redo restores insert caret. |
+| `undo-mid-line-delete` | Delete second line, Undo restores text and caret. |
+| `redo-cleared-by-new-edit` | After Undo, a new edit clears the redo stack. |
+| `undo-after-select-delete` | Shift+Home select, delete, Undo restores collapsed caret at end. |
 
 ## Gap coverage (17)
 
 | Scenario | Behavior |
 |----------|----------|
-| `gap-up-at-doc-start` | Up at doc start leaves caret at start. |
-| `gap-plain-left-moves-caret` | Plain Left from end moves caret one character left. |
-| `gap-plain-right-moves-caret` | Plain Right from start moves caret one character right. |
-| `gap-plain-left-at-doc-start` | Plain Left at doc start clamps (caret stays at 0). |
-| `gap-plain-right-at-doc-end` | Plain Right at doc end clamps (caret stays at EOF). |
-| `gap-collapse-selection-left` | Left arrow collapses a backward selection to the near end. |
-| `gap-collapse-selection-right` | Right arrow collapses a forward selection to the far end. |
-| `gap-delete-forward` | Delete removes character after caret. |
-| `gap-delete-with-selection` | Delete with selection clears selected text. |
-| `gap-select-all` | Ctrl+A selects entire document. |
-| `gap-enter-new-line` | Enter at end inserts newline. |
-| `gap-type-replaces-selection` | Typing with selection replaces selection with typed character. |
+| `gap-up-at-doc-start` | Up at doc start clamps through N=7. |
+| `gap-plain-left-moves-caret` / `gap-plain-right-moves-caret` | Plain Left/Right at N=1/3/7 from mid horizontal line. |
+| `gap-plain-left-at-doc-start` / `gap-plain-right-at-doc-end` | Clamp at ends through N=7. |
+| `gap-collapse-selection-left` / `gap-collapse-selection-right` | Plain arrow collapses a shift selection. |
+| `gap-delete-forward` | Delete at N=1/3/7 from mid horizontal line. |
+| `gap-delete-with-selection` | Delete clears a mid-line selection. |
+| `gap-select-all` | Ctrl+A selects entire prose document. |
+| `gap-enter-new-line` | Enter at horizontal line end inserts newline. |
+| `gap-type-replaces-selection` | Typing replaces a mid-line selection. |
 | `gap-redo-shift-ctrl-z` | Shift+Ctrl+Z redoes after Undo. |
 | `gap-undo-chain` | Two Undos restore successive deletions. |
-| `gap-unicode-alt-backspace` | Alt+Backspace respects Unicode word boundaries (`résumé` → `test`). |
+| `gap-unicode-alt-backspace` | Alt+Backspace on `test résumé æøå` leaves `test résumé`. |
 | `gap-empty-doc-backspace` | Backspace on empty document is a no-op. |
-| `gap-alt-bs-with-selection` | Alt+Backspace with word selection deletes selection, leaves prior word. |
+| `gap-alt-bs-with-selection` | Alt+Backspace with a word selection deletes the selection. |
 
 ## Hardware page buttons (2)
 
 | Scenario | Behavior |
 |----------|----------|
-| `hw-page-right-scrolls-edit` | On a multi-screen note, two `pageright` cmds raise `contentY` by ~1500px each; caret stays put. |
-| `hw-page-left-scrolls-edit` | After two page-rights, two `pageleft` cmds reverse the scroll to `contentY` 0; caret unchanged. |
+| `hw-page-right-scrolls-edit` | `pageright` at N=1/3/7 raises `contentY` by ~1500px each; caret stays put. |
+| `hw-page-left-scrolls-edit` | After seeding seven page-rights, `pageleft` at N=1/3/7 returns to `contentY` 0. |
 
-## Touch (visual goal-x after tap) (3)
+## Reading mode (1)
 
 | Scenario | Behavior |
 |----------|----------|
-| `touch-down-goal-column` | Tap mid line 1 (harnessSetCursor), Down lands at same visual x on line 2. |
+| `read-overscroll-clamps` | Esc to preview; after paging to document end, ten extra `pageright` leave `contentY` unchanged; one `pageleft` decreases `contentY`. Tag: `read`. |
+
+## Touch (3)
+
+| Scenario | Behavior |
+|----------|----------|
+| `touch-down-goal-column` | Tap mid line 1, Down lands at same visual x on line 2. |
 | `touch-up-goal-column` | Tap mid line 2, Up lands at same visual x on line 1. |
 | `touch-down-shorter-line` | Tap mid longer line, Down clamps to closest x on shorter next line. |
 
-## Selection (shift reverse) (1)
+## Selection (shift reverse) (2)
 
 | Scenario | Behavior |
 |----------|----------|
-| `shift-left-then-right-shrinks` | Shift+Left extends selection, Shift+Right shrinks toward anchor (does not grow). |
+| `shift-left-then-right-shrinks` | Shift+Left extends at N=1/3/7; Shift+Right shrinks at N=1/3/7 (does not grow). |
+| `shift-right-then-left-shrinks` | Shift+Right extends at N=1/3/7; Shift+Left shrinks at N=1/3/7. |
 
 ## Sources and notation
 

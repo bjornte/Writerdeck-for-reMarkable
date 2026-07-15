@@ -134,8 +134,8 @@ func TestScenarioContentValidTextExpect(t *testing.T) {
 			if step.Expect == nil || step.Expect.Text == nil {
 				continue
 			}
-			if step.Expect.TextLen != nil && *step.Expect.TextLen != len(*step.Expect.Text) {
-				t.Fatalf("%s step %d: textLen %d != len(text) %d", sc.Name, i, *step.Expect.TextLen, len(*step.Expect.Text))
+			if step.Expect.TextLen != nil && *step.Expect.TextLen != editorLen(*step.Expect.Text) {
+				t.Fatalf("%s step %d: textLen %d != editorLen(text) %d", sc.Name, i, *step.Expect.TextLen, editorLen(*step.Expect.Text))
 			}
 		}
 	}

@@ -1,73 +1,83 @@
 # TODO: Keyboard editing + harness
 
-Mac-style editing in Writerdeck (`handleMacArrow`, `handleMacBackspace`, `handleMacEditKeys` in `build-keywriter.sh` patch 7n/7o). Drive fixes through the device harness — not manual Lobby typing.
+Mac-style editing in Writerdeck (`handleMacArrow`, `handleMacBackspace`, `handleMacEditKeys` in `build-keywriter.sh`). Drive fixes through the device harness — not manual Lobby typing.
 
-Read: [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) § Keyboard and selection, [decisions.md](../decisions.md) §22.
+Read: [scenario-cookbook.md](scenario-cookbook.md), [scenario-catalog.md](scenario-catalog.md), [lessons.md](../lessons.md) § Keyboard and selection, [decisions.md](../decisions.md) §22. Scores: [milestone-runs.md](milestone-runs.md).
 
-## Fresh agent — start here
+Root pointer only: [TODO.md](../../TODO.md) item 2.
 
-**Scores:** [milestone-runs.md](milestone-runs.md) (update after each full `--fast` run). Detail: [harness-runs.md](../recon/harness-runs.md).
+## Current score (device)
 
-| Milestone | Pass / fail | Commit / note |
-|-----------|-------------|---------------|
-| Core 62 baseline | 37 / 25 | `23-24-42` |
-| Best full 83 | 64 / 16 | `04-45-43` (`071f998`) — stopped early |
-| **Suite size** | **90** | +touch, +selection, +shift-alt repeat, +shift-ctrl multiline (not full-run yet) |
+| Milestone | Result | Note |
+|-----------|--------|------|
+| Best full suite (pre-rewrite) | **89 / 4** (+1 prep) of **94** | `00-37-27` @ `bdccee9` |
+| Sign-off gate | **102/102 PASS** after rewrite lands | `--fast`, single session |
 
-**Suite:** **94 scenarios**. Sign-off: **94/94 PASS** with `--fast`.
+### Harness rewrite — confirmed complete (no device run yet)
 
-**Deploy:** `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Relaunch Writerdeck after binary deploy (`kill` + `POST /api/open`). Harness-only: `deploy-rmkbd.sh` when `/api/test/*` or harness runner changed. `systemctl restart writerdeck` if deploy-rmkbd stops the server.
+All applicable scenario files under `daemon/cmd/edit-harness/scenarios_*.go` are rewritten. Suite size **102** (was 94). Do not treat the pre-rewrite score as current.
 
-**One Writerdeck deploy per debugging session** unless QML fails to launch. Batch kernel fixes, one push/CI/fetch/deploy, then full harness.
+What landed:
 
-### Open failure clusters (local / unverified on device)
+1. **`read-overscroll-clamps`** — Esc to preview, page past EOF, ten extra downs must keep `contentY` unchanged, one up decreases it. Tag `read`. Runner capture: `CaptureContentY` / `ExpectContentYEqCaptured` / `ExpectContentYLtCaptured`.
+2. **Omnidirectional + N=1/3/7** on motion, selection, shrink/extend, page, and combo cases (unary edits keep clear setup).
+3. **Shared prose fixture** (`fixtureProse` → harness-only `z-test-keyboard-harness.md`): Norwegian æøå / accents, two bullet lists, long horizontal + 12 uniform vertical lines + word line. Specialized Content kept for wrap (W=320), empty doc, goal-column shapes, tall page bodies.
+4. **Unicode-safe lengths** — prepare/`TextLen` expects use `editorLen` (BMP/QString), not Go byte `len()`.
 
-| Cluster | Scenario | Fix assumption |
-|---------|----------|----------------|
-| Shift+Ctrl+Left multiline | `combo-shift-ctrl-left-multiline` | Mac expects sel **0–caret**, not line start–caret. `socketRouteKey` already sets `lo=0` for Shift+Ctrl+Left; if harness still fails, check whether the key reaches `handleMacArrow` instead and uses `lineStartPos` via `extendSelectionHorizontal` without the Shift+Ctrl early block — ensure phone path hits `socketRouteKey` Shift+Ctrl branch; USB path must use `newPos=0` + `extendSelectionHorizontal`, not plain Ctrl+Left. |
-| Shift+Alt arrow repeat | `combo-shift-alt-*-repeat` | Second press used anchor `pos` for word boundary. Fixed in tree: `selectionExtendFrom(key)` + `extendSelectionHorizontal` in `socketRouteKey` and `handleMacArrow`. Deploy + verify. |
-| Visual goal-x / touch | `-t touch`, `-t cm`, `cm-line-down-goal-col` | Replaced character `goalColumn` with `goalX` from `positionToRectangle`; `lineDownPos`/`lineUpPos` always call `visualLine*Pos(pos, goalX)`. Tap/`harnesssetcursor` → `rememberGoalX`. `cm-line-down-goal-col` now expects cursor **6** (visual), not 11 (char column). Deploy + verify. |
-| Shift+Left then Right | `shift-left-then-right-shrinks` | When head is at min end and user Shift+Right, shrink selection — head/anchor math in `handleMacArrow` shift+Right/Left blocks. Partial fix in tree; verify on device. |
-| Undo cursor/text | `gap-undo-chain`, undo tag | `handleMacUndo` / `pendingRedoCursor` restore wrong caret after undo chain; triage undo tag before full suite (poisons late scenarios). |
-| Wrap / CM selection | `wrap-*`, `cm-select-*`, `shift-down-then-up-shrinks` | Mostly visual-x + `extendSelectionVertical` anchor math; see [harness-runs.md](../recon/harness-runs.md). Wrap offsets calibrated @ W=320 in `wrap_fixtures.go` (20/40/24). |
+### Remaining product bugs (from last device run @ `bdccee9`) — fix after device re-baseline
 
-Plain **Ctrl+nav from cursor 0** fixed @ `22ad701`. Combo tag **25/25** and wrap **17/17** @ `071f998` on the 83-scenario suite (pre–goal-x / pre–multiline scenario).
+- Shift+Down then Shift+Up shrink (`shift-down-then-up-shrinks`)
+- Arrow Down goal column across short line (`cm-line-down-goal-col`)
+- Shift-select near EOF (`cm-select-down-up-doc-end`)
+- Unicode word-delete prepare flake (`gap-unicode-alt-backspace`) — length fix may help; re-check on device
+- Option+Backspace with selection (`gap-alt-bs-with-selection`)
+- **New expected fail until QML clamp:** `read-overscroll-clamps`
 
-### Do not retry
+Hardware page cmds were proven via harness inject; physical gpio page buttons still need exclusive grab ([handoff](../todo-handoff-physical-home-input.md)).
 
-- Separate WebSocket wake after prepare — does not unblock modified keys.
-- End-prime before modified scenarios — wiped `query.text` / jumped to EOF.
-- Nested `invokeMethod` for `socketRouteKey` on the GUI thread — deadlock (504 on editor-state).
+## Next (device verify — only after this confirmation)
+
+1. `bash scripts/test-edit-session.sh`
+2. Full `bash scripts/test-keyboard-harness.sh --fast` → update [milestone-runs.md](milestone-runs.md); sign-off **102/102**
+3. Recalibrate wrap N=3/N=7 offsets if provisional values drift (`wrap_fixtures.go`)
+4. Product QML fixes for remaining failures + read overscroll clamp — triage once, batch fix, one Writerdeck deploy
+
+## Do not retry
+
+- Treating keyboard Left/Right as page-scroll (gpio Key_Left confusion — [lessons.md](../lessons.md)).
+- One-press / one-direction coverage as “done” for walk-back or repeat bugs.
+- Separate WebSocket wake after prepare for modified keys.
+- End-prime before modified scenarios — wiped text / jumped to EOF.
+- Nested `invokeMethod` for `socketRouteKey` on the GUI thread — deadlock.
 - Duplicate `Keys.onPressed` on query TextEdit — QML crash loop.
-- Routing only modified nav to focus item without `socketRouteKey` — Qt release poisoned buffer.
-- Redundant `Ctrl+Home` in scenario setup when prime already positions.
 - Per-scenario deploy loops — triage once, batch fix, one deploy ([lessons.md](../lessons.md) § Harness batch workflow).
 
-### Harness inventory (90 scenarios)
+## Harness inventory (post-rewrite: 102)
 
 | File | Block |
 |------|--------|
-| `scenarios.go` | Core (8) |
-| `scenarios_regression.go` | Regression `\n` (6) |
-| `scenarios_cm.go` | CodeMirror vertical (9) |
+| `scenarios.go` | Core (9) |
+| `scenarios_regression.go` | Regression `\n` (7) |
+| `scenarios_cm.go` | CodeMirror vertical (11) |
 | `scenarios_combo.go` | Alt/Ctrl / Shift combos (25) |
-| `scenarios_bs.go` | Backspace extensions (4) |
-| `scenarios_wrap.go` | Wrapped paragraph (14) |
+| `scenarios_bs.go` | Backspace / delete (5) |
+| `scenarios_wrap.go` | Wrapped paragraph (15) |
 | `scenarios_undo.go` | Undo/redo (5) |
-| `scenarios_gaps.go` | Gap coverage (15) |
+| `scenarios_gaps.go` | Gap coverage (17) |
+| `scenarios_hw.go` | Hardware page buttons (2) |
+| `scenarios_read.go` | Reading-mode overscroll (1) |
 | `scenarios_touch.go` | Touch → visual goal-x (3) |
-| `scenarios_selection.go` | Shift reverse (1) |
-| `main.go`, `report.go` | Runner, markdown reports, `showlobby` teardown |
-| `wrap_fixtures.go` | Calibrated wrap offsets (W=320) |
+| `scenarios_selection.go` | Shift reverse (2) |
+| `fixtures.go` | Shared prose + tall/wrap helpers |
+| `main.go`, `report.go` | Runner, contentY capture, `showlobby` teardown |
+| `wrap_fixtures.go` | Calibrated wrap offsets (W=320; N=3/7 provisional) |
 
-Mode: **sandbox-prepare** — no editor quit between scenarios. Harness returns to Lobby via `showlobby` when done.
+Mode: **sandbox-prepare**. Hardware pages: cmd inject + `contentY`, not Arrow keys. Tags: `-t critical`, `-t hw`, `-t read`, `-t wrap`, `-t undo`.
 
-## Acceptance
+## Acceptance (post-rewrite)
 
-Full suite **90/90 PASS** with `--fast`, single session, clean `journalctl`. `test-edit-session.sh` PASS.
+Full suite **102/102 PASS** with `--fast`, single session, clean `journalctl`. `test-edit-session.sh` PASS. `read-overscroll-clamps` PASS. Omnidirectional + 1/3/7 + prose fixtures as rewritten.
 
 ## Dev loop
 
-[lessons.md](../lessons.md) § Harness batch workflow. Triage once, batch fixes, one Writerdeck deploy, rerun full suite.
-
-Per-scenario: `bash scripts/test-keyboard-harness.sh -s NAME --fast`. Match: `-m combo`, `-t wrap`, `-t touch`.
+[lessons.md](../lessons.md) § Harness batch workflow.

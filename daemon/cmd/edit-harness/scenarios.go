@@ -14,16 +14,19 @@ func AllScenarios() []Scenario {
 	out = append(out, undoScenarios()...)
 	out = append(out, gapScenarios()...)
 	out = append(out, hwScenarios()...)
+	out = append(out, readScenarios()...)
 	out = append(out, touchScenarios()...)
 	out = append(out, selectionScenarios()...)
 	return attachScenarioTags(out)
 }
 
+// coreScenarios cover the basic caret/selection contract on fixtureProse.
+// Directional cases prove N=1, N=3, and N=7 in both directions.
 func coreScenarios() []Scenario {
 	return []Scenario{
 		{
 			Name:    "load-cursor-at-start",
-			Content: "abcdef",
+			Content: fixtureProse,
 			Steps: []Step{
 				{
 					Label: "after open",
@@ -31,7 +34,7 @@ func coreScenarios() []Scenario {
 						Cursor:   intp(0),
 						SelStart: intp(0),
 						SelEnd:   intp(0),
-						TextLen:  intp(6),
+						TextLen:  intp(fixtureProseLen),
 						Mode:     intp(1),
 					},
 				},
@@ -39,77 +42,111 @@ func coreScenarios() []Scenario {
 		},
 		{
 			Name:    "home-clears-selection",
-			Content: "abcdef",
+			Content: fixtureProse,
 			Steps: []Step{
-				{Label: "start", Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
-				{Label: "End", Keys: []Key{{Name: "End"}}},
-				{Label: "at end", Expect: &StateExpect{Cursor: intp(6), SelStart: intp(6), SelEnd: intp(6)}},
-				{Label: "Home", Keys: []Key{{Name: "Home"}}},
-				{Label: "cursor line start", Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
-			},
-		},
-		{
-			Name:    "shift-right-from-home",
-			Content: "abcdef",
-			Steps: []Step{
-				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
-				{Label: "shift+right x3", Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 3},
-				{Expect: &StateExpect{Cursor: intp(3), SelStart: intp(0), SelEnd: intp(3)}},
-			},
-		},
-		{
-			Name:    "shift-left-from-end",
-			Content: "abcdef",
-			Steps: []Step{
+				{Label: "mid horizontal line", SetCursor: intp(proseHMid)},
 				{Keys: []Key{{Name: "End"}}},
-				{Expect: &StateExpect{Cursor: intp(6), SelStart: intp(6), SelEnd: intp(6)}},
-				{Label: "shift+left x3", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 3},
-				{Expect: &StateExpect{Cursor: intp(6), SelStart: intp(3), SelEnd: intp(6)}},
+				{Label: "at line end", Expect: &StateExpect{Cursor: intp(proseHEditorEnd), SelStart: intp(proseHEditorEnd), SelEnd: intp(proseHEditorEnd)}},
+				{Keys: []Key{{Name: "Home", Shift: true}}},
+				{Expect: &StateExpect{SelStart: intp(proseHStart), SelEnd: intp(proseHEditorEnd), SelLen: intp(proseHLen)}},
+				{Label: "Home clears selection", Keys: []Key{{Name: "Home"}}},
+				{Expect: &StateExpect{Cursor: intp(proseHStart), SelStart: intp(proseHStart), SelEnd: intp(proseHStart)}},
+			},
+		},
+		{
+			// Reverse partner: shift-left-from-end.
+			Name:    "shift-right-from-home",
+			Content: fixtureProse,
+			Steps: []Step{
+				{SetCursor: intp(proseHStart)},
+				{Expect: &StateExpect{Cursor: intp(proseHStart), SelStart: intp(proseHStart), SelEnd: intp(proseHStart)}},
+				{Label: "shift+right x1 (N=1)", Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(proseHStart + 1), SelStart: intp(proseHStart), SelEnd: intp(proseHStart + 1)}},
+				{Label: "shift+right x2 more (N=3)", Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 2},
+				{Expect: &StateExpect{Cursor: intp(proseHStart + 3), SelStart: intp(proseHStart), SelEnd: intp(proseHStart + 3)}},
+				{Label: "shift+right x4 more (N=7)", Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 4},
+				{Expect: &StateExpect{Cursor: intp(proseHStart + 7), SelStart: intp(proseHStart), SelEnd: intp(proseHStart + 7)}},
+			},
+		},
+		{
+			// Reverse partner: shift-right-from-home. Mid-line start (not EOF).
+			Name:    "shift-left-from-end",
+			Content: fixtureProse,
+			Steps: []Step{
+				{SetCursor: intp(proseHEditorEnd)},
+				{Expect: &StateExpect{Cursor: intp(proseHEditorEnd), SelStart: intp(proseHEditorEnd), SelEnd: intp(proseHEditorEnd)}},
+				{Label: "shift+left x1 (N=1)", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(proseHEditorEnd), SelStart: intp(proseHEditorEnd - 1), SelEnd: intp(proseHEditorEnd)}},
+				{Label: "shift+left x2 more (N=3)", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 2},
+				{Expect: &StateExpect{Cursor: intp(proseHEditorEnd), SelStart: intp(proseHEditorEnd - 3), SelEnd: intp(proseHEditorEnd)}},
+				{Label: "shift+left x4 more (N=7)", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 4},
+				{Expect: &StateExpect{Cursor: intp(proseHEditorEnd), SelStart: intp(proseHEditorEnd - 7), SelEnd: intp(proseHEditorEnd)}},
 			},
 		},
 		{
 			Name:    "shift-right-after-home-no-stale-anchor",
-			Content: "abcdef",
+			Content: fixtureProse,
 			Steps: []Step{
-				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
-				{Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(1), SelStart: intp(0), SelEnd: intp(1)}},
-				{Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(2), SelStart: intp(0), SelEnd: intp(2)}},
+				{SetCursor: intp(proseHStart)},
+				{Label: "N=1", Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(proseHStart + 1), SelStart: intp(proseHStart), SelEnd: intp(proseHStart + 1)}},
+				{Label: "N=2", Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(proseHStart + 2), SelStart: intp(proseHStart), SelEnd: intp(proseHStart + 2)}},
+				{Label: "N=7 (anchor still start)", Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 5},
+				{Expect: &StateExpect{Cursor: intp(proseHStart + 7), SelStart: intp(proseHStart), SelEnd: intp(proseHStart + 7)}},
 			},
 		},
 		{
+			Name:    "shift-left-after-end-no-stale-anchor",
+			Content: fixtureProse,
+			Steps: []Step{
+				{SetCursor: intp(proseHEditorEnd)},
+				{Label: "N=1", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(proseHEditorEnd), SelStart: intp(proseHEditorEnd - 1), SelEnd: intp(proseHEditorEnd)}},
+				{Label: "N=2", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(proseHEditorEnd), SelStart: intp(proseHEditorEnd - 2), SelEnd: intp(proseHEditorEnd)}},
+				{Label: "N=7 (anchor still end)", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 5},
+				{Expect: &StateExpect{Cursor: intp(proseHEditorEnd), SelStart: intp(proseHEditorEnd - 7), SelEnd: intp(proseHEditorEnd)}},
+			},
+		},
+		{
+			// Reverse partner: shift-up-after-arrow-down. Mid-doc vertical block.
 			Name:    "shift-down-after-arrow-down",
-			Content: "line1\nline2\nline3\nline4",
+			Content: fixtureProse,
 			Steps: []Step{
-				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
-				{Label: "cursor on line3", Expect: &StateExpect{Cursor: intp(12), SelStart: intp(12), SelEnd: intp(12), TextLen: intp(23)}},
-				{Label: "shift+down extends downward", Keys: []Key{{Name: "ArrowDown", Shift: true}}},
-				{Expect: &StateExpect{Cursor: intp(18), SelStart: intp(12), SelEnd: intp(18)}},
+				{SetCursor: intp(proseVLineStart(2))},
+				{Label: "cursor on vertical line 2", Expect: &StateExpect{Cursor: intp(proseVLineStart(2)), SelStart: intp(proseVLineStart(2)), SelEnd: intp(proseVLineStart(2)), TextLen: intp(fixtureProseLen)}},
+				{Label: "shift+down x1 (N=1)", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(proseVLineStart(3)), SelStart: intp(proseVLineStart(2)), SelEnd: intp(proseVLineStart(3))}},
+				{Label: "shift+down x2 more (N=3)", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 2},
+				{Expect: &StateExpect{Cursor: intp(proseVLineStart(5)), SelStart: intp(proseVLineStart(2)), SelEnd: intp(proseVLineStart(5))}},
+				{Label: "shift+down x4 more (N=7)", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 4},
+				{Expect: &StateExpect{Cursor: intp(proseVLineStart(9)), SelStart: intp(proseVLineStart(2)), SelEnd: intp(proseVLineStart(9))}},
 			},
 		},
 		{
+			// Reverse partner: shift-down-after-arrow-down.
 			Name:    "shift-up-after-arrow-down",
-			Content: "line1\nline2\nline3\nline4",
+			Content: fixtureProse,
 			Steps: []Step{
-				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
-				{Label: "cursor on line3", Expect: &StateExpect{Cursor: intp(12), SelStart: intp(12), SelEnd: intp(12)}},
-				{Label: "shift+up extends upward", Keys: []Key{{Name: "ArrowUp", Shift: true}}},
-				{Expect: &StateExpect{Cursor: intp(12), SelStart: intp(6), SelEnd: intp(12)}},
+				{SetCursor: intp(proseVLineEnd(9))},
+				{Label: "cursor on vertical line 9 end", Expect: &StateExpect{Cursor: intp(proseVLineEnd(9)), SelStart: intp(proseVLineEnd(9)), SelEnd: intp(proseVLineEnd(9)), TextLen: intp(fixtureProseLen)}},
+				{Label: "shift+up x1 (N=1)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(proseVLineEnd(9)), SelStart: intp(proseVLineEnd(8)), SelEnd: intp(proseVLineEnd(9))}},
+				{Label: "shift+up x2 more (N=3)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 2},
+				{Expect: &StateExpect{Cursor: intp(proseVLineEnd(9)), SelStart: intp(proseVLineEnd(6)), SelEnd: intp(proseVLineEnd(9))}},
+				{Label: "shift+up x4 more (N=7)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 4},
+				{Expect: &StateExpect{Cursor: intp(proseVLineEnd(9)), SelStart: intp(proseVLineEnd(2)), SelEnd: intp(proseVLineEnd(9))}},
 			},
 		},
 		{
 			Name:    "ctrl-shift-left-select-line",
-			Content: "abcdef",
+			Content: fixtureProse,
 			Steps: []Step{
-				{Keys: []Key{{Name: "End"}}},
-				{Expect: &StateExpect{Cursor: intp(6)}},
+				{SetCursor: intp(proseHEditorEnd)},
+				{Expect: &StateExpect{Cursor: intp(proseHEditorEnd)}},
 				{Label: "shift+home selects line", Keys: []Key{{Name: "Home", Shift: true}}},
-				{Expect: &StateExpect{SelStart: intp(0), SelEnd: intp(6)}},
+				{Expect: &StateExpect{SelStart: intp(proseHStart), SelEnd: intp(proseHEditorEnd), SelLen: intp(proseHLen)}},
 			},
 		},
 	}

@@ -91,7 +91,11 @@ func stepExpectedCursor(step Step) *int {
 }
 
 // needsExplicitRelease: Ctrl+Shift combos block auto release in socket-inject.
+// Escape toggles edit/preview on key-up in Writerdeck, so send an explicit release.
 func (k Key) needsExplicitRelease() bool {
+	if k.Name == "Escape" {
+		return true
+	}
 	return k.Shift && k.Ctrl && isNavKeyName(k.Name)
 }
 
@@ -171,20 +175,22 @@ func inferScenarioTags(name string) []string {
 		tags = append(tags, "gap")
 	case strings.HasPrefix(name, "hw-"):
 		tags = append(tags, "hw")
+	case strings.HasPrefix(name, "read-"):
+		tags = append(tags, "read")
 	case strings.HasPrefix(name, "touch-"):
 		tags = append(tags, "touch")
-	case strings.HasPrefix(name, "shift-left-then-right"):
+	case strings.HasPrefix(name, "shift-left-then-right"), strings.HasPrefix(name, "shift-right-then-left"):
 		tags = append(tags, "selection")
 	case strings.HasPrefix(name, "undo-"), strings.HasPrefix(name, "redo-"):
 		tags = append(tags, "undo")
-	case strings.HasPrefix(name, "bs-"):
+	case strings.HasPrefix(name, "bs-"), strings.HasPrefix(name, "delete-"):
 		tags = append(tags, "backspace")
 	case name == "load-cursor-at-start" || strings.HasPrefix(name, "shift-") ||
 		strings.HasPrefix(name, "home-") || strings.HasPrefix(name, "ctrl-shift-"):
 		tags = append(tags, "core")
 	default:
 		switch name {
-		case "down-one-logical-line", "shift-down-then-up-shrinks", "shift-left-repeat-from-end",
+		case "down-one-logical-line", "up-one-logical-line", "shift-down-then-up-shrinks", "shift-left-repeat-from-end",
 			"alt-backspace-deletes-word", "ctrl-backspace-deletes-line", "shift-left-repeat-mid-doc":
 			tags = append(tags, "regression")
 		}

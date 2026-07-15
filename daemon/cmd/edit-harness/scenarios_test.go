@@ -20,7 +20,7 @@ func TestScenarioNamesUnique(t *testing.T) {
 
 func TestScenarioContentValid(t *testing.T) {
 	for _, sc := range AllScenarios() {
-		n := len(sc.Content)
+		n := editorLen(sc.Content)
 		for i, step := range sc.Steps {
 			if step.Expect == nil {
 				continue
@@ -59,7 +59,7 @@ func TestScenarioContentValid(t *testing.T) {
 }
 
 func TestScenarioCount(t *testing.T) {
-	const want = 94
+	const want = 102
 	if n := len(AllScenarios()); n != want {
 		t.Fatalf("expected %d scenarios, got %d (update want after adding scenarios)", want, n)
 	}

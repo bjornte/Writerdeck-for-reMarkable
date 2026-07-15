@@ -2,11 +2,9 @@ package main
 
 import "strings"
 
-// wrapParagraph is one logical line that wraps to multiple visual rows on e-ink.
-var wrapParagraph = strings.TrimSpace(strings.Repeat("word ", 40))
-
 // wrapScenarios test visual-line motion (not \n logical lines). Requires Scenario.Width
-// and calibrated offsets in wrap_fixtures.go after device run.
+// and calibrated offsets in wrap_fixtures.go. Wrap geometry stays specialized
+// (word×40 at W=320); motion/selection cases prove N=1/3/7 both directions.
 func wrapScenarios() []Scenario {
 	wp := wrapParagraph
 	n := wrapParagraphLen
@@ -22,8 +20,12 @@ func wrapScenarios() []Scenario {
 			Width:   harnessWrapWidth,
 			Steps: []Step{
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Label: "down one visual line", Keys: []Key{{Name: "ArrowDown"}}},
+				{Label: "down x1 (N=1)", Keys: []Key{{Name: "ArrowDown"}}, Repeat: 1},
 				{Expect: &StateExpect{TextLen: intp(n), Cursor: intp(wrapDownOneCursor)}},
+				{Label: "down x2 more (N=3)", Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
+				{Expect: &StateExpect{TextLen: intp(n), Cursor: intp(wrapDownThreeCursor)}},
+				{Label: "down x4 more (N=7)", Keys: []Key{{Name: "ArrowDown"}}, Repeat: 4},
+				{Expect: &StateExpect{TextLen: intp(n), Cursor: intp(wrapDownSevenCursor)}},
 			},
 		},
 		{
@@ -34,6 +36,8 @@ func wrapScenarios() []Scenario {
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowDown"}}},
 				{Expect: &StateExpect{TextLen: intp(n), Cursor: intp(wrapDownOneCursor)}},
+				{Label: "still inside wrapped paragraph after N=3", Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
+				{Expect: &StateExpect{TextLen: intp(n), CursorMin: intp(wrapDownOneCursor), CursorMax: intp(n - 1)}},
 			},
 		},
 		{
@@ -42,9 +46,13 @@ func wrapScenarios() []Scenario {
 			Width:   harnessWrapWidth,
 			Steps: []Step{
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Keys: []Key{{Name: "ArrowDown"}}},
-				{Label: "after down", Expect: &StateExpect{Cursor: intp(wrapDownOneCursor), TextLen: intp(n)}},
-				{Keys: []Key{{Name: "ArrowUp"}}},
+				{Keys: []Key{{Name: "ArrowDown"}}, Repeat: 7},
+				{Expect: &StateExpect{Cursor: intp(wrapDownSevenCursor), TextLen: intp(n)}},
+				{Label: "up x1 (N=1)", Keys: []Key{{Name: "ArrowUp"}}, Repeat: 1},
+				{Expect: &StateExpect{CursorMin: intp(wrapDownThreeCursor - 5), CursorMax: intp(wrapDownSevenCursor), TextLen: intp(n)}},
+				{Label: "up x2 more (N=3)", Keys: []Key{{Name: "ArrowUp"}}, Repeat: 2},
+				{Expect: &StateExpect{CursorMin: intp(wrapDownOneCursor - 5), CursorMax: intp(wrapDownThreeCursor + 5), TextLen: intp(n)}},
+				{Label: "up x4 more (N=7)", Keys: []Key{{Name: "ArrowUp"}}, Repeat: 4},
 				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0), TextLen: intp(n)}},
 			},
 		},
@@ -54,8 +62,12 @@ func wrapScenarios() []Scenario {
 			Width:   harnessWrapWidth,
 			Steps: []Step{
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Label: "shift+down", Keys: []Key{{Name: "ArrowDown", Shift: true}}},
+				{Label: "shift+down x1 (N=1)", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 1},
 				{Expect: &StateExpect{Cursor: intp(wrapDownOneCursor), SelEnd: intp(wrapDownOneCursor), SelLenMin: intp(1), TextLen: intp(n)}},
+				{Label: "shift+down x2 more (N=3)", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 2},
+				{Expect: &StateExpect{Cursor: intp(wrapDownThreeCursor), SelEnd: intp(wrapDownThreeCursor), SelLenMin: intp(wrapDownOneCursor), TextLen: intp(n)}},
+				{Label: "shift+down x4 more (N=7)", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 4},
+				{Expect: &StateExpect{Cursor: intp(wrapDownSevenCursor), SelEnd: intp(wrapDownSevenCursor), SelLenMin: intp(wrapDownThreeCursor), TextLen: intp(n)}},
 			},
 		},
 		{
@@ -65,8 +77,11 @@ func wrapScenarios() []Scenario {
 			Steps: []Step{
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
-				{Label: "shift+down", Keys: []Key{{Name: "ArrowDown", Shift: true}}},
-				{Label: "shift+up shrinks", Keys: []Key{{Name: "ArrowUp", Shift: true}}},
+				{Label: "extend shift+down x3", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 3},
+				{Expect: &StateExpect{SelLenMin: intp(1), TextLen: intp(n)}},
+				{Label: "shrink shift+up x1 (N=1)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 1},
+				{Expect: &StateExpect{SelLenMin: intp(1), TextLen: intp(n)}},
+				{Label: "shrink shift+up x2 more (N=3)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 2},
 				{Expect: &StateExpect{SelLenMin: intp(1), TextLen: intp(n)}},
 			},
 		},
@@ -76,7 +91,11 @@ func wrapScenarios() []Scenario {
 			Width:   harnessWrapWidth,
 			Steps: []Step{
 				{Keys: []Key{{Name: "End", Ctrl: true}}},
-				{Label: "down on last visual line", Keys: []Key{{Name: "ArrowDown"}}},
+				{Label: "down clamp x1 (N=1)", Keys: []Key{{Name: "ArrowDown"}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(n), SelStart: intp(n), SelEnd: intp(n), TextLen: intp(n)}},
+				{Label: "down clamp x3 total", Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
+				{Expect: &StateExpect{Cursor: intp(n), SelStart: intp(n), SelEnd: intp(n), TextLen: intp(n)}},
+				{Label: "down clamp x7 total", Keys: []Key{{Name: "ArrowDown"}}, Repeat: 4},
 				{Expect: &StateExpect{Cursor: intp(n), SelStart: intp(n), SelEnd: intp(n), TextLen: intp(n)}},
 			},
 		},
@@ -92,12 +111,12 @@ func wrapScenarios() []Scenario {
 		},
 		{
 			Name:    "wrap-mixed-newline-and-wrap",
-			Content: "short\n" + strings.Repeat("longword ", 12),
+			Content: "kort\n" + strings.Repeat("langord ", 12),
 			Width:   harnessWrapWidth,
 			Steps: []Step{
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowDown"}}},
-				{Label: "into wrapped tail", Expect: &StateExpect{CursorMin: intp(6)}},
+				{Label: "into wrapped tail", Expect: &StateExpect{CursorMin: intp(5)}},
 			},
 		},
 		{
@@ -119,8 +138,26 @@ func wrapScenarios() []Scenario {
 			Steps: []Step{
 				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Expect: &StateExpect{Cursor: intp(n), TextLen: intp(n)}},
-				{Label: "alt+left word on wrap", Keys: []Key{{Name: "ArrowLeft", Alt: true}}},
+				{Label: "alt+left x1 (N=1)", Keys: []Key{{Name: "ArrowLeft", Alt: true}}, Repeat: 1},
 				{Expect: &StateExpect{CursorMin: intp(1), CursorMax: intp(n - 1), TextLen: intp(n)}},
+				{Label: "alt+left x2 more (N=3)", Keys: []Key{{Name: "ArrowLeft", Alt: true}}, Repeat: 2},
+				{Expect: &StateExpect{CursorMin: intp(1), CursorMax: intp(n - 1), TextLen: intp(n)}},
+				{Label: "alt+left x4 more (N=7)", Keys: []Key{{Name: "ArrowLeft", Alt: true}}, Repeat: 4},
+				{Expect: &StateExpect{CursorMin: intp(0), CursorMax: intp(n - 1), TextLen: intp(n)}},
+			},
+		},
+		{
+			Name:    "wrap-combo-alt-right-word",
+			Content: wp,
+			Width:   harnessWrapWidth,
+			Steps: []Step{
+				{Keys: []Key{{Name: "Home", Ctrl: true}}},
+				{Label: "alt+right x1 (N=1)", Keys: []Key{{Name: "ArrowRight", Alt: true}}, Repeat: 1},
+				{Expect: &StateExpect{CursorMin: intp(1), CursorMax: intp(n - 1), TextLen: intp(n)}},
+				{Label: "alt+right x2 more (N=3)", Keys: []Key{{Name: "ArrowRight", Alt: true}}, Repeat: 2},
+				{Expect: &StateExpect{CursorMin: intp(1), CursorMax: intp(n - 1), TextLen: intp(n)}},
+				{Label: "alt+right x4 more (N=7)", Keys: []Key{{Name: "ArrowRight", Alt: true}}, Repeat: 4},
+				{Expect: &StateExpect{CursorMin: intp(1), CursorMax: intp(n), TextLen: intp(n)}},
 			},
 		},
 		{
@@ -142,8 +179,12 @@ func wrapScenarios() []Scenario {
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowDown"}}},
 				{Expect: &StateExpect{Cursor: intp(wrapDownOneCursor)}},
-				{Label: "shift+left across wrap", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 3},
-				{Expect: &StateExpect{SelLenMin: intp(1), CursorMin: intp(wrapDownOneCursor - 3), CursorMax: intp(wrapDownOneCursor), TextLen: intp(n)}},
+				{Label: "shift+left x1 (N=1)", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 1},
+				{Expect: &StateExpect{SelLenMin: intp(1), TextLen: intp(n)}},
+				{Label: "shift+left x2 more (N=3)", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 2},
+				{Expect: &StateExpect{SelLenMin: intp(1), TextLen: intp(n)}},
+				{Label: "shift+left x4 more (N=7)", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 4},
+				{Expect: &StateExpect{SelLenMin: intp(1), CursorMin: intp(0), CursorMax: intp(wrapDownOneCursor), TextLen: intp(n)}},
 			},
 		},
 		{

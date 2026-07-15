@@ -63,6 +63,12 @@ type Step struct {
 	SetCursor *int         `json:"setCursor,omitempty"`
 	Repeat    int          `json:"repeat,omitempty"`
 	Expect    *StateExpect `json:"expect,omitempty"`
+	// CaptureContentY stores live contentY after this step's keys/cmd.
+	CaptureContentY bool `json:"captureContentY,omitempty"`
+	// ExpectContentYEqCaptured requires contentY == last CaptureContentY.
+	ExpectContentYEqCaptured bool `json:"expectContentYEqCaptured,omitempty"`
+	// ExpectContentYLtCaptured requires contentY < last CaptureContentY.
+	ExpectContentYLtCaptured bool `json:"expectContentYLtCaptured,omitempty"`
 }
 
 type Scenario struct {
@@ -365,6 +371,8 @@ func (h *Harness) RunScenario(sc Scenario) error {
 	defer ws.Close()
 
 	modKeyPrimed := false
+	var capturedY int
+	haveCapturedY := false
 	for i, step := range sc.Steps {
 		label := step.Label
 		if label == "" {
@@ -377,10 +385,16 @@ func (h *Harness) RunScenario(sc Scenario) error {
 			time.Sleep(stepPause)
 		}
 		if step.Cmd != "" {
-			if err := h.editorCmd(step.Cmd, "", 0); err != nil {
-				return fmt.Errorf("%s: cmd %s: %w", label, step.Cmd, err)
+			repeat := step.Repeat
+			if repeat <= 0 {
+				repeat = 1
 			}
-			time.Sleep(stepPause)
+			for r := 0; r < repeat; r++ {
+				if err := h.editorCmd(step.Cmd, "", 0); err != nil {
+					return fmt.Errorf("%s: cmd %s: %w", label, step.Cmd, err)
+				}
+				time.Sleep(stepPause)
+			}
 		}
 		if !modKeyPrimed && len(step.Keys) > 0 && stepNeedsModifiedPrime(step) {
 			st, err := h.queryState()
@@ -397,19 +411,48 @@ func (h *Harness) RunScenario(sc Scenario) error {
 				modKeyPrimed = true
 			}
 		}
-		repeat := step.Repeat
-		if repeat <= 0 {
-			repeat = 1
-		}
-		for r := 0; r < repeat; r++ {
-			for _, k := range step.Keys {
-				if err := h.sendKey(ws, k); err != nil {
-					return fmt.Errorf("%s: send %s: %w", label, k.Name, err)
+		if len(step.Keys) > 0 {
+			repeat := step.Repeat
+			if repeat <= 0 {
+				repeat = 1
+			}
+			for r := 0; r < repeat; r++ {
+				for _, k := range step.Keys {
+					if err := h.sendKey(ws, k); err != nil {
+						return fmt.Errorf("%s: send %s: %w", label, k.Name, err)
+					}
 				}
 			}
-		}
-		if len(step.Keys) > 0 {
 			time.Sleep(stepPause)
+		}
+		if step.CaptureContentY || step.ExpectContentYEqCaptured || step.ExpectContentYLtCaptured {
+			st, err := h.queryState()
+			if err != nil {
+				return fmt.Errorf("%s: state for contentY capture: %w", label, err)
+			}
+			if step.CaptureContentY {
+				capturedY = st.ContentY
+				haveCapturedY = true
+				if h.verbose {
+					fmt.Printf("  %s: captured contentY=%d\n", label, capturedY)
+				}
+			}
+			if step.ExpectContentYEqCaptured {
+				if !haveCapturedY {
+					return fmt.Errorf("%s: ExpectContentYEqCaptured with no prior CaptureContentY", label)
+				}
+				if st.ContentY != capturedY {
+					return fmt.Errorf("%s: contentY want captured %d got %d", label, capturedY, st.ContentY)
+				}
+			}
+			if step.ExpectContentYLtCaptured {
+				if !haveCapturedY {
+					return fmt.Errorf("%s: ExpectContentYLtCaptured with no prior CaptureContentY", label)
+				}
+				if st.ContentY >= capturedY {
+					return fmt.Errorf("%s: contentY want < captured %d got %d", label, capturedY, st.ContentY)
+				}
+			}
 		}
 		if step.Expect != nil {
 			if err := h.checkExpect(label, *step.Expect); err != nil {
@@ -487,8 +530,9 @@ func (h *Harness) verifyPrepareState(content string) error {
 	if err != nil {
 		return fmt.Errorf("post-prepare state: %w", err)
 	}
-	if st.TextLen != len(content) {
-		return fmt.Errorf("textLen want %d got %d", len(content), st.TextLen)
+	wantLen := editorLen(content)
+	if st.TextLen != wantLen {
+		return fmt.Errorf("textLen want %d got %d", wantLen, st.TextLen)
 	}
 	if st.Cursor != 0 || st.SelStart != 0 || st.SelEnd != 0 {
 		return fmt.Errorf("cursor/selection not clean: %v", st)
@@ -706,7 +750,7 @@ func (h *Harness) queryNoteText() (string, error) {
 	if st.TextLen == 0 {
 		return "", nil
 	}
-	if len(st.Text) == st.TextLen {
+	if st.Text != "" {
 		return st.Text, nil
 	}
 	// Fallback: older Writerdeck without live text in editor-state.
