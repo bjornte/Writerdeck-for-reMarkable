@@ -92,6 +92,10 @@ Edit-mode socket keys must reach `handleMacArrow` via QML `socketRouteKey()` inv
 
 Harness `primeModifiedKeys` uses ArrowUp wake only — never End (EOF poison). Plain Ctrl+nav from cursor 0 is fixed in kernel (`22ad701`), not by scenario End steps.
 
+Wrap harness sets `query.width` to 320 for calibration. `harnessSandboxReset` must call `harnessSetWidth(0)` when width is not requested — re-applying `harnessTextWidth` stuck the live editor in a narrow column after a harness run. Restore full width on Home, Lobby, and `doLoad` too.
+
+On device Qt, plain Backspace via `query.select` + `query.insert("")` selects the previous character without deleting — use `query.text` slice (same as Alt/Ctrl backspace in `handleMacBackspace`).
+
 Plain `Key_Home` **release** in edit mode used to call `handleHome()` → lobby and break `combo-shift-end-line`; skip lobby when `mode==1 && !isLobby` on Home release (line-start is press via `handleMacArrow`).
 
 Never add a second `Keys.onPressed` on query TextEdit — patch 6c caused `Property value set multiple times` and a crash loop. Mac key routing belongs in patch 7o prepended to query's existing handler.
