@@ -14,5 +14,7 @@ Sign-off gate: **83/83 PASS**.
 | 2026-07-15T00-17-48 | 83 | 34 | 48 | 1 | −4 | df2f850 QML deploy regression |
 | 2026-07-15T00-43-13 | 83 | 27 | 53 | 1 | −7 | 4c4d816 worst 83 |
 | 2026-07-15T00-56-17 | 83 | 35 | 45 | 1 | +8 | 0a339c9 partial recovery |
+| 2026-07-15T02-03-16 | 83 | 46 | 34 | 1 | +11 | 7d00156 selection-collapse fix; stopped 81/83 |
+| 2026-07-15T02-07-09 | 83 | 52 | 28 | 1 | +6 | 1e62aff direct query.select for shift+combo; stopped 81/83 |
 
-Combo-tag milestones (22 scenarios, `--tag combo`): 6/16 @ baseline → 9/13 @ `22ad701` (`01-25-41`). No full 83 run on `22ad701` yet.
+Combo-tag milestones (22 scenarios, `--tag combo`): 6/16 @ baseline → 9/13 @ `22ad701` (`01-25-41`) → **21/25** @ `1e62aff` (`02-06-13`). No full 83 run on `22ad701` yet.
