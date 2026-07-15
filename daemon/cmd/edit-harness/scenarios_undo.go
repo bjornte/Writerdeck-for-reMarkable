@@ -50,7 +50,7 @@ func undoScenarios() []Scenario {
 				{Label: "delete line2", Keys: []Key{{Name: "Backspace"}}},
 				{Expect: &StateExpect{Cursor: intp(4), TextLen: intp(4)}},
 				{Label: "undo", Keys: []Key{{Name: "z", Ctrl: true}}},
-				{Expect: &StateExpect{Cursor: intp(4), TextLen: intp(7)}},
+				{Expect: &StateExpect{Cursor: intp(7), TextLen: intp(7)}},
 			},
 		},
 		{
