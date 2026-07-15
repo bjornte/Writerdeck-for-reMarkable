@@ -127,7 +127,7 @@ Fixed editor width (320px). Default fixture: one long unbroken paragraph (`word 
 
 | Scenario | Behavior |
 |----------|----------|
-| `undo-redo-len` | Delete all, Undo restores text, Redo restores deletion state. |
+| `undo-redo-len` | Select all, delete, Undo restores text, Redo re-applies delete (empty). |
 | `undo-cursor-reposition` | Insert at doc start, Undo from end restores text and caret to insert point; Redo restores insert caret. |
 | `undo-mid-line-delete` | Delete line 2, Undo restores line and caret position. |
 | `redo-cleared-by-new-edit` | After Undo, a new edit clears the redo stack (Redo has no effect). |

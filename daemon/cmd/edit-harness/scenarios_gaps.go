@@ -115,7 +115,8 @@ func gapScenarios() []Scenario {
 			Content: "abc",
 			Steps: []Step{
 				{Keys: []Key{{Name: "End"}}},
-				{Keys: []Key{{Name: "Backspace"}}, Repeat: 3},
+				{Keys: []Key{{Name: "a", Ctrl: true}}},
+				{Keys: []Key{{Name: "Backspace"}}},
 				{Expect: &StateExpect{TextLen: intp(0), Cursor: intp(0)}},
 				{Keys: []Key{{Name: "z", Ctrl: true}}},
 				{Expect: &StateExpect{TextLen: intp(3), Cursor: intp(3)}},
