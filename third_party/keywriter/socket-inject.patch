@@ -290,6 +290,18 @@
 +                Qt::BlockingQueuedConnection, Q_ARG(QVariant, w));
 +            QMetaObject::invokeMethod(g_rootObj, "publishEditorState", Qt::BlockingQueuedConnection);
 +        }
++        else if (cmd == "harnesssetcursor" && g_rootObj) {
++            int pos = 0;
++            auto pp = line.find("\"pos\":");
++            if (pp != std::string::npos) {
++                pp += 6;
++                while (pp < line.size() && (line[pp] == ' ' || line[pp] == '\t')) pp++;
++                pos = atoi(line.c_str() + pp);
++            }
++            QMetaObject::invokeMethod(g_rootObj, "harnessSetCursor",
++                Qt::BlockingQueuedConnection, Q_ARG(QVariant, pos));
++            QMetaObject::invokeMethod(g_rootObj, "publishEditorState", Qt::BlockingQueuedConnection);
++        }
 +        else if (cmd == "filesnew" && g_rootObj)
 +            QMetaObject::invokeMethod(g_rootObj, "lobbyFilesBeginNew", Qt::QueuedConnection);
 +        else if (cmd == "vaultsetup" && g_rootObj)

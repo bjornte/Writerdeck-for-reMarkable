@@ -54,10 +54,11 @@ type StateExpect struct {
 }
 
 type Step struct {
-	Label  string       `json:"label,omitempty"`
-	Keys   []Key        `json:"keys,omitempty"`
-	Repeat int          `json:"repeat,omitempty"`
-	Expect *StateExpect `json:"expect,omitempty"`
+	Label     string       `json:"label,omitempty"`
+	Keys      []Key        `json:"keys,omitempty"`
+	SetCursor *int         `json:"setCursor,omitempty"`
+	Repeat    int          `json:"repeat,omitempty"`
+	Expect    *StateExpect `json:"expect,omitempty"`
 }
 
 type Scenario struct {
@@ -241,6 +242,7 @@ func main() {
 			fmt.Printf("report: %s\n", *reportMD)
 		}
 	}
+	h.returnToLobby()
 	failed := 0
 	for _, r := range results {
 		if r.Kind != outcomePass {
@@ -362,6 +364,12 @@ func (h *Harness) RunScenario(sc Scenario) error {
 		label := step.Label
 		if label == "" {
 			label = fmt.Sprintf("step %d", i+1)
+		}
+		if step.SetCursor != nil {
+			if err := h.setCursor(*step.SetCursor); err != nil {
+				return fmt.Errorf("%s: setCursor: %w", label, err)
+			}
+			time.Sleep(stepPause)
 		}
 		if !modKeyPrimed && len(step.Keys) > 0 && stepNeedsModifiedPrime(step) {
 			st, err := h.queryState()
@@ -513,16 +521,40 @@ func (h *Harness) editorCmd(c, name string, width int) error {
 	if width > 0 {
 		body["w"] = width
 	}
+	return h.editorCmdBody(body)
+}
+
+func (h *Harness) editorCmdBody(body map[string]interface{}) error {
+	if name, _ := body["name"].(string); name == "" {
+		delete(body, "name")
+	}
+	if w, _ := body["w"].(int); w <= 0 {
+		delete(body, "w")
+	}
 	raw, _ := json.Marshal(body)
 	code, err := h.post("/api/test/editor-cmd", raw)
 	if err != nil {
 		return err
 	}
 	if code != 200 {
+		c, _ := body["c"].(string)
 		return fmt.Errorf("editor-cmd %s HTTP %d", c, code)
 	}
 	time.Sleep(h.reloadPoll)
 	return nil
+}
+
+func (h *Harness) setCursor(pos int) error {
+	return h.editorCmdBody(map[string]interface{}{"c": "harnesssetcursor", "pos": pos})
+}
+
+func (h *Harness) returnToLobby() {
+	if err := h.editorCmd("showlobby", "", 0); err != nil {
+		fmt.Fprintf(os.Stderr, "harness: return to lobby: %v\n", err)
+		return
+	}
+	time.Sleep(2 * stepPause)
+	fmt.Println("Returned editor to lobby.")
 }
 
 // writeNote upserts harness content without deleting the file or quitting the editor.

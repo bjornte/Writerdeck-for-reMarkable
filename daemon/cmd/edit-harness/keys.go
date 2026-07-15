@@ -119,6 +119,10 @@ func inferScenarioTags(name string) []string {
 		tags = append(tags, "cm")
 	case strings.HasPrefix(name, "gap-"):
 		tags = append(tags, "gap")
+	case strings.HasPrefix(name, "touch-"):
+		tags = append(tags, "touch")
+	case strings.HasPrefix(name, "shift-left-then-right"):
+		tags = append(tags, "selection")
 	case strings.HasPrefix(name, "undo-"), strings.HasPrefix(name, "redo-"):
 		tags = append(tags, "undo")
 	case strings.HasPrefix(name, "bs-"):

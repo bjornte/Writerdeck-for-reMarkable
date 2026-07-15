@@ -13,6 +13,8 @@ func AllScenarios() []Scenario {
 	out = append(out, wrapScenarios()...)
 	out = append(out, undoScenarios()...)
 	out = append(out, gapScenarios()...)
+	out = append(out, touchScenarios()...)
+	out = append(out, selectionScenarios()...)
 	return attachScenarioTags(out)
 }
 

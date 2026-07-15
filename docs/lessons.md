@@ -96,6 +96,8 @@ Wrap harness sets `query.width` to 320 for calibration. `harnessSandboxReset` mu
 
 On device Qt, plain Backspace via `query.select` + `query.insert("")` selects the previous character without deleting — use `query.text` slice (same as Alt/Ctrl backspace in `handleMacBackspace`).
 
+Touch tap moves `query.cursorPosition` but did not update `goalColumn`; vertical Up/Down then used a stale column. `onCursorPositionChanged` on the TextEdit calls `rememberGoalColumn`; harness simulates tap via `harnesssetcursor`.
+
 Plain `Key_Home` **release** in edit mode used to call `handleHome()` → lobby and break `combo-shift-end-line`; skip lobby when `mode==1 && !isLobby` on Home release (line-start is press via `handleMacArrow`).
 
 Never add a second `Keys.onPressed` on query TextEdit — patch 6c caused `Property value set multiple times` and a crash loop. Mac key routing belongs in patch 7o prepended to query's existing handler.

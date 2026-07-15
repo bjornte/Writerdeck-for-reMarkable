@@ -140,6 +140,7 @@ func testEditorCmdHandler(w http.ResponseWriter, r *http.Request) {
 		C    string `json:"c"`
 		Name string `json:"name,omitempty"`
 		W    int    `json:"w,omitempty"`
+		Pos  int    `json:"pos,omitempty"`
 	}
 	if json.NewDecoder(r.Body).Decode(&req) != nil || req.C == "" {
 		http.Error(w, "bad request: need {c}", http.StatusBadRequest)
@@ -153,6 +154,8 @@ func testEditorCmdHandler(w http.ResponseWriter, r *http.Request) {
 		line = fmt.Sprintf(`{"t":"cmd","c":%q,"name":%q}`, req.C, req.Name)
 	case req.W > 0:
 		line = fmt.Sprintf(`{"t":"cmd","c":%q,"w":%d}`, req.C, req.W)
+	case req.Pos > 0 || req.C == "harnesssetcursor":
+		line = fmt.Sprintf(`{"t":"cmd","c":%q,"pos":%d}`, req.C, req.Pos)
 	default:
 		line = fmt.Sprintf(`{"t":"cmd","c":%q}`, req.C)
 	}
@@ -163,6 +166,12 @@ func testEditorCmdHandler(w http.ResponseWriter, r *http.Request) {
 		currentNoteMu.Unlock()
 	}
 	if req.C == "harnessprepare" {
+		if _, err := queryEditorState(); err != nil {
+			http.Error(w, err.Error(), http.StatusGatewayTimeout)
+			return
+		}
+	}
+	if req.C == "harnesssetcursor" {
 		if _, err := queryEditorState(); err != nil {
 			http.Error(w, err.Error(), http.StatusGatewayTimeout)
 			return

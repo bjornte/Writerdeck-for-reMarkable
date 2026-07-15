@@ -131,6 +131,20 @@ Fixed editor width (320px). Default fixture: one long unbroken paragraph (`word 
 | `gap-empty-doc-backspace` | Backspace on empty document is a no-op. |
 | `gap-alt-bs-with-selection` | Alt+Backspace with word selection deletes selection, leaves prior word. |
 
+## Touch (goal column after tap)
+
+| Scenario | Behavior |
+|----------|----------|
+| `touch-down-goal-column` | Tap mid line 1 (harnessSetCursor), Down lands same column on line 2. |
+| `touch-up-goal-column` | Tap mid line 2, Up lands same column on line 1. |
+| `touch-down-shorter-line` | Tap col 2 on longer line, Down clamps column on shorter next line. |
+
+## Selection (shift reverse)
+
+| Scenario | Behavior |
+|----------|----------|
+| `shift-left-then-right-shrinks` | Shift+Left extends selection, Shift+Right shrinks toward anchor (does not grow). |
+
 ## Sources and notation
 
 CodeMirror/Qt porting notes, marker notation, and “what not to port”: [scenario-cookbook.md](scenario-cookbook.md).
