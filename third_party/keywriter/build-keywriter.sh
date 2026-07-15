@@ -1326,7 +1326,7 @@ s = s.replace(
     '    property int _prevTextLen: 0\n'
     '    property int _prevCursor: 0\n'
     '    property int _prevSelStart: 0\n'
-    '    property int _prevSelEnd: 0\n'
+    '    property int _prevSelEnd: 0\n',
     1
 )
 
