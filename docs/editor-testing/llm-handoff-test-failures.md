@@ -1,6 +1,6 @@
 # LLM handoff: keyboard testing methodology review
 
-**Current state (2026-07-15):** For implementation work, read [todo.md](todo.md) § Fresh agent first. Scores: [milestone-runs.md](milestone-runs.md); detail: [harness-runs.md](../recon/harness-runs.md). Baseline **37/25** core 62; best full 83 **38/44**; combo tag **9/13** @ `22ad701`. Sign-off: `bash scripts/test-keyboard-harness.sh --fast` → **83/83 PASS**.
+**Current state (2026-07-15):** For implementation work, read [todo.md](todo.md) § Fresh agent first. Scores: [milestone-runs.md](milestone-runs.md); detail: [harness-runs.md](../recon/harness-runs.md). Sign-off: `bash scripts/test-keyboard-harness.sh --fast` → **90/90 PASS**. Historical baseline notes below may reference the 83-scenario suite.
 
 Hand this file to a fresh agent with no prior context. Project: Writerdeck for reMarkable 1 — Markdown editor on tablet, keystrokes over WebSocket/phone path, QML in `third_party/keywriter/build-keywriter.sh`, device harness in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.
 
@@ -157,7 +157,7 @@ Soft-reset full suite had known cascade failures (scenarios pass in isolation wi
 | `docs/editor-testing/milestone-runs.md` | Full-suite scoreboard — update after each `--fast` run |
 | `docs/recon/harness-runs.md` | Consolidated run log and per-scenario matrix |
 | `docs/recon/test-keyboard-harness-*.{md,txt}` | Per-run reports from each harness invocation; pre-2026-07-15 batch consolidated in harness-runs.md |
-| `daemon/cmd/edit-harness/scenarios_*.go` | 83 scenarios across core, combo, wrap, gap, undo |
+| `daemon/cmd/edit-harness/scenarios_*.go` | 90 scenarios across core, combo, wrap, gap, undo, touch, selection |
 | `third_party/keywriter/build-keywriter.sh` | `handleMacArrow`, `lineDownPos` vs `positionToRectangle` |
 | Git log around `1a77f7b`–`d5ab632` | QML fixes vs doc "shipped" claims |
 | `docs/editor-testing/scenario-cookbook.md` § Priority order | Open kernel clusters vs ported scenarios |
@@ -209,7 +209,7 @@ All use a single logical line (no `\n`) unless noted. Positions are placeholders
 | Name | Content sketch | Steps | Expected behavior | QML path |
 |------|----------------|-------|-------------------|----------|
 | `wrap-down-one-visual-line` | `"aaaa…"` (~40 chars, wraps to ≥2 visual lines at W) | Ctrl+Home; Down×1 | Cursor advances one **visual** row, not EOF or `\n` end | `moveCursorVertical` → must use `positionToRectangle`, not `lineDownPos` |
-| `wrap-down-goal-column` | short first visual line + longer second (same string, cursor col 2) | set cursor col 2 on line 1; Down | Column preserved on shorter visual line 2 | goal-column in visual space |
+| `wrap-down-goal-column` | short first visual line + longer second (same string) | set cursor mid visual line 1; Down | Visual x preserved on shorter visual line 2 | `goalX` + `visualLineDownPos` |
 | `wrap-down-last-visual-line` | wrapped paragraph, cursor on last visual line | Down | Cursor → end of paragraph (same logical line), not next `\n` block | `cursorOnLastLine()` edge |
 | `wrap-up-from-visual-line-2` | same as `wrap-down-one-visual-line` | Down to line 2; Up | Returns to same column on visual line 1 | `lineUpPos` vs visual up |
 | `wrap-shift-down-one-visual` | wrapped paragraph | col 0; Shift+Down | Selection spans one visual line down | `extendSelectionVertical` |
@@ -225,15 +225,15 @@ Port into `scenarios_regression.go` or `scenarios_cm.go`. Positions from [scenar
 
 | Name | Status |
 |------|--------|
-| `cm-line-down-basic` | Not ported |
-| `cm-line-down-shorter` | Not ported |
-| `cm-line-down-last-line` | Not ported |
-| `cm-line-down-goal-col` | Not ported |
-| `cm-select-line-down` | Not ported |
-| `cm-select-line-down-mid` | Not ported |
-| `cm-select-down-up-doc-end` | Overlaps `shift-down-then-up-shrinks` — still run for EOF column |
-| `cm-select-up-basic` | Not ported |
-| `cm-select-up-mid` | Not ported |
+| `cm-line-down-basic` | Ported (`scenarios_cm.go`) |
+| `cm-line-down-shorter` | Ported |
+| `cm-line-down-last-line` | Ported |
+| `cm-line-down-goal-col` | Ported — expects visual x (cursor 6), not character column 11 |
+| `cm-select-line-down` | Ported |
+| `cm-select-line-down-mid` | Ported |
+| `cm-select-down-up-doc-end` | Ported; overlaps `shift-down-then-up-shrinks` |
+| `cm-select-up-basic` | Ported |
+| `cm-select-up-mid` | Ported |
 
 These prove `\n`-based vertical motion and selection; they do **not** replace `wrap-*`. Both blocks must PASS.
 

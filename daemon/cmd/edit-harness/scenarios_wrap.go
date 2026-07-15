@@ -108,7 +108,7 @@ func wrapScenarios() []Scenario {
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowRight"}}, Repeat: 2},
 				{Expect: &StateExpect{Cursor: intp(2)}},
-				{Label: "down keeps goal column", Keys: []Key{{Name: "ArrowDown"}}},
+				{Label: "down keeps visual x", Keys: []Key{{Name: "ArrowDown"}}},
 				{Expect: &StateExpect{Cursor: intp(wrapGoalColDownCursor), TextLen: intp(goalColLen)}},
 			},
 		},

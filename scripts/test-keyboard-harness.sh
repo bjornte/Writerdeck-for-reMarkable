@@ -11,7 +11,7 @@
 #   4. Sign-off: full suite --fast; add row to docs/editor-testing/milestone-runs.md
 #
 # Writes docs/recon/test-keyboard-harness-TIMESTAMP.txt and .md (results table).
-# Full suite: 83 scenarios in one editor session (no quit/relaunch between tests).
+# Full suite: 90 scenarios in one editor session (no quit/relaunch between tests).
 #
 # Usage:
 #   bash scripts/test-keyboard-harness.sh              # all scenarios

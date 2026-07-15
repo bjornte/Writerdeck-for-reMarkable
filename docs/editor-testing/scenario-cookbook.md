@@ -36,7 +36,7 @@ Run: `bash scripts/test-keyboard-harness.sh -s cookbook-short-name --fast`
 | Harness name | Cookbook source | Notes |
 |--------------|-----------------|-------|
 | `down-one-logical-line` | CodeMirror `cursorLineDown` | `aa\nbb`, down once |
-| `shift-down-then-up-shrinks` | CodeMirror `selectLineDown` + `selectLineUp` | goal-column shrink |
+| `shift-down-then-up-shrinks` | CodeMirror `selectLineDown` + `selectLineUp` | visual-x shrink |
 | `shift-left-repeat-from-end` | — | Writerdeck bug report |
 | `alt-backspace-deletes-word` | CodeMirror `deleteGroupBackward` | Mac Alt+Backspace |
 | `ctrl-backspace-deletes-line` | CodeMirror `deleteLineBoundaryBackward` | Mac Mod+Backspace |
@@ -62,12 +62,12 @@ Content uses `\n` for line breaks. Positions counted from 0.
 | Suggested name | Content | Keys | Expected (cursor, selStart, selEnd) | CodeMirror test |
 |----------------|---------|------|--------------------------------------|-----------------|
 | `cm-line-down-basic` | `one\ntwo` | Ctrl+Home, Down | (4, 4, 4) | start of `two` |
-| `cm-line-down-shorter` | `one\nt` | cursor 2, Down | (4, 4, 4) | column kept on shorter line |
+| `cm-line-down-shorter` | `one\nt` | cursor 2, Down | (4, 4, 4) | closest x on shorter line |
 | `cm-line-down-last-line` | `one` | cursor 2, Down | (3, 3, 3) | end of doc on last line |
-| `cm-line-down-goal-col` | `one\nt\nthree` | cursor 2, Down×2 | (11, 11, 11) | column across short middle line |
+| `cm-line-down-goal-col` | `one\nt\nthree` | cursor 2, Down×2 | (6, 6, 6) | visual x across short middle line |
 | `cm-select-line-down` | `one\ntwo\nthree` | pos 0, Shift+Down | (4, 0, 4) | sel 0–4 |
 | `cm-select-line-down-mid` | `one\ntwo\nthree` | pos 2, Shift+Down | (7, 2, 7) | mid-line extend down |
-| `cm-select-down-up-doc-end` | `one\ntwo\nthree` | pos 11, Shift+Down, Shift+Up | see `shift-down-then-up-shrinks` | goal column at EOF |
+| `cm-select-down-up-doc-end` | `one\ntwo\nthree` | pos 11, Shift+Down, Shift+Up | see `shift-down-then-up-shrinks` | visual x at EOF |
 | `cm-select-up-basic` | `one\ntwo\nthree` | End, Shift+Up | (11, 4, 11) | select upward one line |
 | `cm-select-up-mid` | `one\ntwo\nthree` | pos 9, Shift+Up | (9, 4, 9) | mid-line extend up |
 
@@ -96,7 +96,7 @@ Wrapped-line cases use harness `Width` (320px) and calibrated byte offsets in `d
 
 ## Priority order
 
-Fix open clusters in [todo.md](todo.md) first: Shift+Ctrl/Alt combos, wrap visual-line down, CM goal-col/selection, undo cursor restore, Alt-only nav from 0, `wordLeftPos`. Most cookbook blocks are already in `scenarios_*.go`; add a scenario only when a reported bug has no matching name in `bash scripts/test-keyboard-harness.sh --list`.
+Fix open clusters in [todo.md](todo.md) first: Shift+Ctrl+Left multiline, shift+Alt repeat, visual goal-x on device, undo cursor restore, remaining wrap/CM selection. Most cookbook blocks are already in `scenarios_*.go`; add a scenario only when a reported bug has no matching name in `bash scripts/test-keyboard-harness.sh --list`.
 
 ## What not to port
 

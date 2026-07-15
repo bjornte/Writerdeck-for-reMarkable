@@ -2,7 +2,7 @@
 
 Consolidated from per-run recon files on 2026-07-15. Individual `test-keyboard-harness-*.md` reports pruned.
 
-Sign-off gate: **83/83 PASS** (`bash scripts/test-keyboard-harness.sh --fast`).
+Sign-off gate: **90/90 PASS** (`bash scripts/test-keyboard-harness.sh --fast`). Run log below is mostly the **83-scenario** era; add a row after the first full **90** run.
 
 ## Run log (all sessions)
 

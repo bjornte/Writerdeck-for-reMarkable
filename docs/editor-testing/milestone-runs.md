@@ -18,5 +18,6 @@ Sign-off gate: **90/90 PASS**.
 | 2026-07-15T02-07-09 | 83 | 52 | 28 | 1 | +6 | 1e62aff direct query.select for shift+combo; stopped 81/83 |
 | 2026-07-15T04-45-43 | 83 | 64 | 16 | 1 | +12 | 071f998 combo positioning + wrap cal 20/40/24 + backspace guard; stopped 81/83 |
 | 2026-07-15T09-47-15 | 90 | 68 | 21 | 1 | +4 | f1ceaaa first full 90; combo/wrap 42/42; undo 0/7; touch 0/3; delete forward broken |
+| 2026-07-15T10-07-59 | 90 | 73 | 16 | 1 | +5 | 2ee3a92 goalX + delete cursor + shift+right repeat; critical 31/34 (undo only fails) |
 
-Combo-tag milestones (25 combo scenarios, `--tag combo`): 6/16 @ baseline → 9/13 @ `22ad701` → **25/25** @ `071f998` (`04-45-43`, 83-scenario suite). Wrap tag **17/17** same run. Full 90: **68/90** @ `f1ceaaa` (`09-47-15`); report `docs/recon/test-keyboard-harness-2026-07-15T09-47-15.md`.
+Combo-tag milestones (25 combo scenarios, `--tag combo`): 6/16 @ baseline → 9/13 @ `22ad701` → **25/25** @ `071f998` (`04-45-43`, 83-scenario suite). Wrap tag **17/17** same run. Full 90: **73/90** @ `2ee3a92` (`10-07-59`); critical **31/34** @ `2ee3a92` (`10-19-26`, undo only); report `docs/recon/test-keyboard-harness-2026-07-15T10-07-59.md`.

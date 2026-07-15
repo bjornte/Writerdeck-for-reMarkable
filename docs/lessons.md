@@ -96,7 +96,11 @@ Wrap harness sets `query.width` to 320 for calibration. `harnessSandboxReset` mu
 
 On device Qt, plain Backspace via `query.select` + `query.insert("")` selects the previous character without deleting — use `query.text` slice (same as Alt/Ctrl backspace in `handleMacBackspace`).
 
-Touch tap moves `query.cursorPosition` but did not update `goalColumn`; vertical Up/Down then used a stale column. `onCursorPositionChanged` on the TextEdit calls `rememberGoalColumn`; harness simulates tap via `harnesssetcursor`.
+Touch tap moves `query.cursorPosition` but did not update stored vertical goal; Up/Down then used a stale x. `onCursorPositionChanged` calls `rememberGoalX` (from `positionToRectangle`); harness simulates tap via `harnesssetcursor`.
+
+Vertical Up/Down uses visual x (`goalX` + `visualLineUpPos` / `visualLineDownPos`), not character offset within logical lines. Character-based goal column was wrong for proportional fonts and for wrapped lines.
+
+Repeated Shift+Alt+Left/Right only selected one word: word boundaries were computed from `query.cursorPosition` (the anchor) instead of the moving selection head. Use `selectionExtendFrom(key)` plus `extendSelectionHorizontal` in `socketRouteKey` and `handleMacArrow`.
 
 Plain `Key_Home` **release** in edit mode used to call `handleHome()` → lobby and break `combo-shift-end-line`; skip lobby when `mode==1 && !isLobby` on Home release (line-start is press via `handleMacArrow`).
 
