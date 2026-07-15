@@ -137,6 +137,8 @@ var criticalScenarios = map[string]bool{
 	"wrap-up-from-visual-line-2":             true,
 	"undo-redo-len":                          true,
 	"gap-up-at-doc-start":                    true,
+	"gap-plain-left-moves-caret":              true,
+	"gap-plain-right-moves-caret":             true,
 	"gap-collapse-selection-left":            true,
 	"gap-collapse-selection-right":           true,
 	"gap-delete-forward":                     true,
@@ -167,6 +169,8 @@ func inferScenarioTags(name string) []string {
 		tags = append(tags, "cm")
 	case strings.HasPrefix(name, "gap-"):
 		tags = append(tags, "gap")
+	case strings.HasPrefix(name, "hw-"):
+		tags = append(tags, "hw")
 	case strings.HasPrefix(name, "touch-"):
 		tags = append(tags, "touch")
 	case strings.HasPrefix(name, "shift-left-then-right"):

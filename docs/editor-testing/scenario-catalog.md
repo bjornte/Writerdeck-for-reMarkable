@@ -1,21 +1,21 @@
 # Scenario catalog
 
-All **90** device harness scenarios in implementation-agnostic terms. Each loads a note, performs keystrokes (Mac-style modifiers over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
+All **94** device harness scenarios in implementation-agnostic terms. Each loads a note, performs keystrokes (Mac-style modifiers over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
 
-**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`), not character index within a logical line. Shift+arrow extends selection; plain arrow without Shift moves the caret. Alt = word/paragraph motion; Ctrl = document or line boundaries (Mac editing model).
+**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`), not character index within a logical line. Shift+arrow extends selection; plain arrow without Shift moves the caret (including Left/Right — one character). Alt = word/paragraph motion; Ctrl = document or line boundaries (Mac editing model). Hardware page-turn buttons are **not** keyboard arrows; harness injects `pageleft`/`pageright` cmds and asserts `contentY`.
 
-Filter critical scenarios: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**34** scenarios). These cover plain/shift navigation, backspace/delete, enter, select-all, typing over selection, word and line delete, doc home/end, and undo/redo — the minimum bar from Microsoft, Obsidian, and macOS text-editing conventions. Failures here block basic editing.
+Filter critical scenarios: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**36** scenarios). These cover plain/shift navigation (including Left/Right), backspace/delete, enter, select-all, typing over selection, word and line delete, doc home/end, and undo/redo — the minimum bar from Microsoft, Obsidian, and macOS text-editing conventions. Failures here block basic editing.
 
 Authoritative names: `bash scripts/test-keyboard-harness.sh --list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`.
 
-## Critical (34)
+## Critical (36)
 
 Must pass for basic editing. Tag: `critical`. Grouped by function; each row is one scenario.
 
 | Group | Scenarios |
 |-------|-----------|
 | Caret / line home | `load-cursor-at-start`, `home-clears-selection`, `gap-up-at-doc-start` |
-| Plain arrows | `down-one-logical-line`, `cm-line-down-basic`, `cm-line-down-last-line`, `wrap-down-one-visual-line`, `wrap-up-from-visual-line-2` |
+| Plain arrows | `down-one-logical-line`, `cm-line-down-basic`, `cm-line-down-last-line`, `wrap-down-one-visual-line`, `wrap-up-from-visual-line-2`, `gap-plain-left-moves-caret`, `gap-plain-right-moves-caret` |
 | Doc bounds | `combo-ctrl-home`, `combo-ctrl-end` |
 | Shift+arrow select | `shift-right-from-home`, `shift-left-from-end`, `shift-right-after-home-no-stale-anchor`, `shift-down-after-arrow-down`, `shift-up-after-arrow-down`, `shift-left-repeat-from-end`, `shift-left-repeat-mid-doc`, `ctrl-shift-left-select-line`, `gap-collapse-selection-left`, `gap-collapse-selection-right` |
 | Backspace / Delete | `bs-plain`, `gap-delete-forward`, `gap-delete-with-selection`, `gap-empty-doc-backspace`, `alt-backspace-deletes-word`, `ctrl-backspace-deletes-line` |
@@ -23,7 +23,7 @@ Must pass for basic editing. Tag: `critical`. Grouped by function; each row is o
 | Undo / redo | `undo-redo-len`, `gap-undo-chain`, `gap-redo-shift-ctrl-z` |
 | Word nav | `combo-alt-left`, `combo-alt-right` |
 
-Not critical (still valuable): selection shrink on reverse (`shift-down-then-up-shrinks`, `shift-left-then-right-shrinks`), boundary scroll-only arrows, goal-column precision on shorter lines, touch tap placement, combo repeat, unicode word boundaries, most wrap/combo permutations.
+Not critical (still valuable): selection shrink on reverse (`shift-down-then-up-shrinks`, `shift-left-then-right-shrinks`), caret clamps at ends (`gap-plain-left-at-doc-start`, `gap-plain-right-at-doc-end`), hardware page scroll (`hw-page-*`), goal-column precision on shorter lines, touch tap placement, combo repeat, unicode word boundaries, most wrap/combo permutations.
 
 ## Core (8)
 
@@ -81,8 +81,8 @@ Not critical (still valuable): selection shrink on reverse (`shift-down-then-up-
 | `combo-shift-alt-right-repeat` | Shift+Alt+Right twice from start selects both words. |
 | `combo-shift-alt-up` | Shift+Alt+Up from doc end selects to previous paragraph start. |
 | `combo-shift-alt-down` | Shift+Alt+Down from start selects through next paragraph. |
-| `combo-shift-ctrl-left` | Shift+Ctrl+Left from end selects to doc start. |
-| `combo-shift-ctrl-left-multiline` | Shift+Ctrl+Left on line 2 selects from doc start (not line start only). |
+| `combo-shift-ctrl-left` | Shift+Ctrl+Left from end selects to line start (Mac ⌘⇧←). |
+| `combo-shift-ctrl-left-multiline` | Shift+Ctrl+Left on line 2 selects that line only (not whole doc). |
 | `combo-shift-ctrl-right` | Shift+Ctrl+Right from start selects to doc end. |
 | `combo-shift-ctrl-up` | Shift+Ctrl+Up from doc end selects to doc start. |
 | `combo-shift-ctrl-down` | Shift+Ctrl+Down from start selects to doc end. |
@@ -133,13 +133,15 @@ Fixed editor width (320px). Default fixture: one long unbroken paragraph (`word 
 | `redo-cleared-by-new-edit` | After Undo, a new edit clears the redo stack (Redo has no effect). |
 | `undo-after-select-delete` | Select-all via Shift+Home, delete, Undo restores text and collapsed caret at end. |
 
-## Gap coverage (15)
+## Gap coverage (17)
 
 | Scenario | Behavior |
 |----------|----------|
 | `gap-up-at-doc-start` | Up at doc start leaves caret at start. |
-| `gap-plain-left-no-cursor-move` | Plain Left at doc end does not move caret (page scroll only). |
-| `gap-plain-right-no-cursor-move` | Plain Right at doc start does not move caret (page scroll only). |
+| `gap-plain-left-moves-caret` | Plain Left from end moves caret one character left. |
+| `gap-plain-right-moves-caret` | Plain Right from start moves caret one character right. |
+| `gap-plain-left-at-doc-start` | Plain Left at doc start clamps (caret stays at 0). |
+| `gap-plain-right-at-doc-end` | Plain Right at doc end clamps (caret stays at EOF). |
 | `gap-collapse-selection-left` | Left arrow collapses a backward selection to the near end. |
 | `gap-collapse-selection-right` | Right arrow collapses a forward selection to the far end. |
 | `gap-delete-forward` | Delete removes character after caret. |
@@ -152,6 +154,13 @@ Fixed editor width (320px). Default fixture: one long unbroken paragraph (`word 
 | `gap-unicode-alt-backspace` | Alt+Backspace respects Unicode word boundaries (`résumé` → `test`). |
 | `gap-empty-doc-backspace` | Backspace on empty document is a no-op. |
 | `gap-alt-bs-with-selection` | Alt+Backspace with word selection deletes selection, leaves prior word. |
+
+## Hardware page buttons (2)
+
+| Scenario | Behavior |
+|----------|----------|
+| `hw-page-right-scrolls-edit` | On a multi-screen note, two `pageright` cmds raise `contentY` by ~1500px each; caret stays put. |
+| `hw-page-left-scrolls-edit` | After two page-rights, two `pageleft` cmds reverse the scroll to `contentY` 0; caret unchanged. |
 
 ## Touch (visual goal-x after tap) (3)
 

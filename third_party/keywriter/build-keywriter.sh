@@ -1080,8 +1080,9 @@ s, ndir = re.subn(
 assert ndir == 1, "scroll direction case block not found in main.qml"
 
 # 7e. Scroll amount: 4/5-screen step 400->1500 px (screen is 1872px tall).
-#     Key_Left/Key_Right (rM1 physical page buttons) now also scroll in edit
-#     mode -- the mode==0 guard was removed for those two cases in step 7d.
+#     Preview/read mode still pages on Key_Left/Key_Right (rM1 page buttons share
+#     those codes until exclusive gpio grab). Edit mode caret motion is handled in
+#     handleMacArrow; pageleft/pageright cmds are the dedicated hardware page path.
 assert 'contentY -= 400' in s, "scrollUp contentY not found in main.qml"
 assert 'contentY += 400' in s, "scrollDown contentY not found in main.qml"
 s = s.replace('contentY -= 400', 'contentY -= 1500', 1)
@@ -1525,13 +1526,25 @@ new7n_fn = (
     '            if (key === Qt.Key_Down) { moveCursorTo(paragraphDownPos(pos, text), false); return }\n'
     '        }\n'
     '        if (shift && cmd && !alt) {\n'
-    '            if (key === Qt.Key_Right || key === Qt.Key_Down || key === Qt.Key_End) {\n'
+    '            if (key === Qt.Key_Right) {\n'
+    '                query.select(pos, macLineEndPos(pos, text))\n'
+    '                cursorStrong = true\n'
+    '                cursorTimer.stop()\n'
+    '                return\n'
+    '            }\n'
+    '            if (key === Qt.Key_Left) {\n'
+    '                query.select(macLineStartPos(pos, text), pos)\n'
+    '                cursorStrong = true\n'
+    '                cursorTimer.stop()\n'
+    '                return\n'
+    '            }\n'
+    '            if (key === Qt.Key_Down || key === Qt.Key_End) {\n'
     '                query.select(pos, text.length)\n'
     '                cursorStrong = true\n'
     '                cursorTimer.stop()\n'
     '                return\n'
     '            }\n'
-    '            if (key === Qt.Key_Left || key === Qt.Key_Up || key === Qt.Key_Home) {\n'
+    '            if (key === Qt.Key_Up || key === Qt.Key_Home) {\n'
     '                query.select(0, pos)\n'
     '                cursorStrong = true\n'
     '                cursorTimer.stop()\n'
@@ -1563,9 +1576,21 @@ new7n_fn = (
     '    }\n'
     '\n'
     '    function publishEditorState() {\n'
+    '        var cy = 0\n'
+    '        try { if (typeof flick !== "undefined") cy = Math.round(flick.contentY) } catch (e) {}\n'
     '        writerdeck.publishState(query.cursorPosition, query.selectionStart,\n'
     '            query.selectionEnd, query.text.length, mode, isLobby ? 1 : 0,\n'
-    '            vaultOverlayMode, currentFile, query.text)\n'
+    '            vaultOverlayMode, currentFile, query.text, cy)\n'
+    '    }\n'
+    '\n'
+    '    function pageLeft() {\n'
+    '        if (typeof flick === "undefined") return\n'
+    '        flick.scrollUp()\n'
+    '    }\n'
+    '\n'
+    '    function pageRight() {\n'
+    '        if (typeof flick === "undefined") return\n'
+    '        flick.scrollDown()\n'
     '    }\n'
     '\n'
     '    function cursorOnLastLine() {\n'
@@ -1998,12 +2023,18 @@ new7n_fn = (
     '                        : Math.max(query.selectionStart, query.selectionEnd)\n'
     '                    query.deselect()\n'
     '                    query.cursorPosition = c\n'
-    '                    cursorStrong = true\n'
-    '                    cursorTimer.stop()\n'
-    '                    event.accepted = true\n'
-    '                    return true\n'
+    '                } else {\n'
+    '                    var textLR = query.text\n'
+    '                    var posLR = query.cursorPosition\n'
+    '                    var nextLR = (event.key === Qt.Key_Left)\n'
+    '                        ? Math.max(0, posLR - 1)\n'
+    '                        : Math.min(textLR.length, posLR + 1)\n'
+    '                    moveCursorTo(nextLR, false)\n'
     '                }\n'
-    '                return false\n'
+    '                cursorStrong = true\n'
+    '                cursorTimer.stop()\n'
+    '                event.accepted = true\n'
+    '                return true\n'
     '            }\n'
     '        }\n'
     '        var shift = mods & Qt.ShiftModifier\n'
@@ -2101,12 +2132,12 @@ new7n_fn = (
     '            }\n'
     '            return false\n'
     '        } else if (event.key === Qt.Key_Left) {\n'
-    '            if (cmd && shift) newPos = 0\n'
+    '            if (cmd && shift) newPos = macLineStartPos(pos, text)\n'
     '            else if (cmd) newPos = lineStartPos(pos, text)\n'
     '            else if (alt) newPos = wordLeftPos(selectionExtendFrom(Qt.Key_Left), text)\n'
     '            else newPos = lineStartPos(pos, text)\n'
     '        } else if (event.key === Qt.Key_Right) {\n'
-    '            if (cmd && shift) newPos = text.length\n'
+    '            if (cmd && shift) newPos = macLineEndPos(pos, text)\n'
     '            else if (cmd) newPos = lineEndPos(pos, text)\n'
     '            else if (alt) newPos = wordRightPos(selectionExtendFrom(Qt.Key_Right), text)\n'
     '            else newPos = lineEndPos(pos, text)\n'
@@ -2236,7 +2267,9 @@ new7n_fn = (
 assert old7n_fn in s, "function showLobby not found (7n)"
 s = s.replace(old7n_fn, new7n_fn, 1)
 
-# 7o. Mac-style modifier+arrow in edit mode; plain Left/Right keep page-scroll.
+# 7o. Mac-style modifier+arrow in edit mode; plain Left/Right move the caret
+#     (normal editor). Hardware page buttons use pageleft/pageright cmds — not
+#     Key_Left/Key_Right (those codes are shared with keyboard arrows).
 s, n7o_kp = re.subn(
     r'([ \t]+Keys\.onPressed:\s*\{\s*\n)([ \t]+)switch\(event\.key\)\{',
     lambda m: (
@@ -2264,8 +2297,7 @@ old7o_l = (
 )
 new7o_l = (
     '                        case Qt.Key_Left:\n'
-    '                            if (event.modifiers === Qt.NoModifier) {\n'
-    '                                if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
+    '                            if (event.modifiers === Qt.NoModifier && mode != 1) {\n'
     '                                flick.scrollUp()\n'
     '                            }\n'
     '                            break'
@@ -2280,8 +2312,7 @@ old7o_r = (
 )
 new7o_r = (
     '                        case Qt.Key_Right:\n'
-    '                            if (event.modifiers === Qt.NoModifier) {\n'
-    '                                if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
+    '                            if (event.modifiers === Qt.NoModifier && mode != 1) {\n'
     '                                flick.scrollDown()\n'
     '                            }\n'
     '                            break'

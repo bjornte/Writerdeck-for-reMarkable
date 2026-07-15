@@ -18,23 +18,43 @@ func gapScenarios() []Scenario {
 			},
 		},
 		{
-			Name:    "gap-plain-left-no-cursor-move",
+			Name:    "gap-plain-left-moves-caret",
 			Content: "hello world",
 			Steps: []Step{
 				{Keys: []Key{{Name: "End"}}},
 				{Expect: &StateExpect{Cursor: intp(11)}},
-				{Label: "plain left scrolls page", Keys: []Key{{Name: "ArrowLeft"}}},
-				{Expect: &StateExpect{Cursor: intp(11), SelStart: intp(11), SelEnd: intp(11)}},
+				{Label: "plain left moves caret", Keys: []Key{{Name: "ArrowLeft"}}},
+				{Expect: &StateExpect{Cursor: intp(10), SelStart: intp(10), SelEnd: intp(10)}},
 			},
 		},
 		{
-			Name:    "gap-plain-right-no-cursor-move",
+			Name:    "gap-plain-right-moves-caret",
 			Content: "hello",
 			Steps: []Step{
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
 				{Expect: &StateExpect{Cursor: intp(0)}},
-				{Label: "plain right scrolls page", Keys: []Key{{Name: "ArrowRight"}}},
+				{Label: "plain right moves caret", Keys: []Key{{Name: "ArrowRight"}}},
+				{Expect: &StateExpect{Cursor: intp(1), SelStart: intp(1), SelEnd: intp(1)}},
+			},
+		},
+		{
+			Name:    "gap-plain-left-at-doc-start",
+			Content: "hello",
+			Steps: []Step{
+				{Keys: []Key{{Name: "Home", Ctrl: true}}},
+				{Expect: &StateExpect{Cursor: intp(0)}},
+				{Label: "left clamps at start", Keys: []Key{{Name: "ArrowLeft"}}},
 				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
+			},
+		},
+		{
+			Name:    "gap-plain-right-at-doc-end",
+			Content: "hello",
+			Steps: []Step{
+				{Keys: []Key{{Name: "End"}}},
+				{Expect: &StateExpect{Cursor: intp(5)}},
+				{Label: "right clamps at end", Keys: []Key{{Name: "ArrowRight"}}},
+				{Expect: &StateExpect{Cursor: intp(5), SelStart: intp(5), SelEnd: intp(5)}},
 			},
 		},
 		{

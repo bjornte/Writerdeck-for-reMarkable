@@ -2,7 +2,7 @@
 
 Hand-maintained scoreboard for full `bash scripts/test-keyboard-harness.sh --fast` sessions (no `-s`, no `--tag`). Update this table after every full-suite run — add a row with timestamp, pass/fail/prep, delta vs prior milestone, and one-line context (commit or what changed). Per-run reports: `docs/recon/test-keyboard-harness-*.{md,txt}` (new runs only; older files consolidated in [harness-runs.md](../recon/harness-runs.md)).
 
-Sign-off gate: **90/90 PASS**.
+Sign-off gate: **94/94 PASS**.
 
 | Run | Suite | Pass | Fail | Prep | vs prior | Context |
 |-----|-------|------|------|------|----------|---------|

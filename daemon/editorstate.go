@@ -17,6 +17,7 @@ type EditorState struct {
 	IsLobby      int    `json:"isLobby"`      // 1=Lobby visible
 	VaultOverlay string `json:"vaultOverlay"` // numpad mode when non-empty
 	CurrentFile  string `json:"currentFile"`
+	ContentY     int    `json:"contentY"` // Flickable scroll offset (page buttons)
 }
 
 const stateQueryTimeout = 3 * time.Second
@@ -83,6 +84,7 @@ func parseEditorState(line []byte) (EditorState, bool) {
 		IsLobby      int    `json:"isLobby"`
 		VaultOverlay string `json:"vaultOverlay"`
 		CurrentFile  string `json:"currentFile"`
+		ContentY     int    `json:"contentY"`
 	}
 	if err := json.Unmarshal(line, &raw); err != nil || raw.T != "state" {
 		return EditorState{}, false
@@ -97,6 +99,7 @@ func parseEditorState(line []byte) (EditorState, bool) {
 		IsLobby:      raw.IsLobby,
 		VaultOverlay: raw.VaultOverlay,
 		CurrentFile:  raw.CurrentFile,
+		ContentY:     raw.ContentY,
 	}, true
 }
 

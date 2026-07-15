@@ -40,22 +40,26 @@ type Key struct {
 }
 
 type StateExpect struct {
-	Cursor    *int    `json:"cursor,omitempty"`
-	CursorMin *int    `json:"cursorMin,omitempty"`
-	CursorMax *int    `json:"cursorMax,omitempty"`
-	SelStart  *int    `json:"selStart,omitempty"`
-	SelEnd    *int    `json:"selEnd,omitempty"`
-	SelLen    *int    `json:"selLen,omitempty"`
-	SelLenMin *int    `json:"selLenMin,omitempty"`
-	TextLen   *int    `json:"textLen,omitempty"`
-	Text      *string `json:"text,omitempty"` // full note body from /api/notes
-	Mode      *int    `json:"mode,omitempty"`
-	IsLobby   *int    `json:"isLobby,omitempty"`
+	Cursor      *int    `json:"cursor,omitempty"`
+	CursorMin   *int    `json:"cursorMin,omitempty"`
+	CursorMax   *int    `json:"cursorMax,omitempty"`
+	SelStart    *int    `json:"selStart,omitempty"`
+	SelEnd      *int    `json:"selEnd,omitempty"`
+	SelLen      *int    `json:"selLen,omitempty"`
+	SelLenMin   *int    `json:"selLenMin,omitempty"`
+	TextLen     *int    `json:"textLen,omitempty"`
+	Text        *string `json:"text,omitempty"` // full note body from /api/notes
+	Mode        *int    `json:"mode,omitempty"`
+	IsLobby     *int    `json:"isLobby,omitempty"`
+	ContentY    *int    `json:"contentY,omitempty"`
+	ContentYMin *int    `json:"contentYMin,omitempty"`
+	ContentYMax *int    `json:"contentYMax,omitempty"`
 }
 
 type Step struct {
 	Label     string       `json:"label,omitempty"`
 	Keys      []Key        `json:"keys,omitempty"`
+	Cmd       string       `json:"cmd,omitempty"` // editor cmd e.g. pageleft/pageright
 	SetCursor *int         `json:"setCursor,omitempty"`
 	Repeat    int          `json:"repeat,omitempty"`
 	Expect    *StateExpect `json:"expect,omitempty"`
@@ -78,6 +82,7 @@ type EditorState struct {
 	Mode        int    `json:"mode"`
 	IsLobby     int    `json:"isLobby"`
 	CurrentFile string `json:"currentFile"`
+	ContentY    int    `json:"contentY"`
 }
 
 type Harness struct {
@@ -368,6 +373,12 @@ func (h *Harness) RunScenario(sc Scenario) error {
 		if step.SetCursor != nil {
 			if err := h.setCursor(*step.SetCursor); err != nil {
 				return fmt.Errorf("%s: setCursor: %w", label, err)
+			}
+			time.Sleep(stepPause)
+		}
+		if step.Cmd != "" {
+			if err := h.editorCmd(step.Cmd, "", 0); err != nil {
+				return fmt.Errorf("%s: cmd %s: %w", label, step.Cmd, err)
 			}
 			time.Sleep(stepPause)
 		}
@@ -777,6 +788,13 @@ func matchExpect(got EditorState, exp StateExpect, noteText string) error {
 	check("textLen", exp.TextLen, got.TextLen)
 	check("mode", exp.Mode, got.Mode)
 	check("isLobby", exp.IsLobby, got.IsLobby)
+	check("contentY", exp.ContentY, got.ContentY)
+	if exp.ContentYMin != nil && got.ContentY < *exp.ContentYMin {
+		errs = append(errs, fmt.Sprintf("contentYMin want >= %d got %d", *exp.ContentYMin, got.ContentY))
+	}
+	if exp.ContentYMax != nil && got.ContentY > *exp.ContentYMax {
+		errs = append(errs, fmt.Sprintf("contentYMax want <= %d got %d", *exp.ContentYMax, got.ContentY))
+	}
 	if exp.Text != nil && noteText != *exp.Text {
 		errs = append(errs, fmt.Sprintf("text want %q got %q", *exp.Text, noteText))
 	}

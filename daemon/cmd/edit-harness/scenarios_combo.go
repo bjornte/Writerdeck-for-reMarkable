@@ -149,7 +149,7 @@ func comboScenarios() []Scenario {
 				{Keys: []Key{{Name: "ArrowDown"}}},
 				{Keys: []Key{{Name: "End"}}},
 				{Keys: []Key{{Name: "ArrowLeft", Shift: true, Ctrl: true}}},
-				{Expect: &StateExpect{Cursor: intp(7), SelStart: intp(0), SelEnd: intp(7), SelLen: intp(7)}},
+				{Expect: &StateExpect{Cursor: intp(7), SelStart: intp(4), SelEnd: intp(7), SelLen: intp(3)}},
 			},
 		},
 		{

@@ -14,7 +14,7 @@ Read: [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) 
 | Best full 83 | 64 / 16 | `04-45-43` (`071f998`) — stopped early |
 | **Suite size** | **90** | +touch, +selection, +shift-alt repeat, +shift-ctrl multiline (not full-run yet) |
 
-**Suite:** **90 scenarios**. Sign-off: **90/90 PASS** with `--fast`.
+**Suite:** **94 scenarios**. Sign-off: **94/94 PASS** with `--fast`.
 
 **Deploy:** `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Relaunch Writerdeck after binary deploy (`kill` + `POST /api/open`). Harness-only: `deploy-rmkbd.sh` when `/api/test/*` or harness runner changed. `systemctl restart writerdeck` if deploy-rmkbd stops the server.
 

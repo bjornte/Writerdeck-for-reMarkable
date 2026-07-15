@@ -255,6 +255,14 @@
 +            invokeSaveCmd("showLobby", "showlobby");
 +        else if (cmd == "editorstate" && g_rootObj)
 +            QMetaObject::invokeMethod(g_rootObj, "publishEditorState", Qt::BlockingQueuedConnection);
++        else if (cmd == "pageleft" && g_rootObj) {
++            QMetaObject::invokeMethod(g_rootObj, "pageLeft", Qt::BlockingQueuedConnection);
++            QMetaObject::invokeMethod(g_rootObj, "publishEditorState", Qt::BlockingQueuedConnection);
++        }
++        else if (cmd == "pageright" && g_rootObj) {
++            QMetaObject::invokeMethod(g_rootObj, "pageRight", Qt::BlockingQueuedConnection);
++            QMetaObject::invokeMethod(g_rootObj, "publishEditorState", Qt::BlockingQueuedConnection);
++        }
 +        else if (cmd == "harnesswidth" && g_rootObj) {
 +            int w = 0;
 +            auto wp = line.find("\"w\":");

@@ -1,6 +1,6 @@
 # Editor testing
 
-Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path via `edit-harness`; USB is spot-check only. Sign-off: **90/90 PASS** (`--fast`).
+Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path via `edit-harness`; USB is spot-check only. Sign-off: **94/94 PASS** (`--fast`).
 
 | File | Purpose |
 |------|---------|
