@@ -33,6 +33,7 @@ func undoScenarios() []Scenario {
 				{Label: "undo from eof", Keys: []Key{{Name: "z", Ctrl: true}}},
 				{Expect: &StateExpect{Cursor: intp(0), TextLen: intp(27)}},
 				{Keys: []Key{{Name: "End"}}},
+				{Expect: &StateExpect{Cursor: intp(27), TextLen: intp(27)}},
 				{Label: "redo restores insert cursor", Keys: []Key{{Name: "y", Ctrl: true}}},
 				{Expect: &StateExpect{Cursor: intp(4), TextLen: intp(31)}},
 			},
@@ -57,7 +58,8 @@ func undoScenarios() []Scenario {
 			Content: "abc",
 			Steps: []Step{
 				{Keys: []Key{{Name: "End"}}},
-				{Keys: []Key{{Name: "Backspace"}}, Repeat: 3},
+				{Keys: []Key{{Name: "a", Ctrl: true}}},
+				{Keys: []Key{{Name: "Backspace"}}},
 				{Expect: &StateExpect{TextLen: intp(0)}},
 				{Keys: []Key{{Name: "z", Ctrl: true}}},
 				{Expect: &StateExpect{TextLen: intp(3), Cursor: intp(3)}},
