@@ -2,7 +2,7 @@
 
 Hand-maintained scoreboard for full `bash scripts/test-keyboard-harness.sh --fast` sessions (no `-s`, no `--tag`). Update this table after every full-suite run — add a row with timestamp, pass/fail/prep, delta vs prior milestone, and one-line context (commit or what changed). Per-run reports: `docs/recon/test-keyboard-harness-*.{md,txt}` (new runs only; older files consolidated in [harness-runs.md](../recon/harness-runs.md)).
 
-Sign-off gate: **87/87 PASS**.
+Sign-off gate: **90/90 PASS**.
 
 | Run | Suite | Pass | Fail | Prep | vs prior | Context |
 |-----|-------|------|------|------|----------|---------|
@@ -17,5 +17,6 @@ Sign-off gate: **87/87 PASS**.
 | 2026-07-15T02-03-16 | 83 | 46 | 34 | 1 | +11 | 7d00156 selection-collapse fix; stopped 81/83 |
 | 2026-07-15T02-07-09 | 83 | 52 | 28 | 1 | +6 | 1e62aff direct query.select for shift+combo; stopped 81/83 |
 | 2026-07-15T04-45-43 | 83 | 64 | 16 | 1 | +12 | 071f998 combo positioning + wrap cal 20/40/24 + backspace guard; stopped 81/83 |
+| 2026-07-15T09-47-15 | 90 | 68 | 21 | 1 | +4 | f1ceaaa first full 90; combo/wrap 42/42; undo 0/7; touch 0/3; delete forward broken |
 
-Combo-tag milestones (22 scenarios, `--tag combo`): 6/16 @ baseline → 9/13 @ `22ad701` → **25/25** @ `071f998` (`04-45-43`). Wrap tag **17/17** same run.
+Combo-tag milestones (25 combo scenarios, `--tag combo`): 6/16 @ baseline → 9/13 @ `22ad701` → **25/25** @ `071f998` (`04-45-43`, 83-scenario suite). Wrap tag **17/17** same run. Full 90: **68/90** @ `f1ceaaa` (`09-47-15`); report `docs/recon/test-keyboard-harness-2026-07-15T09-47-15.md`.

@@ -91,12 +91,40 @@ func TestKeyModifiedNav(t *testing.T) {
 	}
 }
 
+func TestCriticalScenarioTags(t *testing.T) {
+	got, ok := findScenariosByTag("critical")
+	if !ok {
+		t.Fatal("expected critical tag")
+	}
+	if len(got) != len(criticalScenarios) {
+		t.Fatalf("critical count = %d want %d", len(got), len(criticalScenarios))
+	}
+	for name := range criticalScenarios {
+		if _, ok := findScenario(name); !ok {
+			t.Fatalf("critical scenario %q not found", name)
+		}
+		found := false
+		for _, sc := range got {
+			if sc.Name == name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("scenario %q missing critical tag", name)
+		}
+	}
+}
+
 func TestInferScenarioTags(t *testing.T) {
-	if tags := inferScenarioTags("wrap-down-one-visual-line"); len(tags) != 1 || tags[0] != "wrap" {
+	if tags := inferScenarioTags("wrap-down-one-visual-line"); len(tags) != 2 || tags[0] != "critical" || tags[1] != "wrap" {
 		t.Fatalf("wrap tags = %v", tags)
 	}
-	if tags := inferScenarioTags("down-one-logical-line"); len(tags) != 1 || tags[0] != "regression" {
+	if tags := inferScenarioTags("down-one-logical-line"); len(tags) != 2 || tags[0] != "critical" || tags[1] != "regression" {
 		t.Fatalf("regression tags = %v", tags)
+	}
+	if tags := inferScenarioTags("shift-down-then-up-shrinks"); len(tags) != 1 || tags[0] != "core" {
+		t.Fatalf("non-critical shrink tags = %v", tags)
 	}
 }
 

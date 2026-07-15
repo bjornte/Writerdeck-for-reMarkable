@@ -108,8 +108,56 @@ func validateScenarioKey(k Key) string {
 	return "unknown key name " + k.Name
 }
 
+// criticalScenarios are keyboard behaviors that must work for basic editing.
+// Sourced from Microsoft/Obsidian/macOS text-editing conventions: plain and
+// shift+arrow navigation, backspace/delete, enter, select-all, typing over
+// selection, word/line delete, doc home/end, and undo/redo.
+var criticalScenarios = map[string]bool{
+	"load-cursor-at-start": true,
+	"home-clears-selection": true,
+	"shift-right-from-home": true,
+	"shift-left-from-end": true,
+	"shift-right-after-home-no-stale-anchor": true,
+	"shift-down-after-arrow-down":            true,
+	"shift-up-after-arrow-down":              true,
+	"ctrl-shift-left-select-line":            true,
+	"down-one-logical-line":                  true,
+	"shift-left-repeat-from-end":             true,
+	"alt-backspace-deletes-word":             true,
+	"ctrl-backspace-deletes-line":            true,
+	"shift-left-repeat-mid-doc":              true,
+	"cm-line-down-basic":                     true,
+	"cm-line-down-last-line":                 true,
+	"combo-alt-left":                         true,
+	"combo-alt-right":                        true,
+	"combo-ctrl-home":                        true,
+	"combo-ctrl-end":                         true,
+	"bs-plain":                               true,
+	"wrap-down-one-visual-line":              true,
+	"wrap-up-from-visual-line-2":             true,
+	"undo-redo-len":                          true,
+	"gap-up-at-doc-start":                    true,
+	"gap-collapse-selection-left":            true,
+	"gap-collapse-selection-right":           true,
+	"gap-delete-forward":                     true,
+	"gap-delete-with-selection":              true,
+	"gap-select-all":                         true,
+	"gap-enter-new-line":                     true,
+	"gap-type-replaces-selection":            true,
+	"gap-redo-shift-ctrl-z":                  true,
+	"gap-undo-chain":                         true,
+	"gap-empty-doc-backspace":                true,
+}
+
+func isCriticalScenario(name string) bool {
+	return criticalScenarios[name]
+}
+
 func inferScenarioTags(name string) []string {
 	var tags []string
+	if isCriticalScenario(name) {
+		tags = append(tags, "critical")
+	}
 	switch {
 	case strings.HasPrefix(name, "wrap-"):
 		tags = append(tags, "wrap")
@@ -158,8 +206,19 @@ func attachScenarioTags(scenarios []Scenario) []Scenario {
 	for i, sc := range scenarios {
 		if len(sc.Tags) == 0 {
 			sc.Tags = inferScenarioTags(sc.Name)
+		} else if isCriticalScenario(sc.Name) {
+			sc.Tags = appendCriticalTag(sc.Tags)
 		}
 		out[i] = sc
 	}
 	return out
+}
+
+func appendCriticalTag(tags []string) []string {
+	for _, t := range tags {
+		if t == "critical" {
+			return tags
+		}
+	}
+	return append([]string{"critical"}, tags...)
 }

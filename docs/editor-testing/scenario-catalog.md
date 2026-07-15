@@ -1,10 +1,29 @@
 # Scenario catalog
 
-All **83** device harness scenarios in implementation-agnostic terms. Each loads a note, performs keystrokes (Mac-style modifiers over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
+All **90** device harness scenarios in implementation-agnostic terms. Each loads a note, performs keystrokes (Mac-style modifiers over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
 
-**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Shift+arrow extends selection; plain arrow without Shift moves the caret. Alt = word/paragraph motion; Ctrl = document or line boundaries (Mac editing model).
+**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`), not character index within a logical line. Shift+arrow extends selection; plain arrow without Shift moves the caret. Alt = word/paragraph motion; Ctrl = document or line boundaries (Mac editing model).
+
+Filter critical scenarios: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**34** scenarios). These cover plain/shift navigation, backspace/delete, enter, select-all, typing over selection, word and line delete, doc home/end, and undo/redo — the minimum bar from Microsoft, Obsidian, and macOS text-editing conventions. Failures here block basic editing.
 
 Authoritative names: `bash scripts/test-keyboard-harness.sh --list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`.
+
+## Critical (34)
+
+Must pass for basic editing. Tag: `critical`. Grouped by function; each row is one scenario.
+
+| Group | Scenarios |
+|-------|-----------|
+| Caret / line home | `load-cursor-at-start`, `home-clears-selection`, `gap-up-at-doc-start` |
+| Plain arrows | `down-one-logical-line`, `cm-line-down-basic`, `cm-line-down-last-line`, `wrap-down-one-visual-line`, `wrap-up-from-visual-line-2` |
+| Doc bounds | `combo-ctrl-home`, `combo-ctrl-end` |
+| Shift+arrow select | `shift-right-from-home`, `shift-left-from-end`, `shift-right-after-home-no-stale-anchor`, `shift-down-after-arrow-down`, `shift-up-after-arrow-down`, `shift-left-repeat-from-end`, `shift-left-repeat-mid-doc`, `ctrl-shift-left-select-line`, `gap-collapse-selection-left`, `gap-collapse-selection-right` |
+| Backspace / Delete | `bs-plain`, `gap-delete-forward`, `gap-delete-with-selection`, `gap-empty-doc-backspace`, `alt-backspace-deletes-word`, `ctrl-backspace-deletes-line` |
+| Insert / replace | `gap-enter-new-line`, `gap-type-replaces-selection`, `gap-select-all` |
+| Undo / redo | `undo-redo-len`, `gap-undo-chain`, `gap-redo-shift-ctrl-z` |
+| Word nav | `combo-alt-left`, `combo-alt-right` |
+
+Not critical (still valuable): selection shrink on reverse (`shift-down-then-up-shrinks`, `shift-left-then-right-shrinks`), boundary scroll-only arrows, goal-column precision on shorter lines, touch tap placement, combo repeat, unicode word boundaries, most wrap/combo permutations.
 
 ## Core (8)
 
@@ -24,7 +43,7 @@ Authoritative names: `bash scripts/test-keyboard-harness.sh --list`. Implementat
 | Scenario | Behavior |
 |----------|----------|
 | `down-one-logical-line` | Down once from first line moves to start of second line (`aa` / `bb`). |
-| `shift-down-then-up-shrinks` | Shift+Down extends selection; Shift+Up shrinks it (goal-column shrink). |
+| `shift-down-then-up-shrinks` | Shift+Down extends selection; Shift+Up shrinks it (visual-x shrink). |
 | `shift-left-repeat-from-end` | Shift+Left ×3 from end of line selects the last three characters. |
 | `alt-backspace-deletes-word` | Alt+Backspace at end of `hello world` leaves `hello`. |
 | `ctrl-backspace-deletes-line` | Ctrl+Backspace on second line removes that line back to the newline. |
@@ -35,16 +54,16 @@ Authoritative names: `bash scripts/test-keyboard-harness.sh --list`. Implementat
 | Scenario | Behavior |
 |----------|----------|
 | `cm-line-down-basic` | Down from doc start moves to start of second logical line. |
-| `cm-line-down-shorter` | Down from column 2 on a longer first line lands at column 2 on a shorter second line (goal column). |
+| `cm-line-down-shorter` | Down from mid first line lands at closest x on a shorter second line (clamps to line end). |
 | `cm-line-down-last-line` | Down on the last line moves caret to document end. |
-| `cm-line-down-goal-col` | Down twice preserves goal column across a short middle line. |
+| `cm-line-down-goal-col` | Down twice preserves visual x across a short middle line (not character offset). |
 | `cm-select-line-down` | Shift+Down from doc start selects through end of first line. |
 | `cm-select-line-down-mid` | Shift+Down from mid-line extends selection to target on next line. |
 | `cm-select-down-up-doc-end` | At doc end, Shift+Down then Shift+Up yields a bounded upward selection. |
 | `cm-select-up-basic` | Shift+Up from doc end selects upward one logical line. |
 | `cm-select-up-mid` | Shift+Up from mid line 3 selects upward to line 2 boundary. |
 
-## Modifier combos — Alt, Ctrl, Shift (22)
+## Modifier combos — Alt, Ctrl, Shift (25)
 
 | Scenario | Behavior |
 |----------|----------|
@@ -57,10 +76,13 @@ Authoritative names: `bash scripts/test-keyboard-harness.sh --list`. Implementat
 | `combo-ctrl-up` | Ctrl+Up from doc end moves to doc start. |
 | `combo-ctrl-down` | Ctrl+Down from start moves to doc end. |
 | `combo-shift-alt-left` | Shift+Alt+Left from end selects back one word. |
+| `combo-shift-alt-left-repeat` | Shift+Alt+Left twice from end selects both words. |
 | `combo-shift-alt-right` | Shift+Alt+Right from start selects forward one word. |
+| `combo-shift-alt-right-repeat` | Shift+Alt+Right twice from start selects both words. |
 | `combo-shift-alt-up` | Shift+Alt+Up from doc end selects to previous paragraph start. |
 | `combo-shift-alt-down` | Shift+Alt+Down from start selects through next paragraph. |
 | `combo-shift-ctrl-left` | Shift+Ctrl+Left from end selects to doc start. |
+| `combo-shift-ctrl-left-multiline` | Shift+Ctrl+Left on line 2 selects from doc start (not line start only). |
 | `combo-shift-ctrl-right` | Shift+Ctrl+Right from start selects to doc end. |
 | `combo-shift-ctrl-up` | Shift+Ctrl+Up from doc end selects to doc start. |
 | `combo-shift-ctrl-down` | Shift+Ctrl+Down from start selects to doc end. |
@@ -94,7 +116,7 @@ Fixed editor width (320px). Default fixture: one long unbroken paragraph (`word 
 | `wrap-down-last-visual-line` | Down on last visual row stays at document end. |
 | `wrap-shift-down-last-to-eof` | Shift+Down at last visual row selects through document end. |
 | `wrap-mixed-newline-and-wrap` | Down from short first line enters wrapped tail of second logical line. |
-| `wrap-down-goal-column` | Down from column 2 preserves goal column across wrap. |
+| `wrap-down-goal-column` | Down preserves visual x across a wrapped visual line break. |
 | `wrap-combo-alt-left-word` | Alt+Left on wrapped paragraph moves back within text (word nav). |
 | `wrap-combo-ctrl-bs-line` | Ctrl+Backspace on wrapped paragraph clears entire logical line. |
 | `wrap-shift-left-across-wrap` | Shift+Left ×3 from second visual row selects backward across wrap. |
@@ -131,15 +153,15 @@ Fixed editor width (320px). Default fixture: one long unbroken paragraph (`word 
 | `gap-empty-doc-backspace` | Backspace on empty document is a no-op. |
 | `gap-alt-bs-with-selection` | Alt+Backspace with word selection deletes selection, leaves prior word. |
 
-## Touch (goal column after tap)
+## Touch (visual goal-x after tap) (3)
 
 | Scenario | Behavior |
 |----------|----------|
-| `touch-down-goal-column` | Tap mid line 1 (harnessSetCursor), Down lands same column on line 2. |
-| `touch-up-goal-column` | Tap mid line 2, Up lands same column on line 1. |
-| `touch-down-shorter-line` | Tap col 2 on longer line, Down clamps column on shorter next line. |
+| `touch-down-goal-column` | Tap mid line 1 (harnessSetCursor), Down lands at same visual x on line 2. |
+| `touch-up-goal-column` | Tap mid line 2, Up lands at same visual x on line 1. |
+| `touch-down-shorter-line` | Tap mid longer line, Down clamps to closest x on shorter next line. |
 
-## Selection (shift reverse)
+## Selection (shift reverse) (1)
 
 | Scenario | Behavior |
 |----------|----------|

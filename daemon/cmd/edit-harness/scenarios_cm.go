@@ -41,7 +41,7 @@ func cmScenarios() []Scenario {
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowRight"}}, Repeat: 2},
 				{Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(11), SelStart: intp(11), SelEnd: intp(11)}},
+				{Expect: &StateExpect{Cursor: intp(6), SelStart: intp(6), SelEnd: intp(6)}},
 			},
 		},
 		{
