@@ -58,7 +58,7 @@ Authoritative names: `bash scripts/test-keyboard-harness.sh --list`. Implementat
 | `combo-ctrl-down` | Ctrl+Down from start moves to doc end. |
 | `combo-shift-alt-left` | Shift+Alt+Left from end selects back one word. |
 | `combo-shift-alt-right` | Shift+Alt+Right from start selects forward one word. |
-| `combo-shift-alt-up` | Shift+Alt+Up from paragraph end selects to doc start. |
+| `combo-shift-alt-up` | Shift+Alt+Up from doc end selects to previous paragraph start. |
 | `combo-shift-alt-down` | Shift+Alt+Down from start selects through next paragraph. |
 | `combo-shift-ctrl-left` | Shift+Ctrl+Left from end selects to doc start. |
 | `combo-shift-ctrl-right` | Shift+Ctrl+Right from start selects to doc end. |

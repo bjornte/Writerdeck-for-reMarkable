@@ -101,9 +101,9 @@ func comboScenarios() []Scenario {
 			Name:    "combo-shift-alt-up",
 			Content: twoParas,
 			Steps: []Step{
-				{Keys: []Key{{Name: "End"}}},
+				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowUp", Shift: true, Alt: true}}},
-				{Expect: &StateExpect{Cursor: intp(12), SelStart: intp(0), SelEnd: intp(12), SelLen: intp(12)}},
+				{Expect: &StateExpect{Cursor: intp(12), SelStart: intp(7), SelEnd: intp(12), SelLen: intp(5)}},
 			},
 		},
 		{
@@ -137,7 +137,7 @@ func comboScenarios() []Scenario {
 			Name:    "combo-shift-ctrl-up",
 			Content: threeLines,
 			Steps: []Step{
-				{Keys: []Key{{Name: "End"}}},
+				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowUp", Shift: true, Ctrl: true}}},
 				{Expect: &StateExpect{Cursor: intp(13), SelStart: intp(0), SelEnd: intp(13), SelLen: intp(13)}},
 			},
@@ -194,6 +194,7 @@ func comboScenarios() []Scenario {
 			Content: twoLines,
 			Steps: []Step{
 				{Keys: []Key{{Name: "ArrowDown"}}},
+				{Expect: &StateExpect{Cursor: intp(4)}},
 				{Keys: []Key{{Name: "Home", Shift: true, Ctrl: true}}},
 				{Expect: &StateExpect{Cursor: intp(4), SelStart: intp(0), SelEnd: intp(4), SelLen: intp(4)}},
 			},
@@ -203,6 +204,7 @@ func comboScenarios() []Scenario {
 			Content: twoLines,
 			Steps: []Step{
 				{Keys: []Key{{Name: "ArrowDown"}}},
+				{Expect: &StateExpect{Cursor: intp(4)}},
 				{Keys: []Key{{Name: "End", Shift: true, Ctrl: true}}},
 				{Expect: &StateExpect{Cursor: intp(7), SelStart: intp(4), SelEnd: intp(7), SelLen: intp(3)}},
 			},

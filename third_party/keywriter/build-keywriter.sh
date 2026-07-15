@@ -2111,6 +2111,7 @@ new7n_fn = (
     '\n'
     '    function handleMacBackspace(event) {\n'
     '        if (mode != 1) return false\n'
+    '        if (event.key !== Qt.Key_Backspace && event.key !== Qt.Key_Delete) return false\n'
     '        var mods = event.modifiers\n'
     '        var cmd = mods & Qt.ControlModifier\n'
     '        var alt = mods & Qt.AltModifier\n'
