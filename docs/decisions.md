@@ -36,6 +36,10 @@ Keywriter takes keyboard input through Qt QPA — there is no input fd to swap. 
 
 The four-year-old prebuilt binary dies at the loader (`libQt5Quick.so.5`). Qt is static-linked into xochitl on current firmware, so `LD_LIBRARY_PATH` cannot rescue it. We cross-build from source in `ghcr.io/toltec-dev/qt:v3.3` (CI) and deploy a Qt5 runtime sysroot. Writerdeck renders via linuxfb on the rM1's real `/dev/fb0` — rm2fb is not needed.
 
+Using `build-keywriter.sh` as the patching layer is a constraint choice, not an ideal end state. It keeps builds reproducible from a clean upstream checkout, but it is brittle at this size: patch order and context coupling make regressions easier, and reviewability drops as more editor logic lives in generated string patches.
+
+If keyboard/editing behavior keeps requiring deep patch surgery, prefer moving substantial QML/C++ edits into a maintained Writerdeck fork of keywriter and reducing `build-keywriter.sh` to build glue plus minimal deterministic patches.
+
 ## 4. No Toltec
 
 Toltec locks firmware to a supported version range and can soft-brick on unsupported versions. That conflicts with preserving OTA updates. Only revisit if the owner accepts the version lock.
@@ -181,3 +185,5 @@ Notes created or opened by device regression scripts (`test-edit-session.sh`, `t
 ## Open risks
 
 Firmware OTA may wipe the systemd unit and regenerate the SSH password — recovery is re-deploy and re-enable. USB `us`/`no` qmaps and Lobby layout picker are shipped and device-verified. Encrypted notes subset is implemented (decisions.md §31). Integrity residuals: [integrity-audit.md](integrity-audit.md). uinput is closed — see decision 1. Go must be on the Mac. Rootfs is about 96% full; everything we ship lives on `/home/root/`. Do not resize rootfs — A/B OTA scheme, brick risk.
+
+The editor patch stack is also an active risk. It works today, but complexity is concentrated in one large patching script. A prolonged period of keyboard regressions without durable score improvement should be treated as a signal to invest in a fork-first maintenance model.

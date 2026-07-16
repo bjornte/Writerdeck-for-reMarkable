@@ -1,10 +1,10 @@
 # Editor testing
 
-Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path via `edit-harness`; USB is spot-check only. Sign-off: **102/102 PASS** (`--fast`).
+Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path via `edit-harness`; USB is spot-check only. Sign-off: **105/105 PASS** (`--fast`). Current baseline: **72/33** of 105 @ `10-01-42`; critical **26/36**.
 
 | File | Purpose |
 |------|---------|
-| [scenario-catalog.md](scenario-catalog.md) | **All 102 scenarios** — business-logic inventory |
+| [scenario-catalog.md](scenario-catalog.md) | **All 105 scenarios** — business-logic inventory |
 | [todo.md](todo.md) | **Fresh agent handoff** — scores, remaining failures (layman), do-not-retry |
 | [milestone-runs.md](milestone-runs.md) | **Full-suite scoreboard** — update after each `--fast` full run (no `-s`/`--tag`) |
 | [harness-runs.md](../recon/harness-runs.md) | Consolidated run log and per-scenario matrix |

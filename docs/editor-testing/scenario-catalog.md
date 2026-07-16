@@ -33,7 +33,24 @@ Must pass for basic editing. Tag: `critical`. Grouped by function; each row is o
 | Undo / redo | `undo-redo-len`, `gap-undo-chain`, `gap-redo-shift-ctrl-z` |
 | Word nav | `combo-alt-left`, `combo-alt-right` |
 
-Not critical (still valuable): selection shrink on reverse (`shift-down-then-up-shrinks`, `shift-left-then-right-shrinks`, `shift-right-then-left-shrinks`), caret clamps at ends, hardware page scroll (`hw-page-*`), reading overscroll clamp (`read-overscroll-clamps`), goal-column precision, touch tap placement, combo repeat, unicode word boundaries, most wrap/combo permutations.
+Not critical (still valuable): selection shrink (`shift-down-then-up-shrinks`, `shift-left-then-right-shrinks`, `shift-right-then-left-shrinks`, `shift-up-then-down-shrinks`), caret clamps at ends, hardware page scroll (`hw-page-*`), reading overscroll (`read-overscroll-clamps`), goal-column precision, touch tap placement, combo repeat, unicode word boundaries, most wrap/combo permutations.
+
+### Open on device @ `10-01-42` (`f42bfbe`)
+
+**26 / 36 critical PASS.** Ten critical scenarios failed:
+
+| Scenario | Layman |
+|----------|--------|
+| `shift-right-from-home` | Shift+Right then reverse does not shrink cleanly (bi 1+1 / 3+5) |
+| `shift-left-from-end` | Shift+Left then reverse — same |
+| `shift-right-after-home-no-stale-anchor` | Same pattern on stale-anchor variant |
+| `shift-down-after-arrow-down` | Shift+Down then Shift+Up shrink on vertical lines |
+| `shift-up-after-arrow-down` | Shift+Up then Shift+Down shrink |
+| `shift-left-repeat-from-end` | Shift+Left grow then reverse |
+| `shift-left-repeat-mid-doc` | Shift+Left mid-doc then reverse |
+| `alt-backspace-deletes-word` | Alt+Backspace word delete on prose |
+| `ctrl-backspace-deletes-line` | Ctrl+Backspace line delete on prose |
+| `wrap-up-from-visual-line-2` | Up after Down on wrapped paragraph |
 
 ## Core (9)
 
@@ -41,60 +58,60 @@ Not critical (still valuable): selection shrink on reverse (`shift-down-then-up-
 |----------|----------|
 | `load-cursor-at-start` | After open, caret at document start, no selection, full prose present, edit mode. |
 | `home-clears-selection` | Mid horizontal line, End then Shift+Home then Home: selection cleared to line start. |
-| `shift-right-from-home` | From horizontal line start, Shift+Right at N=1/3/7 grows selection from fixed anchor. |
-| `shift-left-from-end` | From horizontal line end, Shift+Left at N=1/3/7 grows selection backward. |
-| `shift-right-after-home-no-stale-anchor` | Repeated Shift+Right keeps anchor at line start through N=7. |
-| `shift-left-after-end-no-stale-anchor` | Repeated Shift+Left keeps anchor at line end through N=7. |
-| `shift-down-after-arrow-down` | Mid vertical block, Shift+Down at N=1/3/7 extends selection downward. |
-| `shift-up-after-arrow-down` | Near bottom of vertical block, Shift+Up at N=1/3/7 extends selection upward. |
+| `shift-right-from-home` | Pattern uni1/5, bi1+1, bi3+5, bi7+7: Shift+Right grow then Shift+Left shrink from mid horizontal line. |
+| `shift-left-from-end` | Same pattern from near horizontal line end. |
+| `shift-right-after-home-no-stale-anchor` | Same as shift-right-from-home (duplicate coverage). |
+| `shift-left-after-end-no-stale-anchor` | Same as shift-left-from-end (duplicate coverage). |
+| `shift-down-after-arrow-down` | Pattern on vertical block: Shift+Down grow, Shift+Up shrink. |
+| `shift-up-after-arrow-down` | Pattern near bottom of vertical block: Shift+Up grow, Shift+Down shrink. |
 | `ctrl-shift-left-select-line` | Shift+Home from horizontal line end selects the whole line. |
 
 ## Regression — logical newlines (7)
 
 | Scenario | Behavior |
 |----------|----------|
-| `down-one-logical-line` | Down at N=1/3/7 across equal-width vertical lines. |
-| `up-one-logical-line` | Up at N=1/3/7 (reverse of down). |
-| `shift-down-then-up-shrinks` | Shift+Down extends; Shift+Up shrinks at N=1/3/7. |
-| `shift-left-repeat-from-end` | Shift+Left at N=1/3/7 from horizontal line end. |
-| `alt-backspace-deletes-word` | Alt+Backspace at N=1/3/7 from end of word line. |
-| `ctrl-backspace-deletes-line` | Ctrl+Backspace at N=1/3/7 from last vertical line. |
-| `shift-left-repeat-mid-doc` | Shift+Left at N=1/3/7 from mid vertical line end. |
+| `down-one-logical-line` | Pattern uni1/5, bi1+1, bi3+5, bi7+7: Down on vertical block. |
+| `up-one-logical-line` | Reverse: Up on vertical block. |
+| `shift-down-then-up-shrinks` | Pattern: Shift+Down grow, Shift+Up shrink (vertical). |
+| `shift-left-repeat-from-end` | Pattern: Shift+Left grow, Shift+Right shrink from near line end. |
+| `alt-backspace-deletes-word` | uni1 and uni5 Alt+Backspace from word-line seed. |
+| `ctrl-backspace-deletes-line` | uni1 and uni5 Ctrl+Backspace from last vertical line. |
+| `shift-left-repeat-mid-doc` | Pattern: Shift+Left grow, Shift+Right shrink mid vertical line. |
 
 ## CodeMirror vertical (11)
 
 | Scenario | Behavior |
 |----------|----------|
-| `cm-line-down-basic` | Down at N=1/3/7 on prose vertical block. |
-| `cm-line-up-basic` | Up at N=1/3/7 (reverse). |
+| `cm-line-down-basic` | Pattern on vertical block (Down). |
+| `cm-line-up-basic` | Pattern on vertical block (Up). |
 | `cm-line-down-shorter` | Down from mid longer line clamps onto shorter next line. |
 | `cm-line-up-shorter` | Up from longer line clamps onto shorter previous line. |
-| `cm-line-down-last-line` | Down on last line clamps at EOF through N=7. |
+| `cm-line-down-last-line` | Down on last line clamps at EOF through uni5. |
 | `cm-line-down-goal-col` | Down twice preserves visual x across a short middle line. |
-| `cm-select-line-down` | Shift+Down at N=1/3/7 from top of vertical block. |
+| `cm-select-line-down` | Pattern: Shift+Down grow, Shift+Up shrink from top of vertical block. |
 | `cm-select-line-down-mid` | Shift+Down from mid-line extends to next line. |
 | `cm-select-down-up-doc-end` | At EOF, Shift+Down clamps then Shift+Up yields bounded selection. |
-| `cm-select-up-basic` | Shift+Up at N=1/3/7 from end of vertical block. |
+| `cm-select-up-basic` | Pattern: Shift+Up grow, Shift+Down shrink from end of vertical block. |
 | `cm-select-up-mid` | Shift+Up from mid last line selects upward. |
 
 ## Modifier combos (25)
 
-Word jumps use the shared prose word line (`alfa…juliett`). Doc-bound jumps prove idempotent clamp at N=1/3/7.
+Word jumps use pattern blocks on the prose word line. Doc-bound jumps use uni1/uni5 idempotent clamp where applicable.
 
 | Scenario | Behavior |
 |----------|----------|
-| `combo-alt-left` / `combo-alt-right` | Word motion at N=1/3/7 both directions. |
-| `combo-alt-up` / `combo-alt-down` | Paragraph motion + clamp at N=1/3/7. |
-| `combo-ctrl-left` / `combo-ctrl-right` | Doc start/end from mid-prose caret; clamp N=1/3/7. |
-| `combo-ctrl-up` / `combo-ctrl-down` | Doc start/end vertical; clamp N=1/3/7. |
-| `combo-shift-alt-left` / `combo-shift-alt-left-repeat` | Word select backward at N=1/3/7. |
-| `combo-shift-alt-right` / `combo-shift-alt-right-repeat` | Word select forward at N=1/3/7. |
+| `combo-alt-left` / `combo-alt-right` | Pattern word motion both directions. |
+| `combo-alt-up` / `combo-alt-down` | Paragraph motion; pattern + clamp. |
+| `combo-ctrl-left` / `combo-ctrl-right` | Doc start/end from mid-prose caret; pattern + clamp. |
+| `combo-ctrl-up` / `combo-ctrl-down` | Doc start/end vertical; pattern + clamp. |
+| `combo-shift-alt-left` / `combo-shift-alt-left-repeat` | Word select backward; pattern. |
+| `combo-shift-alt-right` / `combo-shift-alt-right-repeat` | Word select forward; pattern. |
 | `combo-shift-alt-up` / `combo-shift-alt-down` | Paragraph select. |
-| `combo-shift-ctrl-left` / `combo-shift-ctrl-right` | Line/doc select; clamp N=1/3/7. |
+| `combo-shift-ctrl-left` / `combo-shift-ctrl-right` | Line/doc select; pattern + clamp. |
 | `combo-shift-ctrl-left-multiline` | Shift+Ctrl+Left on line 2 selects that line only. |
-| `combo-shift-ctrl-up` / `combo-shift-ctrl-down` | Whole-doc select; clamp N=1/3/7. |
+| `combo-shift-ctrl-up` / `combo-shift-ctrl-down` | Whole-doc select; pattern + clamp. |
 | `combo-shift-home-line` / `combo-shift-end-line` | Line select via Shift+Home/End. |
-| `combo-ctrl-home` / `combo-ctrl-end` | Doc Home/End from mid prose; clamp N=1/3/7. |
+| `combo-ctrl-home` / `combo-ctrl-end` | Doc Home/End from mid prose; pattern + clamp. |
 | `combo-shift-ctrl-home` / `combo-shift-ctrl-end` | Shift+Ctrl+Home/End from mid two-line doc. |
 
 ## Backspace extensions (5)
@@ -104,27 +121,27 @@ Word jumps use the shared prose word line (`alfa…juliett`). Doc-bound jumps pr
 | `bs-alt-word-mid` | Alt+Backspace mid-word on prose word line. |
 | `bs-ctrl-line-start` | Ctrl+Backspace at start of a vertical line merges upward. |
 | `bs-shift-with-selection` | Shift+Backspace clears a full-line selection. |
-| `bs-plain` | Backspace at N=1/3/7 from horizontal line end. |
-| `delete-repeat-forward` | Delete at N=1/3/7 from horizontal line start (reverse of bs-plain). |
+| `bs-plain` | Pattern: Backspace from horizontal line end. |
+| `delete-repeat-forward` | Pattern: Delete from horizontal line start (reverse of bs-plain). |
 
 ## Wrapped paragraph (15)
 
-Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry). N=3/N=7 visual-line offsets are provisional until re-calibrated on device.
+Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry). Multi-step visual-line offsets in `wrap_fixtures.go` are provisional until re-calibrated on device.
 
 | Scenario | Behavior |
 |----------|----------|
-| `wrap-down-one-visual-line` | Down at N=1/3/7 through visual rows. |
+| `wrap-down-one-visual-line` | Pattern Down through visual rows. |
 | `wrap-down-not-jump-paragraph` | Down stays inside the wrapped block. |
-| `wrap-up-from-visual-line-2` | Up at N=1/3/7 from deep visual row back to start. |
-| `wrap-shift-down-one-visual` | Shift+Down at N=1/3/7. |
-| `wrap-shift-down-then-up-shrinks` | Extend then shrink with Shift+Up at N=1/3. |
-| `wrap-down-last-visual-line` | Down at EOF clamps through N=7. |
+| `wrap-up-from-visual-line-2` | Pattern Up from deep visual row back to start. |
+| `wrap-shift-down-one-visual` | Pattern Shift+Down grow, Shift+Up shrink. |
+| `wrap-shift-down-then-up-shrinks` | Pattern extend then shrink on wrapped block. |
+| `wrap-down-last-visual-line` | Down at EOF clamps through uni5. |
 | `wrap-shift-down-last-to-eof` | Shift+Down on last visual row selects through EOF. |
 | `wrap-mixed-newline-and-wrap` | Down from short first line into wrapped second line. |
 | `wrap-down-goal-column` | Down preserves visual x across a wrap break. |
-| `wrap-combo-alt-left-word` / `wrap-combo-alt-right-word` | Alt word motion at N=1/3/7 both ways. |
+| `wrap-combo-alt-left-word` / `wrap-combo-alt-right-word` | Pattern Alt word motion both ways. |
 | `wrap-combo-ctrl-bs-line` | Ctrl+Backspace clears the wrapped logical line. |
-| `wrap-shift-left-across-wrap` | Shift+Left at N=1/3/7 across a wrap boundary. |
+| `wrap-shift-left-across-wrap` | Pattern Shift+Left grow, Shift+Right shrink across wrap boundary. |
 | `wrap-home-on-visual-line` / `wrap-end-on-visual-line` | Home/End on second visual row. |
 
 ## Undo and redo (5)
@@ -137,15 +154,16 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `redo-cleared-by-new-edit` | After Undo, a new edit clears the redo stack. |
 | `undo-after-select-delete` | Shift+Home select, delete, Undo restores collapsed caret at end. |
 
-## Gap coverage (17)
+## Gap coverage (19)
 
 | Scenario | Behavior |
 |----------|----------|
-| `gap-up-at-doc-start` | Up at doc start clamps through N=7. |
-| `gap-plain-left-moves-caret` / `gap-plain-right-moves-caret` | Plain Left/Right at N=1/3/7 from mid horizontal line. |
-| `gap-plain-left-at-doc-start` / `gap-plain-right-at-doc-end` | Clamp at ends through N=7. |
+| `gap-up-at-doc-start` | Up at doc start clamps through uni5. |
+| `gap-plain-left-moves-caret` / `gap-plain-right-moves-caret` | Pattern Left/Right from mid horizontal line. |
+| `gap-plain-left-in-paragraph` / `gap-plain-right-in-paragraph` | Pattern Left/Right inside long wrapping paragraph. |
+| `gap-plain-left-at-doc-start` / `gap-plain-right-at-doc-end` | Clamp at ends through uni5. |
 | `gap-collapse-selection-left` / `gap-collapse-selection-right` | Plain arrow collapses a shift selection. |
-| `gap-delete-forward` | Delete at N=1/3/7 from mid horizontal line. |
+| `gap-delete-forward` | Pattern Delete from mid horizontal line. |
 | `gap-delete-with-selection` | Delete clears a mid-line selection. |
 | `gap-select-all` | Ctrl+A selects entire prose document. |
 | `gap-enter-new-line` | Enter at horizontal line end inserts newline. |
@@ -160,8 +178,8 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 
 | Scenario | Behavior |
 |----------|----------|
-| `hw-page-right-scrolls-edit` | `pageright` at N=1/3/7 raises `contentY` by ~1500px each; caret stays put. |
-| `hw-page-left-scrolls-edit` | After seeding seven page-rights, `pageleft` at N=1/3/7 returns to `contentY` 0. |
+| `hw-page-right-scrolls-edit` | Pattern `pageright`: raises `contentY` by ~1500px each; caret stays put. |
+| `hw-page-left-scrolls-edit` | After seeding seven page-rights, pattern `pageleft` returns to `contentY` 0. |
 
 ## Reading mode (1)
 

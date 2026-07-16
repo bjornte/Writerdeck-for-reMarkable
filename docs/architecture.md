@@ -35,6 +35,8 @@ Under `/home/root/`:
 
 `Writerdeck` is the full-screen Markdown editor, patched upstream [remarkable-keywriter](https://github.com/dps/remarkable-keywriter). Built in CI from `third_party/keywriter/`.
 
+This patch pipeline is intentionally reproducible and also brittle. Most edit-mode behavior now depends on a large patching script (`third_party/keywriter/build-keywriter.sh`) that rewrites upstream C++ and QML on every build. When upstream structure shifts, or when one local patch changes surrounding lines, later patches can fail or apply in surprising ways. Treat this as known technical debt, not a temporary inconvenience.
+
 `Writerdeck-launcher.sh` sets Qt and e-ink launch environment; the server spawns Writerdeck with `--editor`.
 
 `Writerdeck-user-documents/` holds your `.md` notes.
@@ -107,4 +109,4 @@ git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywrite
 
 Aliases via `bash scripts/install-alias.sh`: `rmkw` for binary-only Writerdeck deploy; `test-edit-session.sh` after QML changes ([decisions.md](decisions.md) §21); `test-keyboard-harness.sh` after arrow/selection QML (§22); `test-e2e.sh -s` for the full pipeline without rebuilding the server; `rmpush` to commit and push. Deploy uses gzip-over-ssh, not scp ([decisions.md](decisions.md) §12).
 
-After Writerdeck or QML changes, run `test-edit-session.sh`; add `test-keyboard-harness.sh --fast` when `handleKey` or selection logic changed (102/102 sign-off, [editor-testing/milestone-runs.md](editor-testing/milestone-runs.md)); add `test-lobby-keyboard.sh` when Lobby navigation, `handleHome`, or `lobbyFocus` changed ([decisions.md](decisions.md) §29). After server or embedded JS only, restart the server and smoke-test the API or browser. After both, do both. Iterate over Wi-Fi; logs in `journalctl -u writerdeck.service`.
+After Writerdeck or QML changes, run `test-edit-session.sh`; add `test-keyboard-harness.sh --fast` when `handleKey` or selection logic changed (105/105 sign-off, [editor-testing/milestone-runs.md](editor-testing/milestone-runs.md)); add `test-lobby-keyboard.sh` when Lobby navigation, `handleHome`, or `lobbyFocus` changed ([decisions.md](decisions.md) §29). After server or embedded JS only, restart the server and smoke-test the API or browser. After both, do both. Iterate over Wi-Fi; logs in `journalctl -u writerdeck.service`.

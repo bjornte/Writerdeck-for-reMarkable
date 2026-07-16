@@ -46,6 +46,8 @@ The tablet drops Wi-Fi on suspend. Keep it awake during dev.
 
 Every save path in edit mode must sync `query.text` into `doc` before `saveFile()`. A bare `saveFile()` writes stale content.
 
+`build-keywriter.sh` is now a brittle concentration point. It is useful for reproducible builds, but hard to reason about once many behavior patches stack in one file. Assume higher regression risk for broad edit-mode changes, and keep patch scope narrow and batch-verified.
+
 Never clear `query.text` without re-syncing on load — it breaks the TextEdit binding. Call `syncQueryDisplay()` after load or mode switch. If you skip this, Home save can zero the file (`save -> 0` in the journal) or Esc-toggle can show corrupted preview.
 
 Preview is imperative, not bound. `toggleMode()` and `doLoad` must call `syncQueryDisplay()` and must never read RichText back into `doc`.
@@ -155,6 +157,8 @@ Open-file tracking shipped in slices 1, 3, and 4; residuals remain — see [inte
 ## CI and patches
 
 One patch file, one target file. Multi-file `git apply --recount` cannot tell where hunks end.
+
+When a patch sequence starts fighting itself (frequent context drift, brace-balance breakage, or repeated keyboard regressions across neighboring paths), stop adding new behavior in the script and plan a source-fork move for that subsystem.
 
 Font CI needs one hard-failing RUN per font with grep assertion — a trailing `|| true` swallows download failures.
 
