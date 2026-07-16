@@ -42,7 +42,7 @@ Do one lettered group per session (or per deploy cycle). After each group: remov
 
 ### Phase 3 — shrink script + ownership
 
-- [x] **Connections / Timers** — cursor Timer, autosave Timer, and text-change Connections moved into [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`db0781e`); script asserts. Critical edit paths no longer live only as script string patches.
+- [x] **Connections / Timers** — cursor Timer, autosave Timer, and text-change Connections moved into [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`db0781e`); script asserts. Critical **36/36** @ `17-57-45`; full suite **92/13** @ `17-59-00` (Patch LOC **1802**). Critical edit paths no longer live only as script string patches.
 - [ ] `build-keywriter.sh` further shrink toward build glue only (clone, qmake, install, tiny deterministic patches if any). Remaining patches are lobby/shell/infra, not caret/selection/undo.
 - [ ] Document fork ownership, default branch, and how to merge upstream keywriter in [../decisions.md](../decisions.md) §3.
 - [ ] Restore `.cursor/rules/writerdeck-backup.mdc` → `writerdeck.mdc` (`alwaysApply: true`); retire or set `alwaysApply: false` on `keywriter-fork-migration.mdc`.

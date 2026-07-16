@@ -10,15 +10,15 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 | Milestone | Result | Note |
 |-----------|--------|------|
-| Latest full suite | **93 / 12** (0 prepare fail) of **105** | `17-47-29` @ Phase 2D (fork `b0f17a5`); report `docs/recon/test-keyboard-harness-2026-07-16T17-47-29.md` |
-| Prior full suite | **90 / 15** (0 prepare fail) of **105** | `17-31-53` @ Phase 2C |
-| **Critical (gate)** | **36 / 36** | green @ `17-46-14` |
+| Latest full suite | **92 / 13** (0 prepare fail) of **105** | `17-59-00` @ Phase 3 Connections (`db0781e`); report `docs/recon/test-keyboard-harness-2026-07-16T17-59-00.md` |
+| Prior full suite | **93 / 12** (0 prepare fail) of **105** | `17-47-29` @ Phase 2D |
+| **Critical (gate)** | **36 / 36** | green @ `17-57-45` |
 | Wrap tag | **15 / 15** | Phase 2B |
 | Undo tag | **5 / 5** | Phase 2C @ `17-31-41` |
 | Best pre-rewrite | **89 / 4** (+1 prep) of **94** | `00-37-27` @ `bdccee9` |
 | Sign-off gate | **105/105 PASS** | `bash scripts/test-keyboard-harness.sh --fast`, single session |
 
-`test-edit-session.sh` PASS on deploy @ Phase 2D. Do not run it in parallel with the keyboard harness.
+`test-edit-session.sh` PASS on deploy @ Phase 3 Connections. Do not run it in parallel with the keyboard harness.
 
 ## Goal for next session
 
@@ -31,7 +31,7 @@ Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../
 - Mid-scenario `Reprepare` after mutating alt/ctrl-backspace uni1 (stale absolute `SetCursor` on a shrunken buffer).
 - Wrap-up expects matched Down×7 then Up×3 geometry (~80, not ≤65).
 
-## Remaining fails @ `17-47-29` (12)
+## Remaining fails @ `17-59-00` (13)
 
 | Scenario | Likely area |
 |----------|-------------|
@@ -44,6 +44,7 @@ Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../
 | `bs-alt-word-mid` | mid-word Alt+BS (off by 1) |
 | `gap-alt-bs-with-selection` | same cluster as shift-alt-left |
 | `read-overscroll-clamps` | reading mode / Esc |
+| `shift-up-then-down-shrinks` | vertical reverse shrink (regressed vs `17-47-29`) |
 
 ## Next (one batch)
 
