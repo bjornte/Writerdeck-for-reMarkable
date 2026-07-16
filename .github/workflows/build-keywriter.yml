@@ -34,6 +34,8 @@ jobs:
         run: |
           mkdir -p third_party/keywriter/dist
           docker run --rm \
+            -e KEYWRITER_REPO=https://github.com/bjornte/Writerdeck-keywriter.git \
+            -e KEYWRITER_REF=master \
             -v "$PWD/third_party/keywriter/dist:/out" \
             rm1-writerdeck-keywriter-builder
           sudo chown -R "$(id -u):$(id -g)" third_party/keywriter/dist

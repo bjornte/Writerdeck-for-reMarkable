@@ -5,12 +5,12 @@
 # Everything is written to /out, which the caller mounts from the host.
 #
 # Environment variables (all have sensible defaults):
-#   KEYWRITER_REPO   git repo to clone (default: dps/remarkable-keywriter)
+#   KEYWRITER_REPO   git repo to clone (default: bjornte/Writerdeck-keywriter)
 #   KEYWRITER_REF    branch/tag/sha to build (default: master)
 
 set -euo pipefail
 
-KEYWRITER_REPO="${KEYWRITER_REPO:-https://github.com/dps/remarkable-keywriter.git}"
+KEYWRITER_REPO="${KEYWRITER_REPO:-https://github.com/bjornte/Writerdeck-keywriter.git}"
 KEYWRITER_REF="${KEYWRITER_REF:-master}"
 OUT_DIR="/out"
 

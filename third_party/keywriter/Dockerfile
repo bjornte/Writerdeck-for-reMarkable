@@ -85,6 +85,11 @@ RUN set -eux; \
     fc-cache -f; \
     fc-list "EB Garamond" | grep -qi "garamond" || { echo "ERROR: EB Garamond missing (fonts-ebgaramond apt?)" >&2; exit 1; }
 
+# Phase 1 pin: clone Writerdeck-owned fork (no behavior change vs upstream yet).
+# Override at docker run time with -e KEYWRITER_REPO=... -e KEYWRITER_REF=...
+ENV KEYWRITER_REPO=https://github.com/bjornte/Writerdeck-keywriter.git \
+    KEYWRITER_REF=master
+
 COPY socket-inject.patch /socket-inject.patch
 COPY rotation_watcher.h /rotation_watcher.h
 COPY rotation_watcher.cpp /rotation_watcher.cpp
