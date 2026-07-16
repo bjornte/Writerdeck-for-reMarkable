@@ -9,7 +9,7 @@ A distraction-free word processor for the reMarkable 1, with support for hardwar
 
 Background: The reMarkable 1 has a large, nice e-ink screen and a distraction-free OS, but no word processor, and no support for hardware keyboards. This Writerdeck fills the gap.
 
-The project is 90% vibe coded and 50% human reviewed. I (the repo owner, Bjørn) have mostly just herded LLMs and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (forked as [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter)) and a keypress injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
+The project is ~70% vibe coded and ~50% human reviewed. I (the repo owner, Bjørn) have mostly just herded LLMs and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (forked as [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter)) and a keypress injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
 
 ## Status
 
