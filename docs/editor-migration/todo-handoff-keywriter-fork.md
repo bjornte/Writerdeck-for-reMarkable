@@ -29,13 +29,13 @@ Quality is the paramount driver for this migration. Check patterns from similar 
 Do one lettered group per session (or per deploy cycle). After each group: remove the corresponding patches from `build-keywriter.sh`, rebuild, deploy, critical harness green.
 
 - [x] **A — Caret, shift selection, backspace/delete**  
-  Helpers moved to fork [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`568ee3f`); script no longer embeds the string. Property decls + Keys.onPressed routing still in `build-keywriter.sh`. Wrap/undo/combo **bodies** rode along in the same file (B done; C/D verification still open). Critical **36/36**; full suite **92/13** @ `14-29-52`.
+  Helpers moved to fork [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`568ee3f`); script no longer embeds the string. Property decls + Keys.onPressed routing still in `build-keywriter.sh`. Wrap/undo/combo **bodies** rode along in the same file (B–C done; D Keys wiring still open). Critical **36/36**; full suite **92/13** @ `14-29-52`.
 
 - [x] **B — Wrap / visual line**  
   Bodies already in fork. Fixed Shift+Down EOF jump on wrapped paragraphs (`904ec77` — snap only when crossing a newline). Wrap tag **15/15**; critical **36/36** @ `17-13-30`. Harness expect for full reverse shrink updated. No wrap-only scraps left in `build-keywriter.sh`. Full suite **91/14** @ `17-14-44`.
 
-- [ ] **C — Undo / redo**  
-  Bodies already in `edit_mac_helpers.qml.inc`. Proof: undo scenarios; move undo property decls out of script when practical.
+- [x] **C — Undo / redo**  
+  Bodies already in fork. Undo property decls moved into [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`6676614`); script asserts presence. Undo tag **5/5**; critical **36/36** @ `17-34-55`; full suite **90/15** @ `17-31-53`. Connections text-change capture still in `build-keywriter.sh`.
 
 - [ ] **D — Combos / polish**  
   Bodies already in `edit_mac_helpers.qml.inc`. Remaining non-critical fails that belong here — only now. Move Keys wiring / leftover script patches.
