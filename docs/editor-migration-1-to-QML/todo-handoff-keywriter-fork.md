@@ -2,6 +2,8 @@
 
 **Migration complete.** Active rule: `.cursor/rules/writerdeck.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) item 3 (shipped). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (**110/110/0**, critical **38/38/0**). Phase checkmarks below keep the scores from the day each slice landed (critical was still 36 then).
 
+Successor: [../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) — move pure text math + undo from QML helpers into C++.
+
 ## What we left
 
 `third_party/keywriter/build-keywriter.sh` used to rewrite upstream C++/QML with huge string patches every CI build. That emergency layer is retired for edit behavior. **keywriter** (Qt 5 / C++ / QML) is the editor engine; **Writerdeck** is our on-device binary. **QML** = screen and typing behavior; **C++** = startup, display, socket keys — see [../architecture.md](../architecture.md) § On the tablet.

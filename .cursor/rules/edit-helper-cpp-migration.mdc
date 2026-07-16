@@ -1,0 +1,55 @@
+---
+description: Edit helpers QML → C++ — Phase A EditHelper migration (active)
+alwaysApply: true
+---
+
+# Edit helpers → C++ (active)
+
+This session’s job is migration 2: move pure text math and undo from fork `edit_mac_helpers.qml.inc` into C++ `EditHelper`. Editor engine = **keywriter** (Qt 5 / C++ / QML). On-device binary = **Writerdeck**. Source of truth: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`). Build glue only: `third_party/keywriter/build-keywriter.sh`.
+
+Handoff (read first): [docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Overview: [docs/editor-migration-2-to-cpp/README.md](docs/editor-migration-2-to-cpp/README.md). Policy: [docs/decisions.md](docs/decisions.md) §3. Queue: [TODO.md](TODO.md) items 4–6. Paused general rules: [writerdeck.mdc](writerdeck.mdc) (`alwaysApply: false`). Prior migration (done): [docs/editor-migration-1-to-QML/](docs/editor-migration-1-to-QML/).
+
+## Audience
+
+The owner is a **designer with basic code skills**. Unless they ask for depth: keep chat replies **terse**, in **plain layman’s prose**, and lead with what happened / what to do next.
+
+## Drivers
+
+- **This migration:** quality is the paramount driver. Prefer a smaller, correct, behavior-identical slice over a fast, messy one. Stop if your own contribution looks low-quality.
+- **Behavior lock:** typing feel must match pre-slice harness results. Prefer bit-identical helper outputs for the same `(text, pos)` inputs.
+- **Patterns:** before inventing editor behavior, check how similar editors do it (CodeMirror, Qt `TextEdit`, Mac/Linux text fields) and prefer proven methodology.
+- **Whole project:** document integrity is the absolute paramount driver — the owner’s prose must survive as plain Markdown on disk. That outranks migration speed and harness cosmetics. See [docs/decisions.md](docs/decisions.md) § Document integrity, [docs/architecture.md](docs/architecture.md), [docs/integrity-audit.md](docs/integrity-audit.md).
+
+## Priority (non-negotiable)
+
+1. Do the **next unchecked** handoff item only (Phase 0 → A1 → A2 → A3). Do not start Phase B/C until A3 is green.
+2. Phase A scope: pure string math + undo in C++. **Do not** move visual/wrap (`positionToRectangle`, `goalX`, `visualLine*`) or rewrite `handleMacArrow` / key dispatch in Phase 0–A3.
+3. Do **not** grow `build-keywriter.sh` with new behavior. Edits land in the fork (`edit_helper.*`, thin QML wrappers).
+4. Do **not** replace Qt `TextEdit` or invent a new buffer format.
+5. One migration slice per session (or one deploy cycle). Stop after ~20 minutes without sign-off for that slice; report and ask.
+
+## Session shape
+
+1. Read the handoff checklist; pick the next unchecked slice only.
+2. Implement that slice only.
+3. Verify on device for that slice (below). Check off the handoff item; update [TODO.md](TODO.md) / [docs/editor-testing/milestone-runs.md](docs/editor-testing/milestone-runs.md) as the handoff says.
+4. Do not start the next slice in the same session unless the user asks.
+
+## Verify (mandatory for the slice you shipped)
+
+Deploy success ≠ tested.
+
+- Writerdeck rebuild: push fork if needed → `git push` (this repo) → wait for CI → `bash scripts/fetch-keywriter-dist.sh` → `bash scripts/deploy-keywriter.sh -b` (never local `docker build` for Writerdeck).
+- Relaunch Writerdeck; `journalctl -u writerdeck -n 30` — fail on QML parse errors or instant `editor process exited`.
+- `bash scripts/test-edit-session.sh`
+- Harness (never parallel with edit-session): Phase 0/A1 → `-t critical --fast` must stay **38/38/0**; Phase A2 → also `-t undo --fast` (**5/5/0**); Phase A3 → full `--fast` (**110/110/0**). Update [docs/editor-testing/milestone-runs.md](docs/editor-testing/milestone-runs.md) after full runs (include fork SHA + Patch LOC).
+- At most one Writerdeck binary deploy per session unless the binary fails to launch.
+- Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server).
+
+## Constraints (carry-over)
+
+No jailbreak / Toltec; preserve OTA. Static Go for server: `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`. Markdown on disk. Secrets: `secrets/remarkable.local.env` via `scripts/_env.sh`. Docs: terse Gruber prose; standing docs only (how → architecture, why → decisions, gotchas → lessons). Executable scripts: ASCII + LF.
+
+## When migration 2 is done
+
+Set this file to `alwaysApply: false` (archive note). Restore [writerdeck.mdc](writerdeck.mdc) to `alwaysApply: true`.

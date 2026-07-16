@@ -5,6 +5,4 @@ alwaysApply: false
 
 # Keywriter fork migration (archived)
 
-Migration complete. Active always-apply rule is [writerdeck.mdc](writerdeck.mdc). Policy and upstream-merge steps: [docs/decisions.md](docs/decisions.md) §3. Checklist (all Phase 1–3 items checked): [docs/editor-migration/todo-handoff-keywriter-fork.md](docs/editor-migration/todo-handoff-keywriter-fork.md).
-
-Do not re-enable this file as `alwaysApply: true`. New editor work goes in [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter); keep `build-keywriter.sh` as glue only.
+Migration 1 complete. Checklist: [docs/editor-migration-1-to-QML/todo-handoff-keywriter-fork.md](docs/editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). While migration 2 runs, active rule is [edit-helper-cpp-migration.mdc](edit-helper-cpp-migration.mdc); [writerdeck.mdc](writerdeck.mdc) is paused. Do not re-enable this file as `alwaysApply: true`.

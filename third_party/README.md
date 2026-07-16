@@ -6,7 +6,7 @@ Code/binaries from other projects. Not authored here; each carries its own licen
 
 Upstream [remarkable-keywriter](https://github.com/dps/remarkable-keywriter): a **Qt 5** editor written in **C++** and **QML**. Writerdeck is our patched build of that engine (socket input, Lobby, Mac/Linux-style editing with Ctrl/Alt chords, and related behavior). Owned fork for migration: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter).
 
-**C++ vs QML:** QML = screen + typing/selection behavior (`main.qml`, fork `edit_mac_helpers.qml.inc`). C++ = startup, e-ink/display, socket keystroke inject (`main.cpp`). Editing improvements for the current migration almost always mean QML in the fork.
+**C++ vs QML:** QML = screen + most typing/selection wiring (`main.qml`, fork `edit_mac_helpers.qml.inc`). C++ = startup, e-ink/display, socket keystroke inject (`main.cpp`), plus (migration 2) pure text math / undo in `EditHelper`. See [../docs/editor-migration-2-to-cpp/](../docs/editor-migration-2-to-cpp/).
 
 - Socket inject, `lobby_bridge`, `rotation_watcher`, Lobby/shell `main.qml`, and `lobby/*.inc` live **in the fork**. CI asserts they are present; it only inserts `edit_mac_helpers.qml.inc` and concatenates Lobby subpages + sleep screen.
 - Built from source — cross-compiled in `ghcr.io/toltec-dev/qt:v3.3` via **CI** ([build-keywriter.sh](keywriter/build-keywriter.sh) + [Dockerfile](keywriter/Dockerfile), workflow `build-keywriter.yml`). Mac: `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b` — not local `docker build`.

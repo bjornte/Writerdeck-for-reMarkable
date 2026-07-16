@@ -23,7 +23,7 @@ Scores are **total/passed/failed**.
 
 ## Goal for next session
 
-Keyboard harness sign-off is **done** (**110/110/0**). Prefer Physical Home owner check. Keep critical **38/38/0** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
+Keyboard harness sign-off is **done** (**110/110/0**). Prefer [editor-migration-2-to-cpp](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) Phase 0 (C++ `EditHelper` stub, no behavior change) or Physical Home owner check. Keep critical **38/38/0** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
 
 ## Hardening @ `00-29-12` (harness only)
 
@@ -37,8 +37,8 @@ None @ `00-29-12`.
 
 ## Next (one batch)
 
-1. Owner: press physical Home from edit, read, and Lobby ([todo-handoff-physical-home-input.md](../todo-handoff-physical-home-input.md)).
-2. Keep harness green on any future edit QML change: one push → CI → fetch → deploy → `test-edit-session.sh` → full `--fast` → update [milestone-runs.md](milestone-runs.md).
+1. [editor-migration-2-to-cpp](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) — next unchecked Phase 0/A item; or owner physical Home check ([todo-handoff-physical-home-input.md](../todo-handoff-physical-home-input.md)).
+2. Keep harness green on any future edit QML/C++ change: one push → CI → fetch → deploy → `test-edit-session.sh` → full `--fast` → update [milestone-runs.md](milestone-runs.md).
 
 Deploy budget: **one** Writerdeck binary deploy per session unless QML fails to launch.
 

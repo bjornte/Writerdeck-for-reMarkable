@@ -1,11 +1,13 @@
 ---
-description: Writerdeck for reMarkable — verify on device, constraints, docs
-alwaysApply: true
+description: PAUSED — general Writerdeck rules; see edit-helper-cpp-migration.mdc
+alwaysApply: false
 ---
 
-# Writerdeck for reMarkable 1
+# Writerdeck for reMarkable 1 (paused)
 
-Markdown typewriter: Mac deploys Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); keywriter fork → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Editor source of truth: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`); `third_party/keywriter/build-keywriter.sh` is build glue only — new QML/C++ edits go in the fork. Background: `TODO.md`, `docs/architecture.md`, `docs/decisions.md`, `DONE.md`, `docs/lessons.md`.
+**Paused while migration 2 is active.** Active always-apply rule: [edit-helper-cpp-migration.mdc](edit-helper-cpp-migration.mdc). Handoff: [docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). When that migration finishes, set this file back to `alwaysApply: true` and archive the migration rule.
+
+The body below is the standing project rule — kept intact for restore. Do not treat it as active guidance while paused.
 
 ## Audience and replies
 
