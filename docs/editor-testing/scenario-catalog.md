@@ -1,12 +1,22 @@
 # Scenario catalog
 
-All **102** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac-style modifiers over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
+All **105** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac-style modifiers over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
 
-**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`), not character index within a logical line. Shift+arrow extends selection; plain arrow without Shift moves the caret (including Left/Right — one character). Alt = word/paragraph motion; Ctrl = document or line boundaries (Mac editing model). Hardware page-turn buttons are **not** keyboard arrows; harness injects `pageleft`/`pageright` cmds and asserts `contentY`. Reading-mode overscroll uses Esc → preview (`mode=0`) then the same page cmds.
+**Motion/selection pattern** (reset caret between blocks — never grow-to-N-then-peel):
 
-**Rewrite shape:** Motion, selection, page, and shrink/extend scenarios assert after **1, 3, and 7** presses and cover **both directions** (or grow-then-shrink). Shared prose includes æøå / accents and two bullet lists. Specialized Content remains for wrap geometry (W=320), empty document, goal-column shapes, and tall page-scroll bodies. Editor positions use QString/BMP indexing (`editorLen`), not Go UTF-8 byte lengths.
+| Block | Meaning |
+|-------|---------|
+| uni 1 | one press one way |
+| uni 5 | five presses one way |
+| bi 1+1 | grow 1, reverse 1 |
+| bi 3+5 | grow 3, reverse 5 (overshoot past anchor) |
+| bi 7+7 | grow 7, reverse 7 |
 
-Filter critical scenarios: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**36** scenarios). Authoritative names: `bash scripts/test-keyboard-harness.sh --list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`.
+Both directions on applicable axes. Fixture includes ≥2 long wrapping paragraphs with æøå, two bullet lists, word line, horizontal line, and 12 equal vertical lines.
+
+**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`). Shift+arrow extends selection; plain arrow moves the caret. Alt = word/paragraph; Ctrl = document/line boundaries (Mac). Hardware pages: `pageleft`/`pageright` + `contentY`. Reading overscroll: Esc → preview then page cmds.
+
+Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**36**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go`.
 
 ## Critical (36)
 
@@ -167,12 +177,13 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `touch-up-goal-column` | Tap mid line 2, Up lands at same visual x on line 1. |
 | `touch-down-shorter-line` | Tap mid longer line, Down clamps to closest x on shorter next line. |
 
-## Selection (shift reverse) (2)
+## Selection (shift reverse) (3)
 
 | Scenario | Behavior |
 |----------|----------|
-| `shift-left-then-right-shrinks` | Shift+Left extends at N=1/3/7; Shift+Right shrinks at N=1/3/7 (does not grow). |
-| `shift-right-then-left-shrinks` | Shift+Right extends at N=1/3/7; Shift+Left shrinks at N=1/3/7. |
+| `shift-left-then-right-shrinks` | Pattern left→right: uni1/5, bi1+1, bi3+5 overshoot, bi7+7. |
+| `shift-right-then-left-shrinks` | Pattern right→left (partner). |
+| `shift-up-then-down-shrinks` | Pattern up→down on vertical prose lines. |
 
 ## Sources and notation
 

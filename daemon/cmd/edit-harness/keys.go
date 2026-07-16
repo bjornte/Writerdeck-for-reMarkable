@@ -179,7 +179,8 @@ func inferScenarioTags(name string) []string {
 		tags = append(tags, "read")
 	case strings.HasPrefix(name, "touch-"):
 		tags = append(tags, "touch")
-	case strings.HasPrefix(name, "shift-left-then-right"), strings.HasPrefix(name, "shift-right-then-left"):
+	case strings.HasPrefix(name, "shift-left-then-right"), strings.HasPrefix(name, "shift-right-then-left"),
+		strings.HasPrefix(name, "shift-up-then-down"):
 		tags = append(tags, "selection")
 	case strings.HasPrefix(name, "undo-"), strings.HasPrefix(name, "redo-"):
 		tags = append(tags, "undo")

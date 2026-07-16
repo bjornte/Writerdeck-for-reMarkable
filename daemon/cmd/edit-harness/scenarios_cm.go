@@ -9,28 +9,12 @@ func cmScenarios() []Scenario {
 		{
 			Name:    "cm-line-down-basic",
 			Content: fixtureProse,
-			Steps: []Step{
-				{SetCursor: intp(proseVLineStart(0))},
-				{Label: "down x1 (N=1)", Keys: []Key{{Name: "ArrowDown"}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(proseVLineStart(1)), SelStart: intp(proseVLineStart(1)), SelEnd: intp(proseVLineStart(1))}},
-				{Label: "down x2 more (N=3)", Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(proseVLineStart(3)), SelStart: intp(proseVLineStart(3)), SelEnd: intp(proseVLineStart(3))}},
-				{Label: "down x4 more (N=7)", Keys: []Key{{Name: "ArrowDown"}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(proseVLineStart(7)), SelStart: intp(proseVLineStart(7)), SelEnd: intp(proseVLineStart(7))}},
-			},
+			Steps:   verticalLinePattern(2, keyArrow("ArrowDown", false, false, false), keyArrow("ArrowUp", false, false, false), +1),
 		},
 		{
 			Name:    "cm-line-up-basic",
 			Content: fixtureProse,
-			Steps: []Step{
-				{SetCursor: intp(proseVLineEnd(proseVCount - 1))},
-				{Label: "up x1 (N=1)", Keys: []Key{{Name: "ArrowUp"}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(proseVLineEnd(proseVCount - 2)), SelStart: intp(proseVLineEnd(proseVCount - 2)), SelEnd: intp(proseVLineEnd(proseVCount - 2))}},
-				{Label: "up x2 more (N=3)", Keys: []Key{{Name: "ArrowUp"}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(proseVLineEnd(proseVCount - 4)), SelStart: intp(proseVLineEnd(proseVCount - 4)), SelEnd: intp(proseVLineEnd(proseVCount - 4))}},
-				{Label: "up x4 more (N=7)", Keys: []Key{{Name: "ArrowUp"}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(proseVLineEnd(proseVCount - 8)), SelStart: intp(proseVLineEnd(proseVCount - 8)), SelEnd: intp(proseVLineEnd(proseVCount - 8))}},
-			},
+			Steps:   verticalLinePattern(9, keyArrow("ArrowUp", false, false, false), keyArrow("ArrowDown", false, false, false), -1),
 		},
 		{
 			Name:    "cm-line-down-shorter",
@@ -81,15 +65,12 @@ func cmScenarios() []Scenario {
 		{
 			Name:    "cm-select-line-down",
 			Content: fixtureProse,
-			Steps: []Step{
-				{SetCursor: intp(proseVLineStart(0))},
-				{Label: "shift+down x1 (N=1)", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(proseVLineStart(1)), SelStart: intp(proseVLineStart(0)), SelEnd: intp(proseVLineStart(1)), SelLen: intp(proseVLineStart(1) - proseVLineStart(0))}},
-				{Label: "shift+down x2 more (N=3)", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(proseVLineStart(3)), SelStart: intp(proseVLineStart(0)), SelEnd: intp(proseVLineStart(3)), SelLen: intp(proseVLineStart(3) - proseVLineStart(0))}},
-				{Label: "shift+down x4 more (N=7)", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(proseVLineStart(7)), SelStart: intp(proseVLineStart(0)), SelEnd: intp(proseVLineStart(7)), SelLen: intp(proseVLineStart(7) - proseVLineStart(0))}},
-			},
+			Steps:   shiftVerticalPattern(2, keyArrow("ArrowDown", true, false, false), keyArrow("ArrowUp", true, false, false), false),
+		},
+		{
+			Name:    "cm-select-up-basic",
+			Content: fixtureProse,
+			Steps:   shiftVerticalPattern(9, keyArrow("ArrowUp", true, false, false), keyArrow("ArrowDown", true, false, false), true),
 		},
 		{
 			Name:    "cm-select-line-down-mid",
@@ -113,19 +94,6 @@ func cmScenarios() []Scenario {
 				{Expect: &StateExpect{Cursor: intp(threeLen), SelStart: intp(threeLen), SelEnd: intp(threeLen)}},
 				{Keys: []Key{{Name: "ArrowUp", Shift: true}}},
 				{Expect: &StateExpect{SelLenMin: intp(1), Cursor: intp(threeLen)}},
-			},
-		},
-		{
-			Name:    "cm-select-up-basic",
-			Content: fixtureProse,
-			Steps: []Step{
-				{SetCursor: intp(proseVLineEnd(proseVCount - 1))},
-				{Label: "shift+up x1 (N=1)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(proseVLineEnd(proseVCount - 1)), SelStart: intp(proseVLineEnd(proseVCount - 2)), SelEnd: intp(proseVLineEnd(proseVCount - 1))}},
-				{Label: "shift+up x2 more (N=3)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(proseVLineEnd(proseVCount - 1)), SelStart: intp(proseVLineEnd(proseVCount - 4)), SelEnd: intp(proseVLineEnd(proseVCount - 1))}},
-				{Label: "shift+up x4 more (N=7)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(proseVLineEnd(proseVCount - 1)), SelStart: intp(proseVLineEnd(proseVCount - 8)), SelEnd: intp(proseVLineEnd(proseVCount - 1))}},
 			},
 		},
 		{

@@ -1,21 +1,30 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestProseAnchorsFitN7(t *testing.T) {
-	if proseHMid-7 < proseHStart {
-		t.Fatalf("horizontal mid too close to start: mid=%d start=%d", proseHMid, proseHStart)
+	if proseHMid-7 < proseHStart || proseHMid+7 > proseHEditorEnd {
+		t.Fatalf("horizontal mid too tight: mid=%d start=%d end=%d", proseHMid, proseHStart, proseHEditorEnd)
 	}
-	if proseHMid+7 > proseHEditorEnd {
-		t.Fatalf("horizontal mid too close to end: mid=%d end=%d", proseHMid, proseHEditorEnd)
+	if proseMidDocCaret < 7 || proseMidDocCaret+7 > fixtureProseLen {
+		t.Fatalf("para1 mid too tight: %d", proseMidDocCaret)
 	}
-	if len(proseWordStarts) < 10 {
-		t.Fatalf("words=%d", len(proseWordStarts))
+	if prosePara2Mid < 7 || prosePara2Mid+7 > fixtureProseLen {
+		t.Fatalf("para2 mid too tight: %d", prosePara2Mid)
+	}
+	if len(proseWordStarts) < 12 {
+		t.Fatalf("words=%d want >=12", len(proseWordStarts))
 	}
 	if proseVCount < 12 {
 		t.Fatalf("vcount=%d", proseVCount)
 	}
-	if fixtureProseLen < 200 {
+	if !strings.Contains(fixtureProse, "Første avsnitt") || !strings.Contains(fixtureProse, "Andre avsnitt") {
+		t.Fatal("missing wrapping paragraphs")
+	}
+	if fixtureProseLen < 400 {
 		t.Fatalf("prose too short: %d", fixtureProseLen)
 	}
 }

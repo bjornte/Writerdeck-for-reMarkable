@@ -17,28 +17,13 @@ func comboScenarios() []Scenario {
 		{
 			Name:    "combo-alt-left",
 			Content: fixtureProse,
-			Steps: []Step{
-				{SetCursor: intp(proseWEditorEnd)},
-				{Label: "alt+left x1 word (N=1)", Keys: []Key{{Name: "ArrowLeft", Alt: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(proseWordStarts[9]), SelStart: intp(proseWordStarts[9]), SelEnd: intp(proseWordStarts[9])}},
-				{Label: "alt+left x2 more words (N=3)", Keys: []Key{{Name: "ArrowLeft", Alt: true}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(proseWordStarts[7]), SelStart: intp(proseWordStarts[7]), SelEnd: intp(proseWordStarts[7])}},
-				{Label: "alt+left x4 more words (N=7)", Keys: []Key{{Name: "ArrowLeft", Alt: true}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(proseWordStarts[3]), SelStart: intp(proseWordStarts[3]), SelEnd: intp(proseWordStarts[3])}},
-			},
+			// Seed word index 7; Left needs room for uni5/bi7 and Right overshoot.
+			Steps: wordCaretPattern(7, keyArrow("ArrowLeft", false, true, false), keyArrow("ArrowRight", false, true, false), -1),
 		},
 		{
 			Name:    "combo-alt-right",
 			Content: fixtureProse,
-			Steps: []Step{
-				{SetCursor: intp(proseWStart)},
-				{Label: "alt+right x1 word (N=1)", Keys: []Key{{Name: "ArrowRight", Alt: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(proseWordStarts[1]), SelStart: intp(proseWordStarts[1]), SelEnd: intp(proseWordStarts[1])}},
-				{Label: "alt+right x2 more words (N=3)", Keys: []Key{{Name: "ArrowRight", Alt: true}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(proseWordStarts[3]), SelStart: intp(proseWordStarts[3]), SelEnd: intp(proseWordStarts[3])}},
-				{Label: "alt+right x4 more words (N=7)", Keys: []Key{{Name: "ArrowRight", Alt: true}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(proseWordStarts[7]), SelStart: intp(proseWordStarts[7]), SelEnd: intp(proseWordStarts[7])}},
-			},
+			Steps:   wordCaretPattern(4, keyArrow("ArrowRight", false, true, false), keyArrow("ArrowLeft", false, true, false), +1),
 		},
 		{
 			Name:    "combo-alt-up",

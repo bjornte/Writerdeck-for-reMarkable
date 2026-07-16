@@ -25,28 +25,23 @@ func gapScenarios() []Scenario {
 		{
 			Name:    "gap-plain-left-moves-caret",
 			Content: fixtureProse,
-			Steps: []Step{
-				{SetCursor: intp(proseHMid)},
-				{Label: "plain left x1 (N=1)", Keys: []Key{{Name: "ArrowLeft"}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(proseHMid - 1), SelStart: intp(proseHMid - 1), SelEnd: intp(proseHMid - 1)}},
-				{Label: "plain left x2 more (N=3)", Keys: []Key{{Name: "ArrowLeft"}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(proseHMid - 3), SelStart: intp(proseHMid - 3), SelEnd: intp(proseHMid - 3)}},
-				{Label: "plain left x4 more (N=7)", Keys: []Key{{Name: "ArrowLeft"}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(proseHMid - 7), SelStart: intp(proseHMid - 7), SelEnd: intp(proseHMid - 7)}},
-			},
+			Steps:   caretAxisPattern(proseHMid, keyArrow("ArrowLeft", false, false, false), keyArrow("ArrowRight", false, false, false), -1),
 		},
 		{
 			Name:    "gap-plain-right-moves-caret",
 			Content: fixtureProse,
-			Steps: []Step{
-				{SetCursor: intp(proseHMid)},
-				{Label: "plain right x1 (N=1)", Keys: []Key{{Name: "ArrowRight"}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(proseHMid + 1), SelStart: intp(proseHMid + 1), SelEnd: intp(proseHMid + 1)}},
-				{Label: "plain right x2 more (N=3)", Keys: []Key{{Name: "ArrowRight"}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(proseHMid + 3), SelStart: intp(proseHMid + 3), SelEnd: intp(proseHMid + 3)}},
-				{Label: "plain right x4 more (N=7)", Keys: []Key{{Name: "ArrowRight"}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(proseHMid + 7), SelStart: intp(proseHMid + 7), SelEnd: intp(proseHMid + 7)}},
-			},
+			Steps:   caretAxisPattern(proseHMid, keyArrow("ArrowRight", false, false, false), keyArrow("ArrowLeft", false, false, false), +1),
+		},
+		{
+			// Mid paragraph for variety (not only horizontal line).
+			Name:    "gap-plain-left-in-paragraph",
+			Content: fixtureProse,
+			Steps:   caretAxisPattern(proseMidDocCaret, keyArrow("ArrowLeft", false, false, false), keyArrow("ArrowRight", false, false, false), -1),
+		},
+		{
+			Name:    "gap-plain-right-in-paragraph",
+			Content: fixtureProse,
+			Steps:   caretAxisPattern(prosePara2Mid, keyArrow("ArrowRight", false, false, false), keyArrow("ArrowLeft", false, false, false), +1),
 		},
 		{
 			Name:    "gap-plain-left-at-doc-start",

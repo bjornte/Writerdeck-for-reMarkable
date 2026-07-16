@@ -9,23 +9,21 @@ import (
 // Shared fixtures for the keyboard harness. Most scenarios load fixtureProse
 // via sandbox prepare into the harness-only note z-test-keyboard-harness.md
 // (z-test- files are filtered from normal vault/user flows). Specialized
-// Content remains for wrap geometry, empty-document, goal-column shapes, and
-// tall page-scroll bodies.
+// Content remains for wrap geometry (Width=320), empty-document, goal-column
+// shapes, and tall page-scroll bodies.
 //
-// Editor positions (cursor, selStart, selEnd, textLen) match QML TextEdit /
-// QString indexing: one unit per Unicode code point for the BMP characters
-// used here (Norwegian æøå, accents). Use editorLen / rune helpers — never
-// Go len() byte counts — when asserting against live editor state.
+// Editor positions match QML TextEdit / QString indexing (BMP == runes here).
+// Use editorLen — never Go len() byte counts — against live editor state.
+//
+// Motion/selection pattern (see pattern.go): uni 1, uni 5, bi 1+1, bi 3+5
+// (overshoot), bi 7+7 — each direction pair covered.
 
-// fixtureProse is the shared dummy document: Norwegian prose, æøå and other
-// specials, two bullet lists, and long enough uniform lines for N=1/3/7
-// motion in both directions without hitting artificial ends early.
 var fixtureProse = buildFixtureProse()
 
 var (
 	fixtureProseLen int
 
-	proseHStart     int // first char of horizontal line
+	proseHStart     int
 	proseHLen       int
 	proseHMid       int
 	proseH          string
@@ -42,26 +40,58 @@ var (
 	proseWordEnds   []int
 	proseWEditorEnd int
 
-	prosePara2Start   int
+	prosePara1Start   int // long wrapping paragraph 1
+	prosePara2Start   int // long wrapping paragraph 2
+	prosePara3Start   int // third body paragraph
 	proseList1Start   int
 	proseList2Item2   int
-	proseMidDocCaret  int
+	proseMidDocCaret  int // mid paragraph 1
 	proseNearEOFCaret int
+	prosePara2Mid     int // caret mid paragraph 2 (different placement)
 )
 
+// Long prose lines intentionally exceed e-ink / wrap width so each paragraph
+// paints across at least three visual lines on device (and many logical lines
+// when hard-wrapped in the source for readability).
+
 func buildFixtureProse() string {
+	para1 := strings.Join([]string{
+		"Første avsnitt — Naïve café résumé med æøå på Færøyene, Zürich og São Paulo.",
+		"Böcker, kjøttkaker og blåbær fyller hyllen mens typewriteren klaprer gjennom natten,",
+		"og skribenten noterer München, Köln, Ålesund og «sitat» med €£¥ før regnet treffer glasset.",
+		"Denne prosaen skal speile ekte lesing: nok setninger til at avsnittet bryter visuelt over minst tre linjer.",
+	}, " ")
+
+	para2 := strings.Join([]string{
+		"Andre avsnitt fortsetter historien om eink-skrivingen: page-up og page-down skal klemme ved bunnen,",
+		"aldri scrolle inn i tomrom under dokumentet. Kapittel VII venter før middag, og sykkelen står klar",
+		"til kontoret hvis skyene letter. Rødvin, ost og brød ligger i vesken — små bevis på at testteksten",
+		"er ekte prosa, ikke abcdef-leker, med plass til både venstre/høyre-og opp/ned-vandring.",
+	}, " ")
+
+	para3 := strings.Join([]string{
+		"Tredje avsnitt er kortere men fortsatt flersorglinjet: foxtrot over hotelindia,",
+		"juliett over kilo, lima over november — ordrekke for Alt-hopp uten å forlate avsnittet.",
+	}, " ")
+
 	var b strings.Builder
 	b.WriteString("Writerdeck harness dummy — ikke i vanlig notatliste\n")
-	b.WriteString("Naïve café résumé: æøå på Færøyene, Zürich og São Paulo. Böcker, kjøttkaker, blåbær — «sitat» €£¥.\n")
 	b.WriteString("\n")
-	b.WriteString("Avsnitt to: den gamle typewriteren klapret mens skribenten noterte München, Köln og Ålesund før kvelden falt på.\n")
-	b.WriteString("\n")
+	b.WriteString(para1)
+	b.WriteString("\n\n")
+	b.WriteString(para2)
+	b.WriteString("\n\n")
+	b.WriteString(para3)
+	b.WriteString("\n\n")
 	b.WriteString("- første punkt: ta med sykkelen til kontoret før regnet\n")
 	b.WriteString("- andre punkt: husk rødvin, ost og brød\n")
 	b.WriteString("- tredje punkt: les Kapittel VII før middag\n")
-	b.WriteString("alfa bravo charlie delta echo foxtrot golf hotel india juliett\n")
+	b.WriteString("\n")
+	b.WriteString("alfa bravo charlie delta echo foxtrot golf hotel india juliett kilo lima\n")
+	b.WriteString("\n")
 	b.WriteString("- eink: lesemodus skal ikke overscrolle\n")
 	b.WriteString("- eink: page-up/down skal klemme ved bunnen\n")
+	b.WriteString("\n")
 	b.WriteString("Horisontal æøå: abcdefghijklmnopqrstuvwxyzæøåcafé!!\n")
 	for i := 0; i < proseVCount; i++ {
 		line := fmt.Sprintf("Linje %02d æøå café!", i)
@@ -86,14 +116,20 @@ func init() {
 		return editorIndexAtByte(fixtureProse, i)
 	}
 
-	proseMidDocCaret = mustFind("café résumé")
-	prosePara2Start = mustFind("Avsnitt to:")
+	prosePara1Start = mustFind("Første avsnitt")
+	prosePara2Start = mustFind("Andre avsnitt")
+	prosePara3Start = mustFind("Tredje avsnitt")
+	proseMidDocCaret = mustFind("typewriteren klaprer")
+	prosePara2Mid = mustFind("page-up og page-down")
 	proseList1Start = mustFind("- første punkt:")
 	proseList2Item2 = mustFind("- eink: page-up")
 
 	proseWStart = mustFind("alfa bravo charlie")
 	wByteStart := strings.Index(fixtureProse, "alfa bravo charlie")
-	wByteEnd := strings.Index(fixtureProse, "\n- eink: lese")
+	wByteEnd := strings.Index(fixtureProse, "\n\n- eink: lese")
+	if wByteEnd < 0 {
+		wByteEnd = strings.Index(fixtureProse, "\n- eink: lese")
+	}
 	if wByteEnd < 0 {
 		panic("fixtureProse word line end missing")
 	}
@@ -123,29 +159,27 @@ func init() {
 	proseHLen = editorLen(proseH)
 	proseHEditorEnd = proseHStart + proseHLen
 	proseHMid = proseHStart + proseHLen/2
+	if proseHMid-7 < proseHStart || proseHMid+7 > proseHEditorEnd {
+		panic(fmt.Sprintf("horizontal mid %d cannot host ±7 (start=%d end=%d)", proseHMid, proseHStart, proseHEditorEnd))
+	}
 
 	proseVStart = mustFind("Linje 00 æøå café!")
-	proseVLen = proseVCount*proseVWidth + (proseVCount - 1) // newlines between
+	proseVLen = proseVCount*proseVWidth + (proseVCount - 1)
 	proseNearEOFCaret = proseVLineStart(proseVCount-1) + proseVWidth/2
 }
 
-// proseVLineStart returns the editor position of logical vertical line i.
 func proseVLineStart(i int) int {
 	return proseVStart + i*(proseVWidth+1)
 }
 
-// proseVLineEnd returns the editor position one past the last character of
-// vertical line i (Home/End within that line).
 func proseVLineEnd(i int) int {
 	return proseVLineStart(i) + proseVWidth
 }
 
-// editorLen is the TextEdit/QString length of s (BMP code points == runes).
 func editorLen(s string) int {
 	return utf8.RuneCountInString(s)
 }
 
-// editorIndexAtByte maps a UTF-8 byte offset in s to an editor position.
 func editorIndexAtByte(s string, byteIndex int) int {
 	if byteIndex <= 0 {
 		return 0
@@ -156,7 +190,6 @@ func editorIndexAtByte(s string, byteIndex int) int {
 	return utf8.RuneCountInString(s[:byteIndex])
 }
 
-// trimLastRunes returns s without its last n runes (for Text expects).
 func trimLastRunes(s string, n int) string {
 	r := []rune(s)
 	if n >= len(r) {
@@ -165,7 +198,6 @@ func trimLastRunes(s string, n int) string {
 	return string(r[:len(r)-n])
 }
 
-// dropFirstRunes returns s without its first n runes.
 func dropFirstRunes(s string, n int) string {
 	r := []rune(s)
 	if n >= len(r) {
@@ -174,7 +206,6 @@ func dropFirstRunes(s string, n int) string {
 	return string(r[n:])
 }
 
-// wordStarts / wordEnds are relative rune offsets within s.
 func wordStarts(s string) []int {
 	var out []int
 	inWord := false
@@ -212,11 +243,8 @@ func wordEnds(s string) []int {
 	return out
 }
 
-// wrapParagraph is one logical line that wraps to multiple visual rows.
-// Length must stay wrapParagraphLen (see wrap_fixtures.go).
 var wrapParagraph = strings.TrimSpace(strings.Repeat("word ", 40))
 
-// fixtureTall returns n filler lines for hardware / read page-scroll tests.
 func fixtureTall(n int) string {
 	var b strings.Builder
 	for i := 0; i < n; i++ {
@@ -227,12 +255,10 @@ func fixtureTall(n int) string {
 	return b.String()
 }
 
-// fixtureTallRead is multi-screen but finite — reading-mode overscroll clamp.
 func fixtureTallRead() string {
 	return fixtureTall(80)
 }
 
-// Specialized tiny geometries (still real words, not abcdef toys).
 const (
 	fixtureGoalColDown = "tre\ni\nfemte"
 	fixtureShorterDown = "tre\ni"
