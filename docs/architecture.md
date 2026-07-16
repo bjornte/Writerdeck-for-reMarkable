@@ -41,7 +41,7 @@ Under `/home/root/`:
 
 Example: a careful, long-lived **undo** improvement belongs in the owned fork as **QML** (where the undo helpers already live) — not in the emergency patch script. Reach for C++ only if undo had to be rebuilt deep inside the text engine itself.
 
-This patch pipeline is intentionally reproducible and also brittle. Most edit-mode behavior now lives in the Writerdeck fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter); `third_party/keywriter/build-keywriter.sh` is build glue (assert + helpers insert + lobby concat). Prefer keeping new editor behavior in the fork — **critical feature groups first**, in bulk transitions ([TODO.md](../TODO.md) item 3, [decisions.md](decisions.md) §3, [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md)). If e-ink full-frame redraw becomes a problem later, see [improvements.md](improvements.md) § E-ink redraw (dirty-region ideas from yaft — not a terminal editor swap).
+This patch pipeline is intentionally reproducible. Most edit-mode behavior lives in the Writerdeck fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter); `third_party/keywriter/build-keywriter.sh` is build glue (assert + helpers insert + lobby concat). Keep new editor behavior in the fork ([decisions.md](decisions.md) §3, [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md)). If e-ink full-frame redraw becomes a problem later, see [improvements.md](improvements.md) § E-ink redraw (dirty-region ideas from yaft — not a terminal editor swap).
 
 `Writerdeck-launcher.sh` sets Qt and e-ink launch environment; the server spawns Writerdeck with `--editor`.
 

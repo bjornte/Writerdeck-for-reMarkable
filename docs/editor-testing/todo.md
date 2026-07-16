@@ -10,19 +10,19 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 | Milestone | Result | Note |
 |-----------|--------|------|
-| Latest full suite | **93 / 12** (0 prepare fail) of **105** | `18-10-10` @ Phase 3 C++ infra (`f7c84e9`); report `docs/recon/test-keyboard-harness-2026-07-16T18-10-10.md` |
-| Prior full suite | **92 / 13** (0 prepare fail) of **105** | `17-59-00` @ Phase 3 Connections |
-| **Critical (gate)** | **36 / 36** | green @ `18-08-55` |
+| Latest full suite | **93 / 12** (0 prepare fail) of **105** | `18-57-31` @ Phase 3 Lobby/shell (`68f6e32`); report `docs/recon/test-keyboard-harness-2026-07-16T18-57-31.md` |
+| Prior full suite | **93 / 12** (0 prepare fail) of **105** | `18-10-10` @ Phase 3 C++ infra |
+| **Critical (gate)** | **36 / 36** | green @ `18-56-12` |
 | Wrap tag | **15 / 15** | Phase 2B |
 | Undo tag | **5 / 5** | Phase 2C @ `17-31-41` |
 | Best pre-rewrite | **89 / 4** (+1 prep) of **94** | `00-37-27` @ `bdccee9` |
 | Sign-off gate | **105/105 PASS** | `bash scripts/test-keyboard-harness.sh --fast`, single session |
 
-`test-edit-session.sh` PASS on deploy @ Phase 3 C++ infra. Do not run it in parallel with the keyboard harness.
+`test-edit-session.sh` PASS on deploy @ Phase 3 Lobby/shell. Do not run it in parallel with the keyboard harness.
 
 ## Goal for next session
 
-Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../editor-migration/todo-handoff-keywriter-fork.md), rule `keywriter-fork-migration.mdc`. Phase 2 A–D + Phase 3 Connections/Timers + C++ infra done; next is Lobby/shell QML shrink + ownership docs. Do **not** first burn down the leftover fails. Keep critical **36/36** green on every behavior-moving deploy.
+Fork migration is **done** ([todo-handoff-keywriter-fork.md](../editor-migration/todo-handoff-keywriter-fork.md); [decisions.md](../decisions.md) §3). Burn down leftover harness fails toward **105/105**, or take Physical Home. Keep critical **36/36** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
 
 
 ## What `377a053` fixed
@@ -31,7 +31,7 @@ Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../
 - Mid-scenario `Reprepare` after mutating alt/ctrl-backspace uni1 (stale absolute `SetCursor` on a shrunken buffer).
 - Wrap-up expects matched Down×7 then Up×3 geometry (~80, not ≤65).
 
-## Remaining fails @ `18-10-10` (12)
+## Remaining fails @ `18-57-31` (12)
 
 | Scenario | Likely area |
 |----------|-------------|

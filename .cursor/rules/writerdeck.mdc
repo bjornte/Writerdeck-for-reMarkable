@@ -1,19 +1,25 @@
 ---
-description: ARCHIVED general Writerdeck rules — restore after keywriter fork migration
-alwaysApply: false
+description: Writerdeck for reMarkable — verify on device, constraints, docs
+alwaysApply: true
 ---
 
-# Writerdeck for reMarkable 1 (archived backup)
+# Writerdeck for reMarkable 1
 
-Archived while `.cursor/rules/keywriter-fork-migration.mdc` is the active always-apply rule. Restore this file as `writerdeck.mdc` with `alwaysApply: true` when the fork migration is done.
+Markdown typewriter: Mac deploys Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); keywriter fork → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Editor source of truth: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`); `third_party/keywriter/build-keywriter.sh` is build glue only — new QML/C++ edits go in the fork. Background: `TODO.md`, `docs/architecture.md`, `docs/decisions.md`, `DONE.md`, `docs/lessons.md`.
 
-Markdown typewriter: Mac deploys Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Background: `TODO.md`, `docs/architecture.md`, `docs/decisions.md`, `DONE.md`, `docs/lessons.md`.
+## Audience and replies
+
+The owner is a **designer with basic code skills**, not a professional developer. Unless they ask for depth: keep chat replies **terse**, in **plain layman’s prose**, and lead with what happened / what to do next. Avoid jargon dumps, long architecture digressions, and “what we didn’t do” lists. Save technical detail for commits, handoff docs, and when asked.
+
+## Drivers
+
+Document integrity is the absolute paramount driver — the owner's prose must survive as plain Markdown on disk. That outranks feature speed and harness cosmetics. See [docs/decisions.md](docs/decisions.md) § Document integrity, [docs/architecture.md](docs/architecture.md), [docs/integrity-audit.md](docs/integrity-audit.md). Before inventing editor behavior, check how similar editors do it (CodeMirror, Qt `TextEdit`, Mac/Linux text fields) and prefer proven patterns.
 
 ## Verify before calling work done (mandatory — do not skip)
 
 **Deploy success ≠ tested. curl/API 200 ≠ UI works.**
 
-After `daemon/`, `build-keywriter.sh`, or `lobby/` changes:
+After `daemon/`, `build-keywriter.sh`, Lobby/QML (fork), or deploy-script changes:
 
 ### Phone browser UI (required for any `daemon/*.js` / embedded HTML/CSS change)
 
@@ -30,13 +36,13 @@ After `daemon/`, `build-keywriter.sh`, or `lobby/` changes:
 
 ### Tablet / server (required for all deploys)
 
-1. Rebuild Writerdeck if QML changed → `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`
+1. Rebuild Writerdeck if QML/C++ changed → push fork if needed → `git push` (this repo) → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`
 2. SSH → `journalctl -u writerdeck -n 30` — fail on QML parse errors or instant `editor process exited`
 3. `bash scripts/test-edit-session.sh` after Writerdeck/QML deploy
-4. `bash scripts/test-keyboard-harness.sh --fast` after QML arrow, selection, or `handleKey` changes (see `docs/decisions.md` #22). Sign-off: full suite **105/105 PASS**. Update [milestone-runs.md](docs/editor-testing/milestone-runs.md). While iterating keyboard bugs, triage all failures before deploying — at most one Writerdeck binary deploy per session unless QML fails to launch (see `docs/editor-testing/todo.md`, `docs/lessons.md` § Harness batch workflow).
+4. `bash scripts/test-keyboard-harness.sh --fast` after QML arrow, selection, or `handleKey` changes (see `docs/decisions.md` #22). Sign-off: full suite **105/105 PASS**. Critical gate: `-t critical --fast` → **36/36**. Update [milestone-runs.md](docs/editor-testing/milestone-runs.md) after every full suite (include **Patch LOC** = `wc -l third_party/keywriter/build-keywriter.sh`). While iterating keyboard bugs, triage all failures before deploying — at most one Writerdeck binary deploy per session unless QML fails to launch (see `docs/editor-testing/todo.md`, `docs/lessons.md` § Harness batch workflow).
 5. `bash scripts/test-lobby-keyboard.sh` after Lobby, `handleHome`, or `lobbyFocus` changes (see `docs/decisions.md` #29)
 
-Run all applicable steps every time without being asked. Do not declare done with known gaps ("not yet on tablet", "should work").
+Run all applicable steps every time without being asked. Do not declare done with known gaps ("not yet on tablet", "should work"). Do not run edit-session and keyboard harness in parallel.
 
 ## Time budget while debugging
 
@@ -52,6 +58,7 @@ Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server). On-device n
 - Static Go only: `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`
 - Markdown save format
 - Cross-compile Writerdeck-server on Mac; never local `docker build` for Writerdeck — CI/GHA + `fetch-keywriter-dist.sh`
+- Do not grow new editor behavior in `build-keywriter.sh` — edit the fork ([docs/decisions.md](docs/decisions.md) §3)
 
 ## Dev setup
 
@@ -59,7 +66,7 @@ Secrets: `secrets/remarkable.local.env`; scripts source `scripts/_env.sh` for `R
 
 **Daemon:** `deploy-rmkbd.sh` → `systemctl restart writerdeck`. Verify APIs **and** load the phone UI (see above) — not `curl` alone.
 
-**Writerdeck:** `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Relaunch Writerdeck after binary deploy (server restart alone is not enough). Then `bash scripts/test-edit-session.sh`; `bash scripts/test-lobby-keyboard.sh` after Lobby/`handleHome` QML; `bash scripts/test-keyboard-harness.sh` when keyboard/selection QML changed.
+**Writerdeck:** editor changes in Writerdeck-keywriter → push fork → this repo CI (or wait for rebuild) → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Relaunch Writerdeck after binary deploy (server restart alone is not enough). Then `bash scripts/test-edit-session.sh`; `bash scripts/test-lobby-keyboard.sh` after Lobby/`handleHome` QML; `bash scripts/test-keyboard-harness.sh` when keyboard/selection QML changed.
 
 GitHub token: browser `localStorage ghToken` + tablet RAM via `POST /api/sync/token`; after restart WebSocket `needtoken` triggers auto-repost. Logs: `journalctl -u writerdeck.service` — token restore shows `sync reconcile (token)` after `client connected` (see `docs/server-sync-implementation.md`).
 

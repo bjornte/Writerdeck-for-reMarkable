@@ -18,7 +18,7 @@ Reference for the project. Test script output goes in `recon/` — gitignored te
 
 `todo-install-onboarding.md` — visitor install friction: README, releases, preflight/install scripts.
 
-`editor-migration/` — keywriter fork migration ([todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md)); one slice per session.
+`editor-migration/` — keywriter fork migration (**done**; [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md)); ownership in [decisions.md](decisions.md) §3.
 
 `editor-testing/` — scenario catalog ([scenario-catalog.md](editor-testing/scenario-catalog.md)), harness handoff ([todo.md](editor-testing/todo.md)), scoreboard ([milestone-runs.md](editor-testing/milestone-runs.md)), run history ([recon/harness-runs.md](recon/harness-runs.md)).
 

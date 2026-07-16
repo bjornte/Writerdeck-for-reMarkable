@@ -38,19 +38,29 @@ Keywriter takes keyboard input through Qt QPA — there is no input fd to swap. 
 
 The four-year-old prebuilt binary dies at the loader (`libQt5Quick.so.5`). Qt is static-linked into xochitl on current firmware, so `LD_LIBRARY_PATH` cannot rescue it. We cross-build from source in `ghcr.io/toltec-dev/qt:v3.3` (CI) and deploy a Qt5 runtime sysroot. Writerdeck renders via linuxfb on the rM1's real `/dev/fb0` — rm2fb is not needed.
 
-Using `build-keywriter.sh` as the patching layer is a constraint choice, not an ideal end state. It keeps builds reproducible from a clean upstream checkout, but it is brittle at this size: patch order and context coupling make regressions easier, and reviewability drops as more editor logic lives in generated string patches.
+Substantial QML/C++ edits live in a maintained Writerdeck fork of keywriter. `build-keywriter.sh` is build glue plus minimal deterministic patches (assert presence, insert helpers before `showLobby()`, concatenate Lobby subpages). Do not grow new editor behavior in the script.
 
-Prefer moving substantial QML/C++ edits into a maintained Writerdeck fork of keywriter and reducing `build-keywriter.sh` to build glue plus minimal deterministic patches. The long patch script is an emergency maintenance model, not a destination — do not wait for harness **105/105**, and do not spend the migration queue on leftover non-critical harness fails first.
+**Fork ownership.** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) is the Writerdeck-owned fork of [dps/remarkable-keywriter](https://github.com/dps/remarkable-keywriter). Default branch is `master`. CI and `build-keywriter.sh` clone that URL via `KEYWRITER_REPO` / `KEYWRITER_REF` (defaults: the fork URL and `master`). Pin a SHA in `KEYWRITER_REF` only when you need a reproducible rollback; day-to-day builds track `master`.
 
-**Fork (owned):** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) — fork of `dps/remarkable-keywriter`, default branch `master`. CI clones that URL via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork `edit_mac_helpers.qml.inc` (Phase 2A–2D + Phase 3 Timers/Connections). Socket inject, `lobby_bridge`, and `rotation_watcher` are in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` are in-tree (`68f6e32`). `build-keywriter.sh` asserts plus tiny glue (helpers insert + lobby concat). Critical **36/36**; latest full suite **93/12** @ `18-57-31` (Patch LOC **386**); wrap tag **15/15**; undo tag **5/5**. Handoff: [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md).
+What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (Phase 2A–2D + Phase 3 Timers/Connections); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **36/36**; latest full suite **93/12** @ `18-57-31` (Patch LOC **386**); wrap tag **15/15**; undo tag **5/5**. Migration checklist: [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md).
 
-Phasing ([TODO.md](../TODO.md) item 3):
+**Merging upstream keywriter.** Upstream is `dps/remarkable-keywriter`. Pull its changes into the fork on purpose — not on every Writerdeck session. In a local clone of Writerdeck-keywriter:
 
-1. Pin CI to the fork with **no behavior change** — **done.**
-2. Move behavior from the patch script into forked C++/QML **by criticality** — **2A–2D done.**
-3. Shrink the script further (Connections/Timers + C++ infra + Lobby/shell QML in fork); document fork ownership and upstream-merge policy here; restore general rules. Remaining script work is tiny glue (helpers insert + lobby concat) plus ownership docs.
+1. `git remote add upstream https://github.com/dps/remarkable-keywriter.git` (once).
+2. `git fetch upstream`
+3. Merge or rebase `upstream/master` onto local `master`, resolve conflicts in favor of Writerdeck behavior where edit/Lobby/socket code diverged.
+4. `git push origin master`
+5. Rebuild Writerdeck via CI, deploy, then `test-edit-session.sh` and `-t critical --fast` (keep **36/36**). Run full `--fast` if the upstream diff touched edit or layout code.
 
-Critical **36/36** means basic editing is gated green. Full **105/105** remains product sign-off. Neither blocks starting the fork; neither should reorder Phase 2 away from criticality-first migration.
+Prefer a merge commit when the fork has substantial unique history; rebase only on a private tip you have not shared. After a successful upstream merge, bump nothing in this repo unless `KEYWRITER_REF` was pinned to a SHA — then point it at the new tip or back to `master`.
+
+Phasing ([TODO.md](../TODO.md) item 3) — **done:**
+
+1. Pin CI to the fork with **no behavior change.**
+2. Move behavior from the patch script into forked C++/QML **by criticality** (2A–2D).
+3. Shrink the script (Connections/Timers + C++ infra + Lobby/shell QML in fork); document ownership and upstream-merge policy; restore general Cursor rules.
+
+Critical **36/36** means basic editing is gated green. Full **105/105** remains product sign-off.
 
 ## 4. No Toltec
 
@@ -198,4 +208,4 @@ Notes created or opened by device regression scripts (`test-edit-session.sh`, `t
 
 Firmware OTA may wipe the systemd unit and regenerate the SSH password — recovery is re-deploy and re-enable. USB `us`/`no` qmaps and Lobby layout picker are shipped and device-verified. Encrypted notes subset is implemented (decisions.md §31). Integrity residuals: [integrity-audit.md](integrity-audit.md). uinput is closed — see decision 1. Go must be on the Mac. Rootfs is about 96% full; everything we ship lives on `/home/root/`. Do not resize rootfs — A/B OTA scheme, brick risk.
 
-The editor patch stack is an active architectural risk: too much behavior lives as generated string patches in one script. Migrate to a Writerdeck fork of keywriter (decision 3, [TODO.md](../TODO.md) item 3) by moving **critical feature groups first**, not by clearing the leftover harness fail list first. Harness **105/105** remains product sign-off; it does not set migration order.
+Editor behavior now lives in the Writerdeck-keywriter fork (decision 3). Residual risk is the tiny glue left in `build-keywriter.sh` and any future upstream merge conflicts — not a growing patch-script stack. Harness **105/105** remains product sign-off.

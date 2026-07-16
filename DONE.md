@@ -34,7 +34,7 @@ Reading font, PIN length, display rotation, and Exit Writerdeck live on the tabl
 
 ## Editor
 
-Built from upstream remarkable-keywriter (**keywriter**: Qt 5, C++, QML), deployed as Writerdeck, patched for socket input. Full-panel via linuxfb. Norwegian and other Unicode via the browser path; USB Norwegian (`no.qmap`) verified on hardware — æ ø å, AltGr, `@`, `{` `}`. Reading fonts: Inter, Literata, EB Garamond, DejaVu. Page up and down in read and edit. Block cursor hides while typing. Ctrl-K note switcher. Mac/Linux-style navigation in edit (Ctrl/Alt chords; partial — see [editor-testing/todo.md](docs/editor-testing/todo.md)). Power button saves, shows a sleep screen, suspends; press again to wake (device verified). USB Esc from stock UI launches to Lobby. Rotation in settings, pushed on connect.
+Built from owned fork [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) of remarkable-keywriter (**keywriter**: Qt 5, C++, QML), deployed as Writerdeck. Socket input, Lobby, and Mac/Linux-style edit helpers live in the fork; `build-keywriter.sh` is CI glue ([decisions.md](docs/decisions.md) §3). Full-panel via linuxfb. Norwegian and other Unicode via the browser path; USB Norwegian (`no.qmap`) verified on hardware — æ ø å, AltGr, `@`, `{` `}`. Reading fonts: Inter, Literata, EB Garamond, DejaVu. Page up and down in read and edit. Block cursor hides while typing. Ctrl-K note switcher. Mac/Linux-style navigation in edit (Ctrl/Alt chords; partial — see [editor-testing/todo.md](docs/editor-testing/todo.md)). Power button saves, shows a sleep screen, suspends; press again to wake (device verified). USB Esc from stock UI launches to Lobby. Rotation in settings, pushed on connect.
 
 ## GitHub sync
 
