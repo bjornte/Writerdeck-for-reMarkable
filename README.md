@@ -9,7 +9,7 @@ A distraction-free word processor for the reMarkable 1, with support for hardwar
 
 Background: The reMarkable 1 has a large, nice e-ink screen and a distraction-free OS, but no word processor, and no support for hardware keyboards. This Writerdeck fills the gap.
 
-The project is 90% vibe coded and 50% human reviewed. I (the repo owner, Bjørn) have mostly just herded LLMs and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (slightly patched) and a keypress injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
+The project is 90% vibe coded and 50% human reviewed. I (the repo owner, Bjørn) have mostly just herded LLMs and perused the documentation, not the code itself. Primary sources: the [keywriter](https://github.com/dps/remarkable-keywriter) editor (forked as [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter)) and a keypress injection approach in [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
 
 ## Status
 
@@ -83,11 +83,11 @@ Development on the tablet is done over SSH from a machine on the same Wi-Fi. To 
 
 ## Main components
 
-Three pieces — the server and client are built here, the editor is third-party (patched):
+Three pieces — the server and client are built here; the editor is a forked third-party app:
 
 - **Writerdeck-server** — a small, static Go daemon at `/home/root/Writerdeck-server`. It serves an HTML capture page and a WebSocket, then forwards keystrokes into `/run/Writerdeck.sock`.
 - **the client** — a browser page (served by Writerdeck-server) that captures keystrokes and sends them over the LAN.
-- **Writerdeck** — our patched build of [keywriter](https://github.com/dps/remarkable-keywriter) (*remarkable-keywriter*), the editor engine: a **Qt 5** app in **C++** and **QML**, patched to read the socket. Full-screen Markdown editor; saves `.md` to `Writerdeck-user-documents/`.
+- **Writerdeck** — full-screen Markdown editor on the tablet. Built from our fork of [keywriter](https://github.com/dps/remarkable-keywriter) (*remarkable-keywriter*): a **Qt 5** app. Building blocks: **QML** (screen + typing/selection/undo) and **C++** (startup, e-ink, socket keystrokes). Owned fork: [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). Saves `.md` to `Writerdeck-user-documents/`.
 
 Keystrokes reach the editor through a local socket rather than `/dev/uinput`: this tablet's kernel can't load uinput, so Writerdeck-server feeds the patched editor instead. The reasoning is in [docs/decisions.md](docs/decisions.md).
 
