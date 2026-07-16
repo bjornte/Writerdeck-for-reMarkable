@@ -42,7 +42,7 @@ Deploy success ≠ tested.
 - Writerdeck rebuild: `git push` → wait for CI → `bash scripts/fetch-keywriter-dist.sh` → `bash scripts/deploy-keywriter.sh -b` (never local `docker build` for Writerdeck).
 - `journalctl -u writerdeck -n 30` — fail on QML parse errors or instant `editor process exited`.
 - `bash scripts/test-edit-session.sh`
-- After edit-behavior moves: `bash scripts/test-keyboard-harness.sh -t critical --fast` must stay **36/36**. Full `--fast` when the slice claims broader coverage, and at **prudent intervals** otherwise (Phase boundaries, each lettered Phase 2 group A–D, or when critical flakes / scoreboard drift is suspected). After every full suite, update [docs/editor-testing/milestone-runs.md](docs/editor-testing/milestone-runs.md). Critical-only gates do not get a milestone row.
+- After edit-behavior moves: `bash scripts/test-keyboard-harness.sh -t critical --fast` must stay **36/36**. Full `--fast` when the slice claims broader coverage, and at **prudent intervals** otherwise (Phase boundaries, each lettered Phase 2 group A–D, or when critical flakes / scoreboard drift is suspected). After every full suite, update [docs/editor-testing/milestone-runs.md](docs/editor-testing/milestone-runs.md) (include **Patch LOC** = `wc -l third_party/keywriter/build-keywriter.sh`). Critical-only gates do not get a milestone row.
 - At most one Writerdeck binary deploy per session unless QML fails to launch.
 - Do not run edit-session and keyboard harness in parallel.
 - Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server).
