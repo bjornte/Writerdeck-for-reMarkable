@@ -8,7 +8,7 @@ Policy: [decisions.md](decisions.md) §3. Root queue: [TODO.md](../TODO.md) item
 
 `third_party/keywriter/build-keywriter.sh` rewrites upstream C++/QML with huge string patches every CI build. That is emergency architecture. **keywriter** (Qt 5 / C++ / QML) is the editor engine; **Writerdeck** is our on-device binary.
 
-CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) via `KEYWRITER_REPO` / `KEYWRITER_REF` in `build-keywriter.sh`, Dockerfile, and `build-keywriter.yml`. Patch script still applies unchanged.
+CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork file `edit_mac_helpers.qml.inc`; `build-keywriter.sh` inserts that file before `showLobby()` (props + Keys wiring still in the script).
 
 ## Priority
 
@@ -28,17 +28,17 @@ Quality is the paramount driver for this migration. Check patterns from similar 
 
 Do one lettered group per session (or per deploy cycle). After each group: remove the corresponding patches from `build-keywriter.sh`, rebuild, deploy, critical harness green.
 
-- [ ] **A — Caret, shift selection, backspace/delete**  
-  From script into fork: `handleMacArrow` horizontal/vertical shift (`shiftAnchor` / `shiftHead`), plain arrows, `handleMacBackspace` / word+line delete helpers. Critical scenarios that cover this group must stay green.
+- [x] **A — Caret, shift selection, backspace/delete**  
+  Helpers moved to fork [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`568ee3f`); script no longer embeds the string. Property decls + Keys.onPressed routing still in `build-keywriter.sh`. Wrap/undo/combo **bodies** rode along in the same file (B/C/D verification still open). Critical **36/36**; full suite **92/13** @ `14-29-52`.
 
 - [ ] **B — Wrap / visual line**  
-  `visualLineUpPos` / `visualLineDownPos`, wrap Home/End, related goal-x. Move as one bulk; wrap harness tag as proof for this slice.
+  Bodies already in `edit_mac_helpers.qml.inc`. Proof: wrap harness tag green; remove any leftover wrap-only script scraps if present.
 
 - [ ] **C — Undo / redo**  
-  Custom edit undo stack and Ctrl+Z / Shift+Ctrl+Z routing. Undo scenarios as proof.
+  Bodies already in `edit_mac_helpers.qml.inc`. Proof: undo scenarios; move undo property decls out of script when practical.
 
 - [ ] **D — Combos / polish**  
-  Alt/Ctrl motion, shift+alt/ctrl, remaining non-critical fails that belong here — only now.
+  Bodies already in `edit_mac_helpers.qml.inc`. Remaining non-critical fails that belong here — only now. Move Keys wiring / leftover script patches.
 
 ### Phase 3 — shrink script + ownership
 

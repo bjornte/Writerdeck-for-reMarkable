@@ -42,12 +42,12 @@ Using `build-keywriter.sh` as the patching layer is a constraint choice, not an 
 
 Prefer moving substantial QML/C++ edits into a maintained Writerdeck fork of keywriter and reducing `build-keywriter.sh` to build glue plus minimal deterministic patches. The long patch script is an emergency maintenance model, not a destination — do not wait for harness **105/105**, and do not spend the migration queue on leftover non-critical harness fails first.
 
-**Fork (owned):** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) — fork of `dps/remarkable-keywriter`, default branch `master`. CI clones that URL via `KEYWRITER_REPO` / `KEYWRITER_REF` (defaults in `build-keywriter.sh`, Dockerfile `ENV`, and `build-keywriter.yml`). Phase 1 pin verified: edit-session PASS, critical **36/36**. Patch script still applies unchanged. Handoff: [todo-handoff-keywriter-fork.md](todo-handoff-keywriter-fork.md).
+**Fork (owned):** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) — fork of `dps/remarkable-keywriter`, default branch `master`. CI clones that URL via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork `edit_mac_helpers.qml.inc` (Phase 2A); `build-keywriter.sh` inserts the file and still owns property decls + Keys wiring. Critical **36/36**; latest full suite **92/13**. Handoff: [todo-handoff-keywriter-fork.md](todo-handoff-keywriter-fork.md).
 
 Phasing ([TODO.md](../TODO.md) item 3):
 
 1. Pin CI to the fork with **no behavior change** — **done.**
-2. Move behavior from the patch script into forked C++/QML **by criticality**, in bulk groups that belong together (for example: caret + shift selection + backspace/delete; then wrap/visual line; then undo; then combos/gap polish). Critical editing paths first; remaining harness fails only when their feature group is the one being migrated.
+2. Move behavior from the patch script into forked C++/QML **by criticality** — **2A done** (helper bodies in fork); B/C/D are proof + remaining script scraps (props/Keys).
 3. Shrink the script to build glue; document fork ownership and upstream-merge policy here.
 
 Critical **36/36** means basic editing is gated green. Full **105/105** remains product sign-off. Neither blocks starting the fork; neither should reorder Phase 2 away from criticality-first migration.
