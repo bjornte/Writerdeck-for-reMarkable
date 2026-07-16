@@ -63,6 +63,9 @@ type Step struct {
 	SetCursor *int         `json:"setCursor,omitempty"`
 	Repeat    int          `json:"repeat,omitempty"`
 	Expect    *StateExpect `json:"expect,omitempty"`
+	// Reprepare re-writes scenario Content and runs harnessprepare (after mutating
+	// edits such as Backspace, before another absolute SetCursor block).
+	Reprepare bool `json:"reprepare,omitempty"`
 	// CaptureContentY stores live contentY after this step's keys/cmd.
 	CaptureContentY bool `json:"captureContentY,omitempty"`
 	// ExpectContentYEqCaptured requires contentY == last CaptureContentY.
@@ -377,6 +380,13 @@ func (h *Harness) RunScenario(sc Scenario) error {
 		label := step.Label
 		if label == "" {
 			label = fmt.Sprintf("step %d", i+1)
+		}
+		if step.Reprepare {
+			if err := h.sandboxPrepare(sc); err != nil {
+				return fmt.Errorf("%s: reprepare: %w", label, err)
+			}
+			modKeyPrimed = false
+			time.Sleep(stepPause)
 		}
 		if step.SetCursor != nil {
 			if err := h.setCursor(*step.SetCursor); err != nil {
