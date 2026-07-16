@@ -1,6 +1,6 @@
 # Scenario catalog
 
-All **105** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac/Linux-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
+All **107** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac/Linux-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
 
 **Motion/selection pattern** (reset caret between blocks — never grow-to-N-then-peel):
 
@@ -154,7 +154,7 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `redo-cleared-by-new-edit` | After Undo, a new edit clears the redo stack. |
 | `undo-after-select-delete` | Shift+Home select, delete, Undo restores collapsed caret at end. |
 
-## Gap coverage (19)
+## Gap coverage (21)
 
 | Scenario | Behavior |
 |----------|----------|
@@ -173,6 +173,8 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `gap-unicode-alt-backspace` | Alt+Backspace on `test résumé æøå` leaves `test résumé`. |
 | `gap-empty-doc-backspace` | Backspace on empty document is a no-op. |
 | `gap-alt-bs-with-selection` | Alt+Backspace with a word selection deletes the selection. |
+| `gap-shift-down-mid-wrapping-paras` | Mid-sentence Shift+Down grow / Shift+Up reverse across wrapping paragraphs (uni1/5, bi1+1/3+5/7+7). |
+| `gap-shift-up-mid-wrapping-paras` | Mid-sentence Shift+Up grow / Shift+Down reverse (partner). |
 
 ## Hardware page buttons (2)
 

@@ -233,3 +233,75 @@ func wordCaretPattern(seedWordIdx int, forwardKey, backKey Key, deltaWord int) [
 	out = append(out, Step{Expect: collapse(seed)})
 	return out
 }
+
+// shiftVisualProsePattern: Shift+Up/Down grow/reverse from a mid-prose caret.
+// Exact visual-line offsets depend on device width/font, so expects use a sticky
+// anchor plus per-step character bands (one visual line stays under maxStep).
+func shiftVisualProsePattern(seed int, growKey, reverseKey Key, towardLow bool) []Step {
+	const maxStep = 90
+	collapse := &StateExpect{Cursor: intp(seed), SelStart: intp(seed), SelEnd: intp(seed), SelLen: intp(0)}
+	growExpect := func(n int) *StateExpect {
+		if towardLow {
+			return &StateExpect{
+				Cursor:    intp(seed),
+				SelEnd:    intp(seed),
+				SelLenMin: intp(1),
+				SelLenMax: intp(n * maxStep),
+			}
+		}
+		return &StateExpect{
+			SelStart:  intp(seed),
+			CursorMin: intp(seed + 1),
+			CursorMax: intp(seed + n*maxStep),
+			SelLenMin: intp(1),
+			SelLenMax: intp(n * maxStep),
+		}
+	}
+	var out []Step
+	block := func(label string, growN, revN int, bi bool) {
+		out = append(out, Step{Label: "reset " + label, SetCursor: intp(seed)})
+		out = append(out, Step{Label: label + " grow x" + strconv.Itoa(growN), Keys: []Key{growKey}, Repeat: growN})
+		out = append(out, Step{Expect: growExpect(growN)})
+		if !bi {
+			return
+		}
+		out = append(out, Step{Label: label + " reverse x" + strconv.Itoa(revN), Keys: []Key{reverseKey}, Repeat: revN})
+		if revN == growN {
+			// Visual rows are not perfectly reversible at large N (wrap + goal x);
+			// bi1+1 collapses exactly, bi7+7 may leave at most one visual line.
+			if growN <= 1 {
+				out = append(out, Step{Expect: collapse})
+			} else {
+				out = append(out, Step{Expect: &StateExpect{
+					SelLenMax: intp(maxStep),
+					CursorMin: intp(seed - maxStep),
+					CursorMax: intp(seed + maxStep),
+				}})
+			}
+			return
+		}
+		over := revN - growN
+		if towardLow {
+			out = append(out, Step{Expect: &StateExpect{
+				SelStart:  intp(seed),
+				CursorMin: intp(seed + 1),
+				CursorMax: intp(seed + over*maxStep),
+				SelLenMin: intp(1),
+				SelLenMax: intp(over * maxStep),
+			}})
+			return
+		}
+		out = append(out, Step{Expect: &StateExpect{
+			SelEnd:    intp(seed),
+			Cursor:    intp(seed),
+			SelLenMin: intp(1),
+			SelLenMax: intp(over * maxStep),
+		}})
+	}
+	block("uni1", 1, 0, false)
+	block("uni5", 5, 0, false)
+	block("bi1+1", 1, 1, true)
+	block("bi3+5", 3, 5, true)
+	block("bi7+7", 7, 7, true)
+	return out
+}

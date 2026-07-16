@@ -2,17 +2,16 @@ package main
 
 const harnessWrapWidth = 320
 
-// Calibrated on device width=320 (2026-07-15, rM1 Writerdeck @ 1e62aff).
-// N=3/N=7 offsets extrapolated from the one-/two-row calibrations; re-run
-// `bash scripts/test-keyboard-harness.sh -m wrap -v` after font/width changes
-// and update these if they drift.
+// Calibrated on device width=320 (2026-07-16, visual-line next-y walk @ fee53bc/6dfade8).
+// Prior 20-char/row values matched the old height-based stepper, which skipped
+// every other visual row on this font/width. Re-run wrap tag after font changes.
 const (
 	wrapParagraphLen      = 199
-	wrapDownOneCursor     = 20  // Ctrl+Home, Down×1 on wrapParagraph
-	wrapDownTwoCursor     = 40  // Ctrl+Home, Down×2
-	wrapDownThreeCursor   = 60  // Ctrl+Home, Down×3
-	wrapDownFourCursor    = 80  // Ctrl+Home, Down×4 (linear ~20/row at W=320)
-	wrapDownSixCursor     = 120 // Ctrl+Home, Down×6
-	wrapDownSevenCursor   = 140 // Ctrl+Home, Down×7
-	wrapGoalColDownCursor = 24  // "ab"+word×35, col 2, Down×1 at W=320
+	wrapDownOneCursor     = 10  // Ctrl+Home, Downx1 on wrapParagraph
+	wrapDownTwoCursor     = 20  // Ctrl+Home, Downx2
+	wrapDownThreeCursor   = 30  // Ctrl+Home, Downx3
+	wrapDownFourCursor    = 40  // Ctrl+Home, Downx4
+	wrapDownSixCursor     = 60  // Ctrl+Home, Downx6
+	wrapDownSevenCursor   = 70  // Ctrl+Home, Downx7
+	wrapGoalColDownCursor = 14  // "ab"+wordx35, col 2, Downx1 at W=320
 )

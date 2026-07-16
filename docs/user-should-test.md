@@ -48,9 +48,7 @@ Do these after the kind of change named — not after every tiny docs edit.
 
 ### Keyboard editing (product sign-off)
 
-Full harness is green (**105/105**). You do **not** need to re-type harness cases by hand. One known gap scripts do not cover yet:
-
-- [ ] **Shift+Down/Up mid-sentence in long wrapping paragraphs** — put the caret in the middle of a sentence in a multi-line paragraph, hold Shift and press Down (then Up). Selection should grow/shrink one visual line at a time like a normal Mac/phone editor, including across the next paragraph. If it jumps oddly, note what you see.
+Full harness is green (**107/107**), including mid-sentence Shift+Up/Down in long wrapping paragraphs. You do **not** need to re-type harness cases by hand. If something still feels wrong while writing for real, note the keys you pressed and tell the agent.
 
 ---
 

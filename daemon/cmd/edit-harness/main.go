@@ -47,6 +47,7 @@ type StateExpect struct {
 	SelEnd      *int    `json:"selEnd,omitempty"`
 	SelLen      *int    `json:"selLen,omitempty"`
 	SelLenMin   *int    `json:"selLenMin,omitempty"`
+	SelLenMax   *int    `json:"selLenMax,omitempty"`
 	TextLen     *int    `json:"textLen,omitempty"`
 	Text        *string `json:"text,omitempty"` // full note body from /api/notes
 	Mode        *int    `json:"mode,omitempty"`
@@ -862,6 +863,12 @@ func matchExpect(got EditorState, exp StateExpect, noteText string) error {
 		have := got.selLen()
 		if have < *exp.SelLenMin {
 			errs = append(errs, fmt.Sprintf("selLenMin want >= %d got %d", *exp.SelLenMin, have))
+		}
+	}
+	if exp.SelLenMax != nil {
+		have := got.selLen()
+		if have > *exp.SelLenMax {
+			errs = append(errs, fmt.Sprintf("selLenMax want <= %d got %d", *exp.SelLenMax, have))
 		}
 	}
 	if len(errs) > 0 {

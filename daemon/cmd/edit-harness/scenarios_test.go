@@ -59,7 +59,7 @@ func TestScenarioContentValid(t *testing.T) {
 }
 
 func TestScenarioCount(t *testing.T) {
-	const want = 105
+	const want = 107
 	if n := len(AllScenarios()); n != want {
 		t.Fatalf("expected %d scenarios, got %d (update want after adding scenarios)", want, n)
 	}

@@ -102,7 +102,7 @@ On device Qt, plain Backspace via `query.select` + `query.insert("")` selects th
 
 Touch tap moves `query.cursorPosition` but did not update stored vertical goal; Up/Down then used a stale x. `onCursorPositionChanged` calls `rememberGoalX` (from `positionToRectangle`); harness simulates tap via `harnesssetcursor`.
 
-Vertical Up/Down uses visual x (`goalX` + `visualLineUpPos` / `visualLineDownPos`), not character offset within logical lines. Character-based goal column was wrong for proportional fonts and for wrapped lines.
+Vertical Up/Down uses visual x (`goalX` + `visualLineUpPos` / `visualLineDownPos`), not character offset within logical lines. Character-based goal column was wrong for proportional fonts and for wrapped lines. Do not step by full `positionToRectangle(pos).height` on mid-line carets — wrapped TextEdit often reports a multi-row height and Down jumps many visual lines; walk to the next distinct row `y` instead (wrap fixtures were recalibrated after this).
 
 Repeated Shift+Alt+Left/Right only selected one word: word boundaries were computed from `query.cursorPosition` (the anchor) instead of the moving selection head. Use `selectionExtendFrom(key)` plus `extendSelectionHorizontal` in `socketRouteKey` and `handleMacArrow`.
 

@@ -10,37 +10,28 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 | Milestone | Result | Note |
 |-----------|--------|------|
-| Latest full suite | **105 / 0** (0 prepare fail) of **105** | `21-21-15` @ fork `48b5d26`; report `docs/recon/test-keyboard-harness-2026-07-16T21-21-15.md` |
-| Prior full suite | **93 / 12** (0 prepare fail) of **105** | `18-57-31` @ Phase 3 Lobby/shell |
-| **Critical (gate)** | **36 / 36** | green @ `21-21-15` |
-| Wrap tag | **15 / 15** | Phase 2B |
-| Undo tag | **5 / 5** | Phase 2C @ `17-31-41` |
-| Best pre-rewrite | **89 / 4** (+1 prep) of **94** | `00-37-27` @ `bdccee9` |
-| Sign-off gate | **105/105 PASS** | met @ `21-21-15` |
+| Latest full suite | **107 / 0** of **107** | `23-12-40` @ fork `67656e1`; report `docs/recon/test-keyboard-harness-2026-07-16T23-12-40.md` |
+| Prior full suite | **105 / 0** of **105** | `21-21-15` first sign-off |
+| **Critical (gate)** | **36 / 36** | green @ `23-11-28` |
+| Wrap tag | **15 / 15** | recalibrated after visual-line fix |
+| Undo tag | **5 / 5** | Phase 2C |
+| Sign-off gate | **107/107 PASS** | met @ `23-12-40` |
 
-`test-edit-session.sh` PASS on deploy @ fork `48b5d26`. Do not run it in parallel with the keyboard harness.
+`test-edit-session.sh` PASS on deploy @ fork `67656e1`. Do not run it in parallel with the keyboard harness.
 
 ## Goal for next session
 
-Keyboard harness sign-off is **105/105**, but one real-world gap is open below. Prefer that, or Physical Home owner check. Keep critical **36/36** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
+Keyboard harness sign-off is **done** (**107/107**), including mid-sentence Shift+vertical across wrapping paragraphs. Prefer Physical Home owner check. Keep critical **36/36** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
 
-## Open product gaps
+## What `67656e1` fixed
 
-- [ ] **Shift+Up/Down mid-sentence across wrapping paragraphs** — From the middle of a sentence in a long wrapping paragraph, Shift+Down (and Up) across several visual lines / into the next paragraph does not match Mac/usual editor behaviour. Existing harness covers Shift+vertical on short `\n` lines (`cm-select-*`, `shift-*-shrinks`) and on **one** wrapped block mostly from the left edge (`wrap-shift-down-*`). Nothing asserts mid-sentence selection walking through multi-paragraph prose. Add a scenario on `fixtureProse` (mid-caret → Shift+Down×N / Shift+Up×N), then fix in the fork.
-
-## What `48b5d26` / `6a07cc6` fixed
-
-- Ctrl+Left/Right → document bounds (matched Ctrl+Up/Down).
-- Shift+Ctrl Right/Down via `shiftAnchor`/`shiftHead` (raw `query.select` collapsed on repeat).
-- `goalXTrackSuspended` so keepGoalColumn survives short-line landings.
-- Vertical shift snap only when the source line wraps visually; EOF forced select only on wrapped last lines.
-- Escape auto-release blocked in `main.cpp` (double `toggleMode` cancelled Esc).
-- Mid-word Alt+BS no longer eats the preceding space; harness Shift+Alt+Left expects fixed to 12-word line.
-- `scrollDown` clamps at `contentHeight - height`; hw fixture tall enough for page-9 overshoot under clamp.
+- Mid-sentence Shift+Down/Up jumped ~160 characters because `visualLineDownPos` stepped by a too-tall character box on wrapped lines.
+- Fix: walk to the next distinct row `y` with a small minGap; wrap fixture offsets recalibrated (~10 chars/row at W=320).
+- New scenarios: `gap-shift-down-mid-wrapping-paras`, `gap-shift-up-mid-wrapping-paras` (uni1/uni5 + bi1+1/bi3+5/bi7+7).
 
 ## Remaining fails
 
-None @ `21-21-15`.
+None @ `23-12-40`.
 
 ## Next (one batch)
 
@@ -56,14 +47,15 @@ Deploy budget: **one** Writerdeck binary deploy per session unless QML fails to 
 - Per-scenario deploy loops.
 - Parallel `test-edit-session.sh` + full harness.
 - Auto-sending Qt KeyRelease for Escape in `rmkbdInjectLine` (double-fires mode toggle).
+- Stepping visual lines by full `positionToRectangle(pos).height` on wrapped mid-line carets.
 
-## Harness inventory (105)
+## Harness inventory (107)
 
 Mode: **sandbox-prepare**. Tags: `-t critical`, `-t hw`, `-t read`, `-t wrap`, `-t undo`. Single scenario: `-s NAME --fast`. Step flag: `Reprepare` rewrites note + `harnessprepare` after mutating edits.
 
 ## Acceptance
 
 1. `-t critical --fast` → **36/36 PASS** (met)
-2. Full `--fast` → **105/105 PASS** (met @ `21-21-15`)
+2. Full `--fast` → **107/107 PASS** (met @ `23-12-40`)
 3. `test-edit-session.sh` PASS
 4. `journalctl -u writerdeck -n 30` clean after deploy

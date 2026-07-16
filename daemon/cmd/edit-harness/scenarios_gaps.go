@@ -205,5 +205,21 @@ func gapScenarios() []Scenario {
 				{Expect: &StateExpect{Cursor: intp(proseWordStarts[11]), TextLen: intp(fixtureProseLen - (proseWEditorEnd - proseWordStarts[11])), SelStart: intp(proseWordStarts[11]), SelEnd: intp(proseWordStarts[11])}},
 			},
 		},
+		{
+			// Mid-sentence Shift+Down/Up across wrapping paragraphs (owner report).
+			// Pattern: uni1/uni5 + bi1+1/bi3+5/bi7+7 both directions.
+			Name:    "gap-shift-down-mid-wrapping-paras",
+			Content: fixtureProse,
+			Steps: shiftVisualProsePattern(proseMidDocCaret,
+				keyArrow("ArrowDown", true, false, false),
+				keyArrow("ArrowUp", true, false, false), false),
+		},
+		{
+			Name:    "gap-shift-up-mid-wrapping-paras",
+			Content: fixtureProse,
+			Steps: shiftVisualProsePattern(prosePara2Mid,
+				keyArrow("ArrowUp", true, false, false),
+				keyArrow("ArrowDown", true, false, false), true),
+		},
 	}
 }
