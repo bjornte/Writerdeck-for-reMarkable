@@ -40,9 +40,13 @@ The four-year-old prebuilt binary dies at the loader (`libQt5Quick.so.5`). Qt is
 
 Using `build-keywriter.sh` as the patching layer is a constraint choice, not an ideal end state. It keeps builds reproducible from a clean upstream checkout, but it is brittle at this size: patch order and context coupling make regressions easier, and reviewability drops as more editor logic lives in generated string patches.
 
-Prefer moving substantial QML/C++ edits into a maintained Writerdeck fork of keywriter and reducing `build-keywriter.sh` to build glue plus minimal deterministic patches. The long patch script is an emergency maintenance model, not a destination — do not wait for harness **105/105**, and do not spend the migration queue on leftover non-critical harness fails first. Phasing ([TODO.md](../TODO.md) item 3):
+Prefer moving substantial QML/C++ edits into a maintained Writerdeck fork of keywriter and reducing `build-keywriter.sh` to build glue plus minimal deterministic patches. The long patch script is an emergency maintenance model, not a destination — do not wait for harness **105/105**, and do not spend the migration queue on leftover non-critical harness fails first.
 
-1. Pin CI to the fork with **no behavior change**.
+**Fork (owned):** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) — fork of `dps/remarkable-keywriter`, default branch `master`. CI clones that URL via `KEYWRITER_REPO` / `KEYWRITER_REF` (defaults in `build-keywriter.sh`, Dockerfile `ENV`, and `build-keywriter.yml`). Phase 1 pin verified: edit-session PASS, critical **36/36**. Patch script still applies unchanged. Handoff: [todo-handoff-keywriter-fork.md](todo-handoff-keywriter-fork.md).
+
+Phasing ([TODO.md](../TODO.md) item 3):
+
+1. Pin CI to the fork with **no behavior change** — **done.**
 2. Move behavior from the patch script into forked C++/QML **by criticality**, in bulk groups that belong together (for example: caret + shift selection + backspace/delete; then wrap/visual line; then undo; then combos/gap polish). Critical editing paths first; remaining harness fails only when their feature group is the one being migrated.
 3. Shrink the script to build glue; document fork ownership and upstream-merge policy here.
 

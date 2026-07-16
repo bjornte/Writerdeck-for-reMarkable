@@ -8,7 +8,7 @@ Policy: [decisions.md](decisions.md) §3. Root queue: [TODO.md](../TODO.md) item
 
 `third_party/keywriter/build-keywriter.sh` rewrites upstream C++/QML with huge string patches every CI build. That is emergency architecture. **keywriter** (Qt 5 / C++ / QML) is the editor engine; **Writerdeck** is our on-device binary.
 
-Build already supports a fork pin: `KEYWRITER_REPO` / `KEYWRITER_REF` in `build-keywriter.sh` (defaults: `dps/remarkable-keywriter` / `master`).
+CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) via `KEYWRITER_REPO` / `KEYWRITER_REF` in `build-keywriter.sh`, Dockerfile, and `build-keywriter.yml`. Patch script still applies unchanged.
 
 ## Priority
 
@@ -20,9 +20,9 @@ Quality is the paramount driver for this migration. Check patterns from similar 
 
 ### Phase 1 — pin, no behavior change
 
-- [ ] Create Writerdeck-owned fork of [remarkable-keywriter](https://github.com/dps/remarkable-keywriter) (org/user repo the project controls).
-- [ ] Wire CI / Dockerfile / `build-keywriter.sh` so builds clone that fork (`KEYWRITER_REPO` / `KEYWRITER_REF`), still applying today’s patch script unchanged.
-- [ ] One CI build + `fetch-keywriter-dist.sh` + `deploy-keywriter.sh -b` + `test-edit-session.sh` + `-t critical --fast` → **36/36**. Document repo URL and default ref in [decisions.md](decisions.md) §3.
+- [x] Create Writerdeck-owned fork of [remarkable-keywriter](https://github.com/dps/remarkable-keywriter) — **done:** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (default branch `master`).
+- [x] Wire CI / Dockerfile / `build-keywriter.sh` so builds clone that fork (`KEYWRITER_REPO` / `KEYWRITER_REF`), still applying today’s patch script unchanged.
+- [x] One CI build + `fetch-keywriter-dist.sh` + `deploy-keywriter.sh -b` + `test-edit-session.sh` + `-t critical --fast` → **36/36**. Documented in [decisions.md](decisions.md) §3.
 
 ### Phase 2 — move critical groups into forked source
 
