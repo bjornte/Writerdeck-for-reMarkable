@@ -1,8 +1,10 @@
 # LLM handoff: keyboard testing methodology review
 
-**Current state (2026-07-16):** Pattern rewrite complete — **105** scenarios (uni1/uni5/bi1+1/bi3+5/bi7+7). Device baseline **72/33/0** @ `10-01-42` (`f42bfbe`); critical **26/36**. Read [todo.md](todo.md) for open failures. Sign-off: `bash scripts/test-keyboard-harness.sh --fast` → **105/105 PASS**. Historical notes below may reference older suite sizes.
+**Current state (2026-07-16):** Pattern rewrite complete — **105** scenarios. Latest full suite **74/31/0** @ `11-38-40` (`7603357`); critical **26/36** (10 open). **For implementation work, read [todo.md](todo.md) first** — it has the critical failure table, what `7603357` tried, and the next batch plan. Sign-off: `-t critical --fast` → 36/36, then full `--fast` → 105/105.
 
-Hand this file to a fresh agent with no prior context. Project: Writerdeck for reMarkable 1 — Markdown editor on tablet, keystrokes over WebSocket/phone path, QML in `third_party/keywriter/build-keywriter.sh`, device harness in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.
+This file is mainly a **historical methodology review** (false-completion traps, harness design). Fresh coding sessions should start at [todo.md](todo.md), not here.
+
+Project: Writerdeck for reMarkable 1 — Markdown editor on tablet, keystrokes over WebSocket/phone path, QML in `third_party/keywriter/build-keywriter.sh`, device harness in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.
 
 Related: [todo.md](todo.md), [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) § Keyboard and selection.
 

@@ -90,6 +90,8 @@ A keyboard harness session should produce one failure list, not a deploy per gue
 
 Deploy budget while iterating: at most one Writerdeck binary deploy per agent session unless the tablet binary failed to launch (QML parse error, editor never connects). Harness-only and daemon-only changes never need `fetch-keywriter-dist.sh`.
 
+Do not run `test-edit-session.sh` and `test-keyboard-harness.sh` in parallel — both POST `/api/open` and can kill Writerdeck mid-suite (false fail-fast or HTTP 409). Run harness alone for keyboard sign-off; run edit-session after deploy before or after, sequentially.
+
 Edit-mode socket keys must reach `handleMacArrow` via QML `socketRouteKey()` invoked from the **inject thread** (`BlockingQueuedConnection`, same as `harnessprepare`). Routing `QKeyEvent` to `activeFocusItem` or nesting `invokeMethod` on the GUI thread dropped keys or deadlocked. Block **Ctrl/Alt nav releases** — Qt TextEdit defaults wiped `query.text` while the file on disk stayed intact.
 
 Harness `primeModifiedKeys` uses ArrowUp wake only — never End (EOF poison). Plain Ctrl+nav from cursor 0 is fixed in kernel (`22ad701`), not by scenario End steps.
