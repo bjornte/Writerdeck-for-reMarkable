@@ -72,7 +72,7 @@ Phone path and USB path are different inputs. The harness (`daemon/cmd/edit-harn
 
 Three tiers: `go test -C daemon -run TestTranslate` for modifier masks in `translate()`; the device harness for cursor/selection via `GET /api/test/editor-state` (Writerdeck publishes `editorstate` over the socket); manual USB checks after qmap or launcher changes.
 
-After QML selection or arrow-handler edits: rebuild Writerdeck, relaunch, run `bash scripts/test-keyboard-harness.sh`. After server test API edits: `deploy-rmkbd.sh` too. Per-run logs: `docs/recon/test-keyboard-harness-*.{md,txt}` (each run); consolidated history: [recon/harness-runs.md](recon/harness-runs.md); milestone table: [editor-testing/milestone-runs.md](editor-testing/milestone-runs.md).
+After QML selection or arrow-handler edits: rebuild Writerdeck, relaunch, run `bash scripts/test-keyboard-harness.sh`. After server test API edits: `deploy-rmkbd.sh` too. Per-run logs: `docs/recon/test-keyboard-harness-*.{md,txt}` (each run); consolidated history: [recon/harness-runs.md](recon/harness-runs.md); milestone table: [editor-testing/milestone-runs.md](editor-testing/milestone-runs.md) (columns are total/passed/failed for all tests and for critical).
 
 Sandbox-prepare (default): one editor launch per full run; between scenarios `PUT` note content plus `harnessprepare` (in-process reset, no quit). Do not use `POST /api/open` to reload the harness note — `saveAndLoad` writes the stale in-memory buffer over the `PUT` first. `--hard-reset` was removed from `test-keyboard-harness.sh`. Single scenario: `bash scripts/test-keyboard-harness.sh -s NAME --fast`.
 
@@ -102,7 +102,7 @@ On device Qt, plain Backspace via `query.select` + `query.insert("")` selects th
 
 Touch tap moves `query.cursorPosition` but did not update stored vertical goal; Up/Down then used a stale x. `onCursorPositionChanged` calls `rememberGoalX` (from `positionToRectangle`); harness simulates tap via `harnesssetcursor`.
 
-Vertical Up/Down uses visual x (`goalX` + `visualLineUpPos` / `visualLineDownPos`), not character offset within logical lines. Character-based goal column was wrong for proportional fonts and for wrapped lines. Do not step by full `positionToRectangle(pos).height` on mid-line carets — wrapped TextEdit often reports a multi-row height and Down jumps many visual lines; walk to the next distinct row `y` instead (wrap fixtures were recalibrated after this).
+Vertical Up/Down uses visual x (`goalX` + `visualLineUpPos` / `visualLineDownPos`), not character offset within logical lines. Character-based goal column was wrong for proportional fonts and for wrapped lines. Do not step by full `positionToRectangle(pos).height` on mid-line carets — wrapped TextEdit often reports a multi-row height and Down jumps many visual lines; walk to the next distinct row `y` instead (wrap fixtures were recalibrated after this). Short hard-newline Shift alone is not enough coverage for mid-sentence wrapping selection — critical gate includes `gap-shift-*-mid-wrapping-paras`.
 
 Repeated Shift+Alt+Left/Right only selected one word: word boundaries were computed from `query.cursorPosition` (the anchor) instead of the moving selection head. Use `selectionExtendFrom(key)` plus `extendSelectionHorizontal` in `socketRouteKey` and `handleMacArrow`.
 

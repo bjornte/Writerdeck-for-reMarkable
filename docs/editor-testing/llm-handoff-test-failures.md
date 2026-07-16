@@ -1,6 +1,6 @@
 # LLM handoff: keyboard testing methodology review
 
-**Current state (2026-07-16):** Pattern rewrite complete — **105** scenarios. Latest full suite **91/14/0** @ `12-41-15` (`377a053`); **critical 36/36**. Remaining 14 are non-critical (goal-col, combo, wrap-shift N=3, etc.). **For implementation work, read [todo.md](todo.md) first.** Sign-off: full `--fast` → 105/105.
+**Current state (2026-07-17):** Live scores and next work live in [todo.md](todo.md) — full suite **110/110/0**, critical **38/38/0** @ `00-29-12`. This file is a **historical methodology review** from the pattern-rewrite era (105 scenarios, critical 36). Do not treat the failure tables below as the current device baseline.
 
 This file is mainly a **historical methodology review** (false-completion traps, harness design). Fresh coding sessions should start at [todo.md](todo.md), not here.
 
@@ -159,7 +159,7 @@ Soft-reset full suite had known cascade failures (scenarios pass in isolation wi
 | `docs/editor-testing/milestone-runs.md` | Full-suite scoreboard — update after each `--fast` run |
 | `docs/recon/harness-runs.md` | Consolidated run log and per-scenario matrix |
 | `docs/recon/test-keyboard-harness-*.{md,txt}` | Per-run reports from each harness invocation; pre-2026-07-15 batch consolidated in harness-runs.md |
-| `daemon/cmd/edit-harness/scenarios_*.go` | 105 scenarios across core, combo, wrap, gap, hw, read, undo, touch, selection |
+| `daemon/cmd/edit-harness/scenarios_*.go` | Scenarios across core, combo, wrap, gap, hw, read, undo, touch, selection (see [todo.md](todo.md) / [scenario-catalog.md](scenario-catalog.md) for live count) |
 | `third_party/keywriter/build-keywriter.sh` | `handleMacArrow`, `lineDownPos` vs `positionToRectangle` |
 | Git log around `1a77f7b`–`d5ab632` | QML fixes vs doc "shipped" claims |
 | `docs/editor-testing/scenario-cookbook.md` § Priority order | Open kernel clusters vs ported scenarios |

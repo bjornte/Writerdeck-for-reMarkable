@@ -4,9 +4,9 @@ Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path
 
 **Start here for a new agent:** [todo.md](todo.md) (scores, critical failures, next batch, do-not-retry).
 
-Sign-off: **110/110 PASS** (`bash scripts/test-keyboard-harness.sh --fast`). Critical gate: **38/38 PASS** (`-t critical --fast`).
+Sign-off: **110/110/0** (`bash scripts/test-keyboard-harness.sh --fast`). Critical gate: **38/38/0** (`-t critical --fast`). Scoreboard columns use total/passed/failed.
 
-Current baseline: **110/0** of 110 @ `00-29-12` @ fork `67656e1`; critical **38/38**. Report: `docs/recon/test-keyboard-harness-2026-07-17T00-29-12.md`.
+Current baseline: **110/110/0** @ `00-29-12` @ fork `67656e1`; critical **38/38/0**. Report: `docs/recon/test-keyboard-harness-2026-07-17T00-29-12.md`.
 
 | File | Purpose |
 |------|---------|

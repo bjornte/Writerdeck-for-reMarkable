@@ -18,39 +18,22 @@ Both directions on applicable axes. Fixture includes ≥2 long wrapping paragrap
 
 Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**38**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go`.
 
-## Critical (36)
+## Critical (38)
 
-Must pass for basic editing. Tag: `critical`. Grouped by function; each row is one scenario.
+Must pass for basic editing. Tag: `critical`. Grouped by function; each row is one scenario. Live scoreboard: [milestone-runs.md](milestone-runs.md).
 
 | Group | Scenarios |
 |-------|-----------|
 | Caret / line home | `load-cursor-at-start`, `home-clears-selection`, `gap-up-at-doc-start` |
 | Plain arrows | `down-one-logical-line`, `cm-line-down-basic`, `cm-line-down-last-line`, `wrap-down-one-visual-line`, `wrap-up-from-visual-line-2`, `gap-plain-left-moves-caret`, `gap-plain-right-moves-caret` |
 | Doc bounds | `combo-ctrl-home`, `combo-ctrl-end` |
-| Shift+arrow select | `shift-right-from-home`, `shift-left-from-end`, `shift-right-after-home-no-stale-anchor`, `shift-down-after-arrow-down`, `shift-up-after-arrow-down`, `shift-left-repeat-from-end`, `shift-left-repeat-mid-doc`, `ctrl-shift-left-select-line`, `gap-collapse-selection-left`, `gap-collapse-selection-right` |
+| Shift+arrow select | `shift-right-from-home`, `shift-left-from-end`, `shift-right-after-home-no-stale-anchor`, `shift-down-after-arrow-down`, `shift-up-after-arrow-down`, `shift-left-repeat-from-end`, `shift-left-repeat-mid-doc`, `ctrl-shift-left-select-line`, `gap-collapse-selection-left`, `gap-collapse-selection-right`, `gap-shift-down-mid-wrapping-paras`, `gap-shift-up-mid-wrapping-paras` |
 | Backspace / Delete | `bs-plain`, `gap-delete-forward`, `gap-delete-with-selection`, `gap-empty-doc-backspace`, `alt-backspace-deletes-word`, `ctrl-backspace-deletes-line` |
 | Insert / replace | `gap-enter-new-line`, `gap-type-replaces-selection`, `gap-select-all` |
 | Undo / redo | `undo-redo-len`, `gap-undo-chain`, `gap-redo-shift-ctrl-z` |
 | Word nav | `combo-alt-left`, `combo-alt-right` |
 
-Not critical (still valuable): selection shrink (`shift-down-then-up-shrinks`, `shift-left-then-right-shrinks`, `shift-right-then-left-shrinks`, `shift-up-then-down-shrinks`), caret clamps at ends, hardware page scroll (`hw-page-*`), reading overscroll (`read-overscroll-clamps`), goal-column precision, touch tap placement, combo repeat, unicode word boundaries, most wrap/combo permutations.
-
-### Open on device @ `10-01-42` (`f42bfbe`)
-
-**26 / 36 critical PASS.** Ten critical scenarios failed:
-
-| Scenario | Layman |
-|----------|--------|
-| `shift-right-from-home` | Shift+Right then reverse does not shrink cleanly (bi 1+1 / 3+5) |
-| `shift-left-from-end` | Shift+Left then reverse — same |
-| `shift-right-after-home-no-stale-anchor` | Same pattern on stale-anchor variant |
-| `shift-down-after-arrow-down` | Shift+Down then Shift+Up shrink on vertical lines |
-| `shift-up-after-arrow-down` | Shift+Up then Shift+Down shrink |
-| `shift-left-repeat-from-end` | Shift+Left grow then reverse |
-| `shift-left-repeat-mid-doc` | Shift+Left mid-doc then reverse |
-| `alt-backspace-deletes-word` | Alt+Backspace word delete on prose |
-| `ctrl-backspace-deletes-line` | Ctrl+Backspace line delete on prose |
-| `wrap-up-from-visual-line-2` | Up after Down on wrapped paragraph |
+Not critical (still valuable): selection shrink on short lines (`shift-*-shrinks`), cross-paragraph Shift (`gap-shift-*-across-para-break`), mid-column short-line Shift (`gap-shift-down-mid-short-lines`), caret clamps at ends, hardware page scroll (`hw-page-*`), reading overscroll (`read-overscroll-clamps`), goal-column precision, touch tap placement, combo repeat, unicode word boundaries, most wrap/combo permutations.
 
 ## Core (9)
 

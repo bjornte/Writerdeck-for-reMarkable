@@ -48,7 +48,7 @@ Do these after the kind of change named — not after every tiny docs edit.
 
 ### Keyboard editing (product sign-off)
 
-Full harness is green (**107/107**), including mid-sentence Shift+Up/Down in long wrapping paragraphs. You do **not** need to re-type harness cases by hand. If something still feels wrong while writing for real, note the keys you pressed and tell the agent.
+Full harness is green (**110/110/0**), including mid-sentence Shift+Up/Down in long wrapping paragraphs and selection across paragraph breaks. You do **not** need to re-type harness cases by hand. If something still feels wrong while writing for real, note the keys you pressed and tell the agent.
 
 ---
 

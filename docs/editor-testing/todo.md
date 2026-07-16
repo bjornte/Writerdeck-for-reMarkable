@@ -8,20 +8,22 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 ## Current score (device)
 
+Scores are **total/passed/failed**.
+
 | Milestone | Result | Note |
 |-----------|--------|------|
-| Latest full suite | **110 / 0** of **110** | `00-29-12` @ fork `67656e1`; report `docs/recon/test-keyboard-harness-2026-07-17T00-29-12.md` |
-| Prior full suite | **107 / 0** of **107** | `23-12-40` mid-wrapping Shift fix |
-| **Critical (gate)** | **38 / 38** | green @ `00-24-22` (includes mid-wrapping Shift) |
-| Wrap tag | **15 / 15** | mid-sentence wrap-shift shrinks strengthened |
-| Undo tag | **5 / 5** | Phase 2C |
-| Sign-off gate | **110/110 PASS** | met @ `00-29-12` |
+| Latest full suite | **110/110/0** | `00-29-12` @ fork `67656e1`; report `docs/recon/test-keyboard-harness-2026-07-17T00-29-12.md` |
+| Prior full suite | **107/107/0** | `23-12-40` mid-wrapping Shift fix |
+| **Critical (gate)** | **38/38/0** | green @ `00-24-22` (includes mid-wrapping Shift) |
+| Wrap tag | **15/15/0** | mid-sentence wrap-shift shrinks strengthened |
+| Undo tag | **5/5/0** | Phase 2C |
+| Sign-off gate | **110/110/0** | met @ `00-29-12` |
 
 `test-edit-session.sh` PASS on restart @ `00-16-42`. Do not run it in parallel with the keyboard harness.
 
 ## Goal for next session
 
-Keyboard harness sign-off is **done** (**110/110**). Prefer Physical Home owner check. Keep critical **38/38** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
+Keyboard harness sign-off is **done** (**110/110/0**). Prefer Physical Home owner check. Keep critical **38/38/0** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
 
 ## Hardening @ `00-29-12` (harness only)
 
@@ -56,7 +58,7 @@ Mode: **sandbox-prepare**. Tags: `-t critical`, `-t hw`, `-t read`, `-t wrap`, `
 
 ## Acceptance
 
-1. `-t critical --fast` → **38/38 PASS** (met)
-2. Full `--fast` → **110/110 PASS** (met @ `00-29-12`)
+1. `-t critical --fast` → **38/38/0** (met)
+2. Full `--fast` → **110/110/0** (met @ `00-29-12`)
 3. `test-edit-session.sh` PASS
 4. `journalctl -u writerdeck -n 30` clean after deploy

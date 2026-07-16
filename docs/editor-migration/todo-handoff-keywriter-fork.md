@@ -1,6 +1,6 @@
 # Handoff: Keywriter fork migration
 
-**Migration complete.** Active rule: `.cursor/rules/writerdeck.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) item 3 (shipped). Keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md).
+**Migration complete.** Active rule: `.cursor/rules/writerdeck.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) item 3 (shipped). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (**110/110/0**, critical **38/38/0**). Phase checkmarks below keep the scores from the day each slice landed (critical was still 36 then).
 
 ## What we left
 

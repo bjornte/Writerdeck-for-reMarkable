@@ -2,7 +2,7 @@
 
 Consolidated from per-run recon files on 2026-07-15. Individual `test-keyboard-harness-*.md` reports pruned.
 
-Sign-off gate: **105/105 PASS** (`bash scripts/test-keyboard-harness.sh --fast`). Current device baseline: **72/33/0** of **105** @ `2026-07-16T10-01-42` (`f42bfbe`); critical **26/36**. Prior: **85/17/0** of 102 @ `01-54-49`; pre-rewrite best **89/94** @ `bdccee9` (`00-37-27`). Scoreboard: [editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md). Older rows below are the 62/83/90-era log.
+Sign-off gate: **110/110/0** (`bash scripts/test-keyboard-harness.sh --fast`); critical **38/38/0**. Live scoreboard: [editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md). This file keeps older session rows (62/83/90-era and early 105 dips); do not treat the table below as the current baseline.
 
 ## Run log (all sessions)
 
