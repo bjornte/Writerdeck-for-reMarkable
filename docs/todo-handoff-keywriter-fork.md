@@ -6,7 +6,7 @@ Policy: [decisions.md](decisions.md) §3. Root queue: [TODO.md](../TODO.md) item
 
 ## What we are leaving
 
-`third_party/keywriter/build-keywriter.sh` rewrites upstream C++/QML with huge string patches every CI build. That is emergency architecture. **keywriter** (Qt 5 / C++ / QML) is the editor engine; **Writerdeck** is our on-device binary.
+`third_party/keywriter/build-keywriter.sh` rewrites upstream C++/QML with huge string patches every CI build. That is emergency architecture. **keywriter** (Qt 5 / C++ / QML) is the editor engine; **Writerdeck** is our on-device binary. **QML** = screen and typing behavior; **C++** = startup, display, socket keys — see [architecture.md](architecture.md) § On the tablet.
 
 CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork file `edit_mac_helpers.qml.inc`; `build-keywriter.sh` inserts that file before `showLobby()` (props + Keys wiring still in the script).
 

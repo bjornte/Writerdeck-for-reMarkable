@@ -35,6 +35,8 @@ Under `/home/root/`:
 
 `Writerdeck` is the full-screen Markdown editor — our patched build of upstream [keywriter](https://github.com/dps/remarkable-keywriter) (*remarkable-keywriter*). Keywriter is the editor engine: a **Qt 5** app written in **C++** and **QML**. Built in CI from `third_party/keywriter/`.
 
+**C++ vs QML (this project):** Both live in the editor kernel (keywriter / our fork). **QML** is the screen and most typing behavior — layout, Lobby, caret, selection, wrap, undo helpers (`main.qml`, `edit_mac_helpers.qml.inc`). **C++** is the engine under that — starting the app, talking to the tablet display, and feeding keystrokes from our socket into Qt (`main.cpp`, patches). Day-to-day editing fixes usually land in QML; C++ when the plumbing itself must change.
+
 This patch pipeline is intentionally reproducible and also brittle. Most edit-mode behavior now depends on a large patching script (`third_party/keywriter/build-keywriter.sh`) that rewrites upstream C++ and QML on every build. That is emergency architecture, not the intended end state. Prefer migrating behavior into the Writerdeck fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) — **critical feature groups first**, in bulk transitions — and shrinking the script to build glue ([TODO.md](../TODO.md) item 3, [decisions.md](decisions.md) §3, [todo-handoff-keywriter-fork.md](todo-handoff-keywriter-fork.md)). If e-ink full-frame redraw becomes a problem later, see [improvements.md](improvements.md) § E-ink redraw (dirty-region ideas from yaft — not a terminal editor swap).
 
 `Writerdeck-launcher.sh` sets Qt and e-ink launch environment; the server spawns Writerdeck with `--editor`.

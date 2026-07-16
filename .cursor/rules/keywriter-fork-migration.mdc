@@ -5,9 +5,13 @@ alwaysApply: true
 
 # Keywriter fork migration (active)
 
-This session’s job is retiring the emergency patch script. Editor engine = **keywriter** (Qt 5 / C++ / QML). On-device binary = **Writerdeck**. Emergency layer = `third_party/keywriter/build-keywriter.sh`.
+This session’s job is retiring the emergency patch script. Editor engine = **keywriter** (Qt 5 / C++ / QML). On-device binary = **Writerdeck**. Emergency layer = `third_party/keywriter/build-keywriter.sh`. **QML** = screen + typing behavior; **C++** = startup / display / socket keys. Migration edits for caret/selection are QML in the fork — see [docs/architecture.md](docs/architecture.md) § On the tablet.
 
 Handoff (read first): [docs/todo-handoff-keywriter-fork.md](docs/todo-handoff-keywriter-fork.md). Policy: [docs/decisions.md](docs/decisions.md) §3. Queue: [TODO.md](TODO.md) item 3. Archived general rules: [writerdeck-backup.mdc](writerdeck-backup.mdc).
+
+## Audience and replies
+
+The owner is a **designer with basic code skills**, not a professional developer. Unless they ask for depth: keep chat replies **terse**, in **plain layman’s prose**, and lead with what happened / what to do next. Avoid jargon dumps, long architecture digressions, and “what we didn’t do” lists. Save technical detail for commits, handoff docs, and when asked.
 
 ## Drivers
 

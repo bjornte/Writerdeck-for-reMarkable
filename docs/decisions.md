@@ -34,7 +34,7 @@ Keywriter takes keyboard input through Qt QPA — there is no input fd to swap. 
 
 ## 3. Build keywriter from source
 
-**keywriter** (*remarkable-keywriter*) is the editor engine: a **Qt 5** app in **C++** and **QML**. **Writerdeck** is our on-device binary — that engine plus our patches.
+**keywriter** (*remarkable-keywriter*) is the editor engine: a **Qt 5** app in **C++** and **QML**. **Writerdeck** is our on-device binary — that engine plus our patches. In this project: **QML** for what you see and how edit keys behave; **C++** for app startup, display, and socket→keystroke plumbing. See [architecture.md](architecture.md) § On the tablet.
 
 The four-year-old prebuilt binary dies at the loader (`libQt5Quick.so.5`). Qt is static-linked into xochitl on current firmware, so `LD_LIBRARY_PATH` cannot rescue it. We cross-build from source in `ghcr.io/toltec-dev/qt:v3.3` (CI) and deploy a Qt5 runtime sysroot. Writerdeck renders via linuxfb on the rM1's real `/dev/fb0` — rm2fb is not needed.
 
