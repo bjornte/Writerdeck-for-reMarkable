@@ -1321,18 +1321,10 @@ s = s.replace(
     '    property real goalX: -1\n'
     '    property int lastShiftHorizKey: 0\n'
     '    property int shiftAnchor: -1\n'
-    '    property int shiftHead: -1\n'
-    '    property var editUndoStack: []\n'
-    '    property var editRedoStack: []\n'
-    '    property bool editUndoCapture: false\n'
-    '    property bool editSkipTextUndoPush: false\n'
-    '    property string _prevTextSnapshot: ""\n'
-    '    property int _prevTextLen: 0\n'
-    '    property int _prevCursor: 0\n'
-    '    property int _prevSelStart: 0\n'
-    '    property int _prevSelEnd: 0\n',
+    '    property int shiftHead: -1\n',
     1
 )
+# Phase 2C: undo/redo props live in fork edit_mac_helpers.qml.inc (inserted below).
 
 # 7c2b. Cursor delegate: hide the block while typing (visible only when strong).
 s, ncwv = re.subn(
@@ -1437,6 +1429,8 @@ if not _helpers.endswith('\n'):
     _helpers += '\n'
 assert 'function handleMacArrow' in _helpers, "edit_mac_helpers.qml.inc missing handleMacArrow"
 assert 'function handleMacBackspace' in _helpers, "edit_mac_helpers.qml.inc missing handleMacBackspace"
+assert 'property var editUndoStack' in _helpers, "edit_mac_helpers.qml.inc missing editUndoStack (Phase 2C)"
+assert 'function handleMacUndo' in _helpers, "edit_mac_helpers.qml.inc missing handleMacUndo"
 new7n_fn = _helpers + old7n_fn
 assert old7n_fn in s, "function showLobby not found (7n)"
 s = s.replace(old7n_fn, new7n_fn, 1)
