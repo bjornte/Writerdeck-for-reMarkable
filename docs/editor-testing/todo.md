@@ -10,19 +10,19 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 | Milestone | Result | Note |
 |-----------|--------|------|
-| Latest full suite | **92 / 13** (0 prepare fail) of **105** | `17-59-00` @ Phase 3 Connections (`db0781e`); report `docs/recon/test-keyboard-harness-2026-07-16T17-59-00.md` |
-| Prior full suite | **93 / 12** (0 prepare fail) of **105** | `17-47-29` @ Phase 2D |
-| **Critical (gate)** | **36 / 36** | green @ `17-57-45` |
+| Latest full suite | **93 / 12** (0 prepare fail) of **105** | `18-10-10` @ Phase 3 C++ infra (`f7c84e9`); report `docs/recon/test-keyboard-harness-2026-07-16T18-10-10.md` |
+| Prior full suite | **92 / 13** (0 prepare fail) of **105** | `17-59-00` @ Phase 3 Connections |
+| **Critical (gate)** | **36 / 36** | green @ `18-08-55` |
 | Wrap tag | **15 / 15** | Phase 2B |
 | Undo tag | **5 / 5** | Phase 2C @ `17-31-41` |
 | Best pre-rewrite | **89 / 4** (+1 prep) of **94** | `00-37-27` @ `bdccee9` |
 | Sign-off gate | **105/105 PASS** | `bash scripts/test-keyboard-harness.sh --fast`, single session |
 
-`test-edit-session.sh` PASS on deploy @ Phase 3 Connections. Do not run it in parallel with the keyboard harness.
+`test-edit-session.sh` PASS on deploy @ Phase 3 C++ infra. Do not run it in parallel with the keyboard harness.
 
 ## Goal for next session
 
-Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../editor-migration/todo-handoff-keywriter-fork.md), rule `keywriter-fork-migration.mdc`. Phase 2 A–D + Phase 3 Connections/Timers done; next is further script shrink + ownership docs. Do **not** first burn down the leftover fails. Keep critical **36/36** green on every behavior-moving deploy.
+Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../editor-migration/todo-handoff-keywriter-fork.md), rule `keywriter-fork-migration.mdc`. Phase 2 A–D + Phase 3 Connections/Timers + C++ infra done; next is Lobby/shell QML shrink + ownership docs. Do **not** first burn down the leftover fails. Keep critical **36/36** green on every behavior-moving deploy.
 
 
 ## What `377a053` fixed
@@ -31,7 +31,7 @@ Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../
 - Mid-scenario `Reprepare` after mutating alt/ctrl-backspace uni1 (stale absolute `SetCursor` on a shrunken buffer).
 - Wrap-up expects matched Down×7 then Up×3 geometry (~80, not ≤65).
 
-## Remaining fails @ `17-59-00` (13)
+## Remaining fails @ `18-10-10` (12)
 
 | Scenario | Likely area |
 |----------|-------------|
@@ -44,11 +44,10 @@ Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../
 | `bs-alt-word-mid` | mid-word Alt+BS (off by 1) |
 | `gap-alt-bs-with-selection` | same cluster as shift-alt-left |
 | `read-overscroll-clamps` | reading mode / Esc |
-| `shift-up-then-down-shrinks` | vertical reverse shrink (regressed vs `17-47-29`) |
 
 ## Next (one batch)
 
-1. Prefer Phase **3** (further shrink `build-keywriter.sh`; Connections/Timers now in fork) over burning down the leftover fails.
+1. Prefer Phase **3** (further shrink Lobby/shell QML in `build-keywriter.sh`; C++ infra now in fork) over burning down the leftover fails.
 2. Triage flakes with `-s NAME --fast` only when that group is in play.
 3. One push → CI → fetch → deploy → `test-edit-session.sh` → full `--fast` → update [milestone-runs.md](milestone-runs.md).
 
