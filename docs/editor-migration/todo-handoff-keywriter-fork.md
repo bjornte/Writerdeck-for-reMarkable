@@ -8,7 +8,7 @@ Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../.
 
 `third_party/keywriter/build-keywriter.sh` rewrites upstream C++/QML with huge string patches every CI build. That is emergency architecture. **keywriter** (Qt 5 / C++ / QML) is the editor engine; **Writerdeck** is our on-device binary. **QML** = screen and typing behavior; **C++** = startup, display, socket keys — see [../architecture.md](../architecture.md) § On the tablet.
 
-CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork file `edit_mac_helpers.qml.inc`; `build-keywriter.sh` inserts that file before `showLobby()` and injects a one-liner `handleMacKeysOnPressed` call (text-change Connections still in the script).
+CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork file `edit_mac_helpers.qml.inc` (includes cursor/autosave Timers and text-change Connections); `build-keywriter.sh` inserts that file before `showLobby()` and injects a one-liner `handleMacKeysOnPressed` call.
 
 ## Priority
 
@@ -35,14 +35,15 @@ Do one lettered group per session (or per deploy cycle). After each group: remov
   Bodies already in fork. Fixed Shift+Down EOF jump on wrapped paragraphs (`904ec77` — snap only when crossing a newline). Wrap tag **15/15**; critical **36/36** @ `17-13-30`. Harness expect for full reverse shrink updated. No wrap-only scraps left in `build-keywriter.sh`. Full suite **91/14** @ `17-14-44`.
 
 - [x] **C — Undo / redo**  
-  Bodies already in fork. Undo property decls moved into [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`6676614`); script asserts presence. Undo tag **5/5**; critical **36/36** @ `17-34-55`; full suite **90/15** @ `17-31-53`. Connections text-change capture still in `build-keywriter.sh`.
+  Bodies already in fork. Undo property decls moved into [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`6676614`); script asserts presence. Undo tag **5/5**; critical **36/36** @ `17-34-55`; full suite **90/15** @ `17-31-53`.
 
 - [x] **D — Combos / polish**  
-  Keys wiring + remaining edit/cursor/harness props moved into [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`b0f17a5` — `handleMacKeysOnPressed`); script injects one call and asserts. Critical **36/36** @ `17-46-14`; full suite **93/12** @ `17-47-29`. Connections text-change capture still in `build-keywriter.sh` (Phase 3).
+  Keys wiring + remaining edit/cursor/harness props moved into [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`b0f17a5` — `handleMacKeysOnPressed`); script injects one call and asserts. Critical **36/36** @ `17-46-14`; full suite **93/12** @ `17-47-29`.
 
 ### Phase 3 — shrink script + ownership
 
-- [ ] `build-keywriter.sh` is build glue only (clone, qmake, install, tiny deterministic patches if any).
+- [x] **Connections / Timers** — cursor Timer, autosave Timer, and text-change Connections moved into [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`db0781e`); script asserts. Critical edit paths no longer live only as script string patches.
+- [ ] `build-keywriter.sh` further shrink toward build glue only (clone, qmake, install, tiny deterministic patches if any). Remaining patches are lobby/shell/infra, not caret/selection/undo.
 - [ ] Document fork ownership, default branch, and how to merge upstream keywriter in [../decisions.md](../decisions.md) §3.
 - [ ] Restore `.cursor/rules/writerdeck-backup.mdc` → `writerdeck.mdc` (`alwaysApply: true`); retire or set `alwaysApply: false` on `keywriter-fork-migration.mdc`.
 

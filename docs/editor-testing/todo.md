@@ -22,7 +22,7 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 ## Goal for next session
 
-Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../editor-migration/todo-handoff-keywriter-fork.md), rule `keywriter-fork-migration.mdc`. Phase 2 A–D done; next is Phase 3 (shrink script). Do **not** first burn down the leftover fails. Keep critical **36/36** green on every behavior-moving deploy.
+Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../editor-migration/todo-handoff-keywriter-fork.md), rule `keywriter-fork-migration.mdc`. Phase 2 A–D + Phase 3 Connections/Timers done; next is further script shrink + ownership docs. Do **not** first burn down the leftover fails. Keep critical **36/36** green on every behavior-moving deploy.
 
 
 ## What `377a053` fixed
@@ -47,7 +47,7 @@ Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../
 
 ## Next (one batch)
 
-1. Prefer Phase **3** (shrink `build-keywriter.sh`; Connections still there) over burning down the leftover fails.
+1. Prefer Phase **3** (further shrink `build-keywriter.sh`; Connections/Timers now in fork) over burning down the leftover fails.
 2. Triage flakes with `-s NAME --fast` only when that group is in play.
 3. One push → CI → fetch → deploy → `test-edit-session.sh` → full `--fast` → update [milestone-runs.md](milestone-runs.md).
 

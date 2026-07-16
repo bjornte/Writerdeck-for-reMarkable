@@ -42,13 +42,13 @@ Using `build-keywriter.sh` as the patching layer is a constraint choice, not an 
 
 Prefer moving substantial QML/C++ edits into a maintained Writerdeck fork of keywriter and reducing `build-keywriter.sh` to build glue plus minimal deterministic patches. The long patch script is an emergency maintenance model, not a destination — do not wait for harness **105/105**, and do not spend the migration queue on leftover non-critical harness fails first.
 
-**Fork (owned):** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) — fork of `dps/remarkable-keywriter`, default branch `master`. CI clones that URL via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork `edit_mac_helpers.qml.inc` (Phase 2A–2D: bodies, props, `handleMacKeysOnPressed`); `build-keywriter.sh` inserts the file, injects a one-liner Keys call, and still owns text-change Connections. Critical **36/36**; latest full suite **93/12**; wrap tag **15/15**; undo tag **5/5**. Handoff: [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md).
+**Fork (owned):** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) — fork of `dps/remarkable-keywriter`, default branch `master`. CI clones that URL via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork `edit_mac_helpers.qml.inc` (Phase 2A–2D + Phase 3 Timers/Connections); `build-keywriter.sh` inserts the file and injects a one-liner Keys call. Critical **36/36**; latest full suite **93/12**; wrap tag **15/15**; undo tag **5/5**. Handoff: [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md).
 
 Phasing ([TODO.md](../TODO.md) item 3):
 
 1. Pin CI to the fork with **no behavior change** — **done.**
 2. Move behavior from the patch script into forked C++/QML **by criticality** — **2A–2D done.**
-3. Shrink the script to build glue; document fork ownership and upstream-merge policy here.
+3. Shrink the script further (Connections/Timers moved — `db0781e`); document fork ownership and upstream-merge policy here; restore general rules. Remaining script patches are lobby/shell/infra.
 
 Critical **36/36** means basic editing is gated green. Full **105/105** remains product sign-off. Neither blocks starting the fork; neither should reorder Phase 2 away from criticality-first migration.
 

@@ -1337,6 +1337,9 @@ assert 'property var editUndoStack' in _helpers, "edit_mac_helpers.qml.inc missi
 assert 'function handleMacUndo' in _helpers, "edit_mac_helpers.qml.inc missing handleMacUndo"
 assert 'property bool cursorStrong' in _helpers, "edit_mac_helpers.qml.inc missing cursorStrong (Phase 2D)"
 assert 'function handleMacKeysOnPressed' in _helpers, "edit_mac_helpers.qml.inc missing handleMacKeysOnPressed (Phase 2D)"
+assert 'id: cursorTimer' in _helpers, "edit_mac_helpers.qml.inc missing cursorTimer (Phase 3)"
+assert 'id: autosaveTimer' in _helpers, "edit_mac_helpers.qml.inc missing autosaveTimer (Phase 3)"
+assert 'Connections {' in _helpers and 'onTextChanged:' in _helpers, "edit_mac_helpers.qml.inc missing text-change Connections (Phase 3)"
 new7n_fn = _helpers + old7n_fn
 assert old7n_fn in s, "function showLobby not found (7n)"
 s = s.replace(old7n_fn, new7n_fn, 1)
@@ -1549,58 +1552,8 @@ assert end_anchor in s, "QML end structure (quick+body+Window close) not found"
 last_pos = s.rfind(end_anchor)
 s = s[:last_pos + len(quick_close)] + lobby_rect + '\n' + s[last_pos + len(quick_close):]
 
-# 8b. Cursor-state Timer and Connections: siblings of the Lobby Rectangle,
-#     inside the body Rectangle. Timer (500 ms, one-shot) sets cursorStrong=true
-#     when typing stops. Connections fires on every text change to hide the block
-#     and restart the timer.
-body_end = '    }\n}'
-assert body_end in s, "body+Window end not found (8b)"
-last_body_pos = s.rfind(body_end)
-cursor_state_block = (
-    '        Timer {\n'
-    '            id: autosaveTimer\n'
-    '            interval: 45000\n'
-    '            repeat: true\n'
-    '            running: !isLobby && currentFile !== "" && mode == 1\n'
-    '            onTriggered: autosaveTick()\n'
-    '        }\n'
-    '        Timer {\n'
-    '            id: cursorTimer\n'
-    '            interval: 500\n'
-    '            repeat: false\n'
-    '            onTriggered: cursorStrong = true\n'
-    '        }\n'
-    '        Connections {\n'
-    '            target: query\n'
-    '            onCursorPositionChanged: {\n'
-    '                if (harnessPrepareLock || mode != 1 || isLobby) return\n'
-    '                rememberGoalX(query.cursorPosition)\n'
-    '            }\n'
-    '            onTextChanged: {\n'
-    '                if (harnessPrepareLock || mode != 1 || isLobby) return\n'
-    '                if (editSkipTextUndoPush) {\n'
-    '                    editSkipTextUndoPush = false\n'
-    '                    syncEditUndoSnapshot()\n'
-    '                    cursorStrong = false\n'
-    '                    cursorTimer.restart()\n'
-    '                    return\n'
-    '                }\n'
-    '                var len = query.text.length\n'
-    '                if (!editUndoCapture && len !== _prevTextLen) {\n'
-    '                    pushEditUndoWithMerge({\n'
-    '                        text: _prevTextSnapshot,\n'
-    '                        cursor: _prevCursor,\n'
-    '                        selStart: _prevSelStart,\n'
-    '                        selEnd: _prevSelEnd\n'
-    '                    })\n'
-    '                }\n'
-    '                syncEditUndoSnapshot()\n'
-    '                cursorStrong = false\n'
-    '                cursorTimer.restart()\n'
-    '            }\n'
-    '        }\n'
-)
-s = s[:last_body_pos] + cursor_state_block + s[last_body_pos:]
+# 8b. Cursor/autosave Timers + text-change Connections live in fork
+#     edit_mac_helpers.qml.inc (Phase 3) — asserted when helpers are loaded.
 
 # rotateScreen(): rotate the display 90 degrees clockwise. Called by the C++
 # setrotation cmd: server pushes saved angle on connect or after USB rotation ack.
