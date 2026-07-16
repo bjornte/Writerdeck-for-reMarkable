@@ -1,9 +1,11 @@
 ---
-description: Writerdeck reMarkable 1 — constraints, deploy, mandatory on-device verify
-alwaysApply: true
+description: ARCHIVED general Writerdeck rules — restore after keywriter fork migration
+alwaysApply: false
 ---
 
-# Writerdeck for reMarkable 1
+# Writerdeck for reMarkable 1 (archived backup)
+
+Archived while `.cursor/rules/keywriter-fork-migration.mdc` is the active always-apply rule. Restore this file as `writerdeck.mdc` with `alwaysApply: true` when the fork migration is done.
 
 Markdown typewriter: Mac deploys Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Background: `TODO.md`, `docs/architecture.md`, `docs/decisions.md`, `DONE.md`, `docs/lessons.md`.
 

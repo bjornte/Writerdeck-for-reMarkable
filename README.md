@@ -87,7 +87,7 @@ Three pieces — the server and client are built here, the editor is third-party
 
 - **Writerdeck-server** — a small, static Go daemon at `/home/root/Writerdeck-server`. It serves an HTML capture page and a WebSocket, then forwards keystrokes into `/run/Writerdeck.sock`.
 - **the client** — a browser page (served by Writerdeck-server) that captures keystrokes and sends them over the LAN.
-- **Writerdeck** — the third-party [remarkable-keywriter](https://github.com/dps/remarkable-keywriter) editor, patched to read that socket. A full-screen, distraction-free Markdown editor that saves `.md` to `Writerdeck-user-documents/`.
+- **Writerdeck** — our patched build of [keywriter](https://github.com/dps/remarkable-keywriter) (*remarkable-keywriter*), the editor engine: a **Qt 5** app in **C++** and **QML**, patched to read the socket. Full-screen Markdown editor; saves `.md` to `Writerdeck-user-documents/`.
 
 Keystrokes reach the editor through a local socket rather than `/dev/uinput`: this tablet's kernel can't load uinput, so Writerdeck-server feeds the patched editor instead. The reasoning is in [docs/decisions.md](docs/decisions.md).
 

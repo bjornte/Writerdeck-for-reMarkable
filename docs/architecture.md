@@ -14,7 +14,7 @@ The reMarkable 1 has a large e-ink screen and a distraction-free OS, but no word
      v
  reMarkable 1
    Writerdeck-server — capture page, WebSocket, file API
-   Writerdeck — patched keywriter, reads /run/Writerdeck.sock, saves .md
+   Writerdeck — patched keywriter (Qt 5 / C++ / QML), reads /run/Writerdeck.sock, saves .md
 ```
 
 Keystrokes reach the editor through a local socket, not `/dev/uinput`. This kernel cannot load uinput; see [decisions.md](decisions.md) §1.
@@ -33,9 +33,9 @@ Under `/home/root/`:
 
 `Writerdeck-server` is the always-on Go daemon — WebSocket, HTTP API, session lifecycle, GitHub sync engine. Source in `daemon/`.
 
-`Writerdeck` is the full-screen Markdown editor, patched upstream [remarkable-keywriter](https://github.com/dps/remarkable-keywriter). Built in CI from `third_party/keywriter/`.
+`Writerdeck` is the full-screen Markdown editor — our patched build of upstream [keywriter](https://github.com/dps/remarkable-keywriter) (*remarkable-keywriter*). Keywriter is the editor engine: a **Qt 5** app written in **C++** and **QML**. Built in CI from `third_party/keywriter/`.
 
-This patch pipeline is intentionally reproducible and also brittle. Most edit-mode behavior now depends on a large patching script (`third_party/keywriter/build-keywriter.sh`) that rewrites upstream C++ and QML on every build. When upstream structure shifts, or when one local patch changes surrounding lines, later patches can fail or apply in surprising ways. Treat this as known technical debt, not a temporary inconvenience.
+This patch pipeline is intentionally reproducible and also brittle. Most edit-mode behavior now depends on a large patching script (`third_party/keywriter/build-keywriter.sh`) that rewrites upstream C++ and QML on every build. That is emergency architecture, not the intended end state. Prefer migrating behavior into a Writerdeck fork of keywriter — **critical feature groups first**, in bulk transitions — and shrinking the script to build glue ([TODO.md](../TODO.md) item 3, [decisions.md](decisions.md) §3). Do not wait for harness **105/105**, and do not clear leftover non-critical fails before moving the critical kernel paths. If e-ink full-frame redraw becomes a problem later, see [improvements.md](improvements.md) § E-ink redraw (dirty-region ideas from yaft — not a terminal editor swap).
 
 `Writerdeck-launcher.sh` sets Qt and e-ink launch environment; the server spawns Writerdeck with `--editor`.
 

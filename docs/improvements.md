@@ -12,6 +12,10 @@ More VS Code-like list indentation; optional cursor block beside the active line
 
 WYSIWYG Markdown in edit mode (large headings, bold, italic without visible `**` / `#`) is not planned — see [decisions.md](decisions.md) §26. Esc/read mode already renders sundown output.
 
+## E-ink redraw (future)
+
+Stay on keywriter for the editor; do not switch the product to a terminal stack such as [yaft](https://github.com/uobikiemukot/yaft). If full-frame Qt updates become too slow or flickery on the rM1, borrow **dirty-region / cell-damage** update ideas from framebuffer terminals like yaft — refresh only what changed — inside the keywriter/linuxfb path. Not a candidate to replace Lobby or the Markdown editor itself.
+
 ## Phone Markdown mirror (future)
 
 While editing on e-ink, show the open note rendered as Markdown on the phone — read-only context, not a second editor. Tapping a word in that view could move the tablet cursor there and scroll that section into view on e-ink. Depends on cursor position over the socket (already published for the keyboard harness) and a rendered Markdown pane on the phone.

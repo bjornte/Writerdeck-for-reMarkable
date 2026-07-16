@@ -13,7 +13,7 @@ CodeMirror uses inline markers in one string:
 
 Harness uses byte offsets in plain UTF-8 (ASCII in these cases). `\n` is one character. After each key step, assert `cursor`, `selStart`, `selEnd`, `textLen`, optional `selLen`.
 
-Writerdeck maps Meta to Ctrl for Mac-style shortcuts over the phone path ([decisions.md](../decisions.md) §2).
+Writerdeck maps Meta to Ctrl for Mac/Linux-style shortcuts over the phone path ([decisions.md](../decisions.md) §2). Chords are Control/Alt (USB Linux keyboards work as-is; Mac ⌘ is not required).
 
 ## Port template
 

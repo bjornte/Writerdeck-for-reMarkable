@@ -16,6 +16,8 @@ Reference for the project. Test script output goes in `recon/` — gitignored te
 
 `handoff-physical-home-input.md` — agent handoff for exclusive gpio grab (remove `suppressNextHomeKey`).
 
+`todo-handoff-keywriter-fork.md` — agent handoff for migrating critical edit behavior out of `build-keywriter.sh` into a keywriter fork (one slice per session).
+
 `todo-install-onboarding.md` — visitor install friction: README, releases, preflight/install scripts.
 
 `editor-testing/` — scenario catalog ([scenario-catalog.md](editor-testing/scenario-catalog.md)), harness handoff ([todo.md](editor-testing/todo.md)), scoreboard ([milestone-runs.md](editor-testing/milestone-runs.md)), run history ([recon/harness-runs.md](recon/harness-runs.md)).
@@ -24,4 +26,4 @@ Reference for the project. Test script output goes in `recon/` — gitignored te
 
 `manual-cleanup-tersify-prompts-at-intervals.md` — periodic doc cleanup prompts.
 
-External: [remarkable-keywriter](https://github.com/dps/remarkable-keywriter) · [input docs](https://remarkable.guide/devel/device/input.html) · [awesome-reMarkable](https://github.com/reHackable/awesome-reMarkable)
+External: [keywriter](https://github.com/dps/remarkable-keywriter) (Qt 5 / C++ / QML editor engine; we ship it as Writerdeck) · [input docs](https://remarkable.guide/devel/device/input.html) · [awesome-reMarkable](https://github.com/reHackable/awesome-reMarkable)

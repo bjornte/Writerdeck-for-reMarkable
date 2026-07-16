@@ -2,7 +2,7 @@
 
 Give this file to a fresh agent. Goal: one physical Home press → one handler. No timers, no pairing flags.
 
-Read first: [architecture.md](architecture.md), [decisions.md](decisions.md) §8 (two-level Home), `.cursor/rules/writerdeck.mdc` (deploy verification).
+Read first: [architecture.md](architecture.md), [decisions.md](decisions.md) §8 (two-level Home), `.cursor/rules/writerdeck-backup.mdc` (deploy verification; migration rule may be active instead).
 
 ## Problem
 

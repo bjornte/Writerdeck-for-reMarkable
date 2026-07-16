@@ -1,6 +1,6 @@
 # TODO: Keyboard editing + harness
 
-**Fresh-agent entry point.** Mac-style editing in Writerdeck (`handleMacArrow`, `handleMacBackspace`, `handleMacEditKeys` in `third_party/keywriter/build-keywriter.sh`). Drive fixes through the device harness — not manual Lobby typing.
+**Fresh-agent entry point.** Mac/Linux-style editing in Writerdeck (Ctrl/Alt chords — same on USB Linux keyboards and phone path; QML helpers still named `handleMacArrow`, `handleMacBackspace`, `handleMacEditKeys` in `third_party/keywriter/build-keywriter.sh`). Drive fixes through the device harness — not manual Lobby typing.
 
 Read first: this file, [milestone-runs.md](milestone-runs.md), [lessons.md](../lessons.md) § Keyboard and selection, [decisions.md](../decisions.md) §22. Scenario names: [scenario-catalog.md](scenario-catalog.md). Porting sources: [scenario-cookbook.md](scenario-cookbook.md).
 
@@ -10,8 +10,8 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 | Milestone | Result | Note |
 |-----------|--------|------|
-| Latest full suite | **91 / 14** (0 prep) of **105** | `12-41-15` @ `377a053`; report `docs/recon/test-keyboard-harness-2026-07-16T12-41-15.md` |
-| Prior full suite | **74 / 31** (0 prep) of **105** | `11-38-40` @ `7603357` |
+| Latest full suite | **91 / 14** (0 prepare fail) of **105** | `12-41-15` @ `377a053`; report `docs/recon/test-keyboard-harness-2026-07-16T12-41-15.md` |
+| Prior full suite | **74 / 31** (0 prepare fail) of **105** | `11-38-40` @ `7603357` |
 | **Critical (gate)** | **36 / 36** | green @ `377a053` |
 | Best pre-rewrite | **89 / 4** (+1 prep) of **94** | `00-37-27` @ `bdccee9` |
 | Sign-off gate | **105/105 PASS** | `bash scripts/test-keyboard-harness.sh --fast`, single session |
@@ -20,7 +20,8 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 ## Goal for next session
 
-Clear the remaining **14** non-critical fails in one QML/harness batch, then full `--fast` → **105/105**. Critical is already green — do not regress it.
+Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../todo-handoff-keywriter-fork.md), rule `keywriter-fork-migration.mdc`. Order: critical feature groups in bulk (A→D). Do **not** first burn down the 14 leftover fails. Keep critical **36/36** green on every behavior-moving deploy.
+
 
 ## What `377a053` fixed
 

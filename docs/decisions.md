@@ -30,15 +30,23 @@ This kernel cannot load `/dev/uinput`. Open returns ENODEV; trimmed kernel expor
 
 ## 2. Synthetic QKeyEvent injection
 
-Keywriter takes keyboard input through Qt QPA — there is no input fd to swap. A socket reader in `main.cpp` posts synthetic `QKeyEvent`s to `focusWindow()`. The browser sends full JSON to the daemon; the daemon sends integer Unicode codepoints to keywriter as `{"t":"text","cp":N}`. The keymap lives browser-side, where layout is already resolved.
+Keywriter takes keyboard input through Qt QPA — there is no input fd to swap. A socket reader in `main.cpp` posts synthetic `QKeyEvent`s to `focusWindow()`. The browser sends full JSON to the daemon; the daemon sends integer Unicode codepoints to keywriter as `{"t":"text","cp":N}`. The keymap lives browser-side, where layout is already resolved. Edit bindings are Mac/Linux-style: Control and Alt chords (Meta from a Mac-like phone keyboard maps to Ctrl). The tablet being Linux does not require a separate “Linux-only” shortcut set — USB Linux keyboards already use Ctrl/Alt.
 
 ## 3. Build keywriter from source
+
+**keywriter** (*remarkable-keywriter*) is the editor engine: a **Qt 5** app in **C++** and **QML**. **Writerdeck** is our on-device binary — that engine plus our patches.
 
 The four-year-old prebuilt binary dies at the loader (`libQt5Quick.so.5`). Qt is static-linked into xochitl on current firmware, so `LD_LIBRARY_PATH` cannot rescue it. We cross-build from source in `ghcr.io/toltec-dev/qt:v3.3` (CI) and deploy a Qt5 runtime sysroot. Writerdeck renders via linuxfb on the rM1's real `/dev/fb0` — rm2fb is not needed.
 
 Using `build-keywriter.sh` as the patching layer is a constraint choice, not an ideal end state. It keeps builds reproducible from a clean upstream checkout, but it is brittle at this size: patch order and context coupling make regressions easier, and reviewability drops as more editor logic lives in generated string patches.
 
-If keyboard/editing behavior keeps requiring deep patch surgery, prefer moving substantial QML/C++ edits into a maintained Writerdeck fork of keywriter and reducing `build-keywriter.sh` to build glue plus minimal deterministic patches.
+Prefer moving substantial QML/C++ edits into a maintained Writerdeck fork of keywriter and reducing `build-keywriter.sh` to build glue plus minimal deterministic patches. The long patch script is an emergency maintenance model, not a destination — do not wait for harness **105/105**, and do not spend the migration queue on leftover non-critical harness fails first. Phasing ([TODO.md](../TODO.md) item 3):
+
+1. Pin CI to the fork with **no behavior change**.
+2. Move behavior from the patch script into forked C++/QML **by criticality**, in bulk groups that belong together (for example: caret + shift selection + backspace/delete; then wrap/visual line; then undo; then combos/gap polish). Critical editing paths first; remaining harness fails only when their feature group is the one being migrated.
+3. Shrink the script to build glue; document fork ownership and upstream-merge policy here.
+
+Critical **36/36** means basic editing is gated green. Full **105/105** remains product sign-off. Neither blocks starting the fork; neither should reorder Phase 2 away from criticality-first migration.
 
 ## 4. No Toltec
 
@@ -186,4 +194,4 @@ Notes created or opened by device regression scripts (`test-edit-session.sh`, `t
 
 Firmware OTA may wipe the systemd unit and regenerate the SSH password — recovery is re-deploy and re-enable. USB `us`/`no` qmaps and Lobby layout picker are shipped and device-verified. Encrypted notes subset is implemented (decisions.md §31). Integrity residuals: [integrity-audit.md](integrity-audit.md). uinput is closed — see decision 1. Go must be on the Mac. Rootfs is about 96% full; everything we ship lives on `/home/root/`. Do not resize rootfs — A/B OTA scheme, brick risk.
 
-The editor patch stack is also an active risk. It works today, but complexity is concentrated in one large patching script. A prolonged period of keyboard regressions without durable score improvement should be treated as a signal to invest in a fork-first maintenance model.
+The editor patch stack is an active architectural risk: too much behavior lives as generated string patches in one script. Migrate to a Writerdeck fork of keywriter (decision 3, [TODO.md](../TODO.md) item 3) by moving **critical feature groups first**, not by clearing the leftover harness fail list first. Harness **105/105** remains product sign-off; it does not set migration order.
