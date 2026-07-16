@@ -10,13 +10,14 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 | Milestone | Result | Note |
 |-----------|--------|------|
-| Latest full suite | **91 / 14** (0 prepare fail) of **105** | `12-41-15` @ `377a053`; report `docs/recon/test-keyboard-harness-2026-07-16T12-41-15.md` |
-| Prior full suite | **74 / 31** (0 prepare fail) of **105** | `11-38-40` @ `7603357` |
-| **Critical (gate)** | **36 / 36** | green @ `377a053` |
+| Latest full suite | **91 / 14** (0 prepare fail) of **105** | `17-14-44` @ Phase 2B (fork `904ec77`); report `docs/recon/test-keyboard-harness-2026-07-16T17-14-44.md` |
+| Prior full suite | **92 / 13** (0 prepare fail) of **105** | `14-29-52` @ Phase 2A |
+| **Critical (gate)** | **36 / 36** | green @ `17-13-30` (also @ `377a053`) |
+| Wrap tag | **15 / 15** | Phase 2B |
 | Best pre-rewrite | **89 / 4** (+1 prep) of **94** | `00-37-27` @ `bdccee9` |
 | Sign-off gate | **105/105 PASS** | `bash scripts/test-keyboard-harness.sh --fast`, single session |
 
-`test-edit-session.sh` PASS on deploy @ `377a053`. Do not run it in parallel with the keyboard harness.
+`test-edit-session.sh` PASS on deploy @ Phase 2B. Do not run it in parallel with the keyboard harness.
 
 ## Goal for next session
 
@@ -29,10 +30,11 @@ Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../
 - Mid-scenario `Reprepare` after mutating alt/ctrl-backspace uni1 (stale absolute `SetCursor` on a shrunken buffer).
 - Wrap-up expects matched Down×7 then Up×3 geometry (~80, not ≤65).
 
-## Remaining fails @ `12-41-15` (14)
+## Remaining fails @ `17-14-44` (14)
 
 | Scenario | Likely area |
 |----------|-------------|
+| `shift-up-after-arrow-down` | intermittent `--fast` flake (passes in dedicated critical runs) |
 | `cm-line-down-goal-col` | goalX / shorter-line landing |
 | `cm-select-line-down-mid` | vertical shift snap mid-line |
 | `cm-select-down-up-doc-end` | EOF vertical selection |
@@ -40,10 +42,9 @@ Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../
 | `combo-shift-alt-left` (+ repeat) | word-select head vs `shiftHead` |
 | `combo-shift-ctrl-right` / `combo-shift-ctrl-down` | shift+ctrl extend |
 | `bs-alt-word-mid` | mid-word Alt+BS (off by 1) |
-| `wrap-shift-down-one-visual` | Shift+Down N=3 jumps to EOF |
+| `gap-plain-left-in-paragraph` | intermittent off-by-one |
 | `gap-alt-bs-with-selection` | same cluster as shift-alt-left |
 | `read-overscroll-clamps` | reading mode / Esc |
-| `shift-left-then-right-shrinks` | selection alias; uni5 off-by-one |
 
 ## Next (one batch)
 

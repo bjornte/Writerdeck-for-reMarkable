@@ -83,13 +83,13 @@ Development on the tablet is done over SSH from a machine on the same Wi-Fi. To 
 
 ## Main components
 
-Three pieces — the server and client are built here; the editor is a forked third-party app:
+Three pieces — the server and client are built here; the editor is a forked third-party app. Go is compiled on the Mac/CI into a normal ARM binary that runs on the tablet (no Go runtime on-device). QML is only the editor UI — not everything that targets the reMarkable.
 
-- **Writerdeck-server** — a small, static Go daemon at `/home/root/Writerdeck-server`. It serves an HTML capture page and a WebSocket, then forwards keystrokes into `/run/Writerdeck.sock`.
+- **Writerdeck-server** — a small, static Go daemon at `/home/root/Writerdeck-server`. Always-on, no screen: HTML capture page, WebSocket, files/sync/PIN, then forwards keystrokes into `/run/Writerdeck.sock`.
 - **the client** — a browser page (served by Writerdeck-server) that captures keystrokes and sends them over the LAN.
 - **Writerdeck** — full-screen Markdown editor on the tablet. Built from our fork of [keywriter](https://github.com/dps/remarkable-keywriter) (*remarkable-keywriter*): a **Qt 5** app. Building blocks: **QML** (screen + typing/selection/undo) and **C++** (startup, e-ink, socket keystrokes). Owned fork: [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). Saves `.md` to `Writerdeck-user-documents/`.
 
-Keystrokes reach the editor through a local socket rather than `/dev/uinput`: this tablet's kernel can't load uinput, so Writerdeck-server feeds the patched editor instead. The reasoning is in [docs/decisions.md](docs/decisions.md).
+Keystrokes reach the editor through a local socket rather than `/dev/uinput`: this tablet's kernel can't load uinput, so Writerdeck-server feeds the patched editor instead. The reasoning is in [docs/decisions.md](docs/decisions.md). More detail: [docs/architecture.md](docs/architecture.md).
 
 
 ## Repo layout

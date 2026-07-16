@@ -81,8 +81,10 @@ func wrapScenarios() []Scenario {
 				{Expect: &StateExpect{SelLenMin: intp(1), TextLen: intp(n)}},
 				{Label: "shrink shift+up x1 (N=1)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 1},
 				{Expect: &StateExpect{SelLenMin: intp(1), TextLen: intp(n)}},
-				{Label: "shrink shift+up x2 more (N=3)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 2},
-				{Expect: &StateExpect{SelLenMin: intp(1), TextLen: intp(n)}},
+				// Full reverse of visual Shift+Down×3 collapses (old expect kept
+				// SelLenMin because buggy EOF jump made 3 ups leave a leftover).
+				{Label: "shrink shift+up x2 more (N=3 full reverse)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 2},
+				{Expect: &StateExpect{Cursor: intp(wrapDownTwoCursor), SelStart: intp(wrapDownTwoCursor), SelEnd: intp(wrapDownTwoCursor), TextLen: intp(n)}},
 			},
 		},
 		{

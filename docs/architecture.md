@@ -19,6 +19,8 @@ The reMarkable 1 has a large e-ink screen and a distraction-free OS, but no word
 
 Keystrokes reach the editor through a local socket, not `/dev/uinput`. This kernel cannot load uinput; see [decisions.md](decisions.md) §1.
 
+**Who does what:** Two programs on the tablet, plus the phone page. **Writerdeck-server** is Go compiled ahead of time into one static ARM binary — always-on, no screen: Wi‑Fi, files, sync, PIN, launching the editor. **Writerdeck** is the full-screen Qt app (QML for what you see and typing feel; C++ for startup, display, socket keys). **Phone** is HTML/JS served by the daemon. They meet over `/run/Writerdeck.sock`. “On the reMarkable” does not mean “must be QML.”
+
 ## Document integrity
 
 Writerdeck exists to produce durable Markdown notes. Before shipping anything that touches notes, saves, opens, sync, CRUD, or editor lifecycle, ask: can this lose text, write wrong bytes, or overwrite without the user knowing?
