@@ -9,11 +9,11 @@ Keystrokes reach the editor over `/run/Writerdeck.sock`, not uinput ([docs/decis
 ## Next unchecked
 
 1. Physical Home — single input path (exclusive gpio grab so page buttons and Home are not confused with keyboard keys). Handoff: [docs/todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md).
-2. Keyboard editing — harness done (**105** scenarios). Critical gate green (**36/36**); full suite **90/15** @ `17-31-53` (Phase 2C; undo tag **5/5**). Product sign-off still **105/105** — [docs/editor-testing/todo.md](docs/editor-testing/todo.md). Do not prioritize burning down the leftover fails ahead of the keywriter fork.
+2. Keyboard editing — harness done (**105** scenarios). Critical gate green (**36/36**); full suite **93/12** @ `17-47-29` (Phase 2D). Product sign-off still **105/105** — [docs/editor-testing/todo.md](docs/editor-testing/todo.md). Do not prioritize burning down the leftover fails ahead of Phase 3.
 3. Keywriter fork migration — **preferred path out of patch-script debt.** Handoff: [docs/editor-migration/todo-handoff-keywriter-fork.md](docs/editor-migration/todo-handoff-keywriter-fork.md). Rule: `.cursor/rules/keywriter-fork-migration.mdc`. Policy: [docs/decisions.md](docs/decisions.md) §3.
-   - **Fork:** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) — CI pinned; helpers in `edit_mac_helpers.qml.inc` (Phase 2A–2C done).
-   - **Phase 2 (next):** D Keys wiring / leftover fails. Do not first fix leftover harness fails.
-   - **Phase 3:** shrink script; restore general `writerdeck.mdc` rule.
+   - **Fork:** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) — CI pinned; helpers in `edit_mac_helpers.qml.inc` (Phase 2A–2D done).
+   - **Phase 2:** done (A–D).
+   - **Phase 3 (next):** shrink script to build glue; document fork ownership; restore general `writerdeck.mdc` rule.
 
 ## Open question
 
@@ -22,6 +22,6 @@ Stay firmware-update-current? Each OTA resets the SSH password and may wipe the 
 ## Resume prompt
 
 > Project: reMarkable 1 Wi-Fi Markdown typewriter. Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); patched keywriter → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Mac deploys; iPhone uses.
-> Shipped: [DONE.md](DONE.md). Next: **keywriter fork Phase 2D** — Keys wiring; handoff [todo-handoff-keywriter-fork.md](docs/editor-migration/todo-handoff-keywriter-fork.md). Physical Home later. Keyboard **105/105** is product sign-off only. Integrity: [integrity-audit.md](docs/integrity-audit.md).
+> Shipped: [DONE.md](DONE.md). Next: **keywriter fork Phase 3** — shrink patch script; handoff [todo-handoff-keywriter-fork.md](docs/editor-migration/todo-handoff-keywriter-fork.md). Physical Home later. Keyboard **105/105** is product sign-off only. Integrity: [integrity-audit.md](docs/integrity-audit.md).
 > Read: architecture, decisions, DONE, lessons, browser-vs-tablet, integrity-audit. Device: `secrets/remarkable.local.env` (`RM_HOST_WIFI`).
 > Constraints: no jailbreak/OTA/Toltec; `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`.
