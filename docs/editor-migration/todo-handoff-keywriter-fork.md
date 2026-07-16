@@ -8,7 +8,7 @@ Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../.
 
 `third_party/keywriter/build-keywriter.sh` rewrites upstream C++/QML with huge string patches every CI build. That is emergency architecture. **keywriter** (Qt 5 / C++ / QML) is the editor engine; **Writerdeck** is our on-device binary. **QML** = screen and typing behavior; **C++** = startup, display, socket keys — see [../architecture.md](../architecture.md) § On the tablet.
 
-CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork file `edit_mac_helpers.qml.inc` (includes cursor/autosave Timers and text-change Connections); `build-keywriter.sh` inserts that file before `showLobby()` and injects a one-liner `handleMacKeysOnPressed` call.
+CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork file `edit_mac_helpers.qml.inc` (includes cursor/autosave Timers and text-change Connections); socket/`lobby_bridge`/`rotation_watcher` are in-tree C++. `build-keywriter.sh` inserts the helpers file before `showLobby()`, injects a one-liner `handleMacKeysOnPressed` call, and still applies Lobby/shell QML Python patches.
 
 ## Priority
 
@@ -43,7 +43,8 @@ Do one lettered group per session (or per deploy cycle). After each group: remov
 ### Phase 3 — shrink script + ownership
 
 - [x] **Connections / Timers** — cursor Timer, autosave Timer, and text-change Connections moved into [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`db0781e`); script asserts. Critical **36/36** @ `17-57-45`; full suite **92/13** @ `17-59-00` (Patch LOC **1802**). Critical edit paths no longer live only as script string patches.
-- [ ] `build-keywriter.sh` further shrink toward build glue only (clone, qmake, install, tiny deterministic patches if any). Remaining patches are lobby/shell/infra, not caret/selection/undo.
+- [x] **C++ infra** — socket reader, `lobby_bridge`, `rotation_watcher`, and toltec `edit.pro` live in the fork (`f7c84e9`); script asserts instead of `git apply` / COPY. Critical **36/36** + full suite — fill after deploy. Lobby/shell QML Python patches remain.
+- [ ] `build-keywriter.sh` further shrink toward build glue only (Lobby/shell QML Python patches still dominate; tiny deterministic patches if any).
 - [ ] Document fork ownership, default branch, and how to merge upstream keywriter in [../decisions.md](../decisions.md) §3.
 - [ ] Restore `.cursor/rules/writerdeck-backup.mdc` → `writerdeck.mdc` (`alwaysApply: true`); retire or set `alwaysApply: false` on `keywriter-fork-migration.mdc`.
 

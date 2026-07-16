@@ -67,7 +67,7 @@ done
 # RM_SKIP_DEPLOY=1 skips the file transfer (binary+sysroot already on device)
 # for a fast relaunch-only loop while experimenting with the platform.
 # RM_BINARY_ONLY=1 pushes just the keywriter binary (~1s) and skips the ~90s
-# Qt5 sysroot tarball -- use for socket-inject.patch iteration when /home/root/qt5/
+# Qt5 sysroot tarball -- use when iterating fork C++ (main.cpp socket) and /home/root/qt5/
 # already exists on the device.  RM_FORCE_SYSROOT=1 re-pushes the full tarball
 # even with RM_BINARY_ONLY=1 (use after a Qt/Dockerfile rebuild).
 RM_QPA="${RM_QPA:-linuxfb:fb=/dev/fb0:size=1404x1872:mmsize=158x210}"

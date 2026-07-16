@@ -6,11 +6,6 @@ on:
     paths:
       - 'third_party/keywriter/Dockerfile'
       - 'third_party/keywriter/build-keywriter.sh'
-      - 'third_party/keywriter/socket-inject.patch'
-      - 'third_party/keywriter/rotation_watcher.h'
-      - 'third_party/keywriter/rotation_watcher.cpp'
-      - 'third_party/keywriter/lobby_bridge.h'
-      - 'third_party/keywriter/lobby_bridge.cpp'
       - 'third_party/keywriter/lobby_subpages.qml.inc'
       - 'third_party/keywriter/lobby/**'
       - '.github/workflows/build-keywriter.yml'

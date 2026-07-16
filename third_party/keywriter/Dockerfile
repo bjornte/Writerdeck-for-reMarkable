@@ -90,11 +90,8 @@ RUN set -eux; \
 ENV KEYWRITER_REPO=https://github.com/bjornte/Writerdeck-keywriter.git \
     KEYWRITER_REF=master
 
-COPY socket-inject.patch /socket-inject.patch
-COPY rotation_watcher.h /rotation_watcher.h
-COPY rotation_watcher.cpp /rotation_watcher.cpp
-COPY lobby_bridge.h /lobby_bridge.h
-COPY lobby_bridge.cpp /lobby_bridge.cpp
+# C++ infra (socket inject, lobby_bridge, rotation_watcher, edit.pro) lives in
+# the Writerdeck-keywriter fork — not copied into the image (Phase 3).
 COPY lobby/ /lobby/
 COPY concat-lobby.sh /concat-lobby.sh
 COPY build-keywriter.sh /build-keywriter.sh

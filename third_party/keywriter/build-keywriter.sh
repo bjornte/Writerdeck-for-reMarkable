@@ -49,52 +49,28 @@ echo "  qmake         = $(command -v qmake || echo '<not found>')"
 echo "  default XSPEC = $(qmake -query QMAKE_XSPEC 2>/dev/null || echo '?')"
 echo
 
-# Rewrite the hardcoded OE spec inside edit.pro to the toltec device spec.
-echo "  edit.pro spec line(s) before sed:"
-grep -n 'linux-oe-g++' edit.pro || echo "    (no linux-oe-g++ found -- pro file may already be patched)"
-sed -i 's/linux-oe-g++/linux-arm-remarkable-g++/' edit.pro
-
-# Patch main.cpp: guard the two display qputenv() calls so an exported env var
-# wins, while the stock 'epaper' default is preserved when nothing is set.
-# This is required because:
-#  (a) the toltec toolchain has no 'epaper' QPA platform plugin -- only linuxfb
-#      (and later rm2fb) are available, so we need QT_QPA_PLATFORM to be
-#      overridable from the outside.
-#  (b) the same file will be patched again in Phase 2 (socket injection),
-#      so doing it here is consistent and cheap.
-# qEnvironmentVariableIsEmpty() is in <QtGlobal>, already included via
-# <QGuiApplication>.
-echo "  Patching main.cpp: guarding qputenv with qEnvironmentVariableIsEmpty ..."
-grep -n 'qputenv.*QT_QPA_PLATFORM\|qputenv.*QMLSCENE_DEVICE' main.cpp \
-    || echo "    (no matching qputenv lines found -- may already be patched)"
-sed -i \
-    's|qputenv("QT_QPA_PLATFORM",|if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) qputenv("QT_QPA_PLATFORM",|' \
-    main.cpp
-sed -i \
-    's|qputenv("QMLSCENE_DEVICE",|if (qEnvironmentVariableIsEmpty("QMLSCENE_DEVICE")) qputenv("QMLSCENE_DEVICE",|' \
-    main.cpp
-echo "  main.cpp after patch:"
-grep -n 'QT_QPA_PLATFORM\|QMLSCENE_DEVICE' main.cpp || true
-echo
-
-# Apply the Phase 2 socket-injection patch (socket reader thread).
-echo "=== Applying socket-injection patch ==="
-# --recount: the patch is hand-authored, so trust the diff body, not the @@
-#   line counts (git apply is strict and does no fuzz; --recount infers counts).
-# --ignore-whitespace: tolerate any whitespace/CRLF drift in upstream main.cpp.
-git apply --recount --ignore-whitespace /socket-inject.patch
-echo "  Patch applied."
-
-# Rotation persistence: moc'd helper for rotationChanged -> server notify.
-cp /rotation_watcher.h /rotation_watcher.cpp /keywriter/
-cp /lobby_bridge.h /lobby_bridge.cpp /keywriter/
-printf '\nHEADERS += rotation_watcher.h\nSOURCES += rotation_watcher.cpp\n' >> edit.pro
-printf '\nHEADERS += lobby_bridge.h\nSOURCES += lobby_bridge.cpp\n' >> edit.pro
-echo "  rotation_watcher + lobby_bridge added to edit.pro."
-
-# Add -pthread to edit.pro for std::thread (socket reader thread).
-printf '\nQMAKE_CXXFLAGS += -pthread\nQMAKE_LFLAGS += -pthread\n' >> edit.pro
-echo "  -pthread added to edit.pro."
+# Phase 3: C++ infra lives in the Writerdeck-keywriter fork (not patched here).
+# Assert so a bad KEYWRITER_REF fails loudly before qmake.
+echo "=== Asserting fork C++ infra ==="
+grep -q 'linux-arm-remarkable-g++' edit.pro \
+    || { echo "ERROR: edit.pro missing linux-arm-remarkable-g++ (fork Phase 3)" >&2; exit 1; }
+grep -q 'rotation_watcher.cpp' edit.pro \
+    || { echo "ERROR: edit.pro missing rotation_watcher.cpp" >&2; exit 1; }
+grep -q 'lobby_bridge.cpp' edit.pro \
+    || { echo "ERROR: edit.pro missing lobby_bridge.cpp" >&2; exit 1; }
+grep -q '\-pthread' edit.pro \
+    || { echo "ERROR: edit.pro missing -pthread" >&2; exit 1; }
+test -f rotation_watcher.h && test -f rotation_watcher.cpp \
+    || { echo "ERROR: rotation_watcher.{h,cpp} missing from fork checkout" >&2; exit 1; }
+test -f lobby_bridge.h && test -f lobby_bridge.cpp \
+    || { echo "ERROR: lobby_bridge.{h,cpp} missing from fork checkout" >&2; exit 1; }
+grep -q 'rmkbdSocketReader' main.cpp \
+    || { echo "ERROR: main.cpp missing socket reader (fork Phase 3)" >&2; exit 1; }
+grep -q 'qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")' main.cpp \
+    || { echo "ERROR: main.cpp missing QT_QPA_PLATFORM guard" >&2; exit 1; }
+grep -q 'qEnvironmentVariableIsEmpty("QMLSCENE_DEVICE")' main.cpp \
+    || { echo "ERROR: main.cpp missing QMLSCENE_DEVICE guard" >&2; exit 1; }
+echo "  fork C++ infra OK (socket + lobby_bridge + rotation_watcher + edit.pro)."
 echo
 
 # Apply Phase 4+7 QML edits via Python3 (not git apply / sed: Python does exact
