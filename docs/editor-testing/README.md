@@ -4,15 +4,15 @@ Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path
 
 **Start here for a new agent:** [todo.md](todo.md) (scores, critical failures, next batch, do-not-retry).
 
-Sign-off: **107/107 PASS** (`bash scripts/test-keyboard-harness.sh --fast`). Critical gate: **36/36 PASS** (`-t critical --fast`).
+Sign-off: **110/110 PASS** (`bash scripts/test-keyboard-harness.sh --fast`). Critical gate: **38/38 PASS** (`-t critical --fast`).
 
-Current baseline: **107/0** of 107 @ `23-12-40` @ fork `67656e1`; critical **36/36**. Report: `docs/recon/test-keyboard-harness-2026-07-16T23-12-40.md`.
+Current baseline: **110/0** of 110 @ `00-29-12` @ fork `67656e1`; critical **38/38**. Report: `docs/recon/test-keyboard-harness-2026-07-17T00-29-12.md`.
 
 | File | Purpose |
 |------|---------|
 | [todo.md](todo.md) | **Fresh agent handoff** — scores, critical failures, next batch, do-not-retry |
 | [milestone-runs.md](milestone-runs.md) | **Full-suite scoreboard** — update after each `--fast` full run |
-| [scenario-catalog.md](scenario-catalog.md) | All 107 scenarios — business-logic inventory |
+| [scenario-catalog.md](scenario-catalog.md) | All 110 scenarios — business-logic inventory |
 | [harness-runs.md](../recon/harness-runs.md) | Consolidated run log |
 | [scenario-cookbook.md](scenario-cookbook.md) | Source catalogs (CodeMirror/Qt) |
 | [llm-handoff-test-failures.md](llm-handoff-test-failures.md) | Historical methodology review |

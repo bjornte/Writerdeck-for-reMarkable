@@ -1,6 +1,6 @@
 # Scenario catalog
 
-All **107** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac/Linux-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
+All **110** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac/Linux-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
 
 **Motion/selection pattern** (reset caret between blocks — never grow-to-N-then-peel):
 
@@ -16,7 +16,7 @@ Both directions on applicable axes. Fixture includes ≥2 long wrapping paragrap
 
 **Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`). Shift+arrow extends selection; plain arrow moves the caret. Alt = word/paragraph; Ctrl = document/line boundaries (Mac). Hardware pages: `pageleft`/`pageright` + `contentY`. Reading overscroll: Esc → preview then page cmds.
 
-Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**36**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go`.
+Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**38**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go`.
 
 ## Critical (36)
 
@@ -89,10 +89,10 @@ Not critical (still valuable): selection shrink (`shift-down-then-up-shrinks`, `
 | `cm-line-down-last-line` | Down on last line clamps at EOF through uni5. |
 | `cm-line-down-goal-col` | Down twice preserves visual x across a short middle line. |
 | `cm-select-line-down` | Pattern: Shift+Down grow, Shift+Up shrink from top of vertical block. |
-| `cm-select-line-down-mid` | Shift+Down from mid-line extends to next line. |
+| `cm-select-line-down-mid` | Shift+Down from mid-sentence wrapping prose (one visual row band). |
+| `cm-select-up-mid` | Shift+Up from mid-sentence wrapping prose (partner). |
 | `cm-select-down-up-doc-end` | At EOF, Shift+Down clamps then Shift+Up yields bounded selection. |
 | `cm-select-up-basic` | Pattern: Shift+Up grow, Shift+Down shrink from end of vertical block. |
-| `cm-select-up-mid` | Shift+Up from mid last line selects upward. |
 
 ## Modifier combos (25)
 
@@ -134,7 +134,7 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `wrap-down-not-jump-paragraph` | Down stays inside the wrapped block. |
 | `wrap-up-from-visual-line-2` | Pattern Up from deep visual row back to start. |
 | `wrap-shift-down-one-visual` | Pattern Shift+Down grow, Shift+Up shrink. |
-| `wrap-shift-down-then-up-shrinks` | Pattern extend then shrink on wrapped block. |
+| `wrap-shift-down-then-up-shrinks` | Mid-sentence on wrapped block: full uni/bi Shift+Down grow / Shift+Up reverse. |
 | `wrap-down-last-visual-line` | Down at EOF clamps through uni5. |
 | `wrap-shift-down-last-to-eof` | Shift+Down on last visual row selects through EOF. |
 | `wrap-mixed-newline-and-wrap` | Down from short first line into wrapped second line. |
@@ -154,7 +154,7 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `redo-cleared-by-new-edit` | After Undo, a new edit clears the redo stack. |
 | `undo-after-select-delete` | Shift+Home select, delete, Undo restores collapsed caret at end. |
 
-## Gap coverage (21)
+## Gap coverage (24)
 
 | Scenario | Behavior |
 |----------|----------|
@@ -173,8 +173,11 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `gap-unicode-alt-backspace` | Alt+Backspace on `test résumé æøå` leaves `test résumé`. |
 | `gap-empty-doc-backspace` | Backspace on empty document is a no-op. |
 | `gap-alt-bs-with-selection` | Alt+Backspace with a word selection deletes the selection. |
-| `gap-shift-down-mid-wrapping-paras` | Mid-sentence Shift+Down grow / Shift+Up reverse across wrapping paragraphs (uni1/5, bi1+1/3+5/7+7). |
-| `gap-shift-up-mid-wrapping-paras` | Mid-sentence Shift+Up grow / Shift+Down reverse (partner). |
+| `gap-shift-down-mid-wrapping-paras` | Mid-sentence Shift+Down grow / Shift+Up reverse across wrapping paragraphs (uni1/5, bi1+1/3+5/7+7). Critical. |
+| `gap-shift-up-mid-wrapping-paras` | Mid-sentence Shift+Up grow / Shift+Down reverse (partner). Critical. |
+| `gap-shift-down-across-para-break` | Near end of wrapping para1, Shift+Down enters para2; reverse shrinks. |
+| `gap-shift-up-across-para-break` | Early in wrapping para2, Shift+Up reaches para1; reverse shrinks. |
+| `gap-shift-down-mid-short-lines` | Mid-column Shift+Down/Up on equal-width hard-newline lines (full pattern). |
 
 ## Hardware page buttons (2)
 

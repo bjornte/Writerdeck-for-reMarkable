@@ -75,13 +75,19 @@ func cmScenarios() []Scenario {
 			Steps:   shiftVerticalPattern(9, keyArrow("ArrowUp", true, false, false), keyArrow("ArrowDown", true, false, false), true),
 		},
 		{
+			// Mid-sentence wrapping prose (replaces toy en/to/tre mid-line).
 			Name:    "cm-select-line-down-mid",
-			Content: three,
+			Content: fixtureProse,
 			Steps: []Step{
-				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Keys: []Key{{Name: "ArrowRight"}}, Repeat: 1},
-				{Label: "shift+down from mid", Keys: []Key{{Name: "ArrowDown", Shift: true}}},
-				{Expect: &StateExpect{Cursor: intp(4), SelStart: intp(1), SelEnd: intp(4), SelLen: intp(3)}},
+				{SetCursor: intp(proseMidDocCaret)},
+				{Label: "shift+down from mid wrapping", Keys: []Key{{Name: "ArrowDown", Shift: true}}},
+				{Expect: &StateExpect{
+					SelStart:  intp(proseMidDocCaret),
+					CursorMin: intp(proseMidDocCaret + 1),
+					CursorMax: intp(proseMidDocCaret + 90),
+					SelLenMin: intp(1),
+					SelLenMax: intp(90),
+				}},
 			},
 		},
 		{
@@ -100,13 +106,15 @@ func cmScenarios() []Scenario {
 		},
 		{
 			Name:    "cm-select-up-mid",
-			Content: three,
+			Content: fixtureProse,
 			Steps: []Step{
-				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
-				{Keys: []Key{{Name: "ArrowRight"}}},
-				{Label: "shift+up from mid line3", Keys: []Key{{Name: "ArrowUp", Shift: true}}},
-				{Expect: &StateExpect{SelLenMin: intp(1)}},
+				{SetCursor: intp(prosePara2Mid)},
+				{Label: "shift+up from mid wrapping", Keys: []Key{{Name: "ArrowUp", Shift: true}}},
+				{Expect: &StateExpect{
+					SelEnd:    intp(prosePara2Mid),
+					SelLenMin: intp(1),
+					SelLenMax: intp(90),
+				}},
 			},
 		},
 	}

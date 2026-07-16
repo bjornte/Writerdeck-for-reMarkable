@@ -153,6 +153,9 @@ var criticalScenarios = map[string]bool{
 	"gap-redo-shift-ctrl-z":                  true,
 	"gap-undo-chain":                         true,
 	"gap-empty-doc-backspace":                true,
+	// Mid-sentence Shift+vertical on wrapping paragraphs (not short \n lines).
+	"gap-shift-down-mid-wrapping-paras": true,
+	"gap-shift-up-mid-wrapping-paras":   true,
 }
 
 func isCriticalScenario(name string) bool {

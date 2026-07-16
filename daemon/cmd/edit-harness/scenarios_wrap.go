@@ -71,21 +71,13 @@ func wrapScenarios() []Scenario {
 			},
 		},
 		{
+			// Mid-sentence on the wrapped block (not Ctrl+Home / visual col 0).
 			Name:    "wrap-shift-down-then-up-shrinks",
 			Content: wp,
 			Width:   harnessWrapWidth,
-			Steps: []Step{
-				{Keys: []Key{{Name: "Home", Ctrl: true}}},
-				{Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
-				{Label: "extend shift+down x3", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 3},
-				{Expect: &StateExpect{SelLenMin: intp(1), TextLen: intp(n)}},
-				{Label: "shrink shift+up x1 (N=1)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 1},
-				{Expect: &StateExpect{SelLenMin: intp(1), TextLen: intp(n)}},
-				// Full reverse of visual Shift+Down×3 collapses (old expect kept
-				// SelLenMin because buggy EOF jump made 3 ups leave a leftover).
-				{Label: "shrink shift+up x2 more (N=3 full reverse)", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(wrapDownTwoCursor), SelStart: intp(wrapDownTwoCursor), SelEnd: intp(wrapDownTwoCursor), TextLen: intp(n)}},
-			},
+			Steps: shiftVisualProsePatternStep(wrapDownTwoCursor+5,
+				keyArrow("ArrowDown", true, false, false),
+				keyArrow("ArrowUp", true, false, false), false, 20, wrapParagraphLen),
 		},
 		{
 			Name:    "wrap-down-last-visual-line",

@@ -2,7 +2,7 @@
 
 Scoreboard for full keyboard tests on the tablet (`bash scripts/test-keyboard-harness.sh --fast`). Add a row after every full run. Detailed logs: `docs/recon/test-keyboard-harness-*.{md,txt}` (older runs in [harness-runs.md](../recon/harness-runs.md)).
 
-**Critical pass** = the smaller “basic editing” gate (36 tests today). Sign-off needs the full suite green: **107/107**.
+**Critical pass** = the smaller “basic editing” gate (38 tests today). Sign-off needs the full suite green: **110/110**.
 
 | Time of test | Num of tests | Total pass | Critical pass | Fail | Comments |
 |--------------|--------------|------------|---------------|------|----------|
@@ -17,5 +17,6 @@ Scoreboard for full keyboard tests on the tablet (`bash scripts/test-keyboard-ha
 | 16 Jul 2026, 18:57 | 105 | 93 | 36/36 | 12 | Editor lives in our own fork now |
 | 16 Jul 2026, 21:21 | 105 | 105 | 36/36 | 0 | Sign-off — all tests pass |
 | 16 Jul 2026, 23:12 | 107 | 107 | 36/36 | 0 | Mid-sentence Shift+Up/Down across wrapping paragraphs fixed |
+| 17 Jul 2026, 00:29 | 110 | 110 | 38/38 | 0 | Hardened: mid-wrapping Shift now critical; cross-para + mid-short-line select |
 
 Other landmarks: shortcut-chord tag **25/25**; wrap **15/15**; undo **5/5**. Fork migration finished the same day as the first sign-off.

@@ -45,9 +45,11 @@ var (
 	prosePara3Start   int // third body paragraph
 	proseList1Start   int
 	proseList2Item2   int
-	proseMidDocCaret  int // mid paragraph 1
-	proseNearEOFCaret int
-	prosePara2Mid     int // caret mid paragraph 2 (different placement)
+	proseMidDocCaret    int // mid paragraph 1
+	proseNearEOFCaret   int
+	prosePara2Mid       int // caret mid paragraph 2 (different placement)
+	prosePara1NearEnd   int // near end of para1 (Shift across blank into para2)
+	prosePara2NearStart int // early in para2 (Shift+Up back into para1)
 )
 
 // Long prose lines intentionally exceed e-ink / wrap width so each paragraph
@@ -121,6 +123,8 @@ func init() {
 	prosePara3Start = mustFind("Tredje avsnitt")
 	proseMidDocCaret = mustFind("typewriteren klaprer")
 	prosePara2Mid = mustFind("page-up og page-down")
+	prosePara1NearEnd = mustFind("bryter visuelt")
+	prosePara2NearStart = mustFind("historien om eink")
 	proseList1Start = mustFind("- første punkt:")
 	proseList2Item2 = mustFind("- eink: page-up")
 

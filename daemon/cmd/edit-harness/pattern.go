@@ -200,6 +200,65 @@ func shiftVerticalPattern(seedLine int, growKey, reverseKey Key, towardLow bool)
 	return out
 }
 
+// shiftVerticalMidPattern: like shiftVerticalPattern but from mid-column on
+// equal-width proseV lines (catches goal-x + selection bugs that col-0 misses).
+func shiftVerticalMidPattern(seedLine, col int, growKey, reverseKey Key, towardLow bool) []Step {
+	if col <= 0 || col >= proseVWidth {
+		panic("shiftVerticalMidPattern: col must be inside the line")
+	}
+	anchor := proseVLineStart(seedLine) + col
+	lineAt := func(line int) int { return proseVLineStart(line) + col }
+	growExpect := func(n int) *StateExpect {
+		if towardLow {
+			end := lineAt(seedLine - n)
+			return &StateExpect{Cursor: intp(anchor), SelStart: intp(end), SelEnd: intp(anchor), SelLen: intp(anchor - end)}
+		}
+		end := lineAt(seedLine + n)
+		return &StateExpect{Cursor: intp(end), SelStart: intp(anchor), SelEnd: intp(end), SelLen: intp(end - anchor)}
+	}
+	afterReverse := func(growN, revK int) *StateExpect {
+		if towardLow {
+			if revK < growN {
+				end := lineAt(seedLine - growN + revK)
+				return &StateExpect{Cursor: intp(anchor), SelStart: intp(end), SelEnd: intp(anchor), SelLen: intp(anchor - end)}
+			}
+			if revK == growN {
+				return &StateExpect{Cursor: intp(anchor), SelStart: intp(anchor), SelEnd: intp(anchor), SelLen: intp(0)}
+			}
+			over := revK - growN
+			end := lineAt(seedLine + over)
+			return &StateExpect{Cursor: intp(end), SelStart: intp(anchor), SelEnd: intp(end), SelLen: intp(end - anchor)}
+		}
+		if revK < growN {
+			end := lineAt(seedLine + growN - revK)
+			return &StateExpect{Cursor: intp(end), SelStart: intp(anchor), SelEnd: intp(end), SelLen: intp(end - anchor)}
+		}
+		if revK == growN {
+			return &StateExpect{Cursor: intp(anchor), SelStart: intp(anchor), SelEnd: intp(anchor), SelLen: intp(0)}
+		}
+		over := revK - growN
+		end := lineAt(seedLine - over)
+		return &StateExpect{Cursor: intp(anchor), SelStart: intp(end), SelEnd: intp(anchor), SelLen: intp(anchor - end)}
+	}
+	var out []Step
+	block := func(label string, growN, revN int, bi bool) {
+		out = append(out, Step{Label: "reset " + label, SetCursor: intp(anchor)})
+		out = append(out, Step{Label: label + " grow x" + strconv.Itoa(growN), Keys: []Key{growKey}, Repeat: growN})
+		out = append(out, Step{Expect: growExpect(growN)})
+		if !bi {
+			return
+		}
+		out = append(out, Step{Label: label + " reverse x" + strconv.Itoa(revN), Keys: []Key{reverseKey}, Repeat: revN})
+		out = append(out, Step{Expect: afterReverse(growN, revN)})
+	}
+	block("uni1", 1, 0, false)
+	block("uni5", 5, 0, false)
+	block("bi1+1", 1, 1, true)
+	block("bi3+5", 3, 5, true)
+	block("bi7+7", 7, 7, true)
+	return out
+}
+
 // wordCaretPattern: Alt+Left/Right by word index on the prose word line.
 func wordCaretPattern(seedWordIdx int, forwardKey, backKey Key, deltaWord int) []Step {
 	seed := proseWordStarts[seedWordIdx]
@@ -238,7 +297,24 @@ func wordCaretPattern(seedWordIdx int, forwardKey, backKey Key, deltaWord int) [
 // Exact visual-line offsets depend on device width/font, so expects use a sticky
 // anchor plus per-step character bands (one visual line stays under maxStep).
 func shiftVisualProsePattern(seed int, growKey, reverseKey Key, towardLow bool) []Step {
-	const maxStep = 90
+	return shiftVisualProsePatternStep(seed, growKey, reverseKey, towardLow, 90, 0)
+}
+
+// shiftVisualProsePatternStep is the same pattern with a custom per-line char
+// band and optional docLen clamp (for short wrap fixtures).
+func shiftVisualProsePatternStep(seed int, growKey, reverseKey Key, towardLow bool, maxStep, docLen int) []Step {
+	clamp := func(p int) int {
+		if docLen <= 0 {
+			return p
+		}
+		if p < 0 {
+			return 0
+		}
+		if p > docLen {
+			return docLen
+		}
+		return p
+	}
 	collapse := &StateExpect{Cursor: intp(seed), SelStart: intp(seed), SelEnd: intp(seed), SelLen: intp(0)}
 	growExpect := func(n int) *StateExpect {
 		if towardLow {
@@ -252,7 +328,7 @@ func shiftVisualProsePattern(seed int, growKey, reverseKey Key, towardLow bool) 
 		return &StateExpect{
 			SelStart:  intp(seed),
 			CursorMin: intp(seed + 1),
-			CursorMax: intp(seed + n*maxStep),
+			CursorMax: intp(clamp(seed + n*maxStep)),
 			SelLenMin: intp(1),
 			SelLenMax: intp(n * maxStep),
 		}
@@ -274,8 +350,8 @@ func shiftVisualProsePattern(seed int, growKey, reverseKey Key, towardLow bool) 
 			} else {
 				out = append(out, Step{Expect: &StateExpect{
 					SelLenMax: intp(maxStep),
-					CursorMin: intp(seed - maxStep),
-					CursorMax: intp(seed + maxStep),
+					CursorMin: intp(clamp(seed - maxStep)),
+					CursorMax: intp(clamp(seed + maxStep)),
 				}})
 			}
 			return
@@ -285,7 +361,7 @@ func shiftVisualProsePattern(seed int, growKey, reverseKey Key, towardLow bool) 
 			out = append(out, Step{Expect: &StateExpect{
 				SelStart:  intp(seed),
 				CursorMin: intp(seed + 1),
-				CursorMax: intp(seed + over*maxStep),
+				CursorMax: intp(clamp(seed + over*maxStep)),
 				SelLenMin: intp(1),
 				SelLenMax: intp(over * maxStep),
 			}})

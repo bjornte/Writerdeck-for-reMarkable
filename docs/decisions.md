@@ -42,7 +42,7 @@ Substantial QML/C++ edits live in a maintained Writerdeck fork of keywriter. `bu
 
 **Fork ownership.** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) is the Writerdeck-owned fork of [dps/remarkable-keywriter](https://github.com/dps/remarkable-keywriter). Default branch is `master`. CI and `build-keywriter.sh` clone that URL via `KEYWRITER_REPO` / `KEYWRITER_REF` (defaults: the fork URL and `master`). Pin a SHA in `KEYWRITER_REF` only when you need a reproducible rollback; day-to-day builds track `master`.
 
-What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (Phase 2A–2D + Phase 3 Timers/Connections); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **36/36**; full suite **107/107** @ `23-12-40` (fork `67656e1`; Patch LOC **386**); wrap tag **15/15**; undo tag **5/5**. Migration checklist: [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md).
+What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (Phase 2A–2D + Phase 3 Timers/Connections); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **38/38**; full suite **110/110** @ `00-29-12` (fork `67656e1`; Patch LOC **386**); wrap tag **15/15**; undo tag **5/5**. Migration checklist: [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md).
 
 **Merging upstream keywriter.** Upstream is `dps/remarkable-keywriter`. Pull its changes into the fork on purpose — not on every Writerdeck session. In a local clone of Writerdeck-keywriter:
 
@@ -60,7 +60,7 @@ Phasing ([TODO.md](../TODO.md) item 3) — **done:**
 2. Move behavior from the patch script into forked C++/QML **by criticality** (2A–2D).
 3. Shrink the script (Connections/Timers + C++ infra + Lobby/shell QML in fork); document ownership and upstream-merge policy; restore general Cursor rules.
 
-Critical **36/36** means basic editing is gated green. Full **107/107** remains product sign-off.
+Critical **38/38** means basic editing is gated green. Full **110/110** remains product sign-off.
 
 ## 4. No Toltec
 
@@ -142,7 +142,7 @@ Global rotation (0, 90, 180, 270) is stored in `.Writerdeck/settings.json`. On e
 
 ## 22. Keyboard selection harness
 
-Modifier+arrow and selection behaviour are tested on the device via `daemon/cmd/edit-harness` and `scripts/test-keyboard-harness.sh`, not by reading saved note bytes. Writerdeck publishes cursor/selection/`contentY` over the socket; the server exposes `GET /api/test/editor-state` and `POST /api/test/reset` (hard quit). Scenarios send keys over `/ws` like the phone UI; hardware page turns use editor cmds `pageleft`/`pageright` (not Arrow keys). **107 scenarios**; sign-off **107/107 PASS** with `--fast`. **Critical subset: 36 scenarios** (`-t critical --fast`); must pass before claiming basic editing works. Motion/selection pattern: uni 1, uni 5, bi 1+1, bi 3+5 (overshoot), bi 7+7 — both directions. Scoreboard: [editor-testing/milestone-runs.md](editor-testing/milestone-runs.md). Handoff: [editor-testing/todo.md](editor-testing/todo.md).
+Modifier+arrow and selection behaviour are tested on the device via `daemon/cmd/edit-harness` and `scripts/test-keyboard-harness.sh`, not by reading saved note bytes. Writerdeck publishes cursor/selection/`contentY` over the socket; the server exposes `GET /api/test/editor-state` and `POST /api/test/reset` (hard quit). Scenarios send keys over `/ws` like the phone UI; hardware page turns use editor cmds `pageleft`/`pageright` (not Arrow keys). **110 scenarios**; sign-off **110/110 PASS** with `--fast`. **Critical subset: 38 scenarios** (`-t critical --fast`); must pass before claiming basic editing works. Motion/selection pattern: uni 1, uni 5, bi 1+1, bi 3+5 (overshoot), bi 7+7 — both directions. Scoreboard: [editor-testing/milestone-runs.md](editor-testing/milestone-runs.md). Handoff: [editor-testing/todo.md](editor-testing/todo.md).
 
 Default run uses **sandbox-prepare**: one editor launch per full suite; between scenarios the harness `PUT`s note content and sends `harnessopen` + `harnessprepare` (QML `harnessSandboxReset` — reload text, cursor 0, clear undo, optional width) without quitting Writerdeck. When the run finishes (pass or fail), the harness sends `showlobby` so the tablet returns to the Lobby. Edit-mode keys are dispatched via QML `socketRouteKey()` from the socket inject thread (not raw `QKeyEvent` to focus). Tap placement and vertical Up/Down share a **visual goal-x** (`positionToRectangle`); harness simulates tap via `harnesssetcursor`. `POST /api/test/reset` remains for manual hard quit only; `--hard-reset` was removed from the harness script. Unit coverage for `translate()` modifier masks stays in `daemon/editor_test.go`. The harness does not exercise USB evdev or `.qmap` — re-check Norwegian Alt+arrow, AltGr, and national characters on hardware after qmap changes. Run after QML arrow/selection changes and after daemon test-handler changes. Harness notes use the `z-test-` prefix (decision 32).
 
@@ -210,4 +210,4 @@ Notes created or opened by device regression scripts (`test-edit-session.sh`, `t
 
 Firmware OTA may wipe the systemd unit and regenerate the SSH password — recovery is re-deploy and re-enable. USB `us`/`no` qmaps and Lobby layout picker are shipped and device-verified. Encrypted notes subset is implemented (decisions.md §31). Integrity residuals: [integrity-audit.md](integrity-audit.md). uinput is closed — see decision 1. Go must be on the Mac. Rootfs is about 96% full; everything we ship lives on `/home/root/`. Do not resize rootfs — A/B OTA scheme, brick risk.
 
-Editor behavior now lives in the Writerdeck-keywriter fork (decision 3). Residual risk is the tiny glue left in `build-keywriter.sh` and any future upstream merge conflicts — not a growing patch-script stack. Harness **107/107** remains product sign-off.
+Editor behavior now lives in the Writerdeck-keywriter fork (decision 3). Residual risk is the tiny glue left in `build-keywriter.sh` and any future upstream merge conflicts — not a growing patch-script stack. Harness **110/110** remains product sign-off.

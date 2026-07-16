@@ -10,28 +10,28 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 | Milestone | Result | Note |
 |-----------|--------|------|
-| Latest full suite | **107 / 0** of **107** | `23-12-40` @ fork `67656e1`; report `docs/recon/test-keyboard-harness-2026-07-16T23-12-40.md` |
-| Prior full suite | **105 / 0** of **105** | `21-21-15` first sign-off |
-| **Critical (gate)** | **36 / 36** | green @ `23-11-28` |
-| Wrap tag | **15 / 15** | recalibrated after visual-line fix |
+| Latest full suite | **110 / 0** of **110** | `00-29-12` @ fork `67656e1`; report `docs/recon/test-keyboard-harness-2026-07-17T00-29-12.md` |
+| Prior full suite | **107 / 0** of **107** | `23-12-40` mid-wrapping Shift fix |
+| **Critical (gate)** | **38 / 38** | green @ `00-24-22` (includes mid-wrapping Shift) |
+| Wrap tag | **15 / 15** | mid-sentence wrap-shift shrinks strengthened |
 | Undo tag | **5 / 5** | Phase 2C |
-| Sign-off gate | **107/107 PASS** | met @ `23-12-40` |
+| Sign-off gate | **110/110 PASS** | met @ `00-29-12` |
 
-`test-edit-session.sh` PASS on deploy @ fork `67656e1`. Do not run it in parallel with the keyboard harness.
+`test-edit-session.sh` PASS on restart @ `00-16-42`. Do not run it in parallel with the keyboard harness.
 
 ## Goal for next session
 
-Keyboard harness sign-off is **done** (**107/107**), including mid-sentence Shift+vertical across wrapping paragraphs. Prefer Physical Home owner check. Keep critical **36/36** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
+Keyboard harness sign-off is **done** (**110/110**). Prefer Physical Home owner check. Keep critical **38/38** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
 
-## What `67656e1` fixed
+## Hardening @ `00-29-12` (harness only)
 
-- Mid-sentence Shift+Down/Up jumped ~160 characters because `visualLineDownPos` stepped by a too-tall character box on wrapped lines.
-- Fix: walk to the next distinct row `y` with a small minGap; wrap fixture offsets recalibrated (~10 chars/row at W=320).
-- New scenarios: `gap-shift-down-mid-wrapping-paras`, `gap-shift-up-mid-wrapping-paras` (uni1/uni5 + bi1+1/bi3+5/bi7+7).
+- Mid-wrapping Shift scenarios promoted to **critical**.
+- `wrap-shift-down-then-up-shrinks` and `cm-select-*-mid` now seed mid-sentence wrapping text.
+- New: `gap-shift-down/up-across-para-break`, `gap-shift-down-mid-short-lines`.
 
 ## Remaining fails
 
-None @ `23-12-40`.
+None @ `00-29-12`.
 
 ## Next (one batch)
 
@@ -48,14 +48,15 @@ Deploy budget: **one** Writerdeck binary deploy per session unless QML fails to 
 - Parallel `test-edit-session.sh` + full harness.
 - Auto-sending Qt KeyRelease for Escape in `rmkbdInjectLine` (double-fires mode toggle).
 - Stepping visual lines by full `positionToRectangle(pos).height` on wrapped mid-line carets.
+- Trusting short hard-newline Shift alone as coverage for mid-sentence wrapping selection.
 
-## Harness inventory (107)
+## Harness inventory (110)
 
 Mode: **sandbox-prepare**. Tags: `-t critical`, `-t hw`, `-t read`, `-t wrap`, `-t undo`. Single scenario: `-s NAME --fast`. Step flag: `Reprepare` rewrites note + `harnessprepare` after mutating edits.
 
 ## Acceptance
 
-1. `-t critical --fast` → **36/36 PASS** (met)
-2. Full `--fast` → **107/107 PASS** (met @ `23-12-40`)
+1. `-t critical --fast` → **38/38 PASS** (met)
+2. Full `--fast` → **110/110 PASS** (met @ `00-29-12`)
 3. `test-edit-session.sh` PASS
 4. `journalctl -u writerdeck -n 30` clean after deploy

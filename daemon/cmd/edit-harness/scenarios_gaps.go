@@ -221,5 +221,44 @@ func gapScenarios() []Scenario {
 				keyArrow("ArrowUp", true, false, false),
 				keyArrow("ArrowDown", true, false, false), true),
 		},
+		{
+			// Near end of wrapping para1: Shift+Down must enter para2 (not jump oddly).
+			Name:    "gap-shift-down-across-para-break",
+			Content: fixtureProse,
+			Steps: []Step{
+				{SetCursor: intp(prosePara1NearEnd)},
+				{Label: "shift+down across blank into para2", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 5},
+				{Expect: &StateExpect{
+					SelStart:  intp(prosePara1NearEnd),
+					CursorMin: intp(prosePara2Start),
+					SelLenMin: intp(prosePara2Start - prosePara1NearEnd),
+				}},
+				{Label: "shrink back with shift+up x5", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 5},
+				{Expect: &StateExpect{SelLenMax: intp(90), CursorMin: intp(prosePara1NearEnd - 90), CursorMax: intp(prosePara1NearEnd + 90)}},
+			},
+		},
+		{
+			// Early in wrapping para2: Shift+Up must reach back into para1.
+			Name:    "gap-shift-up-across-para-break",
+			Content: fixtureProse,
+			Steps: []Step{
+				{SetCursor: intp(prosePara2NearStart)},
+				{Label: "shift+up across blank into para1", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 5},
+				{Expect: &StateExpect{
+					SelEnd:    intp(prosePara2NearStart),
+					SelLenMin: intp(prosePara2NearStart - prosePara2Start + 2),
+				}},
+				{Label: "shrink back with shift+down x5", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 5},
+				{Expect: &StateExpect{SelLenMax: intp(90), CursorMin: intp(prosePara2NearStart - 90), CursorMax: intp(prosePara2NearStart + 90)}},
+			},
+		},
+		{
+			// Mid-column Shift+Down/Up on short hard-newline lines (col 0 already critical).
+			Name:    "gap-shift-down-mid-short-lines",
+			Content: fixtureProse,
+			Steps: shiftVerticalMidPattern(4, proseVWidth/2,
+				keyArrow("ArrowDown", true, false, false),
+				keyArrow("ArrowUp", true, false, false), false),
+		},
 	}
 }
