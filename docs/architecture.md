@@ -87,7 +87,7 @@ SSH over Wi-Fi: `ssh root@<tablet-ip>`. Set `RM_HOST_WIFI` in `secrets/remarkabl
 
 Notes: `/home/root/Writerdeck-user-documents/`. Deploy the binary to `/home/root/Writerdeck`, not into the notes directory.
 
-Buttons on `/dev/input/event1` (value 1 = press): Home 102, left 105, right 106, power 116. Readable with xochitl up. Server watches L+R together for idle launch, Home while editing, power for sleep/wake, USB keyboard Escape while idle.
+Buttons on `/dev/input/event1` (value 1 = press): Home 102, left 105, right 106, power 116. Server watches them always; while a Writerdeck session is active it takes exclusive `EVIOCGRAB` so Qt never sees gpio Home ([decisions.md](decisions.md) §28). Idle: no grab — L+R chord launches, xochitl still gets buttons. Power sleep/wake and USB Escape idle launch as before.
 
 Rootfs is about 96% full (~228 MB), but nothing we ship goes there. Binary, Qt sysroot, and notes live on `/home/root/`, a separate multi-GB partition. Do not resize rootfs.
 

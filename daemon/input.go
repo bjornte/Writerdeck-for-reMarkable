@@ -12,16 +12,83 @@ import (
 	"time"
 )
 
+// buttonDevFd is the shared gpio-keys handle. Opened once for the server
+// lifetime; exclusive EVIOCGRAB is taken only while a Writerdeck session runs
+// so idle xochitl still sees Home/Power/page buttons.
+var (
+	buttonDevMu      sync.Mutex
+	buttonDevFile    *os.File
+	buttonDevGrabbed bool
+)
+
+// openButtonDev opens /dev/input/event1 once. Safe to call from main before
+// the watcher goroutine and before the first session.start().
+func openButtonDev() error {
+	buttonDevMu.Lock()
+	defer buttonDevMu.Unlock()
+	if buttonDevFile != nil {
+		return nil
+	}
+	f, err := os.Open(buttonDev)
+	if err != nil {
+		return err
+	}
+	buttonDevFile = f
+	return nil
+}
+
+// grabButtonDev takes exclusive EVIOCGRAB so Qt evdev cannot see physical
+// Home/Power/page buttons. Call before spawning Writerdeck.
+func grabButtonDev() {
+	buttonDevMu.Lock()
+	defer buttonDevMu.Unlock()
+	if buttonDevFile == nil {
+		fmt.Fprintln(os.Stderr, "writerdeck-server: button grab skipped (device not open)")
+		return
+	}
+	if buttonDevGrabbed {
+		return
+	}
+	if err := evdevGrab(buttonDevFile.Fd()); err != nil {
+		fmt.Fprintf(os.Stderr, "writerdeck-server: EVIOCGRAB %s failed: %v\n", buttonDev, err)
+		return
+	}
+	buttonDevGrabbed = true
+	fmt.Fprintln(os.Stderr, "writerdeck-server: exclusive grab on "+buttonDev+" (Qt will not see gpio-keys)")
+}
+
+// ungrabButtonDev releases EVIOCGRAB so stock xochitl can read gpio-keys again.
+func ungrabButtonDev() {
+	buttonDevMu.Lock()
+	defer buttonDevMu.Unlock()
+	if buttonDevFile == nil || !buttonDevGrabbed {
+		return
+	}
+	if err := evdevUngrab(buttonDevFile.Fd()); err != nil {
+		fmt.Fprintf(os.Stderr, "writerdeck-server: EVIOCGRAB release %s failed: %v\n", buttonDev, err)
+		return
+	}
+	buttonDevGrabbed = false
+	fmt.Fprintln(os.Stderr, "writerdeck-server: released grab on "+buttonDev)
+}
+
 // watchPhysicalButtons reads gpio-keys events (Home, Power, page buttons).
 // Supervisor mode (s != nil): Home relay + Power sleep/wake (see session.sleepForPower).
 // Standalone mode (s == nil): Home sends quit to ec then returns.
+// Exclusive grab is session-scoped (see grabButtonDev); this loop only reads.
 func watchPhysicalButtons(s *session, ec *editorConn) {
-	f, err := os.Open(buttonDev)
-	if err != nil {
+	if err := openButtonDev(); err != nil {
 		fmt.Fprintf(os.Stderr, "writerdeck-server: button watcher: %v (OK on non-device machines)\n", err)
 		return
 	}
-	defer f.Close()
+	buttonDevMu.Lock()
+	f := buttonDevFile
+	buttonDevMu.Unlock()
+	if s == nil {
+		// Standalone: editor is already running; keep gpio away from Qt.
+		grabButtonDev()
+		defer ungrabButtonDev()
+	}
 	fmt.Fprintln(os.Stderr, "writerdeck-server: watching physical buttons on "+buttonDev)
 	var debounce time.Time
 	var leftDown, rightDown bool

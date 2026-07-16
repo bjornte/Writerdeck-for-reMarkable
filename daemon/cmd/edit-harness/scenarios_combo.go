@@ -107,12 +107,13 @@ func comboScenarios() []Scenario {
 			Content: fixtureProse,
 			Steps: []Step{
 				{SetCursor: intp(proseWEditorEnd)},
+				// 12 words (alfa…lima); from end: N=1→lima[11], N=3→juliett[9], N=7→foxtrot[5].
 				{Label: "N=1", Keys: []Key{{Name: "ArrowLeft", Shift: true, Alt: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[9]), SelEnd: intp(proseWEditorEnd), SelLen: intp(proseWEditorEnd - proseWordStarts[9])}},
+				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[11]), SelEnd: intp(proseWEditorEnd), SelLen: intp(proseWEditorEnd - proseWordStarts[11])}},
 				{Label: "N=3", Keys: []Key{{Name: "ArrowLeft", Shift: true, Alt: true}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[7]), SelEnd: intp(proseWEditorEnd)}},
+				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[9]), SelEnd: intp(proseWEditorEnd)}},
 				{Label: "N=7", Keys: []Key{{Name: "ArrowLeft", Shift: true, Alt: true}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[3]), SelEnd: intp(proseWEditorEnd)}},
+				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[5]), SelEnd: intp(proseWEditorEnd)}},
 			},
 		},
 		{
@@ -122,11 +123,11 @@ func comboScenarios() []Scenario {
 			Steps: []Step{
 				{SetCursor: intp(proseWEditorEnd)},
 				{Label: "N=1", Keys: []Key{{Name: "ArrowLeft", Shift: true, Alt: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[9]), SelEnd: intp(proseWEditorEnd)}},
+				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[11]), SelEnd: intp(proseWEditorEnd)}},
 				{Label: "N=3", Keys: []Key{{Name: "ArrowLeft", Shift: true, Alt: true}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[7]), SelEnd: intp(proseWEditorEnd)}},
+				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[9]), SelEnd: intp(proseWEditorEnd)}},
 				{Label: "N=7", Keys: []Key{{Name: "ArrowLeft", Shift: true, Alt: true}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[3]), SelEnd: intp(proseWEditorEnd)}},
+				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[5]), SelEnd: intp(proseWEditorEnd)}},
 			},
 		},
 		{

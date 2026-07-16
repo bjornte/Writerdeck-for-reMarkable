@@ -120,6 +120,12 @@ Do not mark keyboard editing done when only newline-based harness scenarios pass
 
 Do not infer the moving selection end from `query.cursorPosition` after `query.select(min, max)` — Qt parks the caret at `selectionEnd` (the higher index), so Shift+Left/Up then extends the wrong end instead of shrinking. Keep a persistent `shiftAnchor` / `shiftHead` pair; clear it on non-shift motion and `harnessSetCursor`.
 
+`moveCursorTo(..., keepGoalColumn)` must suspend `onCursorPositionChanged` → `rememberGoalX`, or landing on a shorter line clobbers the sticky visual x.
+
+Escape toggles mode on `Keys.onReleased`. `rmkbdInjectLine` must not auto-send KeyRelease for Escape — press handling plus an explicit release double-fires `toggleMode` and cancels the mode change. Same trap as Ctrl/Alt nav releases.
+
+`flick.scrollDown` must clamp at `contentHeight - height`. Without that, read-mode page-down overscrolls into empty space (`read-overscroll-clamps`). After adding the clamp, hw page scenarios need a fixture tall enough that page-9 stays below maxY.
+
 After a mutating Backspace uni1 block, `SetCursor` to a stale absolute index is wrong (document shrank). Mid-scenario `Reprepare` (rewrite note + `harnessprepare`) before the next absolute caret seed.
 
 Saved-file guessing for selection tests was unreliable. Assert `cursor`, `selStart`, `selEnd`, and `textLen` from the editor-state probe instead.
@@ -130,7 +136,7 @@ Apostrophes in Python patch heredocs: `' + chr(39) + '`. QML patch blocks must b
 
 Immediate `editor process exited` after start is almost always a QML parse error, not the USB watcher. Two-level Home looks like a crash in logs but is intentional: first Home to Lobby, second to stock UI. No cursor blink on e-ink — it ghosts.
 
-Physical Home on gpio-keys delivers twice: Go sends `cmd home`, Qt sends `Key_Home`. Without `suppressNextHomeKey` pairing (or a future exclusive grab on event1), read → Home could quit Writerdeck instead of returning to the Lobby. See [decisions.md](decisions.md) §28 and [handoff-physical-home-input.md](handoff-physical-home-input.md).
+Physical Home on gpio-keys is owned by Writerdeck-server via session-scoped `EVIOCGRAB` on `/dev/input/event1` (grab before spawn, release on session end). Do not reintroduce `suppressNextHomeKey` pairing. A bare launcher `keymap=…:grab=1` that grabs event1 starves the Home and Power watcher — pin the USB keyboard device instead. See [decisions.md](decisions.md) §28 and [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md).
 
 After Home from edit, Lobby USB keys failed when `lobbyFocus.forceActiveFocus()` hit a `FocusScope` with no `Keys` handlers — delegate to `handleKey` / `handleKeyDown` / `handleKeyUp`, and set `query.focus: !isLobby` so the editor does not compete. Files is tab 1; vault e2e sends digit `1` for Files and `4` for Settings — update harness key numbers when tab order changes.
 

@@ -42,7 +42,7 @@ Substantial QML/C++ edits live in a maintained Writerdeck fork of keywriter. `bu
 
 **Fork ownership.** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) is the Writerdeck-owned fork of [dps/remarkable-keywriter](https://github.com/dps/remarkable-keywriter). Default branch is `master`. CI and `build-keywriter.sh` clone that URL via `KEYWRITER_REPO` / `KEYWRITER_REF` (defaults: the fork URL and `master`). Pin a SHA in `KEYWRITER_REF` only when you need a reproducible rollback; day-to-day builds track `master`.
 
-What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (Phase 2A–2D + Phase 3 Timers/Connections); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **36/36**; latest full suite **93/12** @ `18-57-31` (Patch LOC **386**); wrap tag **15/15**; undo tag **5/5**. Migration checklist: [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md).
+What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (Phase 2A–2D + Phase 3 Timers/Connections); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **36/36**; full suite **105/105** @ `21-21-15` (fork `48b5d26`; Patch LOC **386**); wrap tag **15/15**; undo tag **5/5**. Migration checklist: [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md).
 
 **Merging upstream keywriter.** Upstream is `dps/remarkable-keywriter`. Pull its changes into the fork on purpose — not on every Writerdeck session. In a local clone of Writerdeck-keywriter:
 
@@ -172,9 +172,11 @@ The Files tab offers Edit and Read instead of a single Open. Edit runs `saveAndL
 
 Bluetooth keyboards pair to the phone; keystrokes reach the tablet over the same WebSocket inject path as Type mode. The phone only captures when the tablet asks: `openedit` (full Type mode), `openread` (read preview — Esc to edit), or `lobbyinput` (Files new, rename, new-encrypted, or delete confirm). The tablet signals via `notifyReadOpen` / `notifyLobbyInput` on the editor socket; the server fans out to browsers. Do not capture in plain Browse mode — browser shortcuts must still work.
 
-## 28. Physical Home duplicate delivery (interim)
+## 28. Physical Home: exclusive gpio grab
 
-gpio-keys on `/dev/input/event1` reaches both Writerdeck-server (`cmd home`) and Qt evdev (`Key_Home`). Without pairing, one press from edit/read could land in the Lobby then immediately quit. Interim fix: `handleHome(fromPhysicalCmd)` sets `suppressNextHomeKey` on the cmd path; the duplicate `Key_Home` consumes it. Durable fix: exclusive grab on `event1` in Go so Qt never sees physical Home — [handoff-physical-home-input.md](handoff-physical-home-input.md).
+gpio-keys on `/dev/input/event1` (Home, Power, page buttons) are read by Writerdeck-server. While a Writerdeck session is active the server takes `EVIOCGRAB` on that device **before** spawning the editor, so Qt evdev never sees physical Home. Without the grab, one press could run `handleHome()` twice (socket `cmd home` then `Key_Home`) and quit from the Lobby. Grab is released when the session ends so idle xochitl still gets the buttons. USB keyboard Home is unchanged — it arrives on other `/dev/input/event*` nodes or over the socket inject path, not via gpio-keys. Page-button idle launch (§7c) still works: while idle there is no grab, so both the server and xochitl see events.
+
+Handoff: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md).
 
 ## 29. Lobby keyboard regression test
 

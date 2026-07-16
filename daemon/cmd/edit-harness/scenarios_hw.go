@@ -1,9 +1,10 @@
 package main
 
 // hwScenarios: pageleft/pageright with uni1/uni5/bi1+1/bi3+5/bi7+7.
-// ~1500px per page. Tall content so 7 pages stay below max scroll.
+// ~1500px per page. Tall content so page 9 (bi 3+5 overshoot) stays below
+// Flickable maxY now that scrollDown clamps at content bottom.
 func hwScenarios() []Scenario {
-	tall := fixtureTall(400)
+	tall := fixtureTall(600)
 	const step = 1500
 	const slack = 150
 

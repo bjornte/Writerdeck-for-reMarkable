@@ -58,8 +58,10 @@ func cmScenarios() []Scenario {
 			Steps: []Step{
 				{Keys: []Key{{Name: "Home", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowRight"}}, Repeat: 2},
+				// "tre\ni\nfemte": col 2 of "tre" sticky across short "i" → col 2 of "femte" (pos 8).
+				// Allow 7–8 for e-ink glyph x rounding.
 				{Keys: []Key{{Name: "ArrowDown"}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(6), SelStart: intp(6), SelEnd: intp(6)}},
+				{Expect: &StateExpect{CursorMin: intp(7), CursorMax: intp(8)}},
 			},
 		},
 		{

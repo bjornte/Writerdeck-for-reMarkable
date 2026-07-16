@@ -8,9 +8,9 @@ Keystrokes reach the editor over `/run/Writerdeck.sock`, not uinput ([docs/decis
 
 ## Next unchecked
 
-1. Physical Home — single input path (exclusive gpio grab so page buttons and Home are not confused with keyboard keys). Handoff: [docs/todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md).
-2. Keyboard editing — harness done (**105** scenarios). Critical gate green (**36/36**); full suite **93/12** @ `18-57-31` (Patch LOC **386**). Product sign-off still **105/105** — [docs/editor-testing/todo.md](docs/editor-testing/todo.md). Leftover fails are product polish, not blocked on fork migration.
-3. Keywriter fork migration — **done.** Owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`); helpers + C++ infra + Lobby/shell in-tree (`68f6e32`). Ownership and upstream-merge policy: [docs/decisions.md](docs/decisions.md) §3. Checklist: [docs/editor-migration/todo-handoff-keywriter-fork.md](docs/editor-migration/todo-handoff-keywriter-fork.md). Active rule: `.cursor/rules/writerdeck.mdc`.
+1. Physical Home — **done** (session `EVIOCGRAB` + fork `3be2de4` without `suppressNextHomeKey`; Writerdeck binary deployed). Please press physical Home once from edit, read, and Lobby to confirm. [docs/todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md); [docs/decisions.md](docs/decisions.md) §28.
+2. Keyboard editing — harness sign-off **105/105** @ `21-21-15`. Open: Shift+Up/Down from mid-sentence across wrapping paragraphs (not covered by current scenarios) — [docs/editor-testing/todo.md](docs/editor-testing/todo.md).
+3. Keywriter fork migration — **done.** Owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`); helpers + C++ infra + Lobby/shell in-tree. Policy: [docs/decisions.md](docs/decisions.md) §3. Active rule: `.cursor/rules/writerdeck.mdc`.
 
 ## Open question
 
@@ -19,6 +19,6 @@ Stay firmware-update-current? Each OTA resets the SSH password and may wipe the 
 ## Resume prompt
 
 > Project: reMarkable 1 Wi-Fi Markdown typewriter. Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); Writerdeck-keywriter fork → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Mac deploys; iPhone uses.
-> Shipped: [DONE.md](DONE.md). Next: **Physical Home** ([todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md)), or leftover keyboard harness fails toward **105/105**. Fork migration done (`68f6e32`; Patch LOC **386**). Integrity: [integrity-audit.md](docs/integrity-audit.md).
+> Shipped: [DONE.md](DONE.md). Next: owner manual physical Home check; Shift+vertical mid-sentence across wrapping paragraphs. Keyboard harness **105/105**. Integrity: [integrity-audit.md](docs/integrity-audit.md).
 > Read: architecture, decisions, DONE, lessons, browser-vs-tablet, integrity-audit. Device: `secrets/remarkable.local.env` (`RM_HOST_WIFI`).
 > Constraints: no jailbreak/OTA/Toltec; `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`.

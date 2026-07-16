@@ -174,6 +174,12 @@ func main() {
 		// ExecStopPost=start xochitl in the unit stays as a safety net.
 		activeSess = &session{editorPath: *editorPath, ec: ec}
 
+		// Open gpio-keys before the first session so grabButtonDev can run
+		// before Writerdeck spawns (see docs/todo-handoff-physical-home-input.md).
+		if err := openButtonDev(); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: button device: %v (OK on non-device machines)\n", err)
+		}
+
 		// Always-on Home watcher: loops for rmkbd's lifetime.
 		go watchHomeButton(activeSess, ec)
 		go watchUSBKeyboardForLaunch(activeSess)

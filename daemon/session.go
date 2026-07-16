@@ -57,6 +57,10 @@ func (s *session) start() error {
 		fmt.Fprintf(os.Stderr, "writerdeck-server: warning: stop xochitl: %v\n", err)
 	}
 	time.Sleep(time.Second)
+	// Grab gpio-keys before Writerdeck starts so Qt evdev never sees physical
+	// Home/Power/page buttons (avoids duplicate handleHome). Idle xochitl keeps
+	// the buttons because we only grab while a session is active.
+	grabButtonDev()
 	cmd := exec.Command(s.editorPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -64,6 +68,7 @@ func (s *session) start() error {
 	// Kill(-pgid, SIGTERM) SIGTERM fallback reaches all child processes.
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	if err := cmd.Start(); err != nil {
+		ungrabButtonDev()
 		exec.Command("systemctl", "start", "xochitl").Run() //nolint:errcheck
 		return fmt.Errorf("start editor: %w", err)
 	}
@@ -93,6 +98,7 @@ func (s *session) end() {
 	s.cmd = nil
 	s.doneCh = nil
 	s.mu.Unlock()
+	ungrabButtonDev()
 	if wasSleeping {
 		fmt.Fprintln(os.Stderr, "writerdeck-server: session: editor stopped for sleep (xochitl stays down)")
 	} else {

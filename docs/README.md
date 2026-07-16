@@ -14,7 +14,9 @@ Reference for the project. Test script output goes in `recon/` — gitignored te
 
 `improvements.md` — design notes for encryption, locales, future UX.
 
-`handoff-physical-home-input.md` — agent handoff for exclusive gpio grab (remove `suppressNextHomeKey`).
+`user-should-test.md` — checklist of what the owner should try by hand (scripts cannot cover these).
+
+`todo-handoff-physical-home-input.md` — Physical Home exclusive gpio grab (**done**; [decisions.md](decisions.md) §28).
 
 `todo-install-onboarding.md` — visitor install friction: README, releases, preflight/install scripts.
 

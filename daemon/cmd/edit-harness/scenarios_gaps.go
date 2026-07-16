@@ -200,9 +200,9 @@ func gapScenarios() []Scenario {
 			Steps: []Step{
 				{SetCursor: intp(proseWEditorEnd)},
 				{Keys: []Key{{Name: "ArrowLeft", Shift: true, Alt: true}}},
-				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[9]), SelEnd: intp(proseWEditorEnd), SelLen: intp(proseWEditorEnd - proseWordStarts[9])}},
+				{Expect: &StateExpect{Cursor: intp(proseWEditorEnd), SelStart: intp(proseWordStarts[11]), SelEnd: intp(proseWEditorEnd), SelLen: intp(proseWEditorEnd - proseWordStarts[11])}},
 				{Label: "alt+backspace deletes selection", Keys: []Key{{Name: "Backspace", Alt: true}}},
-				{Expect: &StateExpect{Cursor: intp(proseWordStarts[9]), TextLen: intp(fixtureProseLen - (proseWEditorEnd - proseWordStarts[9])), SelStart: intp(proseWordStarts[9]), SelEnd: intp(proseWordStarts[9])}},
+				{Expect: &StateExpect{Cursor: intp(proseWordStarts[11]), TextLen: intp(fixtureProseLen - (proseWEditorEnd - proseWordStarts[11])), SelStart: intp(proseWordStarts[11]), SelEnd: intp(proseWordStarts[11])}},
 			},
 		},
 	}
