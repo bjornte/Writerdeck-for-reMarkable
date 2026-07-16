@@ -14,5 +14,6 @@ Scoreboard for full keyboard tests on the tablet (`bash scripts/test-keyboard-ha
 | 16 Jul 2026, 21:21 | 105/105/0 | 36/36/0 | Sign-off — all tests pass |
 | 16 Jul 2026, 23:12 | 107/107/0 | 36/36/0 | Mid-sentence Shift+Up/Down across wrapping paragraphs fixed |
 | 17 Jul 2026, 00:29 | 110/110/0 | 38/38/0 | Hardened: mid-wrapping Shift now critical; cross-para + mid-short-line select |
+| 17 Jul 2026, 01:32 | — | 38/38/0 | Phase 0 EditHelper stub (no behavior change); fork `9320231`; Patch LOC **36** |
 
 Other landmarks: shortcut-chord tag **25/25**; wrap **15/15**; undo **5/5**. Fork migration finished the same day as the first sign-off.

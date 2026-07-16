@@ -58,19 +58,23 @@ grep -q 'rotation_watcher.cpp' edit.pro \
     || { echo "ERROR: edit.pro missing rotation_watcher.cpp" >&2; exit 1; }
 grep -q 'lobby_bridge.cpp' edit.pro \
     || { echo "ERROR: edit.pro missing lobby_bridge.cpp" >&2; exit 1; }
+grep -q 'edit_helper.cpp' edit.pro \
+    || { echo "ERROR: edit.pro missing edit_helper.cpp" >&2; exit 1; }
 grep -q '\-pthread' edit.pro \
     || { echo "ERROR: edit.pro missing -pthread" >&2; exit 1; }
 test -f rotation_watcher.h && test -f rotation_watcher.cpp \
     || { echo "ERROR: rotation_watcher.{h,cpp} missing from fork checkout" >&2; exit 1; }
 test -f lobby_bridge.h && test -f lobby_bridge.cpp \
     || { echo "ERROR: lobby_bridge.{h,cpp} missing from fork checkout" >&2; exit 1; }
+test -f edit_helper.h && test -f edit_helper.cpp \
+    || { echo "ERROR: edit_helper.{h,cpp} missing from fork checkout" >&2; exit 1; }
 grep -q 'rmkbdSocketReader' main.cpp \
     || { echo "ERROR: main.cpp missing socket reader (fork Phase 3)" >&2; exit 1; }
 grep -q 'qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")' main.cpp \
     || { echo "ERROR: main.cpp missing QT_QPA_PLATFORM guard" >&2; exit 1; }
 grep -q 'qEnvironmentVariableIsEmpty("QMLSCENE_DEVICE")' main.cpp \
     || { echo "ERROR: main.cpp missing QMLSCENE_DEVICE guard" >&2; exit 1; }
-echo "  fork C++ infra OK (socket + lobby_bridge + rotation_watcher + edit.pro)."
+echo "  fork C++ infra OK (socket + lobby_bridge + edit_helper + rotation_watcher + edit.pro)."
 echo
 
 # Phase 3: Lobby/shell QML lives in the fork. CI only inserts edit helpers and

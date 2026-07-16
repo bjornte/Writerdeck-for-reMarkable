@@ -1,6 +1,6 @@
 # Handoff: Edit helpers QML → C++ (Phase A)
 
-**Active.** Do the next unchecked item below. When a slice lands, check it off, record fork SHA + harness scores, and update [../editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md). Active rule: `.cursor/rules/edit-helper-cpp-migration.mdc`. Paused: `.cursor/rules/writerdeck.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) items 4–6 (A next; B/C later). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (**110/110/0**, critical **38/38/0** @ `00-29-12`, fork `67656e1`).
+**Active.** Do the next unchecked item below. When a slice lands, check it off, record fork SHA + harness scores, and update [../editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md). Active rule: `.cursor/rules/edit-helper-cpp-migration.mdc`. Paused: `.cursor/rules/writerdeck.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) items 4–7 (A next; B/C later; post-port evaluate last). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (full **110/110/0** @ `00-29-12`; critical **38/38/0** @ `01-32-31`, fork `9320231`).
 
 Prior migration (done): [../editor-migration-1-to-QML/todo-handoff-keywriter-fork.md](../editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Folder overview: [README.md](README.md).
 
@@ -23,10 +23,10 @@ Same typing behavior, clearer brain. Port **pure text math** and **undo/redo** f
 ## Inventory (from `edit_mac_helpers.qml.inc`)
 
 **Move in Phase A (pure string / undo — no layout):**
-`isSpaceChar`, `lineStartPos`, `lineEndPos`, `lineCharCount`, `wordLeftPos`, `wordRightPos`, `deleteWordLeftPos`, `deleteLineLeftPos`, `paragraphUpPos`, `paragraphDownPos`, `insertTextDelta`, `isOneCharInsert`, undo stack ops (`captureEditState` data shape, `pushEditUndoWithMerge`, `editUndo` / `editRedo` merge rules, `clearEditUndoStacks`). Logical `lineDownPos` / `lineUpPos` only if they do **not** call `positionToRectangle`.
+`isSpaceChar`, `lineStartPos`, `lineEndPos`, `lineCharCount`, `wordLeftPos`, `wordRightPos`, `deleteWordLeftPos`, `deleteLineLeftPos`, `paragraphUpPos`, `paragraphDownPos`, `insertTextDelta`, `isOneCharInsert`, undo stack ops (`captureEditState` data shape, `pushEditUndoWithMerge`, `editUndo` / `editRedo` merge rules, `clearEditUndoStacks`). Logical `lineDownPos` / `lineUpPos` only if they do **not** call `positionToRectangle` — confirmed they call `goalXFor` + `visualLine*`, so they stay QML.
 
 **Stay QML for Phase A:**
-Anything using `query.positionToRectangle` / `goalX` / `visualLine*` / `lineWrapsVisually` / `onWrappedLine` / `macLineStartPos` / `macLineEndPos` when wrap-aware; `moveCursorTo`, `applyShiftSelection`, `extendSelection*`, `handleMacArrow`, `handleMacBackspace`, `handleMacEditKeys`, `handleMacKeysOnPressed`, `socketRouteKey`, harness helpers, Timers, Connections, `publishEditorState`.
+Anything using `query.positionToRectangle` / `goalX` / `visualLine*` / `lineWrapsVisually` / `onWrappedLine` / `macLineStartPos` / `macLineEndPos` when wrap-aware; `lineDownPos` / `lineUpPos` / `lineUpForSelection`; `moveCursorTo`, `applyShiftSelection`, `extendSelection*`, `handleMacArrow`, `handleMacBackspace`, `handleMacEditKeys`, `handleMacKeysOnPressed`, `socketRouteKey`, harness helpers, Timers, Connections, `publishEditorState`.
 
 **Phase B / C later (do not start until Phase A done):** key-chord dispatcher into C++; visual-line math into C++.
 
@@ -54,9 +54,9 @@ Deploy budget: **one** Writerdeck binary deploy per agent session unless the bin
 
 ### Phase 0 — pin skeleton, no behavior change
 
-- [ ] Inventory confirmed against current fork `edit_mac_helpers.qml.inc` (list above still accurate; note any drift in this file).
-- [ ] Add `EditHelper` stub in the fork (`edit_helper.h` / `.cpp`), wire `edit.pro` + `main.cpp` context property; QML can see it but **no call sites** yet (or only a unused `Q_INVOKABLE` ping).
-- [ ] CI build + `fetch-keywriter-dist.sh` + `deploy-keywriter.sh -b` + `test-edit-session.sh` + `-t critical --fast` → **38/38/0**. Record fork SHA here and in milestone-runs.
+- [x] Inventory confirmed against current fork `edit_mac_helpers.qml.inc` (list above still accurate; note any drift in this file). Confirmed @ fork `9320231`: Phase A move list unchanged; `lineDownPos`/`lineUpPos` stay QML (visual).
+- [x] Add `EditHelper` stub in the fork (`edit_helper.h` / `.cpp`), wire `edit.pro` + `main.cpp` context property; QML can see it but **no call sites** yet (or only a unused `Q_INVOKABLE` ping). Fork `9320231`; unused `ping()`.
+- [x] CI build + `fetch-keywriter-dist.sh` + `deploy-keywriter.sh -b` + `test-edit-session.sh` + `-t critical --fast` → **38/38/0**. Fork `9320231`; Patch LOC **36**; critical @ `01-32-31` (**38/38/0**); edit-session PASS @ `01-32-08`.
 
 ### Phase A1 — pure text math behind QML wrappers
 
@@ -77,7 +77,7 @@ Deploy budget: **one** Writerdeck binary deploy per agent session unless the bin
 - [ ] Shrink comments in `edit_mac_helpers.qml.inc` that still say “Phase 2C living only in QML” if misleading; note in [../architecture.md](../architecture.md) that pure math/undo live in fork `EditHelper`.
 - [ ] Brief note in [../decisions.md](../decisions.md) §3 (or a short subsection) that Phase A of migration 2 shipped; link this handoff.
 - [ ] Restore `.cursor/rules/writerdeck.mdc` (`alwaysApply: true`); set `edit-helper-cpp-migration.mdc` to `alwaysApply: false` with an archive note. Do this when parking after A3 **or** when B/C finish — keep the migration rule active while B/C are in progress.
-- [ ] Update [../editor-testing/todo.md](../editor-testing/todo.md) / [../../TODO.md](../../TODO.md) items 4–6 when each phase completes (A → check off 4 and point Next at B; etc.).
+- [ ] Update [../editor-testing/todo.md](../editor-testing/todo.md) / [../../TODO.md](../../TODO.md) items 4–7 when each phase completes (A → check off 4 and point Next at B; after A–C evaluate → item 7).
 
 ### Phase B — key-chord dispatcher (later; do not start in the same session as A)
 
@@ -86,6 +86,16 @@ Deploy budget: **one** Writerdeck binary deploy per agent session unless the bin
 ### Phase C — visual line (optional later)
 
 - [ ] Only if A/B paid off. Needs careful layout access (`positionToRectangle` or equivalent). Not required for Phase A success.
+- [ ] Moving wrap math to C++ is **not** by itself a cleanup of hand-tuned gaps (`minGap`, etc.). Prefer behavior-identical port first; design cleanup is § After A–C.
+
+### After A–C — evaluate (not part of the port)
+
+Moving helpers into C++ improves structure and testability. It does **not** automatically fix these design smells. When A–C (as pursued) are done or parked, evaluate and record a keep/change decision in [../decisions.md](../decisions.md) (or a short note here + [../../TODO.md](../../TODO.md) item 7):
+
+- [ ] **Wrap / caret magic thresholds** — today’s visual-line walk uses hand-tuned gaps and row-noise floors. Ask whether Qt layout APIs (or a clearer algorithm) can replace fudge factors without regressing wrap harness tags.
+- [ ] **Custom undo on TextEdit** — stacks and merge rules live beside the text box (pragmatic; harness-green). Ask whether to keep that model in `EditHelper`, lean on Qt’s undo more deeply, or redesign — only if integrity and undo tag stay green.
+
+Do not start this evaluation mid-Phase A. Do not rewrite undo or wrap “for purity” during the behavior-identical port.
 
 ## Do not
 
@@ -101,4 +111,4 @@ Deploy budget: **one** Writerdeck binary deploy per agent session unless the bin
 
 ## Resume prompt (copy for a fresh agent)
 
-> Re. docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md, do the next unchecked item. When done, update docs/editor-testing/milestone-runs.md.
+> Re. docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md, do the next unchecked item (Phase A1). When done, update docs/editor-testing/milestone-runs.md.

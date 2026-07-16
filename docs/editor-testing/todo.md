@@ -14,7 +14,7 @@ Scores are **total/passed/failed**.
 |-----------|--------|------|
 | Latest full suite | **110/110/0** | `00-29-12` @ fork `67656e1`; report `docs/recon/test-keyboard-harness-2026-07-17T00-29-12.md` |
 | Prior full suite | **107/107/0** | `23-12-40` mid-wrapping Shift fix |
-| **Critical (gate)** | **38/38/0** | green @ `00-24-22` (includes mid-wrapping Shift) |
+| **Critical (gate)** | **38/38/0** | green @ `01-32-31` (Phase 0 stub; fork `9320231`) |
 | Wrap tag | **15/15/0** | mid-sentence wrap-shift shrinks strengthened |
 | Undo tag | **5/5/0** | Phase 2C |
 | Sign-off gate | **110/110/0** | met @ `00-29-12` |
@@ -23,7 +23,7 @@ Scores are **total/passed/failed**.
 
 ## Goal for next session
 
-Keyboard harness sign-off is **done** (**110/110/0**). Prefer [editor-migration-2-to-cpp](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) Phase 0 (C++ `EditHelper` stub, no behavior change) or Physical Home owner check. Keep critical **38/38/0** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
+Keyboard harness sign-off is **done** (**110/110/0**). Next: [editor-migration-2-to-cpp](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) Phase A1 (pure text math → `EditHelper`). Phase 0 stub shipped @ fork `9320231`. Keep critical **38/38/0** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
 
 ## Hardening @ `00-29-12` (harness only)
 

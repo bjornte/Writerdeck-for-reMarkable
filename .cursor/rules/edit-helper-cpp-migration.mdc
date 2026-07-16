@@ -7,7 +7,7 @@ alwaysApply: true
 
 This session’s job is migration 2: move pure text math and undo from fork `edit_mac_helpers.qml.inc` into C++ `EditHelper`. Editor engine = **keywriter** (Qt 5 / C++ / QML). On-device binary = **Writerdeck**. Source of truth: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`). Build glue only: `third_party/keywriter/build-keywriter.sh`.
 
-Handoff (read first): [docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Overview: [docs/editor-migration-2-to-cpp/README.md](docs/editor-migration-2-to-cpp/README.md). Policy: [docs/decisions.md](docs/decisions.md) §3. Queue: [TODO.md](TODO.md) items 4–6. Paused general rules: [writerdeck.mdc](writerdeck.mdc) (`alwaysApply: false`). Prior migration (done): [docs/editor-migration-1-to-QML/](docs/editor-migration-1-to-QML/).
+Handoff (read first): [docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Overview: [docs/editor-migration-2-to-cpp/README.md](docs/editor-migration-2-to-cpp/README.md). Policy: [docs/decisions.md](docs/decisions.md) §3. Queue: [TODO.md](TODO.md) items 4–7. Paused general rules: [writerdeck.mdc](writerdeck.mdc) (`alwaysApply: false`). Prior migration (done): [docs/editor-migration-1-to-QML/](docs/editor-migration-1-to-QML/).
 
 ## Audience
 
