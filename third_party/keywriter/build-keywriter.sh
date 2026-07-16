@@ -1308,23 +1308,8 @@ assert nboot == 1, "Component.onCompleted doLoad pattern not found (edit 7k)"
 #      ghosting/smear trail) and reappears 500 ms after the last keystroke
 #      (Timer, step 8b) or immediately on Up/Down. Blink is intentionally absent.
 
-# 7c2a. Add cursor-state property after readFont.
+# 7c2a. Edit/cursor/harness props live in fork edit_mac_helpers.qml.inc (Phase 2D).
 assert '    property string readFont: "Inter"' in s, "readFont not found (7c2a)"
-s = s.replace(
-    '    property string readFont: "Inter"',
-    '    property string readFont: "Inter"\n'
-    '    property bool cursorStrong: true\n'
-    '    property string autosaveSnapshot: ""\n'
-    '    property int harnessTextWidth: 0\n'
-    '    property int harnessDefaultQueryWidth: 0\n'
-    '    property bool harnessPrepareLock: false\n'
-    '    property real goalX: -1\n'
-    '    property int lastShiftHorizKey: 0\n'
-    '    property int shiftAnchor: -1\n'
-    '    property int shiftHead: -1\n',
-    1
-)
-# Phase 2C: undo/redo props live in fork edit_mac_helpers.qml.inc (inserted below).
 
 # 7c2b. Cursor delegate: hide the block while typing (visible only when strong).
 s, ncwv = re.subn(
@@ -1334,90 +1319,9 @@ s, ncwv = re.subn(
 )
 assert ncwv == 1, "cursor delegate visible not found (7c2b)"
 
-# 7c2d. Arrow Down in edit mode -> strong cursor immediately.
-old_kd = (
-    'case Qt.Key_Down:\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollDown()\n'
-    '                            break'
-)
-new_kd = (
-    'case Qt.Key_Down:\n'
-    '                            if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollDown()\n'
-    '                            break'
-)
-assert old_kd in s, "Key_Down case not found (7c2d)"
-s = s.replace(old_kd, new_kd, 1)
-
-# 7c2e. Arrow Up in edit mode -> strong cursor immediately.
-old_ku = (
-    'case Qt.Key_Up:\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollUp()\n'
-    '                            break'
-)
-new_ku = (
-    'case Qt.Key_Up:\n'
-    '                            if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollUp()\n'
-    '                            break'
-)
-assert old_ku in s, "Key_Up case not found (7c2e)"
-s = s.replace(old_ku, new_ku, 1)
-
-# 7n. Cursor boundary niceties (edit mode): Down on the last line -> end of line;
-#     Up on the first line -> start of line. Accept the key so QTextEdit does not
-#     no-op or scroll the flickable instead.
-old7n_kd = (
-    'case Qt.Key_Down:\n'
-    '                            if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollDown()\n'
-    '                            break'
-)
-new7n_kd = (
-    'case Qt.Key_Down:\n'
-    '                            if (mode == 1) {\n'
-    '                                cursorStrong = true; cursorTimer.stop()\n'
-    '                                if (event.modifiers === Qt.NoModifier && root.cursorOnLastLine()) {\n'
-    '                                    root.moveCursorEndOfLine()\n'
-    '                                    event.accepted = true\n'
-    '                                    break\n'
-    '                                }\n'
-    '                            }\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollDown()\n'
-    '                            break'
-)
-assert old7n_kd in s, "Key_Down case not found (7n)"
-s = s.replace(old7n_kd, new7n_kd, 1)
-
-old7n_ku = (
-    'case Qt.Key_Up:\n'
-    '                            if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollUp()\n'
-    '                            break'
-)
-new7n_ku = (
-    'case Qt.Key_Up:\n'
-    '                            if (mode == 1) {\n'
-    '                                cursorStrong = true; cursorTimer.stop()\n'
-    '                                if (event.modifiers === Qt.NoModifier && root.cursorOnFirstLine()) {\n'
-    '                                    root.moveCursorStartOfLine()\n'
-    '                                    event.accepted = true\n'
-    '                                    break\n'
-    '                                }\n'
-    '                            }\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollUp()\n'
-    '                            break'
-)
-assert old7n_ku in s, "Key_Up case not found (7n)"
-s = s.replace(old7n_ku, new7n_ku, 1)
+# Phase 2D: Up/Down edit-mode cursor/boundary logic lives in handleMacArrow
+# (moveCursorVertical). Keys.onPressed only needs preview-mode scroll cases
+# from step 7d — no extra Key_Up/Key_Down patches here.
 
 old7n_fn = '    function showLobby() {'
 # Phase 2A: edit helpers live in the Writerdeck-keywriter fork (not embedded here).
@@ -1431,27 +1335,21 @@ assert 'function handleMacArrow' in _helpers, "edit_mac_helpers.qml.inc missing 
 assert 'function handleMacBackspace' in _helpers, "edit_mac_helpers.qml.inc missing handleMacBackspace"
 assert 'property var editUndoStack' in _helpers, "edit_mac_helpers.qml.inc missing editUndoStack (Phase 2C)"
 assert 'function handleMacUndo' in _helpers, "edit_mac_helpers.qml.inc missing handleMacUndo"
+assert 'property bool cursorStrong' in _helpers, "edit_mac_helpers.qml.inc missing cursorStrong (Phase 2D)"
+assert 'function handleMacKeysOnPressed' in _helpers, "edit_mac_helpers.qml.inc missing handleMacKeysOnPressed (Phase 2D)"
 new7n_fn = _helpers + old7n_fn
 assert old7n_fn in s, "function showLobby not found (7n)"
 s = s.replace(old7n_fn, new7n_fn, 1)
 
-# 7o. Mac-style modifier+arrow in edit mode; plain Left/Right move the caret
-#     (normal editor). Hardware page buttons use pageleft/pageright cmds — not
-#     Key_Left/Key_Right (those codes are shared with keyboard arrows).
+# 7o. Edit-mode Keys routing is handleMacKeysOnPressed in the fork (Phase 2D).
+#     Hardware page buttons use pageleft/pageright cmds — not Key_Left/Key_Right
+#     (those codes are shared with keyboard arrows).
 s, n7o_kp = re.subn(
     r'([ \t]+Keys\.onPressed:\s*\{\s*\n)([ \t]+)switch\(event\.key\)\{',
     lambda m: (
         m.group(1)
-        + m.group(2) + 'if (mode == 1) {\n'
-        + m.group(2) + '    if (root.handleMacBackspace(event))\n'
-        + m.group(2) + '        return\n'
-        + m.group(2) + '    if (root.handleMacEditKeys(event))\n'
-        + m.group(2) + '        return\n'
-        + m.group(2) + '    if (root.handleMacUndo(event))\n'
-        + m.group(2) + '        return\n'
-        + m.group(2) + '    if (root.handleMacArrow(event))\n'
-        + m.group(2) + '        return\n'
-        + m.group(2) + '}\n'
+        + m.group(2) + 'if (root.handleMacKeysOnPressed(event))\n'
+        + m.group(2) + '    return\n'
         + m.group(2) + 'switch(event.key){'
     ),
     s, count=1
