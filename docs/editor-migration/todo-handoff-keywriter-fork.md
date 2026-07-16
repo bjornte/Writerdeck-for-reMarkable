@@ -44,7 +44,7 @@ Do one lettered group per session (or per deploy cycle). After each group: remov
 
 - [x] **Connections / Timers** — cursor Timer, autosave Timer, and text-change Connections moved into [`edit_mac_helpers.qml.inc`](https://github.com/bjornte/Writerdeck-keywriter/blob/master/edit_mac_helpers.qml.inc) (`db0781e`); script asserts. Critical **36/36** @ `17-57-45`; full suite **92/13** @ `17-59-00` (Patch LOC **1802**). Critical edit paths no longer live only as script string patches.
 - [x] **C++ infra** — socket reader, `lobby_bridge`, `rotation_watcher`, and toltec `edit.pro` live in the fork (`f7c84e9`); script asserts instead of `git apply` / COPY. Critical **36/36** @ `18-08-55`; full suite **93/12** @ `18-10-10` (Patch LOC **1778**). Lobby/shell QML Python patches remain.
-- [x] `build-keywriter.sh` further shrink toward build glue only — Lobby/shell QML + `lobby/*.inc` in fork (`68f6e32`); script asserts + helpers insert + lobby concat only (Patch LOC **386**). Critical / full suite TBD this session.
+- [x] `build-keywriter.sh` further shrink toward build glue only — Lobby/shell QML + `lobby/*.inc` in fork (`68f6e32`); script asserts + helpers insert + lobby concat only (Patch LOC **386**). Critical **36/36** @ `18-56-12`; full suite **93/12** @ `18-57-31`.
 - [ ] Document fork ownership, default branch, and how to merge upstream keywriter in [../decisions.md](../decisions.md) §3.
 - [ ] Restore `.cursor/rules/writerdeck-backup.mdc` → `writerdeck.mdc` (`alwaysApply: true`); retire or set `alwaysApply: false` on `keywriter-fork-migration.mdc`.
 
