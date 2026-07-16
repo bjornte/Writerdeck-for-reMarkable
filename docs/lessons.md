@@ -146,7 +146,7 @@ Lobby last-sync needs the phone to POST sync ack after reconcile. Load sync flag
 
 GitHub token is per browser origin (`localStorage ghToken`). A new tablet IP is a new origin — enter the token once in Notes sync setup, then it persists in that browser. After a service restart, tablet RAM is empty until the browser reposts (WebSocket `needtoken` or `refreshSyncStatus` on reconnect). Verify in journal: `sync reconcile (token)` after `client connected` — see [server-sync-implementation.md](server-sync-implementation.md).
 
-Writerdeck deploy needs a fresh binary; QML lives inside it. After lobby edits: run `third_party/keywriter/concat-lobby.sh`, commit `lobby_subpages.qml.inc`, CI rebuild, deploy, relaunch, check journalctl. Restarting the server does not reload a running Writerdeck process.
+Writerdeck deploy needs a fresh binary; QML lives inside it. Lobby fragments live in the Writerdeck-keywriter fork (`lobby/*.inc`); CI concatenates them. After lobby edits there: push the fork, then Writerdeck CI rebuild, deploy, relaunch, check journalctl. Restarting the server does not reload a running Writerdeck process.
 
 Lobby Files vault row: when private notes is on, the note `ListView` must reserve height for the second button row — otherwise Encrypt/Decrypt renders below the visible area. Use explicit half-width `Rectangle` buttons (same pattern as Settings); a `Repeater` that sizes delegates with `parentRow.model.length` fails because `Row` has no `model` — labels draw at x=0 with zero-width chrome and overlap.
 

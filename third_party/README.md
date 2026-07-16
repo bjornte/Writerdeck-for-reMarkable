@@ -8,15 +8,14 @@ Upstream [remarkable-keywriter](https://github.com/dps/remarkable-keywriter): a 
 
 **C++ vs QML:** QML = screen + typing/selection behavior (`main.qml`, fork `edit_mac_helpers.qml.inc`). C++ = startup, e-ink/display, socket keystroke inject (`main.cpp`). Editing improvements for the current migration almost always mean QML in the fork.
 
-- Socket inject, `lobby_bridge`, and `rotation_watcher` live **in the fork** (`main.cpp` + helpers). CI asserts they are present; it no longer `git apply`s a patch or copies those sources from this tree.
+- Socket inject, `lobby_bridge`, `rotation_watcher`, Lobby/shell `main.qml`, and `lobby/*.inc` live **in the fork**. CI asserts they are present; it only inserts `edit_mac_helpers.qml.inc` and concatenates Lobby subpages + sleep screen.
 - Built from source — cross-compiled in `ghcr.io/toltec-dev/qt:v3.3` via **CI** ([build-keywriter.sh](keywriter/build-keywriter.sh) + [Dockerfile](keywriter/Dockerfile), workflow `build-keywriter.yml`). Mac: `git push` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b` — not local `docker build`.
 - [../scripts/deploy-keywriter.sh](../scripts/deploy-keywriter.sh) ships the binary to `/home/root/Writerdeck`; notes live in the separate directory `/home/root/Writerdeck-user-documents/` — don't put the binary there.
 
 ```
 third_party/
   keywriter/
-    build-keywriter.sh  ← CI build (assert fork C++ + QML Python patches + qmake)
+    build-keywriter.sh  ← CI build glue (assert fork + helpers/lobby concat + qmake)
     Dockerfile          ← toltec qt:v3.3 build image
-    lobby/              ← Lobby QML fragments (still injected at build time)
     dist/               ← CI-built Writerdeck + qt5.tar.gz (fetch via fetch-keywriter-dist.sh)
 ```

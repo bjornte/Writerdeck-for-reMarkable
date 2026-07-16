@@ -6,8 +6,6 @@ on:
     paths:
       - 'third_party/keywriter/Dockerfile'
       - 'third_party/keywriter/build-keywriter.sh'
-      - 'third_party/keywriter/lobby_subpages.qml.inc'
-      - 'third_party/keywriter/lobby/**'
       - '.github/workflows/build-keywriter.yml'
 
 permissions:

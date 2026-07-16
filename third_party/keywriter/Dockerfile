@@ -90,11 +90,9 @@ RUN set -eux; \
 ENV KEYWRITER_REPO=https://github.com/bjornte/Writerdeck-keywriter.git \
     KEYWRITER_REF=master
 
-# C++ infra (socket inject, lobby_bridge, rotation_watcher, edit.pro) lives in
-# the Writerdeck-keywriter fork — not copied into the image (Phase 3).
-COPY lobby/ /lobby/
-COPY concat-lobby.sh /concat-lobby.sh
+# C++ + Lobby/shell QML live in the Writerdeck-keywriter fork (Phase 3).
+# Image only carries build glue; lobby/*.inc is cloned with the fork.
 COPY build-keywriter.sh /build-keywriter.sh
-RUN chmod +x /build-keywriter.sh /concat-lobby.sh
+RUN chmod +x /build-keywriter.sh
 
 ENTRYPOINT ["/build-keywriter.sh"]

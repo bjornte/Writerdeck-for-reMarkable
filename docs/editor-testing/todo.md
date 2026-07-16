@@ -47,7 +47,7 @@ Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../
 
 ## Next (one batch)
 
-1. Prefer Phase **3** (further shrink Lobby/shell QML in `build-keywriter.sh`; C++ infra now in fork) over burning down the leftover fails.
+1. Prefer Phase **3** (document fork ownership + restore general rules; Lobby/shell QML now in fork) over burning down the leftover fails.
 2. Triage flakes with `-s NAME --fast` only when that group is in play.
 3. One push → CI → fetch → deploy → `test-edit-session.sh` → full `--fast` → update [milestone-runs.md](milestone-runs.md).
 

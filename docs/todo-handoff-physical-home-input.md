@@ -34,7 +34,7 @@ After this: delete `suppressNextHomeKey`, the `fromPhysicalCmd` argument, and th
 
 2. **Verify Qt no longer gets physical Home** — Deploy server only first; with Writerdeck running, physical Home should change lobby/quit only via cmd path. No duplicate quit. USB keyboard Home (`Key_Home` over socket or evdev on a USB event node) must still work from edit, read, and lobby.
 
-3. **Remove pairing hack from QML** — In `third_party/keywriter/build-keywriter.sh`: drop `suppressNextHomeKey` property, `fromPhysicalCmd` parameter, and the consume branch at the top of `handleKey`. Restore cmd home to plain `invokeSaveCmd("handleHome", "home")` in fork `main.cpp`. Keep a single `Key_Home` entry point at the top of `handleKey` → `handleHome()`.
+3. **Remove pairing hack from QML** — In fork `main.qml` (Writerdeck-keywriter): drop `suppressNextHomeKey` property, `fromPhysicalCmd` parameter, and the consume branch at the top of `handleKey`. Restore cmd home to plain `invokeSaveCmd("handleHome", "home")` in fork `main.cpp`. Keep a single `Key_Home` entry point at the top of `handleKey` → `handleHome()`.
 
 4. **Move server side-effects to editor ack (optional but recommended)** — Today `input.go` fires `exitedit` and sync when the button is pressed, in a goroutine parallel to save. Tie `exitedit`, `currentNote` clear, and `syncEng.reconcileAll("home")` to the successful `saved`/`home` ack from the editor (same pattern as other save-driven state). Button handler should only send cmd home.
 
@@ -45,7 +45,7 @@ After this: delete `suppressNextHomeKey`, the `fromPhysicalCmd` argument, and th
 | Area | Path |
 |------|------|
 | Button watcher | `daemon/input.go`, `daemon/editor.go` |
-| QML patches | `third_party/keywriter/build-keywriter.sh` |
+| QML patches | fork `main.qml` (Writerdeck-keywriter) |
 | Socket cmd | fork [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) `main.cpp` |
 | Tests | `daemon/cmd/lobby-keyboard-test/main.go`, `scripts/test-lobby-keyboard.sh` |
 | Docs | `docs/decisions.md`, optionally `docs/lessons.md` |
