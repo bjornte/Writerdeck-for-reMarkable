@@ -6,7 +6,7 @@ Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path
 
 Sign-off: **105/105 PASS** (`bash scripts/test-keyboard-harness.sh --fast`). Critical gate: **36/36 PASS** (`-t critical --fast`).
 
-Current baseline: **74/31** of 105 @ `11-38-40` @ `7603357`; critical **26/36**. Report: `docs/recon/test-keyboard-harness-2026-07-16T11-38-40.md`.
+Current baseline: **91/14** of 105 @ `12-41-15` @ `377a053`; critical **36/36**. Report: `docs/recon/test-keyboard-harness-2026-07-16T12-41-15.md`.
 
 | File | Purpose |
 |------|---------|

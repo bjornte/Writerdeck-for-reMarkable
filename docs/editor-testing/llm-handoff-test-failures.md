@@ -1,6 +1,6 @@
 # LLM handoff: keyboard testing methodology review
 
-**Current state (2026-07-16):** Pattern rewrite complete — **105** scenarios. Latest full suite **74/31/0** @ `11-38-40` (`7603357`); critical **26/36** (10 open). **For implementation work, read [todo.md](todo.md) first** — it has the critical failure table, what `7603357` tried, and the next batch plan. Sign-off: `-t critical --fast` → 36/36, then full `--fast` → 105/105.
+**Current state (2026-07-16):** Pattern rewrite complete — **105** scenarios. Latest full suite **91/14/0** @ `12-41-15` (`377a053`); **critical 36/36**. Remaining 14 are non-critical (goal-col, combo, wrap-shift N=3, etc.). **For implementation work, read [todo.md](todo.md) first.** Sign-off: full `--fast` → 105/105.
 
 This file is mainly a **historical methodology review** (false-completion traps, harness design). Fresh coding sessions should start at [todo.md](todo.md), not here.
 

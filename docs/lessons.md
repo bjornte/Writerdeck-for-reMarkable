@@ -118,6 +118,10 @@ Do not mark keyboard editing done when only newline-based harness scenarios pass
 
 `TextEdit.moveCursorSelection` takes a character index, not `TextEdit.Down` / `TextEdit.Up`. Passing direction enums selects toward a low position and breaks shift+vertical. Use `lineDownPos` / `lineUpPos` and explicit anchor math (same model as horizontal `extendSelectionHorizontal`). Setting `query.cursorPosition` after `query.select()` collapses the selection.
 
+Do not infer the moving selection end from `query.cursorPosition` after `query.select(min, max)` — Qt parks the caret at `selectionEnd` (the higher index), so Shift+Left/Up then extends the wrong end instead of shrinking. Keep a persistent `shiftAnchor` / `shiftHead` pair; clear it on non-shift motion and `harnessSetCursor`.
+
+After a mutating Backspace uni1 block, `SetCursor` to a stale absolute index is wrong (document shrank). Mid-scenario `Reprepare` (rewrite note + `harnessprepare`) before the next absolute caret seed.
+
 Saved-file guessing for selection tests was unreliable. Assert `cursor`, `selStart`, `selEnd`, and `textLen` from the editor-state probe instead.
 
 Qt RichText ignores margin-bottom on paragraphs and list items — use line-height. Font IDs must match Qt family names exactly. QML Text needs explicit width and wrapMode.
