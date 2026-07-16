@@ -42,7 +42,7 @@ Using `build-keywriter.sh` as the patching layer is a constraint choice, not an 
 
 Prefer moving substantial QML/C++ edits into a maintained Writerdeck fork of keywriter and reducing `build-keywriter.sh` to build glue plus minimal deterministic patches. The long patch script is an emergency maintenance model, not a destination — do not wait for harness **105/105**, and do not spend the migration queue on leftover non-critical harness fails first.
 
-**Fork (owned):** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) — fork of `dps/remarkable-keywriter`, default branch `master`. CI clones that URL via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork `edit_mac_helpers.qml.inc` (Phase 2A); `build-keywriter.sh` inserts the file and still owns property decls + Keys wiring. Critical **36/36**; latest full suite **92/13**. Handoff: [todo-handoff-keywriter-fork.md](todo-handoff-keywriter-fork.md).
+**Fork (owned):** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) — fork of `dps/remarkable-keywriter`, default branch `master`. CI clones that URL via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork `edit_mac_helpers.qml.inc` (Phase 2A); `build-keywriter.sh` inserts the file and still owns property decls + Keys wiring. Critical **36/36**; latest full suite **92/13**. Handoff: [todo-handoff-keywriter-fork.md](editor-migration/todo-handoff-keywriter-fork.md).
 
 Phasing ([TODO.md](../TODO.md) item 3):
 

@@ -20,7 +20,7 @@ Root pointer: [TODO.md](../../TODO.md) item 2.
 
 ## Goal for next session
 
-Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../todo-handoff-keywriter-fork.md), rule `keywriter-fork-migration.mdc`. Order: critical feature groups in bulk (A→D). Do **not** first burn down the 14 leftover fails. Keep critical **36/36** green on every behavior-moving deploy.
+Prefer the **keywriter fork** migration — [todo-handoff-keywriter-fork.md](../editor-migration/todo-handoff-keywriter-fork.md), rule `keywriter-fork-migration.mdc`. Order: critical feature groups in bulk (A→D). Do **not** first burn down the 14 leftover fails. Keep critical **36/36** green on every behavior-moving deploy.
 
 
 ## What `377a053` fixed
