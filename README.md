@@ -22,22 +22,13 @@ Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**,
 
 1. On the [repo page](https://github.com/bjornte/Writerdeck-for-reMarkable), click **Code → Download ZIP** and unzip it. Open a terminal in that folder.
 
-2. Make your secrets file and fill in two values:
-
-   ```bash
-   cp secrets/remarkable.local.env.example secrets/remarkable.local.env
-   ```
-
-   - `RM_ROOT_PASSWORD` — on the tablet: Settings → Help → Copyrights and licenses → General information (scroll down). Changes after every firmware update.
-   - `RM_HOST_WIFI` — the tablet’s Wi-Fi address (tablet Wi-Fi settings, or your router’s device list).
-
-3. Install and start:
+2. Run:
 
    ```bash
    bash scripts/install.sh --start
    ```
 
-   When Lobby and the phone page look good, turn on auto-start (on the tablet): `systemctl enable writerdeck`.
+   It asks for the tablet root password (Settings → Help → Copyrights and licenses → General information, scroll down) and the tablet’s Wi-Fi address, then installs. When Lobby and the phone page look good, turn on auto-start (on the tablet): `systemctl enable writerdeck`.
 
 ### You're done when
 

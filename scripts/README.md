@@ -15,7 +15,7 @@ bash scripts/install.sh              # or: bash scripts/install.sh --start
 bash scripts/install-service.sh --start   # if you skipped --start above
 ```
 
-Checks only: `bash scripts/preflight.sh`. Planning: [install-onboarding](../docs/install-onboarding/).
+Checks only: `bash scripts/preflight.sh` (prompts for password/IP if missing). Planning: [install-onboarding](../docs/install-onboarding/).
 
 ## Everyday commands
 

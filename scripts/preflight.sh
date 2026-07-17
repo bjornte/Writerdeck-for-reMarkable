@@ -40,11 +40,11 @@ fail=0
 echo "=== preflight ==="
 echo
 
+bash "$DIR/ensure-secrets.sh"
+
 # --- secrets file ------------------------------------------------------------
 if [ ! -f "$SECRETS" ]; then
-  err "missing $SECRETS"
-  echo "  cp secrets/remarkable.local.env.example secrets/remarkable.local.env" >&2
-  echo "  then fill in RM_ROOT_PASSWORD and RM_HOST_WIFI." >&2
+  err "missing $SECRETS after ensure-secrets"
   exit 1
 fi
 ok "secrets file present"

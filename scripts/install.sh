@@ -32,6 +32,7 @@ cd "$REPO"
 echo "=== install.sh ==="
 echo
 
+bash "$DIR/ensure-secrets.sh"
 bash "$DIR/preflight.sh" --skip-dist
 
 echo
