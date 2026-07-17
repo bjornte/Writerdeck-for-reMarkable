@@ -4,7 +4,7 @@ Short definitions. Fork glossary: [Writerdeck-keywriter docs/terms.md](https://g
 
 ## Product
 
-Writerdeck. A Wi-Fi Markdown typewriter on a first-gen reMarkable.
+Writerdeck. A Markdown typewriter on a first-gen reMarkable for USB and Bluetooth keyboards. Bluetooth pairs to the phone; typing reaches the tablet over Wi-Fi. USB plugs in with an OTG cable.
 
 Writerdeck-server. Always-on program on the tablet: files, sync, PIN, launching the editor. No screen of its own.
 

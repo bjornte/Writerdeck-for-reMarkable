@@ -4,7 +4,7 @@ How Writerdeck fits together. Why: [decisions.md](decisions.md). Shipped: [../DO
 
 ## What this is
 
-The reMarkable 1 has a fine e-ink screen and a quiet OS, but no word processor and no keyboard support. Writerdeck adds both. You type on a phone keyboard over Wi-Fi or a USB keyboard on an OTG cable. The tablet shows the page and keeps Markdown on disk.
+The reMarkable 1 has a fine e-ink screen and a quiet OS, but no word processor and no keyboard support. Writerdeck adds both. Use a USB keyboard on an OTG cable, or a Bluetooth keyboard paired to your phone — those keys reach the tablet over Wi-Fi. The tablet shows the page and keeps Markdown on disk.
 
 ```
 Phone (Safari + keyboard)

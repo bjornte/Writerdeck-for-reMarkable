@@ -1,6 +1,6 @@
 # What's shipped
 
-Writerdeck adds keyboard word processing to the first-gen reMarkable. Type from a phone over Wi-Fi or from a USB keyboard. Notes save as Markdown.
+Writerdeck adds keyboard word processing to the first-gen reMarkable. Use a USB keyboard on an OTG cable, or a Bluetooth keyboard paired to your phone (keys cross Wi-Fi to the tablet). Notes save as Markdown.
 
 Open work: [TODO.md](TODO.md). How: [docs/architecture.md](docs/architecture.md). Why: [docs/decisions.md](docs/decisions.md). Gotchas: [docs/lessons.md](docs/lessons.md).
 
