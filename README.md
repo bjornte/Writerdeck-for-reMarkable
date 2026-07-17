@@ -18,72 +18,39 @@ A usable appliance. Plenty left to improve; the core loop works.
 
 ## Install
 
-### Before you start
+Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**, [Go](https://go.dev/dl/) installed (`go version` should say 1.25 or newer), and the tablet **awake**.
 
-- reMarkable **1** only (not 2 / Paper Pro)
-- Mac or Linux on the **same Wi-Fi** as the tablet (scripts are bash; no Windows-native path yet)
-- **Go 1.25+** (`go version`) to build Writerdeck-server
-- Tablet **awake** (sleep drops Wi-Fi)
+1. On the [repo page](https://github.com/bjornte/Writerdeck-for-reMarkable), click **Code → Download ZIP** and unzip it. Open a terminal in that folder.
 
-Editor binaries come from the [`keywriter` Release](https://github.com/bjornte/Writerdeck-for-reMarkable/releases/tag/keywriter) (`bash scripts/fetch-keywriter-dist.sh` uses curl). If that fails: open [Actions → Build keywriter](https://github.com/bjornte/Writerdeck-for-reMarkable/actions/workflows/build-keywriter.yml), pick the latest green run, download the `keywriter-dist` artifact, and put `Writerdeck` + `qt5.tar.gz` in `third_party/keywriter/dist/`. Optional: `gh` for a specific Actions run id.
-
-### Steps
-
-1. Clone the repo. Copy the secrets template and fill in **password** and **Wi-Fi IP**:
+2. Make your secrets file and fill in two values:
 
    ```bash
    cp secrets/remarkable.local.env.example secrets/remarkable.local.env
    ```
 
-   - `RM_ROOT_PASSWORD` — tablet: Settings → Help → Copyrights and licenses → General information (scroll down). Changes after every firmware update.
-   - `RM_HOST_WIFI` — tablet Wi-Fi settings (or your router’s client list). Prefer a DHCP reservation so the address stays put. More: [docs/architecture.md](docs/architecture.md).
+   - `RM_ROOT_PASSWORD` — on the tablet: Settings → Help → Copyrights and licenses → General information (scroll down). Changes after every firmware update.
+   - `RM_HOST_WIFI` — the tablet’s Wi-Fi address (tablet Wi-Fi settings, or your router’s device list).
 
-2. One-shot install (recommended):
-
-   ```bash
-   bash scripts/install.sh
-   ```
-
-   Or step by step: `preflight.sh` → `bootstrap.sh` → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh` → `deploy-rmkbd.sh` → `install-service.sh`.
-
-3. Start the service (boot-loop guard — do **not** enable until this works):
+3. Install and start:
 
    ```bash
-   bash scripts/install-service.sh --start
+   bash scripts/install.sh --start
    ```
 
-   Or SSH to the tablet and run `systemctl start writerdeck`. Only then: `systemctl enable writerdeck`.
-
-Optional: `bash scripts/install.sh --start` runs the start smoke test at the end of the chain.
+   When Lobby and the phone page look good, turn on auto-start (on the tablet): `systemctl enable writerdeck`.
 
 ### You're done when
 
 - Lobby Files is on the e-ink screen
-- Phone loads `http://<RM_HOST_WIFI>:8000/` — notes list populated, connection bar shows **Connected** or **Tablet offline**, not stuck on `connecting...`
+- On your phone, `http://<that-Wi-Fi-IP>:8000/` shows your notes list and **Connected** (not stuck on `connecting...`)
 
-Optional smoke test from the Mac: `bash scripts/test-edit-session.sh`.
-
-### After a firmware update (OTA)
-
-The SSH password changes and the systemd unit may be gone. Update `RM_ROOT_PASSWORD`, then:
-
-```bash
-bash scripts/fix-hostkey.sh    # if SSH says "host key changed"
-bash scripts/bootstrap.sh
-bash scripts/deploy-keywriter.sh
-bash scripts/deploy-rmkbd.sh
-bash scripts/install-service.sh --start
-```
-
-Enable again only after a manual start works.
-
-### Recovery (bad autostart)
-
-On the tablet:
+If the tablet boots into Writerdeck and something looks wrong:
 
 ```bash
 systemctl disable --now writerdeck && systemctl start xochitl
 ```
+
+(run that over SSH on the tablet). After a firmware update, the password changes and you may need to re-run the install steps above.
 
 ### Optional GitHub sync
 
@@ -101,7 +68,7 @@ Useful keys: Esc toggles edit and preview inside Writerdeck, or launches to Lobb
 
 ## For developers
 
-Start with [TODO.md](TODO.md) and [DONE.md](DONE.md). Credentials: [secrets/README.md](secrets/README.md). Keep the tablet awake and iterate over Wi-Fi. After editor source changes: push, fetch the CI binary, deploy, run `test-edit-session.sh`. First-time install planning: [docs/install-onboarding/](docs/install-onboarding/).
+Start with [TODO.md](TODO.md) and [DONE.md](DONE.md). Credentials: [secrets/README.md](secrets/README.md). Keep the tablet awake and iterate over Wi-Fi. After editor source changes: push, fetch the CI binary, deploy, run `test-edit-session.sh`. Install notes: [docs/install-onboarding/](docs/install-onboarding/).
 
 ## Constraints
 
