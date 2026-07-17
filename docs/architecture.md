@@ -15,7 +15,7 @@ reMarkable 1
   Writerdeck — full-screen editor; reads /run/Writerdeck.sock; saves .md
 ```
 
-Keys reach the editor over that socket. This kernel cannot load a fake keyboard device (uinput) ([decisions.md](decisions.md) §3).
+Keys reach the editor over that socket. This kernel cannot load a uinput (fake keyboard device) ([decisions.md](decisions.md) §3).
 
 ## Document integrity
 
@@ -57,7 +57,7 @@ Server from the Mac:
 bash scripts/deploy-rmkbd.sh
 ```
 
-Editor from CI (GitHub Actions) (QML is inside the binary):
+Editor from CI (GitHub Actions); QML is inside the binary:
 
 ```bash
 git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywriter.sh -b

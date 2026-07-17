@@ -32,7 +32,7 @@ Going Home clears the on-screen box. Reload and mode toggle must push the real n
 
 ## 3. Socket input, not uinput
 
-This kernel cannot load a fake keyboard device (uinput). Do not retry that path. Keystrokes arrive on a local socket and become Qt key events. The phone resolves the keymap; the tablet gets characters and Mac/Linux-style Ctrl/Alt shortcuts. USB Linux keyboards already use those shortcuts — no second shortcut set.
+This kernel cannot load a uinput (fake keyboard device). Do not retry that path. Keystrokes arrive on a local socket and become Qt key events. The phone resolves the keymap; the tablet gets characters and Mac/Linux-style Ctrl/Alt shortcuts. USB Linux keyboards already use those shortcuts — no second shortcut set.
 
 ## 4. Owned keywriter fork
 
