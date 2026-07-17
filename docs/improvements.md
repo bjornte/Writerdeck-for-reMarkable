@@ -14,4 +14,4 @@ A read-only Markdown mirror on the phone while you type on e-ink, maybe with tap
 
 Phone niceties: bulk delete, search, HTTPS for a native Share sheet, vault PIN on the phone (tablet-only entry ships today).
 
-Easier first-time install for people who are not already comfortable with SSH — [todo-install-onboarding.md](todo-install-onboarding.md).
+Easier first-time install for people who are not already comfortable with SSH — [install-onboarding/](install-onboarding/).

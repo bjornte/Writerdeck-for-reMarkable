@@ -6,6 +6,17 @@ Deploy and test helpers. Run from the repo root. Credentials come from [secrets]
 
 Writerdeck-server from `deploy-rmkbd.sh`. Writerdeck from CI via `deploy-keywriter.sh`. Launcher, `wd`, and the systemd unit from this folder.
 
+## First-time install
+
+```bash
+cp secrets/remarkable.local.env.example secrets/remarkable.local.env
+# fill RM_ROOT_PASSWORD + RM_HOST_WIFI
+bash scripts/install.sh              # or: bash scripts/install.sh --start
+bash scripts/install-service.sh --start   # if you skipped --start above
+```
+
+Checks only: `bash scripts/preflight.sh`. Planning: [install-onboarding](../docs/install-onboarding/).
+
 ## Everyday commands
 
 Ship a new editor binary after CI built it:
@@ -23,6 +34,6 @@ Show Lobby: `wd` or `bash scripts/lobby.sh`.
 
 ## Other useful scripts
 
-bootstrap.sh — SSH key and Wi-Fi SSH. recon.sh — device snapshot after OTA. install-service.sh — systemd unit (enable only after a manual start works). install-alias.sh — Mac shortcuts. recover-orphaned-vault-notes.sh — after a vault key mistake.
+bootstrap.sh — SSH key and Wi-Fi SSH. preflight.sh — secrets / go / ping / dist checks. install.sh — first-time chain. recon.sh — device snapshot after OTA. install-service.sh — systemd unit (`--start` for smoke test; enable only after that works). install-alias.sh — Mac shortcuts. fix-hostkey.sh — after OTA host-key change. recover-orphaned-vault-notes.sh — after a vault key mistake.
 
 Never log secrets. Prefer idempotent scripts.

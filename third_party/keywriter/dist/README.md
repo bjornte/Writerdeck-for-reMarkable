@@ -9,13 +9,14 @@ Built artifacts — fork QML is baked into `Writerdeck` at CI build time (no run
 
 Deployed to `/home/root/Writerdeck` on the tablet.
 
-**CI:**
+**Fetch (no `gh` required):** rolling Release tag `keywriter`, or Actions artifact as browser fallback.
 
 ```bash
-git push                               # triggers build-keywriter.yml
-bash scripts/fetch-keywriter-dist.sh   # pull artifact to dist/
+bash scripts/fetch-keywriter-dist.sh   # curl Release, else gh run download
 bash scripts/deploy-keywriter.sh -b
 ```
+
+After a fork/CI change: wait for Build keywriter on main (updates the Release), then fetch + deploy.
 
 **Local rebuild** (when CI is slow or uncommitted):
 

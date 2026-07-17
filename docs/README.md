@@ -24,6 +24,8 @@ editor-testing/ — automated typing-test scores and check names.
 
 editor-migration-1-to-QML/ and editor-migration-2-to-cpp/ — finished migrations; policy lives in decisions §4–§6.
 
+install-onboarding/ — first-time install path for visitors (docs + scripts + Release fetch).
+
 server-sync-implementation.md — how GitHub sync and token restore work.
 
 External: [keywriter](https://github.com/dps/remarkable-keywriter) · [input docs](https://remarkable.guide/devel/device/input.html)
