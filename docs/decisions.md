@@ -1,6 +1,6 @@
 # Architecture decisions
 
-Why the project is built this way. How it works: [architecture.md](architecture.md). Open work: [../TODO.md](../TODO.md). What's shipped: [../DONE.md](../DONE.md). Gotchas: [lessons.md](lessons.md).
+Why the project is built this way. How it works: [architecture.md](architecture.md). Open work: [../TODO.md](../TODO.md). What's shipped: [../DONE.md](../DONE.md). Gotchas: [lessons.md](lessons.md). Words: [terms.md](terms.md).
 
 ---
 

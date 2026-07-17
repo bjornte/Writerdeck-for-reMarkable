@@ -1,6 +1,6 @@
 # Lessons learned
 
-Operational gotchas from building Writerdeck. Why things are the way they are: [decisions.md](decisions.md). What's shipped: [../DONE.md](../DONE.md).
+Operational gotchas from building Writerdeck. Why things are the way they are: [decisions.md](decisions.md). What's shipped: [../DONE.md](../DONE.md). Words: [terms.md](terms.md).
 
 ## Device verify and iteration
 

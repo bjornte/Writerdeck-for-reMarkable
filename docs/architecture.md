@@ -1,6 +1,6 @@
 # Architecture
 
-How the system works, the device facts, and the dev loop. Open work: [../TODO.md](../TODO.md). Why: [decisions.md](decisions.md). Shipped: [../DONE.md](../DONE.md). Gotchas: [lessons.md](lessons.md).
+How the system works, the device facts, and the dev loop. Open work: [../TODO.md](../TODO.md). Why: [decisions.md](decisions.md). Shipped: [../DONE.md](../DONE.md). Gotchas: [lessons.md](lessons.md). Words: [terms.md](terms.md).
 
 ---
 

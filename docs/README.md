@@ -2,6 +2,8 @@
 
 Reference for the project. Test script output goes in `recon/` — gitignored text files, safe to delete; lessons belong in DONE, TODO, and lessons.
 
+`terms.md` — layman definitions (product, editor, harness, ops). Fork glossary: [Writerdeck-keywriter docs/terms.md](https://github.com/bjornte/Writerdeck-keywriter/blob/master/docs/terms.md).
+
 `architecture.md` — how the system works, device facts, deploy loop. Document integrity is the product contract.
 
 `decisions.md` — why each choice was made.
