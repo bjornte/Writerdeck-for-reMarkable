@@ -16,7 +16,7 @@ Keystrokes reach the editor over `/run/Writerdeck.sock`, not uinput ([docs/decis
 6. Edit helpers QML → C++ **Phase C** — **done.** Visual-line math in `EditHelper`; fork `6a15e08`; full **110/110/0** @ `14-52-09`. [docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md).
 7. After migration 2 (A–C) — **done.** **Keep** hand-tuned wrap/caret gaps and custom `EditHelper` undo (do not lean on Qt undo or rewrite wrap for purity). [docs/decisions.md](docs/decisions.md) §30; handoff § After A–C.
 8. Fork wrap-up hygiene — **done.** Fork owns QML assembly (`assemble-qml.sh` → committed `main.qml`); `build-keywriter.sh` is clone + assert + build only. Edit-session PASS; critical **38/38/0** @ `17-22-24`; full **110/110/0** @ `17-23-47`; fork tip `0bb3b70`.
-9. Fork upstream ancestry (optional, separate session) — restore a real merge-base with [dps/remarkable-keywriter](https://github.com/dps/remarkable-keywriter) so future upstream pulls are ordinary merges. Do not mix with item 8. Policy already in [docs/decisions.md](docs/decisions.md) §3.
+9. Fork upstream ancestry — **done.** Ours-merge `5946cae` links [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) to [dps/remarkable-keywriter](https://github.com/dps/remarkable-keywriter) (merge-base `ddc9e73`; tree unchanged, no force-push). How to pull upstream: [docs/decisions.md](docs/decisions.md) §3; fork README.
 
 ## Open question
 
@@ -25,6 +25,6 @@ Stay firmware-update-current? Each OTA resets the SSH password and may wipe the 
 ## Resume prompt
 
 > Project: reMarkable 1 Wi-Fi Markdown typewriter. Writerdeck-server (`daemon/` → `/home/root/Writerdeck-server`); Writerdeck-keywriter fork → Writerdeck (socket `/run/Writerdeck.sock`, notes in `Writerdeck-user-documents/`). Mac deploys; iPhone uses.
-> Shipped: [DONE.md](DONE.md). Next: owner physical Home check ([docs/todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md)), or optional fork upstream ancestry (item 9). Keyboard harness **110/110/0** @ `17-23-47` (fork `0bb3b70`). Migration 2 keep: [docs/decisions.md](docs/decisions.md) §30. Integrity: [integrity-audit.md](docs/integrity-audit.md).
+> Shipped: [DONE.md](DONE.md). Next: owner physical Home check ([docs/todo-handoff-physical-home-input.md](docs/todo-handoff-physical-home-input.md)). Keyboard harness **110/110/0** @ `17-23-47` (fork `0bb3b70`). Fork ancestry linked @ `5946cae` ([docs/decisions.md](docs/decisions.md) §3). Migration 2 keep: §30. Integrity: [integrity-audit.md](integrity-audit.md).
 > Read: architecture, decisions, DONE, lessons, browser-vs-tablet, integrity-audit. Device: `secrets/remarkable.local.env` (`RM_HOST_WIFI`).
 > Constraints: no jailbreak/OTA/Toltec; `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`.

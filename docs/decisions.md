@@ -44,11 +44,15 @@ Substantial QML/C++ edits live in a maintained Writerdeck fork of keywriter. `bu
 
 What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (goalX, harness hooks, thin apply layer for C++ dispatch), assembled into committed `main.qml` via fork `./assemble-qml.sh` (skeleton `main.qml.in` + `lobby/*.inc`); pure string math, undo stacks, key-chord mapping, and visual-line walk in fork C++ `edit_helper.*` (Phase A @ `a92ad2b`, Phase B @ `57bfc21`, Phase C @ `6a15e08`); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **38/38/0**; full suite **110/110/0** @ `17-23-47` (fork `0bb3b70`); wrap tag **15/15**; undo tag **5/5**. Migration 1 (done): [todo-handoff-keywriter-fork.md](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Migration 2 Phases A–C (done): [todo-handoff-edit-helper-cpp.md](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Post-port keep decisions: §30. QML assembly hygiene: [TODO.md](../TODO.md) item 8 (done).
 
-**Merging upstream keywriter.** Upstream is `dps/remarkable-keywriter`. Pull its changes into the fork on purpose — not on every Writerdeck session. In a local clone of Writerdeck-keywriter:
+**Merging upstream keywriter.** Upstream is `dps/remarkable-keywriter`. Pull its changes into the fork on purpose — not on every Writerdeck session.
+
+**Ancestry.** The fork began as an orphan branch (no shared parent with upstream), so `git merge-base` failed and ordinary merges were impossible. Restored 17 Jul 2026 with an `--allow-unrelated-histories -s ours` merge at fork `5946cae`: both histories are linked, the working tree was unchanged (no editor behavior change, no force-push). `git merge-base HEAD upstream/master` is upstream tip `ddc9e73`. Future upstream commits merge as a normal delta from that base.
+
+In a local clone of Writerdeck-keywriter:
 
 1. `git remote add upstream https://github.com/dps/remarkable-keywriter.git` (once).
 2. `git fetch upstream`
-3. Merge or rebase `upstream/master` onto local `master`, resolve conflicts in favor of Writerdeck behavior where edit/Lobby/socket code diverged.
+3. `git merge upstream/master` — resolve conflicts in favor of Writerdeck where edit/Lobby/socket code diverged.
 4. `git push origin master`
 5. Rebuild Writerdeck via CI, deploy, then `test-edit-session.sh` and `-t critical --fast` (keep **38/38/0**). Run full `--fast` if the upstream diff touched edit or layout code.
 
