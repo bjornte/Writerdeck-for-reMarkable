@@ -1,6 +1,6 @@
 # Editor migration 2 — QML edit helpers → C++
 
-Move pure text math and undo out of fork `edit_mac_helpers.qml.inc` into a small C++ `EditHelper` (same TextEdit on screen; QML stays the hands). **In progress — Phase 0 done (fork `9320231`); next is Phase A1.**
+Move pure text math and undo out of fork `edit_mac_helpers.qml.inc` into a small C++ `EditHelper` (same TextEdit on screen; QML stays the hands). **In progress — Phase A1 done (fork `aa9912b`); next is Phase A2 (undo).**
 
 - [todo-handoff-edit-helper-cpp.md](todo-handoff-edit-helper-cpp.md) — checklist (do the next unchecked item)
 - Active Cursor rule: `.cursor/rules/edit-helper-cpp-migration.mdc` (general `writerdeck.mdc` paused)

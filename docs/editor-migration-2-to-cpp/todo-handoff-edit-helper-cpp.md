@@ -1,6 +1,6 @@
 # Handoff: Edit helpers QML → C++ (Phase A)
 
-**Active.** Do the next unchecked item below. When a slice lands, check it off, record fork SHA + harness scores, and update [../editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md). Active rule: `.cursor/rules/edit-helper-cpp-migration.mdc`. Paused: `.cursor/rules/writerdeck.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) items 4–7 (A next; B/C later; post-port evaluate last). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (full **110/110/0** @ `00-29-12`; critical **38/38/0** @ `01-32-31`, fork `9320231`).
+**Active.** Do the next unchecked item below. When a slice lands, check it off, record fork SHA + harness scores, and update [../editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md). Active rule: `.cursor/rules/edit-helper-cpp-migration.mdc`. Paused: `.cursor/rules/writerdeck.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) items 4–7 (A next; B/C later; post-port evaluate last). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (full **110/110/0** @ `00-29-12`; critical **38/38/0** @ `01-57-58`, fork `aa9912b`).
 
 Prior migration (done): [../editor-migration-1-to-QML/todo-handoff-keywriter-fork.md](../editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Folder overview: [README.md](README.md).
 
@@ -60,10 +60,10 @@ Deploy budget: **one** Writerdeck binary deploy per agent session unless the bin
 
 ### Phase A1 — pure text math behind QML wrappers
 
-- [ ] Port string helpers listed under Inventory → `EditHelper` (`Q_INVOKABLE` or statics called from invokables).
-- [ ] Change QML functions of the same names to thin wrappers that call `editHelper.*` (keep names so `handleMacArrow` / backspace paths need minimal churn).
-- [ ] Do **not** move visual-line or `positionToRectangle` callers.
-- [ ] `test-edit-session.sh` + `-t critical --fast` → **38/38/0**. Prefer also `-t wrap --fast` (**15/15/0**) if any logical-line helper is shared with wrap paths. Record SHA + scores.
+- [x] Port string helpers listed under Inventory → `EditHelper` (`Q_INVOKABLE` or statics called from invokables).
+- [x] Change QML functions of the same names to thin wrappers that call `editHelper.*` (keep names so `handleMacArrow` / backspace paths need minimal churn).
+- [x] Do **not** move visual-line or `positionToRectangle` callers.
+- [x] `test-edit-session.sh` + `-t critical --fast` → **38/38/0**. Prefer also `-t wrap --fast` (**15/15/0**) if any logical-line helper is shared with wrap paths. Record SHA + scores. Fork `aa9912b`; Patch LOC **175**; edit-session PASS @ `01-50-35`; critical @ `01-57-58` (**38/38/0**); wrap @ `01-59-37` (**15/15/0**).
 
 ### Phase A2 — undo / redo into C++
 
@@ -111,4 +111,4 @@ Do not start this evaluation mid-Phase A. Do not rewrite undo or wrap “for pur
 
 ## Resume prompt (copy for a fresh agent)
 
-> Re. docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md, do the next unchecked item (Phase A1). When done, update docs/editor-testing/milestone-runs.md.
+> Re. docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md, do the next unchecked item (Phase A2). When done, update docs/editor-testing/milestone-runs.md.
