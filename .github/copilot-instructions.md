@@ -21,9 +21,9 @@ Daemon loop: `deploy-rmkbd.sh` (embeds `daemon/*` via `go:embed` → `/home/root
 
 ## Verify on device (mandatory — do not skip)
 
-**Deploy success ≠ tested.** Agents and humans must verify on the tablet before calling work done. After `daemon/`, `build-keywriter.sh`, or `lobby/` changes: rebuild Writerdeck if QML changed → deploy → SSH → `journalctl -u writerdeck -n 30` (fail on QML parse errors or instant `editor process exited`) → `bash scripts/test-edit-session.sh`; after Lobby or `handleHome` QML also `bash scripts/test-lobby-keyboard.sh` ([decisions](../docs/decisions.md) §29). You cannot see e-ink, but you **can** read logs and run these scripts — **do it every time**, without being asked.
+**Deploy success ≠ tested.** Agents and humans must verify on the tablet before calling work done. After `daemon/`, `build-keywriter.sh`, or `lobby/` changes: rebuild Writerdeck if QML changed → deploy → SSH → `journalctl -u writerdeck -n 30` (fail on QML parse errors or instant `editor process exited`) → `bash scripts/test-edit-session.sh`; after Lobby or `handleHome` QML also `bash scripts/test-lobby-keyboard.sh` ([decisions](../docs/decisions.md) §15). You cannot see e-ink, but you **can** read logs and run these scripts — **do it every time**, without being asked.
 
-On-device naming: see [architecture.md](../docs/architecture.md) and [decisions.md](../docs/decisions.md) #23. Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server).
+On-device naming: see [architecture.md](../docs/architecture.md) and [decisions.md](../docs/decisions.md) #29. Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server).
 
 ## Doc hygiene
 

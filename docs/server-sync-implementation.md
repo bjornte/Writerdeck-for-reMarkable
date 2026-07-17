@@ -2,7 +2,7 @@
 
 Shipped and device-verified July 2026. The reconcile engine runs in Writerdeck-server (Go). The phone handles token entry and sync settings only. The tablet Lobby Sync tab shows last sync, Sync now when configured, TOKEN NEEDED when RAM is empty, and SYNC OFFLINE / SYNC FAILED when Wi-Fi or GitHub errors apply.
 
-Reconciler behaviour: [decisions.md](decisions.md) §19. Integrity contract: [integrity-audit.md](integrity-audit.md).
+Reconciler behaviour: [decisions.md](decisions.md) §11. Integrity contract: [integrity-audit.md](integrity-audit.md).
 
 ## How it works
 

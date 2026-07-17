@@ -189,7 +189,7 @@ The prior agent treated 13 passing `\n`-only scenarios as sign-off. The scenario
 | Repeated Shift+Left | `shift-left-repeat-from-end` | PASS (single line) | OK for flat line; add `\n` mid-doc variant |
 | Ctrl+Z undo wrong | `scenarios_undo.go` (×5) | **Never run on device** | Must PASS before sign-off |
 | Shift+Alt / Shift+Ctrl arrows | — | None | Full `combo-*` block below |
-| CodeMirror vertical block | — | None | `cm-*` from cookbook priority #2 |
+| CodeMirror vertical block | — | None | `cm-*` from cookbook priority #3 |
 
 Rename or comment `down-one-logical-line` so future agents do not confuse it with wrapped-paragraph Down.
 
@@ -221,7 +221,7 @@ All use a single logical line (no `\n`) unless noted. Positions are placeholders
 
 Optional: `wrap-mixed-newline-and-wrap` — `"short\nlonglonglong…"` — Down from `\n` line into wrapped tail.
 
-### CodeMirror logical-line block (cookbook priority #2)
+### CodeMirror logical-line block (cookbook priority #3)
 
 Port into `scenarios_regression.go` or `scenarios_cm.go`. Positions from [scenario-cookbook.md](scenario-cookbook.md) § CodeMirror vertical motion.
 
@@ -243,7 +243,7 @@ These prove `\n`-based vertical motion and selection; they do **not** replace `w
 
 `handleMacArrow` routes Shift+Alt and Shift+Ctrl through Alt/Ctrl branches with `moveCursorTo(newPos, !!shift)` ([build-keywriter.sh](../../third_party/keywriter/build-keywriter.sh) ~1671–1688). Zero device coverage today.
 
-Minimal matrix (phone/WebSocket path; Meta = Ctrl per decisions §2):
+Minimal matrix (phone/WebSocket path; Meta = Ctrl per decisions §3):
 
 | Name | Content | Keys | Expected |
 |------|---------|------|----------|

@@ -1,55 +1,28 @@
 # scripts/
 
-Dev/deploy automation. Run from repo root. Credentials: [../secrets/remarkable.local.env](../secrets/remarkable.local.env) via `_env.sh`.
+Deploy and test helpers. Run from the repo root. Credentials come from [secrets](../secrets/remarkable.local.env) via `_env.sh`.
 
-## On-device names
+## What lands on the tablet
 
-| On tablet | Built from |
-|---|---|
-| `/home/root/Writerdeck-server` | `daemon/` via `deploy-rmkbd.sh` |
-| `/home/root/Writerdeck` | CI via `deploy-keywriter.sh` |
-| `/home/root/Writerdeck-launcher.sh` | `scripts/Writerdeck-launcher.sh` |
-| `/home/root/wd` | `scripts/wd` |
-| `writerdeck.service` | `scripts/writerdeck.service` |
+Writerdeck-server from `deploy-rmkbd.sh`. Writerdeck from CI via `deploy-keywriter.sh`. Launcher, `wd`, and the systemd unit from this folder.
 
-`migrate-device-layout.sh` renames legacy paths on deploy.
+## Everyday commands
 
-## Writerdeck deploy
-
-`deploy-keywriter.sh` pushes `dist/Writerdeck` — does not rebuild.
+Ship a new editor binary after CI built it:
 
 ```bash
 git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywriter.sh -b
 bash scripts/test-edit-session.sh
 ```
 
-Local Docker (Apple Silicon: `--platform linux/amd64` on both docker commands).
+Ship a new server: `bash scripts/deploy-rmkbd.sh`, then start the service.
 
-## Scripts
+Keyboard caret work: `bash scripts/test-keyboard-harness.sh --fast` ([editor-testing](../docs/editor-testing/todo.md)). Lobby/Home: `bash scripts/test-lobby-keyboard.sh`. Vault: `test-vault.sh` / `test-vault-e2e.sh`.
 
-| Script | Purpose |
-|---|---|
-| `_env.sh` | Shared secrets, ssh, `rm_send_file` |
-| `paths.sh` | On-device path constants |
-| `bootstrap.sh` | SSH key install, enable Wi-Fi SSH |
-| `recon.sh` | Device fact snapshot → `docs/recon/` (re-run after OTA) |
-| `fetch-keywriter-dist.sh` | Pull CI artifacts (`gh` required) |
-| `deploy-keywriter.sh` | Ship Writerdeck + qt5 sysroot |
-| `deploy-rmkbd.sh` | Cross-build and ship Writerdeck-server (flush-save + graceful wait) |
-| `Writerdeck-launcher.sh` | Qt linuxfb launch env |
-| `test-e2e.sh` | Full pipeline test (`-s` skips server rebuild) |
-| `test-edit-session.sh` | Writerdeck/QML regression — POST `/api/open` |
-| `test-keyboard-harness.sh` | Modifier+arrow and selection on device (WebSocket path). Scenarios: [editor-testing/todo.md](../docs/editor-testing/todo.md). Scores: [milestone-runs.md](../docs/editor-testing/milestone-runs.md), detail [harness-runs.md](../docs/recon/harness-runs.md). Triage: `--unit`, then `--fast`; batch fixes before deploy. `-s NAME`, `-t TAG`, `--list`, `--unit`, `--fast`, `--no-prepare`, `-v`. |
-| `test-lobby-keyboard.sh` | Lobby keys after return from edit; Home-from-read must not quit. `POST /api/lobby`, `POST /api/test/home`. After Lobby, `handleHome`, or `lobbyFocus` QML changes ([decisions.md](../docs/decisions.md) §29). |
-| `test-vault.sh` | Loopback vault encrypt, lock, unlock, decrypt on device or `--local`. Resets vault for deterministic PIN. After `daemon/vault.go` or vault API edits. |
-| `recover-orphaned-vault-notes.sh` | Re-wrap `.md.enc` notes after a vault key rotation. Needs `--old-vault-ref` from GitHub `secret/vault` history, `--notes`, `--pin`. |
-| `test-vault-e2e.sh` | Tablet vault UI, keyboard PIN, Files encrypt/decrypt, GitHub `secret/` and note bytes. Needs sync on. Logs: `docs/recon/test-vault-e2e-*.txt`. After vault QML or E2E harness edits. |
-| `lobby.sh` / `wd` | Show Lobby on e-ink |
-| `install-service.sh` | Install systemd unit (manual enable) |
-| `install-alias.sh` | Mac aliases: `rmpush`, `rmkw`, `wd` |
-| `fix-hostkey.sh` | Clear stale SSH host key |
-| `push.sh` | Stage, commit, push |
+Show Lobby: `wd` or `bash scripts/lobby.sh`.
 
-Convention: script device actions; tee output to `docs/recon/` where useful. Never log secrets.
+## Other useful scripts
 
-Wi-Fi via `$RM_HOST` (default from secrets). Keep scripts idempotent.
+bootstrap.sh — SSH key and Wi-Fi SSH. recon.sh — device snapshot after OTA. install-service.sh — systemd unit (enable only after a manual start works). install-alias.sh — Mac shortcuts. recover-orphaned-vault-notes.sh — after a vault key mistake.
+
+Never log secrets. Prefer idempotent scripts.

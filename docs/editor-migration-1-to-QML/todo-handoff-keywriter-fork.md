@@ -1,6 +1,6 @@
 # Handoff: Keywriter fork migration
 
-**Migration complete.** Active rule: `.cursor/rules/writerdeck.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) item 3 (shipped). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (**110/110/0**, critical **38/38/0**). Phase checkmarks below keep the scores from the day each slice landed (critical was still 36 then).
+**Migration complete.** Active rule: `.cursor/rules/writerdeck.mdc`. Policy: [../decisions.md](../decisions.md) §4. Root queue: [../../TODO.md](../../TODO.md) item 3 (shipped). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (**110/110/0**, critical **38/38/0**). Phase checkmarks below keep the scores from the day each slice landed (critical was still 36 then).
 
 Successor: [../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) — move pure text math + undo from QML helpers into C++.
 
@@ -16,7 +16,7 @@ CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/
 
 - [x] Create Writerdeck-owned fork of [remarkable-keywriter](https://github.com/dps/remarkable-keywriter) — **done:** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (default branch `master`).
 - [x] Wire CI / Dockerfile / `build-keywriter.sh` so builds clone that fork (`KEYWRITER_REPO` / `KEYWRITER_REF`), still applying today’s patch script unchanged.
-- [x] One CI build + `fetch-keywriter-dist.sh` + `deploy-keywriter.sh -b` + `test-edit-session.sh` + `-t critical --fast` → **36/36**. Documented in [../decisions.md](../decisions.md) §3.
+- [x] One CI build + `fetch-keywriter-dist.sh` + `deploy-keywriter.sh -b` + `test-edit-session.sh` + `-t critical --fast` → **36/36**. Documented in [../decisions.md](../decisions.md) §4.
 
 ### Phase 2 — move critical groups into forked source
 
@@ -30,7 +30,7 @@ CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/
 - [x] **Connections / Timers** — fork `db0781e`; Patch LOC **1802**; full suite **92/13** @ `17-59-00`.
 - [x] **C++ infra** — fork `f7c84e9`; Patch LOC **1778**; full suite **93/12** @ `18-10-10`.
 - [x] Lobby/shell QML + `lobby/*.inc` in fork (`68f6e32`); Patch LOC **386**; critical **36/36** @ `18-56-12`; full suite **93/12** @ `18-57-31`.
-- [x] Document fork ownership, default branch, and how to merge upstream keywriter in [../decisions.md](../decisions.md) §3.
+- [x] Document fork ownership, default branch, and how to merge upstream keywriter in [../decisions.md](../decisions.md) §4.
 - [x] Restore `.cursor/rules/writerdeck.mdc` (`alwaysApply: true`); retire `keywriter-fork-migration.mdc` (`alwaysApply: false`).
 
 ## Do not (still true)

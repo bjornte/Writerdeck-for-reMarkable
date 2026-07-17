@@ -13,7 +13,7 @@ CodeMirror uses inline markers in one string:
 
 Harness uses byte offsets in plain UTF-8 (ASCII in these cases). `\n` is one character. After each key step, assert `cursor`, `selStart`, `selEnd`, `textLen`, optional `selLen`.
 
-Writerdeck maps Meta to Ctrl for Mac/Linux-style shortcuts over the phone path ([decisions.md](../decisions.md) §2). Chords are Control/Alt (USB Linux keyboards work as-is; Mac ⌘ is not required).
+Writerdeck maps Meta to Ctrl for Mac/Linux-style shortcuts over the phone path ([decisions.md](../decisions.md) §3). Chords are Control/Alt (USB Linux keyboards work as-is; Mac ⌘ is not required).
 
 ## Port template
 
@@ -50,7 +50,7 @@ Sources: Qt `tst_qplaintextedit` (`undoRedo`, `undoRedoShouldRepositionTextEditC
 | `undo-redo-len` | Qt `undoRedo` | delete all, Ctrl+Z, Ctrl+Y |
 | `undo-cursor-reposition` | Qt `undoRedoShouldRepositionTextEditCursor` | type at start, undo/redo cursor |
 | `undo-mid-line-delete` | — | delete line2, undo restores cursor |
-| `redo-cleared-by-new-edit` | Ace #4024 | edit after undo kills redo |
+| `redo-cleared-by-new-edit` | Ace #7024 | edit after undo kills redo |
 | `undo-after-select-delete` | CodeMirror selection restore | shift+home, delete, undo |
 
 Single-character steps use the WebSocket text path (`Key{Name:"a"}`). Run: `bash scripts/test-keyboard-harness.sh -s undo-redo-len --fast`.

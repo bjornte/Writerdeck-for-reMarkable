@@ -9,7 +9,7 @@ alwaysApply: false
 
 The body below is kept for reference if Phase B/C resumes with a fresh migration-focused rule.
 
-Handoff (read first): [docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Overview: [docs/editor-migration-2-to-cpp/README.md](docs/editor-migration-2-to-cpp/README.md). Policy: [docs/decisions.md](docs/decisions.md) §3. Queue: [TODO.md](TODO.md) items 4–7. Paused general rules: [writerdeck.mdc](writerdeck.mdc) (`alwaysApply: false`). Prior migration (done): [docs/editor-migration-1-to-QML/](docs/editor-migration-1-to-QML/).
+Handoff (read first): [docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Overview: [docs/editor-migration-2-to-cpp/README.md](docs/editor-migration-2-to-cpp/README.md). Policy: [docs/decisions.md](docs/decisions.md) §4. Queue: [TODO.md](TODO.md) items 4–7. Paused general rules: [writerdeck.mdc](writerdeck.mdc) (`alwaysApply: false`). Prior migration (done): [docs/editor-migration-1-to-QML/](docs/editor-migration-1-to-QML/).
 
 ## Audience
 

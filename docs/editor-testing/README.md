@@ -1,20 +1,17 @@
 # Editor testing
 
-Keyboard and selection regression for Writerdeck edit mode. Phone/WebSocket path via `edit-harness`; USB is spot-check only.
+Automated typing and selection checks on the real tablet, over the same path the phone uses. USB layout quirks still need a human.
 
-**Start here for a new agent:** [todo.md](todo.md) (scores, critical failures, next batch, do-not-retry).
+Start here: [todo.md](todo.md).
 
-Sign-off: **110/110/0** (`bash scripts/test-keyboard-harness.sh --fast`). Critical gate: **38/38/0** (`-t critical --fast`). Scoreboard columns use total/passed/failed.
+Sign-off is the full suite green (**110/110/0**). The critical gate is **38/38/0**. Policy: [decisions.md](../decisions.md) §13. Gotchas: [lessons.md](../lessons.md).
 
-Current baseline: **110/110/0** @ `00-29-12` @ fork `67656e1`; critical **38/38/0**. Report: `docs/recon/test-keyboard-harness-2026-07-17T00-29-12.md`.
+todo.md — current scores and next steps.
 
-| File | Purpose |
-|------|---------|
-| [todo.md](todo.md) | **Fresh agent handoff** — scores, critical failures, next batch, do-not-retry |
-| [milestone-runs.md](milestone-runs.md) | **Full-suite scoreboard** — update after each `--fast` full run |
-| [scenario-catalog.md](scenario-catalog.md) | All 110 scenarios — business-logic inventory |
-| [harness-runs.md](../recon/harness-runs.md) | Consolidated run log |
-| [scenario-cookbook.md](scenario-cookbook.md) | Source catalogs (CodeMirror/Qt) |
-| [llm-handoff-test-failures.md](llm-handoff-test-failures.md) | Historical methodology review |
+milestone-runs.md — full-suite scoreboard; update after each full run.
 
-Code: `daemon/cmd/edit-harness/`, `scripts/test-keyboard-harness.sh`. Policy: [decisions.md](../decisions.md) §22. Gotchas: [lessons.md](../lessons.md) § Keyboard and selection.
+scenario-catalog.md — all scenarios by name.
+
+scenario-cookbook.md — where scenarios came from (CodeMirror, Qt, Ace).
+
+Code lives in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.

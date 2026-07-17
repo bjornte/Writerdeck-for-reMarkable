@@ -1,13 +1,11 @@
 # secrets/
 
-Local credentials — gitignored. Nothing real is committed.
+Local credentials — never committed. Copy `remarkable.local.env.example` to `remarkable.local.env`. Scripts read it through `_env.sh`.
 
-Copy `remarkable.local.env.example` → `remarkable.local.env`. Bash scripts read it via `_env.sh`.
+RM_ROOT_PASSWORD — SSH password from the tablet settings screen; regenerates after OTA.
 
-| Key | Meaning |
-|---|---|
-| `RM_ROOT_PASSWORD` | Root SSH password (device settings screen; regenerates on OTA) |
-| `RM_HOST_USB` | USB IP — `10.11.99.1` (dead on Mac; Wi-Fi is the path) |
-| `RM_HOST_WIFI` | Wi-Fi IP (DHCP — reserve tablet MAC on router) |
+RM_HOST_WIFI — tablet address on your network. Prefer a DHCP reservation.
 
-Threat model: password is visible on the device; home LAN. Real risk is git leakage — gitignore prevents that. Day-to-day access is SSH key via `bootstrap.sh`.
+RM_HOST_USB — unused on the Mac; Wi-Fi is the path.
+
+The password is already visible on the device. The real risk is committing it. Day-to-day access uses the SSH key from `bootstrap.sh`.

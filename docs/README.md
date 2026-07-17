@@ -1,35 +1,27 @@
 # docs/
 
-Reference for the project. Test script output goes in `recon/` — gitignored text files, safe to delete; lessons belong in DONE, TODO, and lessons.
+Project reference. Throwaway test logs live in `recon/` (gitignored). Lasting lessons go in DONE, TODO, and lessons.
 
-`terms.md` — layman definitions (product, editor, harness, ops). Fork glossary: [Writerdeck-keywriter docs/terms.md](https://github.com/bjornte/Writerdeck-keywriter/blob/master/docs/terms.md).
+terms.md — layman definitions. Fork twin: [Writerdeck-keywriter docs/terms.md](https://github.com/bjornte/Writerdeck-keywriter/blob/master/docs/terms.md).
 
-`architecture.md` — how the system works, device facts, deploy loop. Document integrity is the product contract.
+architecture.md — how the pieces fit, device facts, deploy loop.
 
-`decisions.md` — why each choice was made.
+decisions.md — why we chose this shape.
 
-`lessons.md` — operational gotchas.
+lessons.md — gotchas that still bite.
 
-`browser-vs-tablet.md` — phone vs tablet; upload vs download vs paste-at-cursor.
+browser-vs-tablet.md — what the phone does vs the Lobby.
 
-`integrity-audit.md` — integrity status and open risks.
+integrity-audit.md — document integrity status and open risks.
 
-`improvements.md` — design notes for encryption, locales, future UX.
+improvements.md — wishlist, not committed work.
 
-`user-should-test.md` — checklist of what the owner should try by hand (scripts cannot cover these).
+user-should-test.md — checks only human fingers can do.
 
-`todo-handoff-physical-home-input.md` — Physical Home exclusive gpio grab (**done**; [decisions.md](decisions.md) §28).
+editor-testing/ — keyboard harness scores and scenarios.
 
-`todo-install-onboarding.md` — visitor install friction: README, releases, preflight/install scripts.
+editor-migration-1-to-QML/ and editor-migration-2-to-cpp/ — finished migrations; policy lives in decisions §4–§6.
 
-`editor-migration-1-to-QML/` — keywriter fork migration (**done**; [todo-handoff-keywriter-fork.md](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md)); ownership in [decisions.md](decisions.md) §3.
+server-sync-implementation.md — how GitHub sync and token restore work.
 
-`editor-migration-2-to-cpp/` — QML edit helpers → C++ `EditHelper` (**done**; A–C + keep wrap gaps / custom undo in [decisions.md](decisions.md) §30; [todo-handoff-edit-helper-cpp.md](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md)).
-
-`editor-testing/` — scenario catalog ([scenario-catalog.md](editor-testing/scenario-catalog.md)), harness handoff ([todo.md](editor-testing/todo.md)), scoreboard ([milestone-runs.md](editor-testing/milestone-runs.md)), run history ([recon/harness-runs.md](recon/harness-runs.md)).
-
-`server-sync-implementation.md` — shipped server-side GitHub sync reference (token restore, `needtoken`, log verification).
-
-`manual-cleanup-tersify-prompts-at-intervals.md` — periodic doc cleanup prompts.
-
-External: [keywriter](https://github.com/dps/remarkable-keywriter) (Qt 5 / C++ / QML editor engine; we ship it as Writerdeck) · [input docs](https://remarkable.guide/devel/device/input.html) · [awesome-reMarkable](https://github.com/reHackable/awesome-reMarkable)
+External: [keywriter](https://github.com/dps/remarkable-keywriter) · [input docs](https://remarkable.guide/devel/device/input.html)

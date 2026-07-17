@@ -1,225 +1,165 @@
 # Architecture decisions
 
-Why the project is built this way. How it works: [architecture.md](architecture.md). Open work: [../TODO.md](../TODO.md). What's shipped: [../DONE.md](../DONE.md). Gotchas: [lessons.md](lessons.md). Words: [terms.md](terms.md).
+Why the project is built this way — integrity and editor spine first, device quirks later. How: [architecture.md](architecture.md). Open work: [../TODO.md](../TODO.md). Shipped: [../DONE.md](../DONE.md). Gotchas: [lessons.md](lessons.md). Words: [terms.md](terms.md).
+
+Numbers were renumbered 17 Jul 2026; prefer titles over old § IDs.
 
 ---
 
 ## Document integrity
 
-Writerdeck is a typewriter. The owner's prose must survive editing, sync, and normal device use as plain Markdown on disk. That contract gates every feature — not a polish item for later. Full audit: [integrity-audit.md](integrity-audit.md).
+Writerdeck is a typewriter. Your prose must survive as plain Markdown on disk. That rule gates every feature. Full audit: [integrity-audit.md](integrity-audit.md).
 
-Files on disk are UTF-8 Markdown, never Qt HTML or rich text. While a note is open on the tablet, reconcile and tablet-side rename/delete must not silently overwrite it. Saves go through defined paths, with 45-second autosave and save-before-stop on deploy and SIGTERM; a SIGKILL or crash before the next autosave or flush can still lose recent typing. If disk changes under an open session, the user must reload or get conflict UX — the buffer must not blindly win. GitHub sync assists backup; it must not delete, empty-push, or fork paths against a live edit.
+Notes are UTF-8 Markdown, never Qt HTML. An open note must not be silently overwritten by sync or remote delete. Saves use defined paths, autosave about every 45 seconds, and save-before-stop on deploy; a hard kill can still lose recent typing. If the file on disk changes under you, reload or show a conflict — do not let a stale buffer win. GitHub sync backs up; it must not empty-push or delete against a live edit.
 
-No change to `daemon/`, the sync engine, `build-keywriter.sh`, or note APIs ships without an integrity pass against those rules.
+No change to the daemon, sync, build script, or note APIs ships without an integrity pass.
 
 ## Device verification
 
-A green deploy script is not a pass. After any change to `daemon/`, `build-keywriter.sh`, `lobby/`, or deploy scripts: rebuild Writerdeck when QML changed, deploy, relaunch, then read `journalctl -u writerdeck -n 30` on the tablet. Fail on QML parse errors or immediate `editor process exited`. When Writerdeck QML was touched, run `bash scripts/test-edit-session.sh`. "Works in theory" does not ship.
-
-## Move features to reMarkable lobby UI
-
-Shipped July 2026. Phone file-manager dedup: create, read preview, Edit, rename, and delete removed from the browser; tablet Files tab owns day-to-day file ops. Phone keeps upload, download, paste-at-cursor (Type mode), and sync token entry — [browser-vs-tablet.md](browser-vs-tablet.md). Preferences dedup (July 2026): reading font, PIN length, and Exit Writerdeck moved to the Lobby Settings tab; phone Preferences removed.
+A green deploy script is not a pass. Rebuild when QML changed, deploy, relaunch, read the tablet journal. Fail on QML parse errors or an editor that exits at once. After QML changes run the edit-session smoke test. After caret or selection work run the keyboard harness (§13). After Lobby or Home run the Lobby keyboard test (§15).
 
 ---
 
+## 1. Plain-text edit mode
 
+While you type, the editor stays plain text — raw Markdown on screen and in memory. Esc preview may look fancy. Headings and bold belong there, not in edit mode.
 
-## 1. Socket input, not uinput
+Rich text in edit was tried. Pulling formatted text back into the note produced empty files, HTML on disk, and broken previews. Real WYSIWYG-in-edit stays out of scope unless someone writes a new decision and re-proves integrity.
 
-This kernel cannot load `/dev/uinput`. Open returns ENODEV; trimmed kernel exports (`CONFIG_TRIM_UNUSED_KSYMS`) mean an out-of-tree `uinput.ko` cannot bind. The patched editor reads keystrokes from `/run/Writerdeck.sock` instead. Do not retry uinput. If keywriter itself ever fails, fallbacks are a libremarkable editor or HWR via the Wacom pen node — that draws ink, not clean Markdown.
+## 2. Display sync after Lobby clears the buffer
 
-## 2. Synthetic QKeyEvent injection
+Going Home clears the on-screen box. Reload and mode toggle must push the real note text (or its preview HTML) back onto the screen — never read fancy HTML back into the note. Without that, Home can save a zero-length file.
 
-Keywriter takes keyboard input through Qt QPA — there is no input fd to swap. A socket reader in `main.cpp` posts synthetic `QKeyEvent`s to `focusWindow()`. The browser sends full JSON to the daemon; the daemon sends integer Unicode codepoints to keywriter as `{"t":"text","cp":N}`. The keymap lives browser-side, where layout is already resolved. Edit bindings are Mac/Linux-style: Control and Alt chords (Meta from a Mac-like phone keyboard maps to Ctrl). The tablet being Linux does not require a separate “Linux-only” shortcut set — USB Linux keyboards already use Ctrl/Alt.
+## 3. Socket input, not uinput
 
-## 3. Build keywriter from source
+This kernel cannot load a fake keyboard device. Do not retry that path. Keystrokes arrive on a local socket and become Qt key events. The phone resolves the keymap; the tablet gets characters and Mac/Linux-style Ctrl/Alt chords. USB Linux keyboards already use those chords — no second shortcut set.
 
-**keywriter** (*remarkable-keywriter*) is the editor engine: a **Qt 5** app in **C++** and **QML**. **Writerdeck** is our on-device binary — that engine plus our patches. In this project: **QML** for what you see and how edit keys behave; **C++** for app startup, display, and socket→keystroke plumbing. See [architecture.md](architecture.md) § On the tablet.
+## 4. Owned keywriter fork
 
-The four-year-old prebuilt binary dies at the loader (`libQt5Quick.so.5`). Qt is static-linked into xochitl on current firmware, so `LD_LIBRARY_PATH` cannot rescue it. We cross-build from source in `ghcr.io/toltec-dev/qt:v3.3` (CI) and deploy a Qt5 runtime sysroot. Writerdeck renders via linuxfb on the rM1's real `/dev/fb0` — rm2fb is not needed.
+The editor is Dave Singleton’s keywriter, rebuilt as Writerdeck from our fork. The old binary does not load on current firmware. We build in CI with a Qt sysroot and draw to the real framebuffer.
 
-Substantial QML/C++ edits live in a maintained Writerdeck fork of keywriter. `build-keywriter.sh` is clone + assert + build glue only. Do not grow editor behavior in the script.
+Fork: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). CI clones it; the build script only asserts and compiles. New editor behavior goes in the fork, assembled with `./assemble-qml.sh` into committed `main.qml`. Math, undo, chords, and wrap walk live in C++ `EditHelper`; QML draws and applies. Migrations: [editor-migration-1-to-QML](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md), [editor-migration-2-to-cpp](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Keep §5–§6.
 
-**Fork ownership.** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) is the Writerdeck-owned fork of [dps/remarkable-keywriter](https://github.com/dps/remarkable-keywriter). Default branch is `master`. CI and `build-keywriter.sh` clone that URL via `KEYWRITER_REPO` / `KEYWRITER_REF` (defaults: the fork URL and `master`). Pin a SHA in `KEYWRITER_REF` only when you need a reproducible rollback; day-to-day builds track `master`.
+Pull upstream on purpose, not every session. Histories are linked (`5946cae`); ordinary merges work. After a merge: rebuild, deploy, edit-session, then critical keyboard gate.
 
-What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (goalX, harness hooks, thin apply layer for C++ dispatch), assembled into committed `main.qml` via fork `./assemble-qml.sh` (skeleton `main.qml.in` + `lobby/*.inc`); pure string math, undo stacks, key-chord mapping, and visual-line walk in fork C++ `edit_helper.*` (Phase A @ `a92ad2b`, Phase B @ `57bfc21`, Phase C @ `6a15e08`); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **38/38/0**; full suite **110/110/0** @ `17-23-47` (fork `0bb3b70`); wrap tag **15/15**; undo tag **5/5**. Migration 1 (done): [todo-handoff-keywriter-fork.md](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Migration 2 Phases A–C (done): [todo-handoff-edit-helper-cpp.md](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Post-port keep decisions: §30. QML assembly hygiene: [TODO.md](../TODO.md) item 8 (done).
+## 5. Keep wrap gaps and custom EditHelper undo
 
-**Merging upstream keywriter.** Upstream is `dps/remarkable-keywriter`. Pull its changes into the fork on purpose — not on every Writerdeck session.
+Qt’s text box does not give clean “visual line” indexes. Wrapped Up/Down therefore uses small calibrated pixel gaps and a sticky horizontal goal. That is fudge, but it matches Mac/Linux motion and the wrap tests. Change the numbers only if those tests regress.
 
-**Ancestry.** The fork began as an orphan branch (no shared parent with upstream), so `git merge-base` failed and ordinary merges were impossible. Restored 17 Jul 2026 with an `--allow-unrelated-histories -s ours` merge at fork `5946cae`: both histories are linked, the working tree was unchanged (no editor behavior change, no force-push). `git merge-base HEAD upstream/master` is upstream tip `ddc9e73`. Future upstream commits merge as a normal delta from that base.
+Undo is ours in `EditHelper`, not Qt’s built-in stack. Socket typing and chord deletes must share one history. Redesign only if integrity or undo tests force it. Do not replace Qt’s text box for purity — §6.
 
-In a local clone of Writerdeck-keywriter:
+## 6. Do not fork Qt TextEdit
 
-1. `git remote add upstream https://github.com/dps/remarkable-keywriter.git` (once).
-2. `git fetch upstream`
-3. `git merge upstream/master` — resolve conflicts in favor of Writerdeck where edit/Lobby/socket code diverged.
-4. `git push origin master`
-5. Rebuild Writerdeck via CI, deploy, then `test-edit-session.sh` and `-t critical --fast` (keep **38/38/0**). Run full `--fast` if the upstream diff touched edit or layout code.
+Moving our helpers into the fork was a same-behavior port under a green harness — evenings, not months. Replacing Qt’s text box is a different job.
 
-Prefer a merge commit when the fork has substantial unique history; rebase only on a private tip you have not shared. After a successful upstream merge, bump nothing in this repo unless `KEYWRITER_REF` was pinned to a SHA — then point it at the new tip or back to `master`.
+That box is open source, but the useful slice is tens of thousands of lines inside Qt. Forking it means maintaining a patched Qt forever. We already pass integrity and editing on device with §5. Stop here unless stock TextEdit cannot fix a real product bug, with tests ready to catch regressions.
 
-Phasing ([TODO.md](../TODO.md) item 3) — **done:**
+## 7. No Toltec
 
-1. Pin CI to the fork with **no behavior change.**
-2. Move behavior from the patch script into forked C++/QML **by criticality** (2A–2D).
-3. Shrink the script (Connections/Timers + C++ infra + Lobby/shell QML in fork); document ownership and upstream-merge policy; restore general Cursor rules.
+Toltec pins firmware and can soft-brick on unsupported versions. That fights OTA. Skip it unless the owner accepts the lock.
 
-Critical **38/38/0** means basic editing is gated green. Full **110/110/0** remains product sign-off.
+## 8. Static Go binary
 
-## 30. Keep wrap gaps and custom EditHelper undo
+The server is one static ARM binary. No Python or extra runtimes on the tablet. It cross-compiles on the Mac in about a second and survives firmware updates.
 
-After migration 2 Phases A–C, evaluate (do not rewrite for purity) whether hand-tuned visual-line thresholds and the custom undo stacks should change. **Keep both.** Recorded 17 Jul 2026; harness already green (wrap **15/15**, undo **5/5**, full **110/110/0** @ `14-52-09`).
+## 9. Always-on server, on-demand editor
 
-**Wrap / caret gaps.** Qt Quick `TextEdit` exposes caret geometry via `positionToRectangle` / `positionAt` only — no visual-line index API. Mid-line carets on wrapped paragraphs often report a multi-row height, so stepping by that height jumps many visual rows ([lessons.md](lessons.md) § Keyboard). The walk therefore uses small `minGap` floors (3 px, or 10 when height ≥ 40) plus a 0.5 px same-row tolerance to find the next distinct row `y`, then pick the closest `x` to `goalX`. Those numbers are device-calibrated fudge, not elegance — but they are the cheapest proof that matches Mac/Linux vertical motion and the wrap harness. Replacing them with a “cleaner” algorithm (or digging into private Qt document layout) would be a high-risk rewrite for no product win. Touch the constants only if wrap or mid-wrapping Shift scenarios regress.
+The server keeps the phone reachable under the stock UI. Only the editor session flips xochitl. Keep-awake covers the editor child, not the whole device. Units that start from `/home/root` must wait for that mount or cold boot fails with `203/EXEC`.
 
-**Custom undo.** Stacks and one-char insert merge live in C++ `EditHelper`; QML applies restored text, cursor, and selection onto `query`. Qt’s built-in `TextEdit.undo` / `undoStack` stay sidelined (cleared on harness reset so they do not fight ours). We need the custom model because Mac chord paths often assign `query.text` directly (word/line delete, restore), socket inject must share one history, and typing should merge into a single undo step with cursor restored. Leaning on Qt’s undo more deeply would not improve Markdown-on-disk integrity and would risk the undo tag. Redesign only if integrity or undo scenarios force it — not for architectural purity. See also [architecture.md](architecture.md) § On the tablet (deeper C++ text engine only if undo must live inside Qt’s document model).
+## 10. Companion model
 
-## 4. No Toltec
+No phone app — the tablet is the server. Day-to-day files and settings live in the Lobby; the phone is for typing, upload/download, paste-at-cursor, and the sync token — [browser-vs-tablet.md](browser-vs-tablet.md). A PIN appears on the e-ink each boot. Home twice: edit to Lobby, Lobby to quit.
 
-Toltec locks firmware to a supported version range and can soft-brick on unsupported versions. That conflicts with preserving OTA updates. Only revisit if the owner accepts the version lock.
+## 11. GitHub sync is a non-authoritative reconciler
 
-## 5. Static Go binary
+Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Reconcile copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused. Details: [server-sync-implementation.md](server-sync-implementation.md).
 
-The server is `CGO_ENABLED=0`, ARMv7, with no on-device runtime dependencies. It survives firmware updates and cross-compiles on the Mac in about a second. The tablet ships no Python; installing it implies Entware/Toltec and a firmware lock.
+## 12. Optional at-rest encryption (private notes)
 
-## 6. Mac builds the server; CI builds Writerdeck
+Pairing PIN and vault PIN are separate. Encrypted notes are `.md.enc` beside plain `.md`. Each file is sealed; the vault PIN unlocks a key held in RAM only while that note (or a one-shot encrypt/decrypt) is active. PIN every open, including note switches. Tablet-only entry. Per-note encrypt/decrypt — no bulk lock. Sync treats ciphertext as opaque and mirrors recovery material under `secret/`. Markdown integrity applies to `.md` only. See [integrity-audit.md](integrity-audit.md).
 
-The Mac is the only host that can reach the tablet over Wi-Fi, so deploys originate there. Go cross-compiles fast enough that a local `go build` is the edit-deploy loop. CI and Docker are reserved for Writerdeck, which needs the toltec Qt sysroot.
+## 13. Keyboard selection harness
 
-## 7. Always-on server, on-demand editor
+We prove caret and selection on the real tablet, over the same path the phone uses — not by reading saved files. About 110 scenarios; 38 are the critical “basic editing works” gate. Scoreboard: [editor-testing/](editor-testing/). Harness notes use the `z-test-` prefix (§32). USB layout quirks still need a human check after qmap changes.
 
-Writerdeck-server keeps serving `:8000` even under the stock xochitl GUI. It toggles xochitl per editor session, not per server lifetime — Home returns to the GUI while the phone can still reach the server. Boot auto-launches one editor session. Keep-awake wraps only the Writerdeck child via `systemd-inhibit`, so the tablet sleeps normally under the GUI.
+## 14. Edit-session regression test
 
-Any systemd unit whose `ExecStart` lives on `/home/root` must declare `RequiresMountsFor=/home/root`. Otherwise a cold boot races the mount and you get `203/EXEC`.
+Opening a note from outside must keep the editor up for several seconds. Instant exit usually means broken QML, not a server bug. Run after Writerdeck or QML deploy.
 
-## 7b. USB Escape launches from stock UI
+## 15. Lobby keyboard regression test
 
-Writerdeck-server watches USB keyboard evdev nodes with hotplug rescan. Escape while idle — xochitl up, no editor session, not sleeping — starts a session to the Lobby. This is not Esc-to-wake after power sleep; the power button handles that. While a session is active, Escape is ignored here so Writerdeck keeps normal edit behaviour.
+After Home from edit, Lobby keys must still work. The Lobby keyboard script checks that path. Run it with edit-session after Lobby or Home QML changes.
 
-## 7c. Left and right page buttons launch from stock UI
+## 16. Physical Home: exclusive gpio grab
 
-Physical page buttons (`KEY_LEFT` / `KEY_RIGHT` on `/dev/input/event1`) are readable alongside xochitl. Both pressed while idle follows the same launch path as USB Escape, with 800 ms debounce. xochitl still receives individual button events — acceptable on the home screen; in a document the chord may briefly page.
-
-## 8. Companion model
-
-The tablet is the web server; there is no phone app. Writerdeck-server does all file operations on `Writerdeck-user-documents/` natively. Writerdeck changes are a Lobby overlay and opening a note via `saveAndLoad(name)`. A random PIN is minted per boot and shown on e-ink; you must hold the device to read it. Two-level Home — edit to Lobby, Lobby to quit — means you can write again without rebooting.
-
-## 9. Share is Download
-
-The native iOS share sheet needs HTTPS, which we do not have on plain LAN http. **Download** with `Content-Disposition: attachment` is the reliable export path on the phone (per-row button on the note list). A read-view **Copy** button existed earlier; it left with phone preview dedup. Paste-at-cursor in Type mode is insert-while-editing, not export — see [browser-vs-tablet.md](browser-vs-tablet.md).
-
-## 10. Two-machine dev split (retired)
-
-July 2026. Was a Mac-on-LAN plus work-laptop-over-git workaround when corporate VPN kept the work machine off the home LAN. All dev is Mac-on-LAN now.
-
-## 11. Wi-Fi is the dev path
-
-The Mac's USB-ethernet gadget to the tablet is inactive. Wi-Fi SSH works when `RM_HOST_WIFI` in secrets matches the tablet's DHCP address. On iPhone Personal Hotspot, both devices often share that network — tablet commonly `172.20.10.5` (`RM_HOST_HOTSPOT` in secrets template; `export RM_HOST=…` for deploy scripts).
-
-## 12. Deploy transport is gzip-over-ssh
-
-`scp` wedges at a fixed ~255 KB offset on the Mac-to-Wi-Fi-to-tablet link — an SFTP windowing deadlock, not sleep or QoS. `rm_send_file` in `_env.sh` streams gzip through SSH with a post-copy size check. When scp stalls at a fixed offset on an embedded link, switch transports.
-
-## 13. Secrets in a gitignored env file
-
-Plaintext in `secrets/remarkable.local.env` is acceptable here: the SSH password is shown on the device settings screen, and the device lives on a home LAN. The real risk is git leakage, which the ignore prevents.
-
-## 14. LF and ASCII on device files
-
-CRLF or a stray non-ASCII byte breaks shell scripts and the systemd unit on the device. `.gitattributes` normalizes line endings. Markdown prose may use Unicode; code and device files may not.
-
-## 16. Upload reuses the safe create route
-
-Uploading a `.md` from the phone POSTs through `/api/notes` so it inherits `notesSafe()` path checks and 409-on-exists. The authoritative body size cap is `http.MaxBytesReader` on the server; client checks are UX only.
+While Writerdeck is open, the server exclusively grabs the tablet’s Home/Power/page buttons so Qt never sees a second Home. Release on exit so the stock UI works again. USB Home is unchanged. Idle page-button launch (§23) needs no grab. Handoff: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md).
 
 ## 17. PIN and per-IP lockout
 
-The owner chooses 6-digit, 4-digit, or no PIN. "None" opens the notes API to anyone on the Wi-Fi — the UI warns explicitly. Per-IP lockout blocks an address for 60 seconds after five wrong guesses, not globally, so an attacker cannot lock the owner out of their own device. Compare uses `subtle.ConstantTimeCompare`. Changing PIN length re-mints under lock and re-pushes the Lobby. Store length as the string enum `"6"`, `"4"`, or `"none"` — an absent field on an older settings file would read as integer zero and silently mean "none". Gotcha: `int(Uint32) % N` overflows the device's 32-bit `int`; reduce in uint32 space first.
+Six digits, four, or none. None means anyone on the Wi-Fi can hit the notes API — the UI warns. Five wrong guesses lock that IP for a minute, not the whole device. Store length as `"6"`, `"4"`, or `"none"`.
 
 ## 18. Show PIN on tablet
 
-A second device that arrives mid-edit sees the note, not the PIN. `POST /api/lobby` saves the open note and drops to the Lobby so the PIN is readable on e-ink. The endpoint is pre-auth by necessity; it reveals nothing over the wire. Rate-limited to about one honored call per three seconds. `showLobby()` is idempotent and never quits — distinct from `handleHome()`.
+A second phone mid-edit sees the note, not the PIN. Ask the tablet to return to Lobby so the PIN is readable on e-ink. That call is pre-auth and rate-limited; it reveals nothing over the wire.
 
-## 19. GitHub sync is a non-authoritative reconciler
+## 19. Tablet file CRUD via trusted socket
 
-The engine runs on Writerdeck-server. The token lives in browser `localStorage` and tablet RAM via `POST /api/sync/token`; it is never written to disk. After a restart clears tablet RAM, the server sends WebSocket `needtoken` to connected browsers so a saved token can be reposted automatically; the browser may also push on reconnect via `refreshSyncStatus()`. Reconcile unions tablet and repo note lists and copies anything missing from either side — it never deletes on its own. Tablet Files CRUD pairs to GitHub via the trusted socket. External deletes on GitHub propagate when the local copy is pristine and carries a stored `sha`, confirmed with a per-note 404 before acting; unpushed local edits resurrect instead of deleting. Empty-push guard refuses to push a zero-byte file over a previously-synced note. Details: [server-sync-implementation.md](server-sync-implementation.md).
+Lobby file ops use the same local socket as keystrokes. The server does the disk work and can nudge the phone. Launch Lobby with `wd` on the Mac or `~/wd` on the tablet.
 
-## 20. Display rotation persists in settings
+## 20. Bluetooth remote key capture on the phone
 
-Global rotation (0, 90, 180, 270) is stored in `.Writerdeck/settings.json`. On editor connect the server pushes `setrotation` from saved settings. On the tablet, Ctrl-R, Ctrl-arrows, and the Lobby Settings button call `rotateScreen()`; USB rotation relays `rotationChanged` back via `rotation_watcher`. Phone Preferences no longer expose rotate — tablet only.
+Bluetooth pairs to the phone. Capture only when the tablet asks (edit, read, or a Lobby text field). Leave Browse alone so normal browser shortcuts still work.
 
-## 21. Edit-session regression test
+## 21. Lobby Files: Edit and Read
 
-`POST /api/open` launches a note from outside the tablet UI (tests and scripts). If Writerdeck exits immediately, the session ends, xochitl restarts, and it looks like the stock UI reloading — almost always a broken QML patch, not the server. `scripts/test-edit-session.sh` POSTs `/api/open` from stock UI and asserts Writerdeck stays up about eight seconds. Run it after Writerdeck or QML deploy (`rmkw`); not after server-only deploy — restart the server and spot-check the API instead. `build-keywriter.sh` asserts brace balance in `handleKey()` before write.
+Two opens: Edit to type, Read to preview. The phone learns which mode so a Bluetooth keyboard can still Esc into edit. Enter edits; `v` reads.
 
-## 22. Keyboard selection harness
+## 22. Lobby tab order (Files first)
 
-Modifier+arrow and selection behaviour are tested on the device via `daemon/cmd/edit-harness` and `scripts/test-keyboard-harness.sh`, not by reading saved note bytes. Writerdeck publishes cursor/selection/`contentY` over the socket; the server exposes `GET /api/test/editor-state` and `POST /api/test/reset` (hard quit). Scenarios send keys over `/ws` like the phone UI; hardware page turns use editor cmds `pageleft`/`pageright` (not Arrow keys). **110 scenarios**; sign-off **110/110/0** with `--fast`. **Critical subset: 38 scenarios** (`-t critical --fast` → **38/38/0**); must pass before claiming basic editing works. Motion/selection pattern: uni 1, uni 5, bi 1+1, bi 3+5 (overshoot), bi 7+7 — both directions. Scoreboard: [editor-testing/milestone-runs.md](editor-testing/milestone-runs.md). Handoff: [editor-testing/todo.md](editor-testing/todo.md).
+Boot and Home land on the note list, not the welcome screen. Coming back from edit reselects the note you left.
 
-Default run uses **sandbox-prepare**: one editor launch per full suite; between scenarios the harness `PUT`s note content and sends `harnessopen` + `harnessprepare` (QML `harnessSandboxReset` — reload text, cursor 0, clear undo, optional width) without quitting Writerdeck. When the run finishes (pass or fail), the harness sends `showlobby` so the tablet returns to the Lobby. Edit-mode keys are dispatched via QML `socketRouteKey()` from the socket inject thread (not raw `QKeyEvent` to focus). Tap placement and vertical Up/Down share a **visual goal-x** (`positionToRectangle`); harness simulates tap via `harnesssetcursor`. `POST /api/test/reset` remains for manual hard quit only; `--hard-reset` was removed from the harness script. Unit coverage for `translate()` modifier masks stays in `daemon/editor_test.go`. The harness does not exercise USB evdev or `.qmap` — re-check Norwegian Alt+arrow, AltGr, and national characters on hardware after qmap changes. Run after QML arrow/selection changes and after daemon test-handler changes. Harness notes use the `z-test-` prefix (decision 32).
+## 23. Idle launch from stock UI
 
-## 23. On-device Writerdeck naming
+From the stock UI, USB Escape or both page buttons together open Writerdeck to the Lobby. Power still owns sleep/wake. While Writerdeck is already up, Escape is left to the editor.
 
-On the tablet: `Writerdeck`, `Writerdeck-server`, `Writerdeck-user-documents/`, `.Writerdeck/`, `/run/Writerdeck.sock`, `writerdeck.service`. Repo script names like `deploy-rmkbd.sh` stay historical. `migrate-device-layout.sh` renames legacy paths on deploy.
+## 24. Mac builds the server; CI builds Writerdeck
 
-## 24. Tablet file CRUD via trusted socket
+Deploy starts on the Mac, which can reach the tablet. The Go server builds locally. Writerdeck needs the Qt container, so CI builds that binary.
 
-The Lobby Files tab sends `{"t":"req","op":…}` over the existing Unix socket; the server performs the same disk ops as `/api/notes`. Tablet delete, rename, and create queue sync and notify the phone via `tabletcrud`. Launch the Lobby from the Mac with `wd` or `bash scripts/lobby.sh`, or on the tablet with `~/wd`.
+## 25. Wi-Fi is the dev path
 
-## 25. Display sync after Lobby clears the buffer
+USB ethernet to the tablet is unused. Set `RM_HOST_WIFI` (or hotspot) in secrets and deploy over Wi-Fi SSH.
 
-Returning to the Lobby assigns `query.text = ""`, which breaks any `text:` binding on the `TextEdit`. `doLoad` and `toggleMode()` call `syncQueryDisplay()` so edit shows plain `doc` and preview shows `readHtml(doc)` — never RichText extracted back into `doc`. Without this, Home save can zero files. `showLobby` also clears `currentFile`.
+## 26. Deploy transport is gzip-over-ssh
 
-## 26. Plain-text edit mode
+`scp` stalls on this link. We stream gzip over SSH and check the size afterward.
 
-Edit mode stays `TextEdit.PlainText` — raw Markdown bytes in `doc`, monospace on screen. Read mode (Esc) renders via sundown into RichText. Formatted headings, bold, and italic belong in read mode only.
+## 27. Secrets in a gitignored env file
 
-RichText in edit mode was tried upstream and in early patches; reading formatted `query.text` back into `doc` caused empty saves, HTML on disk, and corrupted previews. The integrity contract gates any WYSIWYG-in-edit proposal: a display-only overlay or C++ syntax highlighter could work in theory, but true hide-the-markers editing is out of scope unless someone writes an ADR and re-tests slices 1–11.
+The tablet password is already on the device screen. Keeping it in a local ignored env file is fine; committing it is not.
 
-## 27. Lobby Files: Edit and Read
+## 28. LF and ASCII on device files
 
-The Files tab offers Edit and Read instead of a single Open. Edit runs `saveAndLoad()` — type mode; the server broadcasts `openedit` and the phone enters Type mode. Read runs `doLoad()` in preview (`mode=0`) and broadcasts `openread` so a Bluetooth keyboard on the phone can still send Esc to toggle edit. USB: Enter edits, `v` reads. Touch: double-tap or a second tap on the already-selected row opens Edit.
+Wrong line endings or stray fancy characters break shell and systemd on the tablet. Markdown may use Unicode; scripts and device files may not.
 
-## 33. Bluetooth remote key capture on the phone
+## 29. On-device Writerdeck naming
 
-Bluetooth keyboards pair to the phone; keystrokes reach the tablet over the same WebSocket inject path as Type mode. The phone only captures when the tablet asks: `openedit` (full Type mode), `openread` (read preview — Esc to edit), or `lobbyinput` (Files new, rename, new-encrypted, or delete confirm). The tablet signals via `notifyReadOpen` / `notifyLobbyInput` on the editor socket; the server fans out to browsers. Do not capture in plain Browse mode — browser shortcuts must still work.
+On the tablet the names are Writerdeck, Writerdeck-server, Writerdeck-user-documents, and `/run/Writerdeck.sock`. Some repo script names are older history.
 
-## 28. Physical Home: exclusive gpio grab
+## 30. Upload reuses the safe create route
 
-gpio-keys on `/dev/input/event1` (Home, Power, page buttons) are read by Writerdeck-server. While a Writerdeck session is active the server takes `EVIOCGRAB` on that device **before** spawning the editor, so Qt evdev never sees physical Home. Without the grab, one press could run `handleHome()` twice (socket `cmd home` then `Key_Home`) and quit from the Lobby. Grab is released when the session ends so idle xochitl still gets the buttons. USB keyboard Home is unchanged — it arrives on other `/dev/input/event*` nodes or over the socket inject path, not via gpio-keys. Page-button idle launch (§7c) still works: while idle there is no grab, so both the server and xochitl see events.
+Phone upload goes through the same create API as a new note — path checks and “already exists” included. The server enforces size; the client check is courtesy.
 
-Handoff: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md).
+## 31. Display rotation persists in settings
 
-## 29. Lobby keyboard regression test
-
-After Home from edit, `lobbyFocus` must keep USB and WebSocket keys working — a bare `FocusScope` without `Keys` handlers stole focus. `scripts/test-lobby-keyboard.sh` opens a note, drops to Lobby via `POST /api/lobby`, sends Enter over WebSocket (Files is the default tab), reopens the note, and asserts Home-from-read does not quit Writerdeck (`POST /api/test/home`). Run after Lobby or `handleHome` QML changes alongside `test-edit-session.sh`.
-
-## 33. Lobby tab order (Files first)
-
-Files is tab 1 so boot and Home from edit land on the note list, not the welcome Home screen (tab 6). Returning from edit saves the open filename in `lobbyLastEditedFile` and selects that row after the notes list refreshes. Ctrl-K from the Lobby still opens the note picker on Files. Vault e2e harnesses use digit `1` for Files and `4` for Settings.
-
-## 31. Optional at-rest encryption (private notes)
-
-Two independent PINs: the LAN pairing PIN (`pinDigits`, phone browser) and the vault encryption PIN (tablet only). `pinDigits: none` does not disable encryption.
-
-Encrypted notes use suffix `.md.enc` beside plain `.md` in `Writerdeck-user-documents/`. Crypto: AES-256-GCM per file with a random 32-byte data key; user PIN derives a KEK via scrypt (N=32768); settings store `encryptionEnabled`, `vaultSalt`, `vaultVerifier`, `wrappedDataKey` only. On-disk format: magic `WDENC1` + nonce + ciphertext+tag. Stdlib AES-GCM plus `golang.org/x/crypto/scrypt`; `CGO_ENABLED=0`.
-
-Unlocked state is gone: the data key lives in server RAM only during an active note-editing session (one encrypted note) or briefly for a one-shot Files encrypt/decrypt or phone download. PIN every time you open, read, edit, encrypt, or decrypt — including note switches. Edit/read toggle on the same note does not re-prompt; save on Lobby exit does not re-prompt while that session key is held. Returning to the Lobby clears the session key. PIN entry is tablet-only: touch numpad or USB digits + Enter. Failed attempts rate-limit like pairing PIN auth. Files Encrypt/Decrypt and New encrypted show the PIN overlay first; after a correct PIN the deferred op runs once via `vaultpinok`.
-
-Per-note encrypt/decrypt from Lobby Files — no bulk encrypt on enable. With private notes on, Files shows a second touch row (Encrypt and New encrypted on plain notes, Decrypt on `.md.enc`); Settings is enable and change PIN only. Failed encrypt/decrypt pushes `vaultopfailed` to the tablet — a red message on the Files tab (corrupt ciphertext, bad format, name clash). Opening an encrypted note with the wrong vault key shows the same error path, not a blank editor. Disabling vault or applying a new `secret/vault` from sync is refused while non-test encrypted notes exist — `vaultChangePIN` re-wraps the same data key and is safe; `disablevault` plus fresh setup mints a new key and orphans old ciphertext unless notes are re-wrapped. GitHub sync treats `.md.enc` as opaque bytes and mirrors recovery material under `secret/pin` (plaintext PIN) and `secret/vault` (JSON wrap metadata). `secret/` is excluded from phone note APIs.
-
-Phone download decrypts server-side after the tablet enters its PIN; if no session key is present, the server returns 423, pushes `requestvaultpin` to the tablet, and the phone waits. No encryption PIN UI on the phone. Forgotten PIN: recover from `secret/pin` on GitHub after re-deploy.
-
-UTF-8 Markdown integrity applies to `.md` only; `.md.enc` are opaque on disk. See [integrity-audit.md](integrity-audit.md).
+Rotation is saved on the tablet and pushed when the editor connects. Change it from Lobby Settings or Ctrl-R / Ctrl-arrows. Phone Preferences no longer rotate.
 
 ## 32. Device test harness note names
 
-Notes created or opened by device regression scripts (`test-edit-session.sh`, `test-keyboard-harness.sh`, `test-vault.sh`, `test-vault-e2e.sh`, and future harnesses) use the `z-test-` filename prefix so they sort last in the Lobby Files list and are easy to tell from user notes. Example: `z-test-keyboard-harness.md`, `z-test-vault-e2e.md`.
+Automated tests use filenames starting with `z-test-` so they sort last and stay obvious in the Files list.
 
 ---
 
 ## Open risks
 
-Firmware OTA may wipe the systemd unit and regenerate the SSH password — recovery is re-deploy and re-enable. USB `us`/`no` qmaps and Lobby layout picker are shipped and device-verified. Encrypted notes subset is implemented (decisions.md §31). Integrity residuals: [integrity-audit.md](integrity-audit.md). uinput is closed — see decision 1. Go must be on the Mac. Rootfs is about 96% full; everything we ship lives on `/home/root/`. Do not resize rootfs — A/B OTA scheme, brick risk.
-
-Editor behavior now lives in the Writerdeck-keywriter fork (decision 3). Residual risk is upstream merge conflicts — not a growing patch-script stack. Harness **110/110/0** remains product sign-off.
+OTA may wipe the systemd unit and reset the SSH password — redeploy and re-enable. Rootfs is nearly full; everything we ship lives under `/home/root`. Do not resize rootfs. uinput is closed (§3). The editor lives in the fork (§4); residual risk is upstream merge conflict, not a patch-script pile. Keyboard sign-off remains the full harness (§13). Integrity leftovers: [integrity-audit.md](integrity-audit.md).

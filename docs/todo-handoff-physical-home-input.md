@@ -2,7 +2,7 @@
 
 **Done.** One physical Home press → one handler. Exclusive `EVIOCGRAB` on `/dev/input/event1` while a Writerdeck session is active; `suppressNextHomeKey` removed from the fork.
 
-Read first: [architecture.md](architecture.md), [decisions.md](decisions.md) §28, `.cursor/rules/writerdeck.mdc`.
+Read first: [architecture.md](architecture.md), [decisions.md](decisions.md) §16, `.cursor/rules/writerdeck.mdc`.
 
 ## Architecture (shipped)
 
@@ -19,7 +19,7 @@ USB keyboard (/dev/input/event* except event1) + phone WebSocket
 
 1. **Exclusive grab in Go** — `daemon/input.go` + `daemon/evdev_grab_linux.go`; `grabButtonDev()` in `session.start()` before editor spawn; `ungrabButtonDev()` in `session.end()`. Idle xochitl keeps buttons (no grab).
 2. **Fork cleanup** — [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) `3be2de4`: dropped `suppressNextHomeKey` / `fromPhysicalCmd`; cmd home uses `invokeSaveCmd("handleHome", "home")`.
-3. **Docs** — [decisions.md](decisions.md) §28; lessons note on grab-before-spawn.
+3. **Docs** — [decisions.md](decisions.md) §16; lessons note on grab-before-spawn.
 
 ## Verify
 

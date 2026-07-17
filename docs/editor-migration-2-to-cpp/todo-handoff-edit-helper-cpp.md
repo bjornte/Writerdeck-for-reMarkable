@@ -1,6 +1,6 @@
 # Handoff: Edit helpers QML → C++ (Phase A)
 
-**Phase A done.** Phase B (key-chord dispatcher) done @ fork `57bfc21`. Phase C (visual line) done @ fork `6a15e08` (layout-access fix after first-device miss on `b3e2fe0`). Full **110/110/0** @ `14-52-09`; critical **38/38/0**. After A–C evaluation **done** — keep wrap gaps and custom `EditHelper` undo ([../decisions.md](../decisions.md) §30). Standing rule: `.cursor/rules/writerdeck.mdc`. Archived migration rule: `.cursor/rules/edit-helper-cpp-migration.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) items 4–7 done. Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (full **110/110/0** @ `14-52-09`, fork `6a15e08`; critical **38/38/0**; undo **5/5/0**).
+**Phase A done.** Phase B (key-chord dispatcher) done @ fork `57bfc21`. Phase C (visual line) done @ fork `6a15e08` (layout-access fix after first-device miss on `b3e2fe0`). Full **110/110/0** @ `14-52-09`; critical **38/38/0**. After A–C evaluation **done** — keep wrap gaps and custom `EditHelper` undo ([../decisions.md](../decisions.md) §5). Standing rule: `.cursor/rules/writerdeck.mdc`. Archived migration rule: `.cursor/rules/edit-helper-cpp-migration.mdc`. Policy: [../decisions.md](../decisions.md) §4. Root queue: [../../TODO.md](../../TODO.md) items 4–7 done. Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (full **110/110/0** @ `14-52-09`, fork `6a15e08`; critical **38/38/0**; undo **5/5/0**).
 
 Prior migration (done): [../editor-migration-1-to-QML/todo-handoff-keywriter-fork.md](../editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Folder overview: [README.md](README.md).
 
@@ -75,7 +75,7 @@ Deploy budget: **one** Writerdeck binary deploy per agent session unless the bin
 
 - [x] Full `bash scripts/test-keyboard-harness.sh --fast` → **110/110/0**. @ `10-12-39` (retry after `10-09-05` flake on `shift-left-after-end-no-stale-anchor`); edit-session PASS @ `10-08-06`; fork `a92ad2b`.
 - [x] Shrink comments in `edit_mac_helpers.qml.inc` that still say “Phase 2C living only in QML” if misleading; note in [../architecture.md](../architecture.md) that pure math/undo live in fork `EditHelper`. Comments already accurate @ `a92ad2b`; architecture updated.
-- [x] Brief note in [../decisions.md](../decisions.md) §3 (or a short subsection) that Phase A of migration 2 shipped; link this handoff.
+- [x] Brief note in [../decisions.md](../decisions.md) §4 (or a short subsection) that Phase A of migration 2 shipped; link this handoff.
 - [x] Restore `.cursor/rules/writerdeck.mdc` (`alwaysApply: true`); set `edit-helper-cpp-migration.mdc` to `alwaysApply: false` with an archive note. Do this when parking after A3 **or** when B/C finish — keep the migration rule active while B/C are in progress.
 - [x] Update [../editor-testing/todo.md](../editor-testing/todo.md) / [../../TODO.md](../../TODO.md) items 4–7 when each phase completes (A → check off 4 and point Next at B; after A–C evaluate → item 7).
 
@@ -92,8 +92,8 @@ Deploy budget: **one** Writerdeck binary deploy per agent session unless the bin
 
 Moving helpers into C++ improves structure and testability. It does **not** automatically fix these design smells. When A–C (as pursued) are done or parked, evaluate and record a keep/change decision in [../decisions.md](../decisions.md) (or a short note here + [../../TODO.md](../../TODO.md) item 7):
 
-- [x] **Wrap / caret magic thresholds** — **keep.** Qt `TextEdit` has no visual-line API beyond `positionToRectangle`; `minGap` (3 / 10) + 0.5 px row tolerance are calibrated against multi-row caret heights on wrap. No cleaner public API; rewrite only if wrap / mid-wrapping Shift regress. Decision: [../decisions.md](../decisions.md) §30.
-- [x] **Custom undo on TextEdit** — **keep** stacks + one-char merge in `EditHelper`. Qt’s `undo` / `undoStack` stay sidelined. Needed for programmatic Mac chord edits, shared socket history, and merge+cursor restore. Redesign only if integrity or undo tag forces it. Decision: [../decisions.md](../decisions.md) §30.
+- [x] **Wrap / caret magic thresholds** — **keep.** Qt `TextEdit` has no visual-line API beyond `positionToRectangle`; `minGap` (3 / 10) + 0.5 px row tolerance are calibrated against multi-row caret heights on wrap. No cleaner public API; rewrite only if wrap / mid-wrapping Shift regress. Decision: [../decisions.md](../decisions.md) §5.
+- [x] **Custom undo on TextEdit** — **keep** stacks + one-char merge in `EditHelper`. Qt’s `undo` / `undoStack` stay sidelined. Needed for programmatic Mac chord edits, shared socket history, and merge+cursor restore. Redesign only if integrity or undo tag forces it. Decision: [../decisions.md](../decisions.md) §5.
 
 Evaluation complete 17 Jul 2026 (docs only; no behavior change / no new harness row). Do not rewrite undo or wrap “for purity.”
 
@@ -105,10 +105,10 @@ Evaluation complete 17 Jul 2026 (docs only; no behavior change / no new harness 
 - `pkill -f /home/root/Writerdeck` (matches Writerdeck-server).
 - Move visual-line / wrap math in Phase 0–A3.
 - Replace `TextEdit` or invent a new buffer format.
-- Change Markdown-on-disk / plain-text edit integrity ([../decisions.md](../decisions.md) § Document integrity, §26).
+- Change Markdown-on-disk / plain-text edit integrity ([../decisions.md](../decisions.md) § Document integrity, §1).
 - One-scenario deploy loops; batch fixes, one binary deploy per session.
 - Start Phase B/C before A3 sign-off.
 
 ## Resume prompt (copy for a fresh agent)
 
-> Migration 2 (A–C + After A–C keep decisions) is done. See docs/decisions.md §30. Next open work: TODO.md (physical Home owner check, or other root items).
+> Migration 2 (A–C + After A–C keep decisions) is done. See docs/decisions.md §5. Next open work: TODO.md (physical Home owner check, or other root items).
