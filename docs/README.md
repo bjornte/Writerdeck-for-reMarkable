@@ -22,7 +22,7 @@ Reference for the project. Test script output goes in `recon/` — gitignored te
 
 `editor-migration-1-to-QML/` — keywriter fork migration (**done**; [todo-handoff-keywriter-fork.md](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md)); ownership in [decisions.md](decisions.md) §3.
 
-`editor-migration-2-to-cpp/` — QML edit helpers → C++ `EditHelper` (**active**; [todo-handoff-edit-helper-cpp.md](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md)).
+`editor-migration-2-to-cpp/` — QML edit helpers → C++ `EditHelper` (**Phase A done**; Phase B/C in [todo-handoff-edit-helper-cpp.md](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md)).
 
 `editor-testing/` — scenario catalog ([scenario-catalog.md](editor-testing/scenario-catalog.md)), harness handoff ([todo.md](editor-testing/todo.md)), scoreboard ([milestone-runs.md](editor-testing/milestone-runs.md)), run history ([recon/harness-runs.md](recon/harness-runs.md)).
 

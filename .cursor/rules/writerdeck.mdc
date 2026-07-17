@@ -1,13 +1,11 @@
 ---
-description: PAUSED — general Writerdeck rules; see edit-helper-cpp-migration.mdc
-alwaysApply: false
+description: Writerdeck for reMarkable 1 — standing project rules
+alwaysApply: true
 ---
 
-# Writerdeck for reMarkable 1 (paused)
+# Writerdeck for reMarkable 1
 
-**Paused while migration 2 is active.** Active always-apply rule: [edit-helper-cpp-migration.mdc](edit-helper-cpp-migration.mdc). Handoff: [docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). When that migration finishes, set this file back to `alwaysApply: true` and archive the migration rule.
-
-The body below is the standing project rule — kept intact for restore. Do not treat it as active guidance while paused.
+Migration 2 Phase A (pure math/undo → `EditHelper`) shipped @ fork `a92ad2b`. Phase B/C handoff: [docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md).
 
 ## Audience and replies
 

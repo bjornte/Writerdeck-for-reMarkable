@@ -16,5 +16,7 @@ Scoreboard for full keyboard tests on the tablet (`bash scripts/test-keyboard-ha
 | 17 Jul 2026, 00:29 | 110/110/0 | 38/38/0 | Hardened: mid-wrapping Shift now critical; cross-para + mid-short-line select |
 | 17 Jul 2026, 01:32 | — | 38/38/0 | Phase 0 EditHelper stub (no behavior change); fork `9320231`; Patch LOC **36** |
 | 17 Jul 2026, 01:57 | — | 38/38/0 | Phase A1 pure text math → EditHelper; wrap **15/15/0** @ `01-59-37`; fork `aa9912b`; Patch LOC **175** |
+| 17 Jul 2026, 03:50 | — | 38/38/0 | Phase A2 undo/redo → EditHelper; undo **5/5/0** @ `03-47-34`; fork `a92ad2b`; Patch LOC **168** |
+| 17 Jul 2026, 10:12 | 110/110/0 | 38/38/0 | Phase A3 sign-off (migration 2 Phase A); fork `a92ad2b`; edit-session PASS @ `10-08-06`; first run 109/110 (shift-select flake @ `10-09-05`), retry green |
 
 Other landmarks: shortcut-chord tag **25/25**; wrap **15/15**; undo **5/5**. Fork migration finished the same day as the first sign-off.

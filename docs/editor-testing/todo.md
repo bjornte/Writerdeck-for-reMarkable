@@ -12,18 +12,18 @@ Scores are **total/passed/failed**.
 
 | Milestone | Result | Note |
 |-----------|--------|------|
-| Latest full suite | **110/110/0** | `00-29-12` @ fork `67656e1`; report `docs/recon/test-keyboard-harness-2026-07-17T00-29-12.md` |
-| Prior full suite | **107/107/0** | `23-12-40` mid-wrapping Shift fix |
-| **Critical (gate)** | **38/38/0** | green @ `01-57-58` (Phase A1; fork `aa9912b`) |
+| Latest full suite | **110/110/0** | `10-12-39` @ fork `a92ad2b` (Phase A3); report `docs/recon/test-keyboard-harness-2026-07-17T10-12-39.md` |
+| Prior full suite | **110/110/0** | `00-29-12` @ fork `67656e1` |
+| **Critical (gate)** | **38/38/0** | green @ `10-12-39` (Phase A3; fork `a92ad2b`) |
 | Wrap tag | **15/15/0** | mid-sentence wrap-shift shrinks strengthened |
-| Undo tag | **5/5/0** | Phase 2C |
-| Sign-off gate | **110/110/0** | met @ `00-29-12` |
+| Undo tag | **5/5/0** | green @ `03-47-34` (Phase A2; stacks in `EditHelper`) |
+| Sign-off gate | **110/110/0** | met @ `10-12-39` (Phase A3) |
 
-`test-edit-session.sh` PASS on restart @ `00-16-42`. Do not run it in parallel with the keyboard harness.
+`test-edit-session.sh` PASS @ `10-08-06`. Do not run it in parallel with the keyboard harness.
 
 ## Goal for next session
 
-Keyboard harness sign-off is **done** (**110/110/0**). Next: [editor-migration-2-to-cpp](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) Phase A2 (undo → `EditHelper`). Phase A1 shipped @ fork `aa9912b`. Keep critical **38/38/0** green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
+Migration 2 Phase A is **done** (pure math + undo in `EditHelper`; full **110/110/0** @ `10-12-39`). Next when resuming migration 2: [editor-migration-2-to-cpp](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) Phase B (key-chord dispatcher). Keep critical green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
 
 ## Hardening @ `00-29-12` (harness only)
 
@@ -33,11 +33,11 @@ Keyboard harness sign-off is **done** (**110/110/0**). Next: [editor-migration-2
 
 ## Remaining fails
 
-None @ `00-29-12`.
+None @ `10-12-39`.
 
 ## Next (one batch)
 
-1. [editor-migration-2-to-cpp](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) — next unchecked Phase 0/A item; or owner physical Home check ([todo-handoff-physical-home-input.md](../todo-handoff-physical-home-input.md)).
+1. [editor-migration-2-to-cpp](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) — Phase B when resuming migration 2; or owner physical Home check ([todo-handoff-physical-home-input.md](../todo-handoff-physical-home-input.md)).
 2. Keep harness green on any future edit QML/C++ change: one push → CI → fetch → deploy → `test-edit-session.sh` → full `--fast` → update [milestone-runs.md](milestone-runs.md).
 
 Deploy budget: **one** Writerdeck binary deploy per session unless QML fails to launch.

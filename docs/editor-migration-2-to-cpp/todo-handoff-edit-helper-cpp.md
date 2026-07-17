@@ -1,6 +1,6 @@
 # Handoff: Edit helpers QML → C++ (Phase A)
 
-**Active.** Do the next unchecked item below. When a slice lands, check it off, record fork SHA + harness scores, and update [../editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md). Active rule: `.cursor/rules/edit-helper-cpp-migration.mdc`. Paused: `.cursor/rules/writerdeck.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) items 4–7 (A next; B/C later; post-port evaluate last). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (full **110/110/0** @ `00-29-12`; critical **38/38/0** @ `01-57-58`, fork `aa9912b`).
+**Phase A done.** Next unchecked: Phase B (key-chord dispatcher) when you resume migration 2. When a slice lands, check it off, record fork SHA + harness scores, and update [../editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md). Standing rule: `.cursor/rules/writerdeck.mdc`. Archived migration rule: `.cursor/rules/edit-helper-cpp-migration.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) items 5–7 (B next; C later; post-port evaluate last). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (full **110/110/0** @ `10-12-39`, fork `a92ad2b`; critical **38/38/0**; undo **5/5/0**).
 
 Prior migration (done): [../editor-migration-1-to-QML/todo-handoff-keywriter-fork.md](../editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Folder overview: [README.md](README.md).
 
@@ -67,17 +67,17 @@ Deploy budget: **one** Writerdeck binary deploy per agent session unless the bin
 
 ### Phase A2 — undo / redo into C++
 
-- [ ] Port undo merge rules + stacks into `EditHelper` (or tightly coupled C++ types). QML Timers/Connections still call into it; `restore` still assigns `query.text` / cursor / selection in QML (or via a single apply helper in QML).
-- [ ] Preserve one-char insert merge behavior (today’s `isOneCharInsert` / `pushEditUndoWithMerge`).
-- [ ] `-t undo --fast` → **5/5/0**; `-t critical --fast` → **38/38/0**. Record SHA + scores.
+- [x] Port undo merge rules + stacks into `EditHelper` (or tightly coupled C++ types). QML Timers/Connections still call into it; `restore` still assigns `query.text` / cursor / selection in QML (or via a single apply helper in QML).
+- [x] Preserve one-char insert merge behavior (today’s `isOneCharInsert` / `pushEditUndoWithMerge`).
+- [x] `-t undo --fast` → **5/5/0**; `-t critical --fast` → **38/38/0**. Record SHA + scores. Fork `a92ad2b`; Patch LOC **168**; edit-session PASS @ `03-47-08`; undo @ `03-47-34` (**5/5/0**); critical @ `03-50-56` (**38/38/0**).
 
 ### Phase A3 — sign-off + docs
 
-- [ ] Full `bash scripts/test-keyboard-harness.sh --fast` → **110/110/0**.
-- [ ] Shrink comments in `edit_mac_helpers.qml.inc` that still say “Phase 2C living only in QML” if misleading; note in [../architecture.md](../architecture.md) that pure math/undo live in fork `EditHelper`.
-- [ ] Brief note in [../decisions.md](../decisions.md) §3 (or a short subsection) that Phase A of migration 2 shipped; link this handoff.
-- [ ] Restore `.cursor/rules/writerdeck.mdc` (`alwaysApply: true`); set `edit-helper-cpp-migration.mdc` to `alwaysApply: false` with an archive note. Do this when parking after A3 **or** when B/C finish — keep the migration rule active while B/C are in progress.
-- [ ] Update [../editor-testing/todo.md](../editor-testing/todo.md) / [../../TODO.md](../../TODO.md) items 4–7 when each phase completes (A → check off 4 and point Next at B; after A–C evaluate → item 7).
+- [x] Full `bash scripts/test-keyboard-harness.sh --fast` → **110/110/0**. @ `10-12-39` (retry after `10-09-05` flake on `shift-left-after-end-no-stale-anchor`); edit-session PASS @ `10-08-06`; fork `a92ad2b`.
+- [x] Shrink comments in `edit_mac_helpers.qml.inc` that still say “Phase 2C living only in QML” if misleading; note in [../architecture.md](../architecture.md) that pure math/undo live in fork `EditHelper`. Comments already accurate @ `a92ad2b`; architecture updated.
+- [x] Brief note in [../decisions.md](../decisions.md) §3 (or a short subsection) that Phase A of migration 2 shipped; link this handoff.
+- [x] Restore `.cursor/rules/writerdeck.mdc` (`alwaysApply: true`); set `edit-helper-cpp-migration.mdc` to `alwaysApply: false` with an archive note. Do this when parking after A3 **or** when B/C finish — keep the migration rule active while B/C are in progress.
+- [x] Update [../editor-testing/todo.md](../editor-testing/todo.md) / [../../TODO.md](../../TODO.md) items 4–7 when each phase completes (A → check off 4 and point Next at B; after A–C evaluate → item 7).
 
 ### Phase B — key-chord dispatcher (later; do not start in the same session as A)
 
@@ -111,4 +111,4 @@ Do not start this evaluation mid-Phase A. Do not rewrite undo or wrap “for pur
 
 ## Resume prompt (copy for a fresh agent)
 
-> Re. docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md, do the next unchecked item (Phase A2). When done, update docs/editor-testing/milestone-runs.md.
+> Re. docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md, do the next unchecked item (Phase A3). When done, update docs/editor-testing/milestone-runs.md.
