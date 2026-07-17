@@ -12,14 +12,14 @@ Scores are **total/passed/failed**.
 
 | Milestone | Result | Note |
 |-----------|--------|------|
-| Latest full suite | **110/110/0** | `14-52-09` @ fork `6a15e08` (Phase C); report `docs/recon/test-keyboard-harness-2026-07-17T14-52-09.md` |
-| Prior full suite | **110/110/0** | `10-29-42` @ fork `57bfc21` (Phase B) |
-| **Critical (gate)** | **38/38/0** | green @ `14-55-48` (Phase C; fork `6a15e08`) |
+| Latest full suite | **110/110/0** | `17-23-47` @ fork `0bb3b70` (QML assembly hygiene); report `docs/recon/test-keyboard-harness-2026-07-17T17-23-47.md` |
+| Prior full suite | **110/110/0** | `14-52-09` @ fork `6a15e08` (Phase C) |
+| **Critical (gate)** | **38/38/0** | green @ `17-22-24` (fork `0bb3b70`) |
 | Wrap tag | **15/15/0** | mid-sentence wrap-shift shrinks strengthened |
 | Undo tag | **5/5/0** | green @ `03-47-34` (Phase A2; stacks in `EditHelper`) |
-| Sign-off gate | **110/110/0** | met @ `14-52-09` (Phase C) |
+| Sign-off gate | **110/110/0** | met @ `17-23-47` (QML assembly hygiene) |
 
-`test-edit-session.sh` PASS @ `14-51-45`. Do not run it in parallel with the keyboard harness.
+`test-edit-session.sh` PASS @ `17-22-06`. Do not run it in parallel with the keyboard harness.
 
 ## Goal for next session
 
@@ -33,7 +33,7 @@ Migration 2 is **complete** (A–C + keep decisions in [decisions.md](../decisio
 
 ## Remaining fails
 
-None @ `14-52-09`.
+None @ `17-23-47`.
 
 ## Next (one batch)
 
@@ -59,6 +59,6 @@ Mode: **sandbox-prepare**. Tags: `-t critical`, `-t hw`, `-t read`, `-t wrap`, `
 ## Acceptance
 
 1. `-t critical --fast` → **38/38/0** (met)
-2. Full `--fast` → **110/110/0** (met @ `14-52-09`)
+2. Full `--fast` → **110/110/0** (met @ `17-23-47`)
 3. `test-edit-session.sh` PASS
 4. `journalctl -u writerdeck -n 30` clean after deploy
