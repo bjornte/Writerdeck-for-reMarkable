@@ -4,6 +4,8 @@ Project reference. Throwaway test logs live in `recon/` (gitignored). Lasting le
 
 terms.md — layman definitions. Fork twin: [Writerdeck-keywriter docs/terms.md](https://github.com/bjornte/Writerdeck-keywriter/blob/master/docs/terms.md).
 
+jargon-to-avoid.md — process slang to drop; keep real tech names (QML, CI, uinput, …).
+
 architecture.md — how the pieces fit, device facts, deploy loop.
 
 decisions.md — why we chose this shape.

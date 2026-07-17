@@ -16,7 +16,7 @@ Document integrity. Your prose must survive as plain Markdown on disk.
 
 ## Editor
 
-QML. What you see and how edits are applied on screen.
+QML. Screen language — layout and applying edits on screen (the main screen file is `main.qml`).
 
 C++ / EditHelper. Startup, display, socket keys, and the math behind shortcuts, wrap, and undo.
 
@@ -32,8 +32,8 @@ Automated typing tests. Scripted typing on the real tablet over the same path th
 
 Basic set / full set. Thirty-eight checks for “basic editing works”; one hundred ten before calling typing work done.
 
-Edit-session check. Opens a note and checks the editor stays up — catches a broken screen file that crashes on launch.
+Edit-session check. Opens a note and checks the editor stays up — catches broken QML that crashes on launch.
 
 Deploy. Copy a new binary to the tablet and relaunch the editor. Restarting the server alone does not reload the editor.
 
-OTA. Over-the-air tablet software update from reMarkable — may reset the SSH password and wipe our boot service.
+OTA (over-the-air update). Tablet software update from reMarkable — may reset the SSH password and wipe our boot service.

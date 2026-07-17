@@ -32,7 +32,7 @@ Edit-mode keys from the socket must go through the QML router on the thread that
 
 Physical Home is taken over by the server while Writerdeck is open. Do not grab the whole button device from the USB launcher — that starves Home and Power. After Home from edit, Lobby focus must actually handle keys.
 
-Alt+Left/Right on USB looked like Escape until the keymap was fixed. Keyboard-map changes apply at editor launch, not mid-session. The automated typing tests do not exercise USB layouts — check those by hand.
+Alt+Left/Right on USB looked like Escape until the keymap was fixed. qmap (USB keyboard map) changes apply at editor launch, not mid-session. The automated typing tests do not exercise USB layouts — check those by hand.
 
 Wrapped Up/Down must walk visual rows, not step by a tall caret rectangle. Shift selection needs a remembered anchor and head; do not trust the caret index after select. Page buttons are not arrow keys.
 

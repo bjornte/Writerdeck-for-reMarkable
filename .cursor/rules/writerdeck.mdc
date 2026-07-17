@@ -54,7 +54,7 @@ Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server). On-device n
 
 ## Constraints
 
-- No jailbreak; preserve over-the-air updates → avoid Toltec
+- No jailbreak; preserve OTA (over-the-air updates) → avoid Toltec
 - Static Go only: `CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`
 - Markdown save format
 - Cross-compile Writerdeck-server on Mac; never local `docker build` for Writerdeck — GitHub Actions + `fetch-keywriter-dist.sh`
@@ -66,13 +66,13 @@ Secrets: `secrets/remarkable.local.env`; scripts source `scripts/_env.sh` for `R
 
 **Daemon:** `deploy-rmkbd.sh` → `systemctl restart writerdeck`. Verify APIs **and** load the phone UI (see above) — not `curl` alone.
 
-**Writerdeck:** editor changes in Writerdeck-keywriter → push fork → this repo’s automatic build (or wait for rebuild) → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Relaunch Writerdeck after binary deploy (server restart alone is not enough). Then `bash scripts/test-edit-session.sh`; `bash scripts/test-lobby-keyboard.sh` after Lobby/`handleHome` QML; `bash scripts/test-keyboard-harness.sh` when keyboard/selection QML changed.
+**Writerdeck:** editor changes in Writerdeck-keywriter → push fork → this repo’s CI (or wait for rebuild) → `fetch-keywriter-dist.sh` → `deploy-keywriter.sh -b`. Relaunch Writerdeck after binary deploy (server restart alone is not enough). Then `bash scripts/test-edit-session.sh`; `bash scripts/test-lobby-keyboard.sh` after Lobby/`handleHome` QML; `bash scripts/test-keyboard-harness.sh` when keyboard/selection QML changed.
 
 GitHub token: browser `localStorage ghToken` + tablet RAM via `POST /api/sync/token`; after restart WebSocket `needtoken` triggers auto-repost. Logs: `journalctl -u writerdeck.service` — token restore shows `sync reconcile (token)` after `client connected` (see `docs/server-sync-implementation.md`).
 
 ## Documentation
 
-Write like John Gruber: complete sentences, direct, minimal formatting — almost no bold, no emoji, no `Status: built` scaffolding. Prose over bullet dumps; use tables only when the data is inherently tabular (e.g. browser vs tablet), not as default structure. Short cross-links at the top, not boilerplate on every file.
+Write like John Gruber: complete sentences, direct, minimal formatting — almost no bold, no emoji, no `Status: built` scaffolding. Prose over bullet dumps; use tables only when the data is inherently tabular (e.g. browser vs tablet), not as default structure. Short cross-links at the top, not boilerplate on every file. Avoid process slang; keep real tech names — [docs/jargon-to-avoid.md](docs/jargon-to-avoid.md).
 
 Terse and forward-looking. Keep durable operational commands and lessons (what worked, what didn't, why). Prune settled history, chatty narration, and decisions that won't help anyone extending the project later. When in doubt, keep — but don't pad.
 

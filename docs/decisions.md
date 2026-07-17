@@ -16,7 +16,7 @@ No change to the daemon, sync, build script, or note APIs ships without an integ
 
 ## Device verification
 
-A successful deploy script is not enough. Rebuild when the screen files changed, deploy, relaunch, read the tablet journal. Fail on screen-file parse errors or an editor that exits at once. After screen-file changes run the edit-session check. After caret or selection work run the automated typing tests (§13). After Lobby or Home run the Lobby keyboard test (§15).
+A successful deploy script is not enough. Rebuild when the QML changed, deploy, relaunch, read the tablet journal. Fail on QML parse errors or an editor that exits at once. After QML changes run the edit-session check. After caret or selection work run the automated typing tests (§13). After Lobby or Home run the Lobby keyboard test (§15).
 
 ---
 
@@ -30,15 +30,15 @@ Rich text in edit was tried. Pulling formatted text back into the note produced 
 
 Going Home clears the on-screen box. Reload and mode toggle must push the real note text (or its preview HTML) back onto the screen — never read fancy HTML back into the note. Without that, Home can save a zero-length file.
 
-## 3. Socket input, not a fake keyboard device
+## 3. Socket input, not uinput
 
-This kernel cannot load a fake keyboard device. Do not retry that path. Keystrokes arrive on a local socket and become Qt key events. The phone resolves the keymap; the tablet gets characters and Mac/Linux-style Ctrl/Alt shortcuts. USB Linux keyboards already use those shortcuts — no second shortcut set.
+This kernel cannot load a fake keyboard device (uinput). Do not retry that path. Keystrokes arrive on a local socket and become Qt key events. The phone resolves the keymap; the tablet gets characters and Mac/Linux-style Ctrl/Alt shortcuts. USB Linux keyboards already use those shortcuts — no second shortcut set.
 
 ## 4. Owned keywriter fork
 
-The editor is Dave Singleton’s keywriter, rebuilt as Writerdeck from our fork. The old binary does not load on current firmware. We build it in GitHub’s automatic build with a bundled Qt library set and draw to the tablet’s real screen device.
+The editor is Dave Singleton’s keywriter, rebuilt as Writerdeck from our fork. The old binary does not load on current firmware. We build it in CI (GitHub Actions) with a Qt sysroot and draw to the real framebuffer (`/dev/fb0`).
 
-Fork: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). The automatic build clones it; the build script only checks and compiles. New editor behavior goes in the fork, assembled with `./assemble-qml.sh` into committed `main.qml`. Math, undo, shortcuts, and wrapped-line motion live in C++ `EditHelper`; QML draws and applies. Migrations: [editor-migration-1-to-QML](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md), [editor-migration-2-to-cpp](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Keep §5–§6.
+Fork: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). CI clones it; the build script only checks and compiles. New editor behavior goes in the fork, assembled with `./assemble-qml.sh` into committed `main.qml`. Math, undo, shortcuts, and wrapped-line motion live in C++ `EditHelper`; QML draws and applies. Migrations: [editor-migration-1-to-QML](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md), [editor-migration-2-to-cpp](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Keep §5–§6.
 
 Pull from Dave’s original on purpose, not every session. Histories are linked (`5946cae`); ordinary merges work. After a merge: rebuild, deploy, edit-session, then the 38 basic typing checks.
 
@@ -56,7 +56,7 @@ That box is open source, but the useful slice is tens of thousands of lines insi
 
 ## 7. No Toltec
 
-Toltec pins firmware and can leave the tablet unable to update normally on unsupported versions. That fights over-the-air updates. Skip it unless the owner accepts the lock.
+Toltec pins firmware and can leave the tablet unable to update normally on unsupported versions. That fights OTA (over-the-air updates). Skip it unless the owner accepts the lock.
 
 ## 8. Static Go binary
 
@@ -80,17 +80,17 @@ Pairing PIN and vault PIN are separate. Encrypted notes are `.md.enc` beside pla
 
 ## 13. Automated typing tests
 
-We prove caret and selection on the real tablet, over the same path the phone uses — not by reading saved files. About 110 checks; 38 are the “basic editing works” set. Pass/fail log: [editor-testing/](editor-testing/). Test notes use the `z-test-` prefix (§32). USB layout quirks still need a human check after keyboard-map changes.
+We prove caret and selection on the real tablet, over the same path the phone uses — not by reading saved files. About 110 checks; 38 are the “basic editing works” set. Pass/fail log: [editor-testing/](editor-testing/). Test notes use the `z-test-` prefix (§32). USB layout quirks still need a human check after qmap changes.
 
 ## 14. Edit-session check
 
-Opening a note from outside must keep the editor up for several seconds. Instant exit usually means a broken screen file, not a server bug. Run after Writerdeck or screen-file deploy.
+Opening a note from outside must keep the editor up for several seconds. Instant exit usually means a broken QML, not a server bug. Run after Writerdeck or QML deploy.
 
 ## 15. Lobby keyboard check
 
-After Home from edit, Lobby keys must still work. The Lobby keyboard script checks that path. Run it with edit-session after Lobby or Home screen-file changes.
+After Home from edit, Lobby keys must still work. The Lobby keyboard script checks that path. Run it with edit-session after Lobby or Home QML changes.
 
-## 16. Physical Home: exclusive button grab
+## 16. Physical Home: exclusive gpio grab
 
 While Writerdeck is open, the server exclusively grabs the tablet’s Home/Power/page buttons so Qt never sees a second Home. Release on exit so the stock UI works again. USB Home is unchanged. Idle page-button launch (§23) needs no grab. Handoff: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md).
 
@@ -124,7 +124,7 @@ From the stock UI, USB Escape or both page buttons together open Writerdeck to t
 
 ## 24. Mac builds the server; GitHub builds Writerdeck
 
-Deploy starts on the Mac, which can reach the tablet. The Go server builds locally. Writerdeck needs the Qt container, so GitHub’s automatic build produces that binary.
+Deploy starts on the Mac, which can reach the tablet. The Go server builds locally. Writerdeck needs the Qt container, so CI (GitHub Actions) produces that binary.
 
 ## 25. Wi-Fi is the dev path
 
@@ -162,4 +162,4 @@ Automated tests use filenames starting with `z-test-` so they sort last and stay
 
 ## Open risks
 
-Over-the-air update may wipe the boot service and reset the SSH password — redeploy and re-enable. Rootfs is nearly full; everything we ship lives under `/home/root`. Do not resize rootfs. The fake-keyboard-device path is closed (§3). The editor lives in the fork (§4); residual risk is a clash when merging Dave’s original, not a patch-script pile. Calling typing work done still means all 110 automated typing checks (§13). Integrity leftovers: [integrity-audit.md](integrity-audit.md).
+Over-the-air update may wipe the boot service and reset the SSH password — redeploy and re-enable. Rootfs is nearly full; everything we ship lives under `/home/root`. Do not resize rootfs. uinput is closed (§3). The editor lives in the fork (§4); residual risk is a clash when merging Dave’s original, not a patch-script pile. Calling typing work done still means all 110 automated typing checks (§13). Integrity leftovers: [integrity-audit.md](integrity-audit.md).

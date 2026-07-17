@@ -36,4 +36,4 @@ Optional GitHub sync — copy missing notes both ways, never mass-delete, refuse
 
 ## Prove it still works
 
-After editor changes: edit-session check, then automated typing tests if caret work moved, Lobby keyboard test if Home/Lobby moved. After vault work: vault scripts. Do not retry the fake-keyboard-device path — keys use the socket.
+After editor changes: edit-session check, then automated typing tests if caret work moved, Lobby keyboard test if Home/Lobby moved. After vault work: vault scripts. Do not retry uinput — keys use the socket.

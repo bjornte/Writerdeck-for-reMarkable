@@ -43,7 +43,7 @@ Start with [TODO.md](TODO.md) and [DONE.md](DONE.md). Credentials: [secrets/READ
 
 ## Constraints
 
-No jailbreak; keep over-the-air updates — so no Toltec. One static Go binary on the tablet.
+No jailbreak; keep OTA (over-the-air updates) — so no Toltec. One static Go binary on the tablet.
 
 ## Pieces
 
