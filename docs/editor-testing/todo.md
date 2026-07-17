@@ -23,7 +23,7 @@ Scores are **total/passed/failed**.
 
 ## Goal for next session
 
-Migration 2 Phase C is **done** (visual-line math in `EditHelper`; fork `6a15e08`; full **110/110/0** @ `14-52-09`). Next: [editor-migration-2-to-cpp](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) § After A–C (evaluate wrap gaps / undo model). Keep critical green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
+Migration 2 is **complete** (A–C + keep decisions in [decisions.md](../decisions.md) §30). Next product queue: owner physical Home check ([todo-handoff-physical-home-input.md](../todo-handoff-physical-home-input.md)), or other [TODO.md](../../TODO.md) items. Keep critical green on every behavior-moving deploy. Edit QML/C++ in the fork, not in `build-keywriter.sh`.
 
 ## Hardening @ `00-29-12` (harness only)
 
@@ -33,11 +33,11 @@ Migration 2 Phase C is **done** (visual-line math in `EditHelper`; fork `6a15e08
 
 ## Remaining fails
 
-None @ `10-12-39`.
+None @ `14-52-09`.
 
 ## Next (one batch)
 
-1. [editor-migration-2-to-cpp](../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md) — Phase C (optional) when resuming migration 2; or owner physical Home check ([todo-handoff-physical-home-input.md](../todo-handoff-physical-home-input.md)).
+1. Owner physical Home check ([todo-handoff-physical-home-input.md](../todo-handoff-physical-home-input.md)), or other root [TODO.md](../../TODO.md) work.
 2. Keep harness green on any future edit QML/C++ change: one push → CI → fetch → deploy → `test-edit-session.sh` → full `--fast` → update [milestone-runs.md](milestone-runs.md).
 
 Deploy budget: **one** Writerdeck binary deploy per session unless QML fails to launch.
@@ -59,6 +59,6 @@ Mode: **sandbox-prepare**. Tags: `-t critical`, `-t hw`, `-t read`, `-t wrap`, `
 ## Acceptance
 
 1. `-t critical --fast` → **38/38/0** (met)
-2. Full `--fast` → **110/110/0** (met @ `00-29-12`)
+2. Full `--fast` → **110/110/0** (met @ `14-52-09`)
 3. `test-edit-session.sh` PASS
 4. `journalctl -u writerdeck -n 30` clean after deploy

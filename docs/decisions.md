@@ -42,7 +42,7 @@ Substantial QML/C++ edits live in a maintained Writerdeck fork of keywriter. `bu
 
 **Fork ownership.** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) is the Writerdeck-owned fork of [dps/remarkable-keywriter](https://github.com/dps/remarkable-keywriter). Default branch is `master`. CI and `build-keywriter.sh` clone that URL via `KEYWRITER_REPO` / `KEYWRITER_REF` (defaults: the fork URL and `master`). Pin a SHA in `KEYWRITER_REF` only when you need a reproducible rollback; day-to-day builds track `master`.
 
-What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (goalX, harness hooks, thin apply layer for C++ dispatch); pure string math, undo stacks, key-chord mapping, and visual-line walk in fork C++ `edit_helper.*` (Phase A @ `a92ad2b`, Phase B @ `57bfc21`, Phase C @ `6a15e08`); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **38/38/0**; full suite **110/110/0** @ `14-52-09` (fork `6a15e08`); wrap tag **15/15**; undo tag **5/5**. Migration 1 (done): [todo-handoff-keywriter-fork.md](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Migration 2 Phases A–C (done): [todo-handoff-edit-helper-cpp.md](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Post-port evaluation (wrap gaps / undo model) remains in that handoff § After A–C.
+What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (goalX, harness hooks, thin apply layer for C++ dispatch); pure string math, undo stacks, key-chord mapping, and visual-line walk in fork C++ `edit_helper.*` (Phase A @ `a92ad2b`, Phase B @ `57bfc21`, Phase C @ `6a15e08`); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **38/38/0**; full suite **110/110/0** @ `14-52-09` (fork `6a15e08`); wrap tag **15/15**; undo tag **5/5**. Migration 1 (done): [todo-handoff-keywriter-fork.md](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Migration 2 Phases A–C (done): [todo-handoff-edit-helper-cpp.md](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Post-port keep decisions: §30.
 
 **Merging upstream keywriter.** Upstream is `dps/remarkable-keywriter`. Pull its changes into the fork on purpose — not on every Writerdeck session. In a local clone of Writerdeck-keywriter:
 
@@ -61,6 +61,14 @@ Phasing ([TODO.md](../TODO.md) item 3) — **done:**
 3. Shrink the script (Connections/Timers + C++ infra + Lobby/shell QML in fork); document ownership and upstream-merge policy; restore general Cursor rules.
 
 Critical **38/38/0** means basic editing is gated green. Full **110/110/0** remains product sign-off.
+
+## 30. Keep wrap gaps and custom EditHelper undo
+
+After migration 2 Phases A–C, evaluate (do not rewrite for purity) whether hand-tuned visual-line thresholds and the custom undo stacks should change. **Keep both.** Recorded 17 Jul 2026; harness already green (wrap **15/15**, undo **5/5**, full **110/110/0** @ `14-52-09`).
+
+**Wrap / caret gaps.** Qt Quick `TextEdit` exposes caret geometry via `positionToRectangle` / `positionAt` only — no visual-line index API. Mid-line carets on wrapped paragraphs often report a multi-row height, so stepping by that height jumps many visual rows ([lessons.md](lessons.md) § Keyboard). The walk therefore uses small `minGap` floors (3 px, or 10 when height ≥ 40) plus a 0.5 px same-row tolerance to find the next distinct row `y`, then pick the closest `x` to `goalX`. Those numbers are device-calibrated fudge, not elegance — but they are the cheapest proof that matches Mac/Linux vertical motion and the wrap harness. Replacing them with a “cleaner” algorithm (or digging into private Qt document layout) would be a high-risk rewrite for no product win. Touch the constants only if wrap or mid-wrapping Shift scenarios regress.
+
+**Custom undo.** Stacks and one-char insert merge live in C++ `EditHelper`; QML applies restored text, cursor, and selection onto `query`. Qt’s built-in `TextEdit.undo` / `undoStack` stay sidelined (cleared on harness reset so they do not fight ours). We need the custom model because Mac chord paths often assign `query.text` directly (word/line delete, restore), socket inject must share one history, and typing should merge into a single undo step with cursor restored. Leaning on Qt’s undo more deeply would not improve Markdown-on-disk integrity and would risk the undo tag. Redesign only if integrity or undo scenarios force it — not for architectural purity. See also [architecture.md](architecture.md) § On the tablet (deeper C++ text engine only if undo must live inside Qt’s document model).
 
 ## 4. No Toltec
 
