@@ -43,6 +43,10 @@ The install path worked for the repo owner but assumed expertise: six ordered sc
 - Toltec or jailbreak-based distribution.
 - Phone-only install with no computer.
 
+## Follow-up
+
+- [ ] Inspect dangers of bricking on boot now that `install.sh --start` / `install-service.sh --start` auto-enables `writerdeck` after a health check. Confirm the check is strong enough, document failure modes, and whether enable should stay gated (human glance at e-ink, stricter checks, or opt-in flag).
+
 ## Done when
 
 A new contributor can follow README only: configure secrets with IP + password, run one install command (or a short numbered list), load the phone UI, see the Lobby on the tablet, and recover from a bad autostart without reading `docs/lessons.md`.

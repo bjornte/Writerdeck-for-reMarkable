@@ -2,13 +2,9 @@
 # scripts/install-service.sh -- Install writerdeck.service on the device.
 #
 # Copies the unit to /etc/systemd/system/ and runs daemon-reload.
-# Does NOT enable the unit (boot-loop guard). Optional --start runs
-# systemctl start and prints a journalctl tail for the smoke test.
+# With --start: starts the unit, checks it is healthy, then enables autostart.
+# Without --start: installs only (not started, not enabled).
 #
-# Safe sequence:
-#   1. bash scripts/install-service.sh
-#   2. systemctl start writerdeck        (or --start)
-#   3. systemctl enable writerdeck       (only after step 2 passes)
 # Recovery: systemctl disable --now writerdeck && systemctl start xochitl
 #
 # Usage (run from repo root on the Mac):
@@ -31,7 +27,7 @@ for arg in "$@"; do
   case "$arg" in
     --start) DO_START=1 ;;
     -h|--help)
-      sed -n '2,20p' "$0"
+      sed -n '2,16p' "$0"
       exit 0
       ;;
     *) TARGET="$arg" ;;
@@ -80,43 +76,50 @@ echo
 if [ "$DO_START" -eq 1 ]; then
   echo "--- systemctl start $SYSTEMD_UNIT ---"
   rm_ssh "systemctl start $SYSTEMD_UNIT" "$TARGET"
-  sleep 1
+  sleep 2
   echo "--- journalctl -u $SYSTEMD_UNIT -n 30 ---"
   rm_ssh "journalctl -u $SYSTEMD_UNIT -n 30 --no-pager 2>&1 || true" "$TARGET"
   echo
+
+  echo "--- health check ---"
+  ACTIVE="$(rm_ssh "systemctl is-active $SYSTEMD_UNIT 2>/dev/null || true" "$TARGET" | tr -d '\r')"
+  HTTP_OK=0
+  if curl -fsS -m 8 "http://${TARGET}:8000/" >/dev/null 2>&1; then
+    HTTP_OK=1
+  fi
+  if [ "$ACTIVE" != "active" ] || [ "$HTTP_OK" -ne 1 ]; then
+    echo "ERROR: service not healthy (active=${ACTIVE:-unknown}, phone_http=${HTTP_OK})." >&2
+    echo "  Autostart NOT enabled. Fix, then re-run: bash scripts/install-service.sh --start" >&2
+    echo "  Recovery: systemctl disable --now writerdeck && systemctl start xochitl" >&2
+    exit 1
+  fi
+  echo "  OK  active + http://${TARGET}:8000/"
+
+  echo "--- systemctl enable $SYSTEMD_UNIT (autostart on boot) ---"
+  rm_ssh "systemctl enable $SYSTEMD_UNIT" "$TARGET"
+  echo "  enabled."
+  echo
   echo "======================================"
-  echo "  UNIT INSTALLED + STARTED (not enabled)"
+  echo "  UNIT INSTALLED + STARTED + ENABLED"
   echo "======================================"
   echo ""
   echo "  Phone UI:  http://${TARGET}:8000/"
   echo ""
-  echo "  Check: Lobby on e-ink; phone list populated;"
+  echo "  You're done when: Lobby on e-ink; phone list populated;"
   echo "  connection bar not stuck on connecting..."
   echo ""
-  echo "  If that looks good, enable autostart:"
-  echo "    ssh root@$TARGET"
-  echo "    systemctl enable writerdeck"
-  echo ""
-  echo "  Recovery:"
-  echo "    systemctl disable --now writerdeck"
-  echo "    systemctl start xochitl"
+  echo "  Recovery (if something goes wrong after reboot):"
+  echo "    systemctl disable --now writerdeck && systemctl start xochitl"
   echo "======================================"
 else
   echo "======================================"
-  echo "  INSTALL DONE  (unit installed, NOT enabled)"
+  echo "  INSTALL DONE  (unit installed, NOT started)"
   echo "======================================"
   echo ""
-  echo "  Step 1 -- manual test:"
+  echo "  Start + enable autostart:"
   echo "    bash scripts/install-service.sh --start"
-  echo "  Or:"
-  echo "    ssh root@$TARGET"
-  echo "    systemctl start writerdeck"
-  echo ""
-  echo "  Step 2 -- enable autostart (only after step 1 passes):"
-  echo "    systemctl enable writerdeck"
   echo ""
   echo "  Recovery:"
-  echo "    systemctl disable --now writerdeck"
-  echo "    systemctl start xochitl"
+  echo "    systemctl disable --now writerdeck && systemctl start xochitl"
   echo "======================================"
 fi

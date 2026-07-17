@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # scripts/install.sh -- First-time (idempotent) install chain for Writerdeck.
 #
-# Runs: preflight (no dist) -> bootstrap -> fetch if needed -> deploy editor ->
-# deploy server -> install-service. Does NOT enable the unit (boot-loop guard).
+# Runs: ensure-secrets -> preflight -> bootstrap -> fetch if needed -> deploy
+# editor -> deploy server -> install-service. With --start: also start, health-
+# check the phone UI, then enable autostart on boot.
 #
 # Usage (run from repo root on the Mac):
 #   bash scripts/install.sh
-#   bash scripts/install.sh --start    # also systemctl start + journalctl tail
+#   bash scripts/install.sh --start    # start + enable after health check
 #
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -70,19 +71,13 @@ echo ""
 echo "  Phone UI:  http://${RM_HOST}:8000/"
 echo ""
 if [ "$DO_START" -ne 1 ]; then
-  echo "  Next -- smoke-test start (do not enable yet):"
-  echo "    bash scripts/install-service.sh --start"
-  echo "  Or on the tablet:"
-  echo "    systemctl start writerdeck"
-  echo ""
-  echo "  Only after that works:"
-  echo "    systemctl enable writerdeck"
+  echo "  Next -- start + enable autostart:"
+  echo "    bash scripts/install.sh --start"
+  echo "  Or: bash scripts/install-service.sh --start"
   echo ""
 fi
 echo "  You're done when: Lobby on e-ink; phone list populated;"
 echo "  connection bar not stuck on connecting..."
-echo ""
-echo "  Optional: bash scripts/test-edit-session.sh"
 echo ""
 echo "  Recovery:"
 echo "    systemctl disable --now writerdeck && systemctl start xochitl"

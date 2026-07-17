@@ -28,7 +28,7 @@ Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**,
    bash scripts/install.sh --start
    ```
 
-   It asks for the tablet root password (Settings → Help → Copyrights and licenses → General information, scroll down) and the tablet’s Wi-Fi address, then installs. When Lobby and the phone page look good, turn on auto-start (on the tablet): `systemctl enable writerdeck`.
+   It asks for the tablet root password (Settings → Help → Copyrights and licenses → General information, scroll down) and the tablet’s Wi-Fi address, then installs and turns on auto-start for the next boot.
 
 ### You're done when
 
