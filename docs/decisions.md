@@ -40,7 +40,7 @@ The editor is Dave Singleton’s keywriter, rebuilt as Writerdeck from our fork.
 
 Fork: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). CI clones it; the build script only asserts and compiles. New editor behavior goes in the fork, assembled with `./assemble-qml.sh` into committed `main.qml`. Math, undo, chords, and wrap walk live in C++ `EditHelper`; QML draws and applies. Migrations: [editor-migration-1-to-QML](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md), [editor-migration-2-to-cpp](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Keep §5–§6.
 
-Pull upstream on purpose, not every session. Histories are linked (`5946cae`); ordinary merges work. After a merge: rebuild, deploy, edit-session, then critical keyboard gate.
+Pull from Dave’s original on purpose, not every session. Histories are linked (`5946cae`); ordinary merges work. After a merge: rebuild, deploy, edit-session, then critical keyboard gate.
 
 ## 5. Keep wrap gaps and custom EditHelper undo
 
@@ -162,4 +162,4 @@ Automated tests use filenames starting with `z-test-` so they sort last and stay
 
 ## Open risks
 
-OTA may wipe the systemd unit and reset the SSH password — redeploy and re-enable. Rootfs is nearly full; everything we ship lives under `/home/root`. Do not resize rootfs. uinput is closed (§3). The editor lives in the fork (§4); residual risk is upstream merge conflict, not a patch-script pile. Keyboard sign-off remains the full harness (§13). Integrity leftovers: [integrity-audit.md](integrity-audit.md).
+OTA may wipe the systemd unit and reset the SSH password — redeploy and re-enable. Rootfs is nearly full; everything we ship lives under `/home/root`. Do not resize rootfs. uinput is closed (§3). The editor lives in the fork (§4); residual risk is a clash when merging Dave’s original, not a patch-script pile. Keyboard sign-off remains the full harness (§13). Integrity leftovers: [integrity-audit.md](integrity-audit.md).

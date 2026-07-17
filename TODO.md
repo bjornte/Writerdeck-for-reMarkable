@@ -12,7 +12,7 @@ Verify on the tablet before checking anything off. Keys use a socket, not a fake
 
 ## Settled (kept for pointers)
 
-Editor fork, EditHelper, wrap/undo keep, QML assembly, and upstream ancestry are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Keyboard harness green: **110/110/0** ([editor-testing/todo.md](docs/editor-testing/todo.md)).
+Editor fork, EditHelper, wrap/undo keep, QML assembly, and linking git history to Dave’s original are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Keyboard harness green: **110/110/0** ([editor-testing/todo.md](docs/editor-testing/todo.md)).
 
 ## Open question
 

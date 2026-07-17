@@ -1,6 +1,6 @@
 # third_party/
 
-Upstream bits we do not author. Each keeps its own license.
+Code from other projects that we did not write. Each keeps its own license.
 
 ## keywriter → Writerdeck
 
