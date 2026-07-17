@@ -4,14 +4,14 @@ Automated typing and selection checks on the real tablet, over the same path the
 
 Start here: [todo.md](todo.md).
 
-Sign-off is the full suite green (**110/110/0**). The critical gate is **38/38/0**. Policy: [decisions.md](../decisions.md) §13. Gotchas: [lessons.md](../lessons.md).
+Calling typing work done means all 110 checks passed. The basic “editing works” set is 38 checks. Policy: [decisions.md](../decisions.md) §13. Gotchas: [lessons.md](../lessons.md).
 
 todo.md — current scores and next steps.
 
-milestone-runs.md — full-suite scoreboard; update after each full run.
+milestone-runs.md — pass/fail log of full runs; update after each full run.
 
-scenario-catalog.md — all scenarios by name.
+scenario-catalog.md — all checks by name.
 
-scenario-cookbook.md — where scenarios came from (CodeMirror, Qt, Ace).
+scenario-cookbook.md — where checks came from (CodeMirror, Qt, Ace).
 
 Code lives in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.

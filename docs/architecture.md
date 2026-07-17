@@ -27,9 +27,9 @@ Files are UTF-8 Markdown. An open note is protected from silent sync overwrite. 
 
 Writerdeck-server is a static Go binary — Wi-Fi, APIs, sync, PIN, launching the editor. Source in `daemon/`.
 
-Writerdeck is the full-screen editor, built from our fork of [keywriter](https://github.com/dps/remarkable-keywriter). QML draws the screen and applies edits. C++ starts the app, talks to the display, feeds keys from the socket, and runs EditHelper (math, chords, wrap, undo). Keep calibrated wrap gaps and custom undo; do not fork Qt’s text box ([decisions.md](decisions.md) §5–§6).
+Writerdeck is the full-screen editor, built from our fork of [keywriter](https://github.com/dps/remarkable-keywriter). QML draws the screen and applies edits. C++ starts the app, talks to the display, feeds keys from the socket, and runs EditHelper (math, shortcuts, wrap, undo). Keep hand-tuned wrap gaps and custom undo; do not replace Qt’s text box ([decisions.md](decisions.md) §5–§6).
 
-New editor behavior belongs in [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). The CI build script clones, asserts, and compiles — it does not stitch QML.
+New editor behavior belongs in [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). GitHub’s automatic build clones, checks, and compiles — it does not stitch the screen file.
 
 Under `/home/root/`: the two binaries, `Writerdeck-user-documents/` for notes, `.Writerdeck/settings.json`, a Qt runtime, and the launcher script. They meet on `/run/Writerdeck.sock`. The phone page is embedded in the server.
 
@@ -41,11 +41,11 @@ The server stays up under the stock UI. Home from Lobby brings xochitl back; the
 
 ## Constraints
 
-No jailbreak; keep OTA — so no Toltec. One static Go binary on the tablet. Markdown on disk; HTML there is a bug. Device scripts are ASCII and LF. The tablet drops Wi-Fi when it sleeps — keep it awake while developing.
+No jailbreak; keep over-the-air updates — so no Toltec. One static Go binary on the tablet. Markdown on disk; HTML there is a bug. Device scripts are ASCII and LF. The tablet drops Wi-Fi when it sleeps — keep it awake while developing.
 
 ## Device facts
 
-SSH as `root` over Wi-Fi. Put the password and `RM_HOST_WIFI` in `secrets/remarkable.local.env`. After OTA the password changes. On iPhone hotspot the tablet is often `172.20.10.5`.
+SSH as `root` over Wi-Fi. Put the password and `RM_HOST_WIFI` in `secrets/remarkable.local.env`. After an over-the-air update the password changes. On iPhone hotspot the tablet is often `172.20.10.5`.
 
 While Writerdeck is open, the server grabs the physical Home button so Qt does not see it twice ([decisions.md](decisions.md) §16). Rootfs is nearly full; everything we ship lives on `/home/root`. Do not resize rootfs.
 
@@ -57,10 +57,10 @@ Server from the Mac:
 bash scripts/deploy-rmkbd.sh
 ```
 
-Editor from CI (QML is inside the binary):
+Editor from GitHub’s automatic build (the screen file is inside the binary):
 
 ```bash
 git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywriter.sh -b
 ```
 
-Then relaunch the editor and read `journalctl -u writerdeck`. After QML: edit-session test. After caret work: keyboard harness. After Lobby/Home: Lobby keyboard test. Deploy uses gzip over SSH, not scp.
+Then relaunch the editor and read `journalctl -u writerdeck`. After screen-file changes: edit-session check. After caret work: automated typing tests. After Lobby/Home: Lobby keyboard test. Deploy uses gzip over SSH, not scp.

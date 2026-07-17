@@ -1,6 +1,6 @@
 # Terms
 
-Short definitions. Fork glossary: [Writerdeck-keywriter docs/terms.md](https://github.com/bjornte/Writerdeck-keywriter/blob/master/docs/terms.md).
+Short definitions. Fork twin: [Writerdeck-keywriter docs/terms.md](https://github.com/bjornte/Writerdeck-keywriter/blob/master/docs/terms.md).
 
 ## Product
 
@@ -18,9 +18,9 @@ Document integrity. Your prose must survive as plain Markdown on disk.
 
 QML. What you see and how edits are applied on screen.
 
-C++ / EditHelper. Startup, display, socket keys, and the math behind chords, wrap, and undo.
+C++ / EditHelper. Startup, display, socket keys, and the math behind shortcuts, wrap, and undo.
 
-Chord. A shortcut that holds Ctrl, Alt, or Shift with another key.
+Shortcut (chord). A key held with Ctrl, Alt, or Shift.
 
 Visual line. One wrapped row on screen — not the same as a line ending in a newline.
 
@@ -28,10 +28,12 @@ Goal column. The horizontal spot Up/Down tries to keep across uneven lines.
 
 ## Testing and ops
 
-Keyboard harness. Scripted typing on the real tablet over the same path the phone uses.
+Automated typing tests. Scripted typing on the real tablet over the same path the phone uses (`test-keyboard-harness.sh`).
 
-Critical / full suite. Thirty-eight scenarios for “basic editing works”; one hundred ten for product sign-off.
+Basic set / full set. Thirty-eight checks for “basic editing works”; one hundred ten before calling typing work done.
 
-Edit-session test. Opens a note and checks the editor stays up — catches broken QML.
+Edit-session check. Opens a note and checks the editor stays up — catches a broken screen file that crashes on launch.
 
 Deploy. Copy a new binary to the tablet and relaunch the editor. Restarting the server alone does not reload the editor.
+
+OTA. Over-the-air tablet software update from reMarkable — may reset the SSH password and wipe our boot service.

@@ -43,7 +43,9 @@ source scripts/_env.sh
 rm_ssh 'journalctl -u writerdeck --since "1 hour ago" --no-pager' | rg 'client connected|sync reconcile \(token\)|token verify'
 ```
 
-## Device sign-off matrix
+## Device verify matrix
+
+Run these on a real tablet with sync configured where noted.
 
 Token POST then service restart — token cleared from RAM, browser auto-repost via `needtoken` (journal: `sync reconcile (token)`). Token survives Wi-Fi IP change (re-enter once per browser origin if IP changes). Edit on tablet, exit Home — GitHub updated within one reconcile. Edit on GitHub, sync run — tablet updated if file not open in editor. Both edit same note — `(tablet copy).md` plus primary. Empty tablet, non-empty GitHub — pull restore, no junk copy. Tablet delete, rename, create — GitHub reflects without phone. Open note during reconcile — that file skipped, others sync. Power sleep — reconcile completes, no browser hang. Sync off — no GitHub traffic. Bad or expired token — error banner, local saves continue. Phone closed overnight — ticker reconcile backs up tablet edits.
 

@@ -26,7 +26,7 @@ After phone UI deploy: hard-refresh the page — notes list loads; the bar shows
 
 After sync or vault work: Sync setup still runs; a wrong vault PIN shows an error, not a blank editor.
 
-You do not need to re-type the keyboard harness by hand while it stays green. If real writing still feels wrong, note the keys and tell the agent.
+You do not need to re-type the automated typing checks by hand while they stay passing. If real writing still feels wrong, note the keys and tell the agent.
 
 ## How to launch
 

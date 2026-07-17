@@ -1,12 +1,15 @@
-# LLM handoff: keyboard testing methodology review
+# LLM handoff: keyboard testing methodology review (historical)
 
-**Current state (2026-07-17):** Live scores and next work live in [todo.md](todo.md) — full suite **110/110/0**, critical **38/38/0** @ `00-29-12`. This file is a **historical methodology review** from the pattern-rewrite era (105 scenarios, critical 36). Do not treat the failure tables below as the current device baseline.
+This file is an archive of a past mistake review. It keeps developer slang from that era on purpose. For current scores and plain-language guidance, use [todo.md](todo.md) and [terms.md](../terms.md). Do not treat the failure tables below as today’s baseline.
 
-This file is mainly a **historical methodology review** (false-completion traps, harness design). Fresh coding sessions should start at [todo.md](todo.md), not here.
+Project context at the time: Markdown editor on tablet; keystrokes over the phone path; automated typing tests in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.
 
-Project: Writerdeck for reMarkable 1 — Markdown editor on tablet, keystrokes over WebSocket/phone path, QML in `third_party/keywriter/build-keywriter.sh`, device harness in `daemon/cmd/edit-harness/` and `scripts/test-keyboard-harness.sh`.
+Related now: [todo.md](todo.md), [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md).
 
-Related: [todo.md](todo.md), [scenario-cookbook.md](scenario-cookbook.md), [lessons.md](../lessons.md) § Keyboard and selection.
+---
+
+*Historical review below.*
+
 
 ---
 

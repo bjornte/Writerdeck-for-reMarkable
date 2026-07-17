@@ -1,6 +1,6 @@
 # Architecture decisions
 
-Why the project is built this way — integrity and editor spine first, device quirks later. How: [architecture.md](architecture.md). Open work: [../TODO.md](../TODO.md). Shipped: [../DONE.md](../DONE.md). Gotchas: [lessons.md](lessons.md). Words: [terms.md](terms.md).
+Why the project is built this way — document integrity and core editing first, device quirks later. How: [architecture.md](architecture.md). Open work: [../TODO.md](../TODO.md). Finished: [../DONE.md](../DONE.md). Gotchas: [lessons.md](lessons.md). Words: [terms.md](terms.md).
 
 Numbers were renumbered 17 Jul 2026; prefer titles over old § IDs.
 
@@ -8,7 +8,7 @@ Numbers were renumbered 17 Jul 2026; prefer titles over old § IDs.
 
 ## Document integrity
 
-Writerdeck is a typewriter. Your prose must survive as plain Markdown on disk. That rule gates every feature. Full audit: [integrity-audit.md](integrity-audit.md).
+Writerdeck is a typewriter. Your prose must survive as plain Markdown on disk. That rule comes before every feature. Full audit: [integrity-audit.md](integrity-audit.md).
 
 Notes are UTF-8 Markdown, never Qt HTML. An open note must not be silently overwritten by sync or remote delete. Saves use defined paths, autosave about every 45 seconds, and save-before-stop on deploy; a hard kill can still lose recent typing. If the file on disk changes under you, reload or show a conflict — do not let a stale buffer win. GitHub sync backs up; it must not empty-push or delete against a live edit.
 
@@ -16,7 +16,7 @@ No change to the daemon, sync, build script, or note APIs ships without an integ
 
 ## Device verification
 
-A green deploy script is not a pass. Rebuild when QML changed, deploy, relaunch, read the tablet journal. Fail on QML parse errors or an editor that exits at once. After QML changes run the edit-session smoke test. After caret or selection work run the keyboard harness (§13). After Lobby or Home run the Lobby keyboard test (§15).
+A successful deploy script is not enough. Rebuild when the screen files changed, deploy, relaunch, read the tablet journal. Fail on screen-file parse errors or an editor that exits at once. After screen-file changes run the edit-session check. After caret or selection work run the automated typing tests (§13). After Lobby or Home run the Lobby keyboard test (§15).
 
 ---
 
@@ -24,43 +24,43 @@ A green deploy script is not a pass. Rebuild when QML changed, deploy, relaunch,
 
 While you type, the editor stays plain text — raw Markdown on screen and in memory. Esc preview may look fancy. Headings and bold belong there, not in edit mode.
 
-Rich text in edit was tried. Pulling formatted text back into the note produced empty files, HTML on disk, and broken previews. Real WYSIWYG-in-edit stays out of scope unless someone writes a new decision and re-proves integrity.
+Rich text in edit was tried. Pulling formatted text back into the note produced empty files, HTML on disk, and broken previews. Real hide-the-markers editing stays out of scope unless someone writes a new decision and re-proves integrity.
 
 ## 2. Display sync after Lobby clears the buffer
 
 Going Home clears the on-screen box. Reload and mode toggle must push the real note text (or its preview HTML) back onto the screen — never read fancy HTML back into the note. Without that, Home can save a zero-length file.
 
-## 3. Socket input, not uinput
+## 3. Socket input, not a fake keyboard device
 
-This kernel cannot load a fake keyboard device. Do not retry that path. Keystrokes arrive on a local socket and become Qt key events. The phone resolves the keymap; the tablet gets characters and Mac/Linux-style Ctrl/Alt chords. USB Linux keyboards already use those chords — no second shortcut set.
+This kernel cannot load a fake keyboard device. Do not retry that path. Keystrokes arrive on a local socket and become Qt key events. The phone resolves the keymap; the tablet gets characters and Mac/Linux-style Ctrl/Alt shortcuts. USB Linux keyboards already use those shortcuts — no second shortcut set.
 
 ## 4. Owned keywriter fork
 
-The editor is Dave Singleton’s keywriter, rebuilt as Writerdeck from our fork. The old binary does not load on current firmware. We build in CI with a Qt sysroot and draw to the real framebuffer.
+The editor is Dave Singleton’s keywriter, rebuilt as Writerdeck from our fork. The old binary does not load on current firmware. We build it in GitHub’s automatic build with a bundled Qt library set and draw to the tablet’s real screen device.
 
-Fork: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). CI clones it; the build script only asserts and compiles. New editor behavior goes in the fork, assembled with `./assemble-qml.sh` into committed `main.qml`. Math, undo, chords, and wrap walk live in C++ `EditHelper`; QML draws and applies. Migrations: [editor-migration-1-to-QML](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md), [editor-migration-2-to-cpp](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Keep §5–§6.
+Fork: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). The automatic build clones it; the build script only checks and compiles. New editor behavior goes in the fork, assembled with `./assemble-qml.sh` into committed `main.qml`. Math, undo, shortcuts, and wrapped-line motion live in C++ `EditHelper`; QML draws and applies. Migrations: [editor-migration-1-to-QML](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md), [editor-migration-2-to-cpp](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Keep §5–§6.
 
-Pull from Dave’s original on purpose, not every session. Histories are linked (`5946cae`); ordinary merges work. After a merge: rebuild, deploy, edit-session, then critical keyboard gate.
+Pull from Dave’s original on purpose, not every session. Histories are linked (`5946cae`); ordinary merges work. After a merge: rebuild, deploy, edit-session, then the 38 basic typing checks.
 
 ## 5. Keep wrap gaps and custom EditHelper undo
 
-Qt’s text box does not give clean “visual line” indexes. Wrapped Up/Down therefore uses small calibrated pixel gaps and a sticky horizontal goal. That is fudge, but it matches Mac/Linux motion and the wrap tests. Change the numbers only if those tests regress.
+Qt’s text box does not give clean “visual line” indexes. Wrapped Up/Down therefore uses small hand-tuned pixel gaps and a sticky horizontal goal. That is not elegant — but it matches Mac/Linux motion and the wrap tests. Change the numbers only if those tests start failing.
 
-Undo is ours in `EditHelper`, not Qt’s built-in stack. Socket typing and chord deletes must share one history. Redesign only if integrity or undo tests force it. Do not replace Qt’s text box for purity — §6.
+Undo is ours in `EditHelper`, not Qt’s built-in stack. Socket typing and shortcut deletes must share one history. Redesign only if integrity or undo tests force it. Do not replace Qt’s text box for purity — §6.
 
-## 6. Do not fork Qt TextEdit
+## 6. Do not fork Qt’s text box
 
-Moving our helpers into the fork was a same-behavior port under a green harness — evenings, not months. Replacing Qt’s text box is a different job.
+Moving our helpers into the fork kept the same typing behavior under passing automated tests — evenings, not months. Replacing Qt’s text box is a different job.
 
 That box is open source, but the useful slice is tens of thousands of lines inside Qt. Forking it means maintaining a patched Qt forever. We already pass integrity and editing on device with §5. Stop here unless stock TextEdit cannot fix a real product bug, with tests ready to catch regressions.
 
 ## 7. No Toltec
 
-Toltec pins firmware and can soft-brick on unsupported versions. That fights OTA. Skip it unless the owner accepts the lock.
+Toltec pins firmware and can leave the tablet unable to update normally on unsupported versions. That fights over-the-air updates. Skip it unless the owner accepts the lock.
 
 ## 8. Static Go binary
 
-The server is one static ARM binary. No Python or extra runtimes on the tablet. It cross-compiles on the Mac in about a second and survives firmware updates.
+The server is one static ARM binary. No Python or extra runtimes on the tablet. It builds on the Mac in about a second and survives firmware updates.
 
 ## 9. Always-on server, on-demand editor
 
@@ -70,27 +70,27 @@ The server keeps the phone reachable under the stock UI. Only the editor session
 
 No phone app — the tablet is the server. Day-to-day files and settings live in the Lobby; the phone is for typing, upload/download, paste-at-cursor, and the sync token — [browser-vs-tablet.md](browser-vs-tablet.md). A PIN appears on the e-ink each boot. Home twice: edit to Lobby, Lobby to quit.
 
-## 11. GitHub sync is a non-authoritative reconciler
+## 11. GitHub sync copies missing notes both ways
 
-Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Reconcile copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused. Details: [server-sync-implementation.md](server-sync-implementation.md).
+Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Sync copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused. Details: [server-sync-implementation.md](server-sync-implementation.md).
 
 ## 12. Optional at-rest encryption (private notes)
 
-Pairing PIN and vault PIN are separate. Encrypted notes are `.md.enc` beside plain `.md`. Each file is sealed; the vault PIN unlocks a key held in RAM only while that note (or a one-shot encrypt/decrypt) is active. PIN every open, including note switches. Tablet-only entry. Per-note encrypt/decrypt — no bulk lock. Sync treats ciphertext as opaque and mirrors recovery material under `secret/`. Markdown integrity applies to `.md` only. See [integrity-audit.md](integrity-audit.md).
+Pairing PIN and vault PIN are separate. Encrypted notes are `.md.enc` beside plain `.md`. Each file is sealed; the vault PIN unlocks a key held in RAM only while that note (or a one-shot encrypt/decrypt) is active. PIN every open, including note switches. Tablet-only entry. Per-note encrypt/decrypt — no bulk lock. Sync copies encrypted files without reading them and mirrors recovery material under `secret/`. Markdown integrity applies to `.md` only. See [integrity-audit.md](integrity-audit.md).
 
-## 13. Keyboard selection harness
+## 13. Automated typing tests
 
-We prove caret and selection on the real tablet, over the same path the phone uses — not by reading saved files. About 110 scenarios; 38 are the critical “basic editing works” gate. Scoreboard: [editor-testing/](editor-testing/). Harness notes use the `z-test-` prefix (§32). USB layout quirks still need a human check after qmap changes.
+We prove caret and selection on the real tablet, over the same path the phone uses — not by reading saved files. About 110 checks; 38 are the “basic editing works” set. Pass/fail log: [editor-testing/](editor-testing/). Test notes use the `z-test-` prefix (§32). USB layout quirks still need a human check after keyboard-map changes.
 
-## 14. Edit-session regression test
+## 14. Edit-session check
 
-Opening a note from outside must keep the editor up for several seconds. Instant exit usually means broken QML, not a server bug. Run after Writerdeck or QML deploy.
+Opening a note from outside must keep the editor up for several seconds. Instant exit usually means a broken screen file, not a server bug. Run after Writerdeck or screen-file deploy.
 
-## 15. Lobby keyboard regression test
+## 15. Lobby keyboard check
 
-After Home from edit, Lobby keys must still work. The Lobby keyboard script checks that path. Run it with edit-session after Lobby or Home QML changes.
+After Home from edit, Lobby keys must still work. The Lobby keyboard script checks that path. Run it with edit-session after Lobby or Home screen-file changes.
 
-## 16. Physical Home: exclusive gpio grab
+## 16. Physical Home: exclusive button grab
 
 While Writerdeck is open, the server exclusively grabs the tablet’s Home/Power/page buttons so Qt never sees a second Home. Release on exit so the stock UI works again. USB Home is unchanged. Idle page-button launch (§23) needs no grab. Handoff: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md).
 
@@ -102,7 +102,7 @@ Six digits, four, or none. None means anyone on the Wi-Fi can hit the notes API 
 
 A second phone mid-edit sees the note, not the PIN. Ask the tablet to return to Lobby so the PIN is readable on e-ink. That call is pre-auth and rate-limited; it reveals nothing over the wire.
 
-## 19. Tablet file CRUD via trusted socket
+## 19. Tablet file create/rename/delete via trusted socket
 
 Lobby file ops use the same local socket as keystrokes. The server does the disk work and can nudge the phone. Launch Lobby with `wd` on the Mac or `~/wd` on the tablet.
 
@@ -122,9 +122,9 @@ Boot and Home land on the note list, not the welcome screen. Coming back from ed
 
 From the stock UI, USB Escape or both page buttons together open Writerdeck to the Lobby. Power still owns sleep/wake. While Writerdeck is already up, Escape is left to the editor.
 
-## 24. Mac builds the server; CI builds Writerdeck
+## 24. Mac builds the server; GitHub builds Writerdeck
 
-Deploy starts on the Mac, which can reach the tablet. The Go server builds locally. Writerdeck needs the Qt container, so CI builds that binary.
+Deploy starts on the Mac, which can reach the tablet. The Go server builds locally. Writerdeck needs the Qt container, so GitHub’s automatic build produces that binary.
 
 ## 25. Wi-Fi is the dev path
 
@@ -154,7 +154,7 @@ Phone upload goes through the same create API as a new note — path checks and 
 
 Rotation is saved on the tablet and pushed when the editor connects. Change it from Lobby Settings or Ctrl-R / Ctrl-arrows. Phone Preferences no longer rotate.
 
-## 32. Device test harness note names
+## 32. Device test note names
 
 Automated tests use filenames starting with `z-test-` so they sort last and stay obvious in the Files list.
 
@@ -162,4 +162,4 @@ Automated tests use filenames starting with `z-test-` so they sort last and stay
 
 ## Open risks
 
-OTA may wipe the systemd unit and reset the SSH password — redeploy and re-enable. Rootfs is nearly full; everything we ship lives under `/home/root`. Do not resize rootfs. uinput is closed (§3). The editor lives in the fork (§4); residual risk is a clash when merging Dave’s original, not a patch-script pile. Keyboard sign-off remains the full harness (§13). Integrity leftovers: [integrity-audit.md](integrity-audit.md).
+Over-the-air update may wipe the boot service and reset the SSH password — redeploy and re-enable. Rootfs is nearly full; everything we ship lives under `/home/root`. Do not resize rootfs. The fake-keyboard-device path is closed (§3). The editor lives in the fork (§4); residual risk is a clash when merging Dave’s original, not a patch-script pile. Calling typing work done still means all 110 automated typing checks (§13). Integrity leftovers: [integrity-audit.md](integrity-audit.md).

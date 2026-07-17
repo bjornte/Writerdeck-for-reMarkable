@@ -1,21 +1,21 @@
-# Keyboard harness
+# Automated typing tests
 
-Prove Mac/Linux-style editing on the tablet with the automated harness — not by typing in the Lobby by hand.
+Prove Mac/Linux-style editing on the tablet with scripted tests — not by typing in the Lobby by hand.
 
-Read: this file, [milestone-runs.md](milestone-runs.md), [lessons.md](../lessons.md), [decisions.md](../decisions.md) §13, [terms.md](../terms.md). Scenario names: [scenario-catalog.md](scenario-catalog.md).
+Read: this file, [milestone-runs.md](milestone-runs.md), [lessons.md](../lessons.md), [decisions.md](../decisions.md) §13, [terms.md](../terms.md). Check names: [scenario-catalog.md](scenario-catalog.md).
 
 ## Current score
 
-Full suite **110/110/0** @ `17-23-47` (fork `0bb3b70`). Critical **38/38/0**. Wrap and undo tags green. Edit-session passed the same day. Do not run edit-session in parallel with this harness.
+All 110 checks passed at `17-23-47` (fork commit `0bb3b70`). Basic set 38 of 38. Wrap and undo groups also passed. Edit-session passed the same day. Do not run edit-session at the same time as these typing tests.
 
 ## Next
 
-Owner Physical Home check ([user-should-test.md](../user-should-test.md)). Keep the harness green on any future edit change: one push, one deploy, edit-session, full `--fast`, update the scoreboard.
+Owner Physical Home check ([user-should-test.md](../user-should-test.md)). Keep all typing checks passing on any future edit change: one push, one deploy, edit-session, full `--fast`, update the pass/fail log.
 
 ## Do not
 
-Infer the moving end of a selection from the caret after select. Treat keyboard arrows as page-scroll. Deploy once per failing scenario. Auto-release Escape in inject helpers. Step wrapped lines by a tall caret rectangle alone.
+Infer the moving end of a selection from the caret after select. Treat keyboard arrows as page-scroll. Deploy once per failing case. Auto-release Escape in key-feed helpers. Step wrapped lines by a tall caret rectangle alone.
 
-## Acceptance
+## Done means
 
-Critical **38/38/0**, full **110/110/0**, edit-session pass, clean journal after deploy.
+Basic set 38 of 38, full set 110 of 110, edit-session pass, clean journal after deploy.

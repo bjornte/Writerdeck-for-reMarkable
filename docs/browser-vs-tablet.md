@@ -1,6 +1,6 @@
 # Browser vs tablet
 
-What each surface does. How the system fits: [architecture.md](architecture.md). Wishlist: [improvements.md](improvements.md).
+What the phone is for vs what the tablet is for. How the system fits: [architecture.md](architecture.md). Wishlist: [improvements.md](improvements.md).
 
 The phone is a keyboard bridge, import/export helper, and place to paste the GitHub token. Day-to-day files and settings live on the tablet Lobby.
 

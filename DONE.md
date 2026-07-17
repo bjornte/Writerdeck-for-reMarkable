@@ -26,14 +26,14 @@ Optional vault: a second PIN on the tablet only. Per-note encrypt/decrypt; ciphe
 
 ## Editor
 
-Built from our [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) fork of Dave’s keywriter. Typing math lives in C++ EditHelper; the screen is QML. Mac/Linux chords are harness-green (**110/110/0**). Physical Home is owned by the server while you edit. Power sleeps and wakes with a save. Norwegian USB layout works on hardware.
+Built from our [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) fork of Dave’s keywriter. Typing math lives in C++ EditHelper; the screen is QML. Mac/Linux shortcuts pass all 110 automated typing checks. Physical Home is owned by the server while you edit. Power sleeps and wakes with a save. Norwegian USB layout works on hardware.
 
 We stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
 
 ## Sync
 
-Optional GitHub reconcile — copy missing notes both ways, never mass-delete, refuse empty push over a known-good note. Token stays in the browser and tablet RAM. [server-sync-implementation.md](docs/server-sync-implementation.md).
+Optional GitHub sync — copy missing notes both ways, never mass-delete, refuse empty push over a known-good note. Token stays in the browser and tablet RAM. [server-sync-implementation.md](docs/server-sync-implementation.md).
 
 ## Prove it still works
 
-After editor changes: edit-session smoke test, then keyboard harness if caret work moved, Lobby keyboard test if Home/Lobby moved. After vault work: vault scripts. Do not retry uinput — keys use the socket.
+After editor changes: edit-session check, then automated typing tests if caret work moved, Lobby keyboard test if Home/Lobby moved. After vault work: vault scripts. Do not retry the fake-keyboard-device path — keys use the socket.

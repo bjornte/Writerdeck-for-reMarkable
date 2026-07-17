@@ -17,7 +17,7 @@ bash scripts/test-edit-session.sh
 
 Ship a new server: `bash scripts/deploy-rmkbd.sh`, then start the service.
 
-Keyboard caret work: `bash scripts/test-keyboard-harness.sh --fast` ([editor-testing](../docs/editor-testing/todo.md)). Lobby/Home: `bash scripts/test-lobby-keyboard.sh`. Vault: `test-vault.sh` / `test-vault-e2e.sh`.
+Keyboard caret work: `bash scripts/test-keyboard-harness.sh --fast` ([editor-testing](../docs/editor-testing/todo.md)). Lobby/Home: `bash scripts/test-lobby-keyboard.sh`. Vault: `test-vault.sh` / `test-vault-e2e.sh` (full vault path including the tablet UI).
 
 Show Lobby: `wd` or `bash scripts/lobby.sh`.
 

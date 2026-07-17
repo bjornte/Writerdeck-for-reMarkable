@@ -18,7 +18,7 @@ improvements.md — wishlist, not committed work.
 
 user-should-test.md — checks only human fingers can do.
 
-editor-testing/ — keyboard harness scores and scenarios.
+editor-testing/ — automated typing-test scores and check names.
 
 editor-migration-1-to-QML/ and editor-migration-2-to-cpp/ — finished migrations; policy lives in decisions §4–§6.
 

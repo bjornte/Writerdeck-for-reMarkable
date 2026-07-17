@@ -1,6 +1,6 @@
 # TODO
 
-Writerdeck turns a first-gen reMarkable into a Markdown typewriter with USB and Bluetooth keyboards. Most of the product is shipped — see [DONE.md](DONE.md).
+Writerdeck turns a first-gen reMarkable into a Markdown typewriter with USB and Bluetooth keyboards. Most of the product is finished — see [DONE.md](DONE.md).
 
 How: [docs/architecture.md](docs/architecture.md). Why: [docs/decisions.md](docs/decisions.md). Gotchas: [docs/lessons.md](docs/lessons.md). Words: [docs/terms.md](docs/terms.md).
 
@@ -12,15 +12,15 @@ Verify on the tablet before checking anything off. Keys use a socket, not a fake
 
 ## Settled (kept for pointers)
 
-Editor fork, EditHelper, wrap/undo keep, QML assembly, and linking git history to Dave’s original are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Keyboard harness green: **110/110/0** ([editor-testing/todo.md](docs/editor-testing/todo.md)).
+Editor fork, EditHelper, wrap/undo keep, screen-file assembly, and linking git history to Dave’s original are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Automated typing tests: all 110 passed ([editor-testing/todo.md](docs/editor-testing/todo.md)).
 
 ## Open question
 
-Stay on current firmware forever? Each OTA resets the SSH password and may wipe the systemd unit — redeploy and re-enable.
+Stay on current firmware forever? Each over-the-air update resets the SSH password and may wipe the boot service — redeploy and re-enable.
 
 ## Resume prompt
 
 > Project: reMarkable 1 Markdown typewriter (USB and Bluetooth keyboards). Server in `daemon/`; editor from Writerdeck-keywriter fork; notes in `Writerdeck-user-documents/`. Mac deploys; phone types.
-> Next: owner Physical Home check ([docs/user-should-test.md](docs/user-should-test.md)). Harness **110/110/0** @ fork `0bb3b70`. Stop short of forking Qt TextEdit ([decisions.md](docs/decisions.md) §5–§6).
+> Next: owner Physical Home check ([docs/user-should-test.md](docs/user-should-test.md)). Typing tests all 110 passed at fork commit `0bb3b70`. Stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
 > Read: architecture, decisions, DONE, lessons, terms, integrity-audit. Device: `secrets/remarkable.local.env`.
-> Constraints: no jailbreak / Toltec; keep OTA; static Go ARM binary.
+> Constraints: no jailbreak / Toltec; keep over-the-air updates; one static Go ARM binary.
