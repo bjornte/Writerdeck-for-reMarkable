@@ -4,10 +4,10 @@ Short definitions for Writerdeck and its editor fork.
 
 ## Product
 
-* **Writerdeck**: A Markdown typewriter on a first-gen reMarkable for USB and Bluetooth keyboards. Bluetooth pairs to the phone; typing reaches the tablet over Wi-Fi. USB plugs in with an OTG cable.
-* **Writerdeck-server**: Always-on program on the tablet: files, sync, PIN, launching the editor. No screen of its own.
-* **Writerdeck (the app)**: The full-screen editor you see. Built from our fork of Singleton’s keywriter: [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter).
-* **keywriter**: Singleton’s original Qt Markdown notepad — the project that fork started from.
+* **Writerdeck for reMarkable**: A typewriter for reMarkable 1 with a Bluetooth or USB keyboard. Bluetooth pairs via the user's phone. USB connects with an OTG cable.
+* **Writerdeck-server**: Always-on program on the tablet: files, sync, PIN, launching the editor. No screen of its own. Made primarily in Go.
+* **Writerdeck (app)**: The full-screen editor you see. Built from our fork of Singleton’s keywriter: [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter).
+* **keywriter**: Singleton’s original Qt Markdown notepad — the project that fork started from. Made primarily in QML & C++. Uses Qt’s TextEdit.
 * **Lobby**: In-app home on the tablet — files, settings, sleep — not the stock reMarkable UI.
 * **Document integrity**: Your prose must survive as plain Markdown on disk.
 
