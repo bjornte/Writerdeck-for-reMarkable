@@ -70,6 +70,8 @@ test -f edit_helper.h && test -f edit_helper.cpp \
     || { echo "ERROR: edit_helper.{h,cpp} missing from fork checkout" >&2; exit 1; }
 grep -q 'clearUndoStacks' edit_helper.cpp \
     || { echo "ERROR: edit_helper.cpp missing clearUndoStacks (Phase A2 undo)" >&2; exit 1; }
+grep -q 'dispatchMacArrow' edit_helper.cpp \
+    || { echo "ERROR: edit_helper.cpp missing dispatchMacArrow (Phase B key dispatch)" >&2; exit 1; }
 grep -q 'rmkbdSocketReader' main.cpp \
     || { echo "ERROR: main.cpp missing socket reader (fork Phase 3)" >&2; exit 1; }
 grep -q 'qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")' main.cpp \
@@ -117,6 +119,7 @@ assert 'function handleMacArrow' in _helpers, "edit_mac_helpers.qml.inc missing 
 assert 'function handleMacBackspace' in _helpers, "edit_mac_helpers.qml.inc missing handleMacBackspace"
 assert 'editHelper.beginTextEdit' in _helpers, "edit_mac_helpers.qml.inc missing editHelper.beginTextEdit (Phase A2 undo)"
 assert 'editHelper.notifyTextChanged' in _helpers, "edit_mac_helpers.qml.inc missing editHelper.notifyTextChanged (Phase A2 undo)"
+assert 'editHelper.dispatchMacArrow' in _helpers, "edit_mac_helpers.qml.inc missing editHelper.dispatchMacArrow (Phase B)"
 assert 'function handleMacUndo' in _helpers, "edit_mac_helpers.qml.inc missing handleMacUndo"
 assert 'property bool cursorStrong' in _helpers, "edit_mac_helpers.qml.inc missing cursorStrong (Phase 2D)"
 assert 'function handleMacKeysOnPressed' in _helpers, "edit_mac_helpers.qml.inc missing handleMacKeysOnPressed (Phase 2D)"
