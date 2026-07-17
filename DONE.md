@@ -1,38 +1,54 @@
 # What's shipped
 
-Writerdeck adds keyboard word processing to the first-gen reMarkable. Use a USB keyboard on an OTG cable, or a Bluetooth keyboard paired to your phone (keys cross Wi-Fi to the tablet). Notes save as Markdown.
+Writerdeck adds word processing to the first generation reMarkable. Write with a physical Bluetooth or USB keyboard. Notes save as Markdown.
 
 Open work: [TODO.md](TODO.md). How: [docs/architecture.md](docs/architecture.md). Why: [docs/decisions.md](docs/decisions.md). Gotchas: [docs/lessons.md](docs/lessons.md).
 
 ## Your words
 
-Notes are plain Markdown on disk. Sync and file ops must not silently empty or overwrite an open note. Details and leftovers: [docs/integrity-audit.md](docs/integrity-audit.md).
+Notes are plain Markdown on disk. Most importantly, your documents must be preserved at all times. Sync and file operations must not silently modify any note, including the open one. Details and leftovers: [docs/integrity-audit.md](docs/integrity-audit.md).
+
+## Starting the Writerdeck
+
+If the reMarkable is off, turn it on, and the app launches.
+
+If you're in the main reMarkable user interface, press both left & right pagination buttons simulateously, and you land in the Lobby Files tab. If you have connected a USB keyboard, pressing Esc will also launch the app.
+
+If you have a dev setup for the app on your computer, `wd` will also launch the Writerdeck.
 
 ## How you write
 
-Power on and you land in the Lobby Files tab. Open the tablet address on the phone, enter the PIN, pair a keyboard to the phone if you like. Open a note on the tablet — the phone enters Type mode and keys land on e-ink.
+Hook up a physical keyboard, either USB (with an OTG cable) or Bluetooth (via your phone. The lobby's keyboard page tells you how).
 
-Home from a note saves and returns to Files with that note selected. Home from the Lobby quits to the stock reMarkable UI. The server keeps answering on port 8000 either way. Relaunch with USB Esc, both page buttons together, or `wd` / `~/wd`.
+## Saving & exiting
 
-## Phone and tablet split
+Pressing home while in a note saves and returns to Files. Home from the Lobby quits to the stock reMarkable UI.
 
-The phone is a keyboard bridge, upload/download, paste-at-cursor, and sync token entry. Day-to-day files and settings live on the tablet Lobby. Full split: [docs/browser-vs-tablet.md](docs/browser-vs-tablet.md).
+## Syncing notes
+
+Notes can optionally be synced to a private GitHub repo of your choosing. Ensuring that your work is preserved, and never lost, is the core success factor of the sync. Git history is an extra safety layer. Any missing note at either end is always copied over. Mass deletes are not supported. Checks are in place to never flush notes of content.
+
+Notes syncing is done from the reMarkable, and not the phone. The repository access token stays in the phone's browser and the tablet's RAM. If the token is missing one place but available at the other, it is copied over. For security purposes, it is never saved to reMarkable's disk. Details: [server-sync-implementation.md](docs/server-sync-implementation.md).
+
+## Settings
+
+Except for setting the sync token, which is done on the phone, all settings are available from the Lobby
+
+## Connection between tablet and phone
+
+When using a Bluetooth keyboard, the phone is a bridge for typing. However, the interface has several secondary functions, which are useful also from a laptop: upload, download, paste-at-cursor, and sync token entry. Details: [docs/browser-vs-tablet.md](docs/browser-vs-tablet.md).
 
 ## Security and private notes
 
-PIN each boot — six digits, four, or none (none warns that anyone on your Wi-Fi can connect). Five wrong guesses lock that IP for a minute.
+PIN each boot — six digits, four, or none. **Note!** Without a PIN, anyone on your Wi-Fi can reach your notes. Five wrong guesses lock that IP for a minute.
 
-Optional vault: a second PIN on the tablet only. Per-note encrypt/decrypt; ciphertext as `.md.enc`. PIN every open. Recovery material can sync to GitHub under `secret/`. [decisions.md](docs/decisions.md) §12.
+Optional vault: a second PIN on the tablet only. Per-note encrypt/decrypt; ciphertext as `.md.enc`. PIN every open. Recovery material can sync to GitHub under `secret/`.
 
 ## Editor
 
-Built from our [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) fork of Singleton’s keywriter. Typing math lives in C++ EditHelper; the screen is QML. Mac/Linux shortcuts pass all 110 automated typing checks. Physical Home is owned by the server while you edit. Power sleeps and wakes with a save. Norwegian USB layout works on hardware.
+Built from our [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) fork of David Singleton’s keywriter. Typing math lives in C++ EditHelper; the screen is QML. Mac/Linux shortcuts pass all automated typing checks. Physical Home is owned by the server while you edit. Power sleeps and wakes with a save. Norwegian USB layout works on hardware.
 
 We stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
-
-## Sync
-
-Optional GitHub sync — copy missing notes both ways, never mass-delete, refuse empty push over a known-good note. Token stays in the browser and tablet RAM. [server-sync-implementation.md](docs/server-sync-implementation.md).
 
 ## Prove it still works
 
