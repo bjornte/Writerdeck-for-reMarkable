@@ -24,7 +24,7 @@ editor-testing/ — automated typing-test scores and check names.
 
 editor-migration-1-to-QML/ and editor-migration-2-to-cpp/ — finished migrations; policy lives in decisions §4–§6.
 
-install-onboarding/ — first-time install path for visitors (docs + scripts + Release fetch).
+install-onboarding/ — visitor install (ZIP, prompts, Releases); boot-enable follow-up still open.
 
 server-sync-implementation.md — how GitHub sync and token restore work.
 

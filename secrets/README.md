@@ -1,6 +1,6 @@
 # secrets/
 
-Local credentials — never committed. Copy `remarkable.local.env.example` to `remarkable.local.env`. Scripts read it through `_env.sh`.
+Local credentials — never committed. `bash scripts/install.sh` (via `ensure-secrets.sh`) creates `remarkable.local.env` from the example and asks for password and Wi-Fi IP when empty. You can still copy the example by hand if you prefer.
 
 RM_ROOT_PASSWORD — SSH password from the tablet settings screen; regenerates after OTA.
 

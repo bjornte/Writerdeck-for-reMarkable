@@ -45,7 +45,7 @@ No jailbreak; keep OTA (over-the-air updates) — so no Toltec. One static Go bi
 
 ## Device facts
 
-SSH as `root` over Wi-Fi. Put the password and `RM_HOST_WIFI` in `secrets/remarkable.local.env`. After an OTA (over-the-air update) the password changes. On iPhone hotspot the tablet is often `172.20.10.5`.
+SSH as `root` over Wi-Fi. Password and `RM_HOST_WIFI` live in `secrets/remarkable.local.env` (install prompts if empty). After an OTA (over-the-air update) the password changes. On iPhone hotspot the tablet is often `172.20.10.5`. Visitors fetch prebuilt editor (`keywriter` Release) and server (`server` Release); developers with Go build the server locally via `deploy-rmkbd.sh`.
 
 While Writerdeck is open, the server grabs the physical Home button so Qt does not see it twice ([decisions.md](decisions.md) §16). Rootfs is nearly full; everything we ship lives on `/home/root`. Do not resize rootfs.
 

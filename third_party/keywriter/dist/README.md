@@ -9,7 +9,7 @@ Built artifacts — fork QML is baked into `Writerdeck` at CI build time (no run
 
 Deployed to `/home/root/Writerdeck` on the tablet.
 
-**Fetch (no `gh` required):** rolling Release tag `keywriter`, or Actions artifact as browser fallback.
+**Fetch (no `gh` / no Go required for install):** rolling Releases `keywriter` (editor + Qt) and `server` (Writerdeck-server).
 
 ```bash
 bash scripts/fetch-keywriter-dist.sh   # curl Release, else gh run download

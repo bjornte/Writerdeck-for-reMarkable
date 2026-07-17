@@ -53,3 +53,7 @@ We stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §
 ## Prove it still works
 
 After editor changes: edit-session check, then automated typing tests if caret work moved, Lobby keyboard test if Home/Lobby moved. After vault work: vault scripts. Do not retry uinput — keys use the socket.
+
+## First-time install
+
+Visitors: Download ZIP, `bash scripts/install.sh --start`, answer password + Wi-Fi prompts. Binaries come from GitHub Releases (`keywriter`, `server`) — no `gh` login, no Go. Autostart is enabled only after a phone-page health check. Details and boot-risk follow-up: [docs/install-onboarding/](docs/install-onboarding/).

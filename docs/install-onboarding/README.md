@@ -1,7 +1,5 @@
 # Install and onboarding
 
-Make first-time install usable without already knowing SSH, systemd, and CI artifacts.
+First-time install for visitors: Download ZIP → `bash scripts/install.sh --start`. The script asks for password and Wi-Fi IP, downloads editor + server from GitHub Releases (no `gh`, no Go), deploys, health-checks the phone page, then enables autostart.
 
-Batch 1 (docs + install scripts), **Binaries without gh** (editor Release), and **no Go required** (server Release + fetch fallback) are done. Visitors need ZIP + Wi-Fi secrets + `install.sh --start`.
-
-Checklist: [todo-install-onboarding.md](todo-install-onboarding.md). Wishlist pointer: [../improvements.md](../improvements.md).
+Checklist and remaining follow-up (boot bricking): [todo-install-onboarding.md](todo-install-onboarding.md). Wishlist: [../improvements.md](../improvements.md).

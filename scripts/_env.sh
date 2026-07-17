@@ -11,8 +11,8 @@ _SECRETS="$_THIS_DIR/../secrets/remarkable.local.env"
 
 if [ ! -f "$_SECRETS" ]; then
   echo "ERROR: missing secrets file: $_SECRETS" >&2
-  echo "  cp secrets/remarkable.local.env.example secrets/remarkable.local.env" >&2
-  echo "  then fill in RM_ROOT_PASSWORD (and RM_HOST_WIFI)." >&2
+  echo "  Run: bash scripts/install.sh --start  (prompts for password + Wi-Fi IP)" >&2
+  echo "  Or:  bash scripts/ensure-secrets.sh" >&2
   return 1 2>/dev/null || exit 1
 fi
 
