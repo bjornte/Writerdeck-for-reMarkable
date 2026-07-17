@@ -26,7 +26,7 @@ Optional vault: a second PIN on the tablet only. Per-note encrypt/decrypt; ciphe
 
 ## Editor
 
-Built from our [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) fork of Dave’s keywriter. Typing math lives in C++ EditHelper; the screen is QML. Mac/Linux shortcuts pass all 110 automated typing checks. Physical Home is owned by the server while you edit. Power sleeps and wakes with a save. Norwegian USB layout works on hardware.
+Built from our [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) fork of Singleton’s keywriter. Typing math lives in C++ EditHelper; the screen is QML. Mac/Linux shortcuts pass all 110 automated typing checks. Physical Home is owned by the server while you edit. Power sleeps and wakes with a save. Norwegian USB layout works on hardware.
 
 We stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
 

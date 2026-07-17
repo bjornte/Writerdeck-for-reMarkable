@@ -6,8 +6,8 @@ Short definitions for Writerdeck and its editor fork.
 
 * **Writerdeck**: A Markdown typewriter on a first-gen reMarkable for USB and Bluetooth keyboards. Bluetooth pairs to the phone; typing reaches the tablet over Wi-Fi. USB plugs in with an OTG cable.
 * **Writerdeck-server**: Always-on program on the tablet: files, sync, PIN, launching the editor. No screen of its own.
-* **Writerdeck (the app)**: The full-screen editor you see. Built from our fork of Dave’s keywriter: [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter).
-* **keywriter**: Dave Singleton’s original Qt Markdown notepad — the project that fork started from.
+* **Writerdeck (the app)**: The full-screen editor you see. Built from our fork of Singleton’s keywriter: [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter).
+* **keywriter**: Singleton’s original Qt Markdown notepad — the project that fork started from.
 * **Lobby**: In-app home on the tablet — files, settings, sleep — not the stock reMarkable UI.
 * **Document integrity**: Your prose must survive as plain Markdown on disk.
 
@@ -30,4 +30,4 @@ Short definitions for Writerdeck and its editor fork.
 * **Known-good commit**: A Writerdeck-keywriter revision that last passed those typing tests. Everyday builds usually follow `master`.
 * **Deploy**: Copy a new binary to the tablet and relaunch the editor. Restarting the server alone does not reload the editor.
 * **OTA (over-the-air update)**: Tablet software update from reMarkable — may reset the SSH password and wipe our boot service.
-* **The original / shared history**: Dave’s remarkable-keywriter repo, and the shared git starting point that makes ordinary merges possible. Developers often nickname Dave’s remote `upstream`; it still means the original.
+* **The original / shared history**: Singleton’s remarkable-keywriter repo, and the shared git starting point that makes ordinary merges possible. Developers often nickname Singleton’s remote `upstream`; it still means the original.

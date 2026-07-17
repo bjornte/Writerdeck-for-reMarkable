@@ -18,7 +18,7 @@ Do not replace them with euphemisms only. Wrong: “the screen file” forever. 
 
 ## Avoid these process words in prose
 
-upstream — say Dave’s original (or the original keywriter). Keep `upstream` only as a git remote name, with a gloss.
+upstream — say Singleton’s original (or the original keywriter). Keep `upstream` only as a git remote name, with a gloss.
 
 downstream, ship tip, tip (for a commit) — say known-good commit or commit hash.
 

@@ -1,6 +1,6 @@
 # Copilot instructions — Writerdeck for reMarkable 1
 
-Writerdeck for reMarkable 1 turns a reMarkable 1 e-paper tablet into a distraction-free Markdown typewriter. Typing works with a USB keyboard on an OTG cable, or a Bluetooth keyboard paired to the phone (keys reach the tablet over Wi-Fi). Writerdeck-server (`/home/root/Writerdeck-server`, built from `daemon/`) receives key events and feeds our fork of Dave’s remarkable-keywriter over `/run/Writerdeck.sock`, which saves `.md` to `Writerdeck-user-documents/`.
+Writerdeck for reMarkable 1 turns a reMarkable 1 e-paper tablet into a distraction-free Markdown typewriter. Typing works with a USB keyboard on an OTG cable, or a Bluetooth keyboard paired to the phone (keys reach the tablet over Wi-Fi). Writerdeck-server (`/home/root/Writerdeck-server`, built from `daemon/`) receives key events and feeds our fork of Singleton’s remarkable-keywriter over `/run/Writerdeck.sock`, which saves `.md` to `Writerdeck-user-documents/`.
 
 For background, consult [todo](../TODO.md), [architecture](../docs/architecture.md), [decisions](../docs/decisions.md), [done](../DONE.md), and [lessons](../docs/lessons.md).
 
