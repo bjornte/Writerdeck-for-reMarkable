@@ -18,5 +18,9 @@ Scoreboard for full keyboard tests on the tablet (`bash scripts/test-keyboard-ha
 | 17 Jul 2026, 01:57 | — | 38/38/0 | Phase A1 pure text math → EditHelper; wrap **15/15/0** @ `01-59-37`; fork `aa9912b`; Patch LOC **175** |
 | 17 Jul 2026, 03:50 | — | 38/38/0 | Phase A2 undo/redo → EditHelper; undo **5/5/0** @ `03-47-34`; fork `a92ad2b`; Patch LOC **168** |
 | 17 Jul 2026, 10:12 | 110/110/0 | 38/38/0 | Phase A3 sign-off (migration 2 Phase A); fork `a92ad2b`; edit-session PASS @ `10-08-06`; first run 109/110 (shift-select flake @ `10-09-05`), retry green |
+| 17 Jul 2026, 10:29 | 110/110/0 | 38/38/0 | Phase B key-chord dispatcher → EditHelper; fork `57bfc21`; Patch LOC **279**; edit-session PASS @ `10-29-19`; full green first run @ `10-29-42` |
+| 17 Jul 2026, 11:27 | — | — | Phase C visual-line math → EditHelper; fork `b3e2fe0`; Patch LOC **181**; CI build green (run `29569954349`); deploy pending until tablet online |
+| 17 Jul 2026, 14:46 | 110/71/39 | — | Phase C first device run @ `192.168.86.30` (fork `b3e2fe0`); Up/Down jumped to doc bounds — `queryRectAt` invokeMethod used wrong arg types; fix pushed as `6a15e08` |
+| 17 Jul 2026, 14:52 | 110/110/0 | 38/38/0 | Phase C sign-off; fork `6a15e08`; layout access fix; edit-session PASS @ `14-51-45`; full green @ `14-52-09`; critical **38/38/0** @ `14-55-48`; Patch LOC **177** |
 
 Other landmarks: shortcut-chord tag **25/25**; wrap **15/15**; undo **5/5**. Fork migration finished the same day as the first sign-off.

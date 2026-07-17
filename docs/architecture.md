@@ -37,7 +37,7 @@ Under `/home/root/`:
 
 `Writerdeck` is the full-screen Markdown editor — our patched build of upstream [keywriter](https://github.com/dps/remarkable-keywriter) (*remarkable-keywriter*). Keywriter is the editor engine: a **Qt 5** app written in **C++** and **QML**. Built in CI from `third_party/keywriter/`.
 
-**C++ vs QML (this project):** Both live in the editor kernel (keywriter / our fork). **QML** is the screen and most typing wiring — layout, Lobby, caret application, selection, wrap helpers (`main.qml`, `edit_mac_helpers.qml.inc`). **C++** is the engine under that — starting the app, talking to the tablet display, feeding keystrokes from our socket into Qt (`main.cpp`), and pure text math / undo in `EditHelper` (migration 2 Phase A shipped @ fork `a92ad2b`). Day-to-day visual/wrap fixes still land in QML; string-math and undo live in C++ per [editor-migration-2-to-cpp/](editor-migration-2-to-cpp/).
+**C++ vs QML (this project):** Both live in the editor kernel (keywriter / our fork). **QML** is the screen and caret application — layout, Lobby, selection, goal-column state, applying dispatch results (`main.qml`, `edit_mac_helpers.qml.inc`). **C++** is the engine under that — starting the app, talking to the tablet display, feeding keystrokes from our socket into Qt (`main.cpp`), and pure text math / undo / key-chord dispatch / visual-line math in `EditHelper` (migration 2 Phase A @ `a92ad2b`, Phase B @ `57bfc21`, Phase C @ `6a15e08`). Day-to-day wrap fixes still land in QML apply paths; string-math, undo, chord mapping, and visual-line walk live in C++ per [editor-migration-2-to-cpp/](editor-migration-2-to-cpp/).
 
 Example: a careful, long-lived **undo** improvement belongs in the owned fork as **C++ `EditHelper`** — not in the emergency patch script. Reach for a deeper C++ text engine only if undo had to be rebuilt inside Qt’s document model itself.
 
@@ -83,7 +83,7 @@ No jailbreak; preserve OTA — so no Toltec. No on-device runtime beyond one sta
 
 reMarkable 1, codename zero-gravitas. OS `20260506100933`, kernel `5.4.70-v1.6.3-rm10x`.
 
-SSH over Wi-Fi: `ssh root@<tablet-ip>`. Set `RM_HOST_WIFI` in `secrets/remarkable.local.env`; reserve the tablet's MAC on the router so DHCP stays stable. USB at `10.11.99.1` is dead on the Mac. SSH password is on the device settings screen and regenerates after every OTA — gitignored in secrets.
+SSH over Wi-Fi: `ssh root@<tablet-ip>`. Set `RM_HOST_WIFI` in `secrets/remarkable.local.env`; reserve the tablet's MAC on the router so DHCP stays stable. If deploy/SSH fails on home Wi-Fi, check whether the Mac and tablet are on an iPhone Personal Hotspot — tablet is often `172.20.10.5` (`export RM_HOST=172.20.10.5`; phone UI `http://172.20.10.5:8000/`). USB at `10.11.99.1` is dead on the Mac. SSH password is on the device settings screen and regenerates after every OTA — gitignored in secrets.
 
 Notes: `/home/root/Writerdeck-user-documents/`. Deploy the binary to `/home/root/Writerdeck`, not into the notes directory.
 

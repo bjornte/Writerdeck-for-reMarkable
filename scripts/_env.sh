@@ -33,8 +33,9 @@ RM_HOST_WIFI="$(_get_env RM_HOST_WIFI)"
 RM_ROOT_PASSWORD="$(_get_env RM_ROOT_PASSWORD)"
 
 # Default device target. USB-ethernet is currently inactive (no DHCP lease) on
-# the Mac, so prefer Wi-Fi when an IP is recorded. Override per call with the
-# optional target arg, or globally:  export RM_HOST=10.11.99.1
+# the Mac, so prefer Wi-Fi when an IP is recorded. On iPhone Personal Hotspot,
+# export RM_HOST=172.20.10.5 (see RM_HOST_HOTSPOT in secrets). Override per
+# call with the optional target arg, or globally:  export RM_HOST=10.11.99.1
 RM_HOST="${RM_HOST:-${RM_HOST_WIFI:-$RM_HOST_USB}}"
 export RM_HOST_USB RM_HOST_WIFI RM_ROOT_PASSWORD RM_HOST
 

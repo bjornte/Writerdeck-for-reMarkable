@@ -42,6 +42,10 @@ Never `pkill -f /home/root/Writerdeck`; that pattern matches Writerdeck-server t
 
 The tablet drops Wi-Fi on suspend. Keep it awake during dev.
 
+Deploy or SSH timing out? Check whether the Mac and reMarkable are on an iPhone Personal Hotspot instead of home Wi-Fi. Both often join the shared network; tablet is commonly `172.20.10.5` (`export RM_HOST=172.20.10.5`, phone UI `http://172.20.10.5:8000/`). See `RM_HOST_HOTSPOT` in `secrets/remarkable.local.env.example`.
+
+Calling `TextEdit.positionToRectangle` from C++ via `QMetaObject::invokeMethod` needs `Q_ARG(int, …)` and `Q_RETURN_ARG(QRectF, …)`. `QVariant` args silently fail (all zeros → Up/Down jump to document bounds). Do not reject results with `QRectF::isValid()` — caret width can be 0.
+
 ## Writerdeck and QML
 
 Every save path in edit mode must sync `query.text` into `doc` before `saveFile()`. A bare `saveFile()` writes stale content.

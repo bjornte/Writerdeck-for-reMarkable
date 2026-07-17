@@ -42,7 +42,7 @@ Substantial QML/C++ edits live in a maintained Writerdeck fork of keywriter. `bu
 
 **Fork ownership.** [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) is the Writerdeck-owned fork of [dps/remarkable-keywriter](https://github.com/dps/remarkable-keywriter). Default branch is `master`. CI and `build-keywriter.sh` clone that URL via `KEYWRITER_REPO` / `KEYWRITER_REF` (defaults: the fork URL and `master`). Pin a SHA in `KEYWRITER_REF` only when you need a reproducible rollback; day-to-day builds track `master`.
 
-What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (wrap motion, key dispatch, harness hooks — thin wrappers over `EditHelper` for pure math/undo); pure string math and undo stacks in fork C++ `edit_helper.*` (Phase A shipped @ `a92ad2b`); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **38/38/0**; full suite **110/110/0** @ `10-12-39` (fork `a92ad2b`; Phase A cumulative Patch LOC **379**); wrap tag **15/15**; undo tag **5/5**. Migration 1 (done): [todo-handoff-keywriter-fork.md](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Migration 2 Phase A (done): [todo-handoff-edit-helper-cpp.md](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Phase B/C (key dispatch, optional visual line) remain in that handoff when pursued.
+What lives where: edit helpers in fork `edit_mac_helpers.qml.inc` (goalX, harness hooks, thin apply layer for C++ dispatch); pure string math, undo stacks, key-chord mapping, and visual-line walk in fork C++ `edit_helper.*` (Phase A @ `a92ad2b`, Phase B @ `57bfc21`, Phase C @ `6a15e08`); socket inject, `lobby_bridge`, and `rotation_watcher` in-tree C++ (`f7c84e9`); Lobby/shell QML and `lobby/*.inc` in-tree (`68f6e32`). Critical **38/38/0**; full suite **110/110/0** @ `14-52-09` (fork `6a15e08`); wrap tag **15/15**; undo tag **5/5**. Migration 1 (done): [todo-handoff-keywriter-fork.md](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Migration 2 Phases A–C (done): [todo-handoff-edit-helper-cpp.md](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Post-port evaluation (wrap gaps / undo model) remains in that handoff § After A–C.
 
 **Merging upstream keywriter.** Upstream is `dps/remarkable-keywriter`. Pull its changes into the fork on purpose — not on every Writerdeck session. In a local clone of Writerdeck-keywriter:
 
@@ -102,7 +102,7 @@ July 2026. Was a Mac-on-LAN plus work-laptop-over-git workaround when corporate 
 
 ## 11. Wi-Fi is the dev path
 
-The Mac's USB-ethernet gadget to the tablet is inactive. Wi-Fi SSH works when `RM_HOST_WIFI` in secrets matches the tablet's DHCP address.
+The Mac's USB-ethernet gadget to the tablet is inactive. Wi-Fi SSH works when `RM_HOST_WIFI` in secrets matches the tablet's DHCP address. On iPhone Personal Hotspot, both devices often share that network — tablet commonly `172.20.10.5` (`RM_HOST_HOTSPOT` in secrets template; `export RM_HOST=…` for deploy scripts).
 
 ## 12. Deploy transport is gzip-over-ssh
 

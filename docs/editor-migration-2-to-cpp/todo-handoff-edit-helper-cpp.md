@@ -1,12 +1,12 @@
 # Handoff: Edit helpers QML → C++ (Phase A)
 
-**Phase A done.** Next unchecked: Phase B (key-chord dispatcher) when you resume migration 2. When a slice lands, check it off, record fork SHA + harness scores, and update [../editor-testing/milestone-runs.md](../editor-testing/milestone-runs.md). Standing rule: `.cursor/rules/writerdeck.mdc`. Archived migration rule: `.cursor/rules/edit-helper-cpp-migration.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) items 5–7 (B next; C later; post-port evaluate last). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (full **110/110/0** @ `10-12-39`, fork `a92ad2b`; critical **38/38/0**; undo **5/5/0**).
+**Phase A done.** Phase B (key-chord dispatcher) done @ fork `57bfc21`. Phase C (visual line) done @ fork `6a15e08` (layout-access fix after first-device miss on `b3e2fe0`). Full **110/110/0** @ `14-52-09`; critical **38/38/0**. Standing rule: `.cursor/rules/writerdeck.mdc`. Archived migration rule: `.cursor/rules/edit-helper-cpp-migration.mdc`. Policy: [../decisions.md](../decisions.md) §3. Root queue: [../../TODO.md](../../TODO.md) items 5–7 (A–C done; post-port evaluate next). Live keyboard scores: [../editor-testing/todo.md](../editor-testing/todo.md) (full **110/110/0** @ `14-52-09`, fork `6a15e08`; critical **38/38/0**; undo **5/5/0**).
 
 Prior migration (done): [../editor-migration-1-to-QML/todo-handoff-keywriter-fork.md](../editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). Folder overview: [README.md](README.md).
 
 ## Goal
 
-Same typing behavior, clearer brain. Port **pure text math** and **undo/redo** from fork `edit_mac_helpers.qml.inc` into C++ `EditHelper` (QObject, `Q_INVOKABLE`), exposed to QML like `lobby_bridge`. QML still owns the on-screen `TextEdit`, Timers, Connections, harness hooks, visual wrap motion, and key dispatch (`handleMacKeysOnPressed` / `handleMacArrow` / …).
+Same typing behavior, clearer brain. Port **pure text math**, **undo/redo**, **key-chord mapping**, and **visual-line walk** from fork `edit_mac_helpers.qml.inc` into C++ `EditHelper` (QObject, `Q_INVOKABLE`), exposed to QML like `lobby_bridge`. QML still owns the on-screen `TextEdit`, Timers, Connections, harness hooks, `goalX` column state, and applying dispatch results (`handleMacKeysOnPressed` / thin wrappers / `moveCursorTo` / …).
 
 **Behavior lock:** after each slice, typing must match pre-slice harness results. Prefer bit-identical helper outputs for the same `(text, pos)` inputs.
 
@@ -81,12 +81,12 @@ Deploy budget: **one** Writerdeck binary deploy per agent session unless the bin
 
 ### Phase B — key-chord dispatcher (later; do not start in the same session as A)
 
-- [ ] Move chord → action mapping from `handleMacArrow` / `handleMacBackspace` / `handleMacEditKeys` into C++ **after** A3 is green. Separate handoff pass.
+- [x] Move chord → action mapping from `handleMacArrow` / `handleMacBackspace` / `handleMacEditKeys` into C++ **after** A3 is green. Separate handoff pass. Fork `57bfc21`; Patch LOC **279**; edit-session PASS @ `10-29-19`; full `--fast` **110/110/0** @ `10-29-42`.
 
 ### Phase C — visual line (optional later)
 
-- [ ] Only if A/B paid off. Needs careful layout access (`positionToRectangle` or equivalent). Not required for Phase A success.
-- [ ] Moving wrap math to C++ is **not** by itself a cleanup of hand-tuned gaps (`minGap`, etc.). Prefer behavior-identical port first; design cleanup is § After A–C.
+- [x] Only if A/B paid off. Needs careful layout access (`positionToRectangle` or equivalent). Not required for Phase A success. Fork `6a15e08` (after `b3e2fe0` first-device miss: invokeMethod must use `int`/`QRectF`, not `QVariant`; do not gate on `QRectF::isValid()` — caret width may be 0). `EditHelper::setQueryItem` + QML re-bind; QML keeps `goalX` + apply. Patch LOC **177** (`edit_helper.*`); edit-session PASS @ `14-51-45`; full `--fast` **110/110/0** @ `14-52-09`; critical **38/38/0**.
+- [x] Moving wrap math to C++ is **not** by itself a cleanup of hand-tuned gaps (`minGap`, etc.). Prefer behavior-identical port first; design cleanup is § After A–C. Gaps preserved verbatim in C++.
 
 ### After A–C — evaluate (not part of the port)
 
@@ -111,4 +111,4 @@ Do not start this evaluation mid-Phase A. Do not rewrite undo or wrap “for pur
 
 ## Resume prompt (copy for a fresh agent)
 
-> Re. docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md, do the next unchecked item (Phase A3). When done, update docs/editor-testing/milestone-runs.md.
+> Re. docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md, do the next unchecked item (§ After A–C evaluate wrap gaps / undo model). When done, update docs/decisions.md and TODO.md item 7.
