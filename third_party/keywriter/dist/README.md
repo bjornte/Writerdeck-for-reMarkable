@@ -1,6 +1,6 @@
 # third_party/keywriter/dist/
 
-Built artifacts — QML patches from `build-keywriter.sh` are **baked into** `Writerdeck`.
+Built artifacts — fork QML is baked into `Writerdeck` at CI build time (no runtime patching).
 
 | File | Description |
 |---|---|

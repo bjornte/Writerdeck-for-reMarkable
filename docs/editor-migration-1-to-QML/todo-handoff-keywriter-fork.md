@@ -8,7 +8,7 @@ Successor: [../editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](../edi
 
 `third_party/keywriter/build-keywriter.sh` used to rewrite upstream C++/QML with huge string patches every CI build. That emergency layer is retired for edit behavior. **keywriter** (Qt 5 / C++ / QML) is the editor engine; **Writerdeck** is our on-device binary. **QML** = screen and typing behavior; **C++** = startup, display, socket keys — see [../architecture.md](../architecture.md) § On the tablet.
 
-CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork file `edit_mac_helpers.qml.inc` (includes cursor/autosave Timers and text-change Connections); socket/`lobby_bridge`/`rotation_watcher` are in-tree C++; Lobby/shell QML and `lobby/*.inc` are in-tree too (`68f6e32`). `build-keywriter.sh` inserts helpers before `showLobby()`, concatenates Lobby subpages + sleep screen, and otherwise asserts + builds.
+CI pins to owned fork [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter) (`master`) via `KEYWRITER_REPO` / `KEYWRITER_REF`. Edit helpers live in fork file `edit_mac_helpers.qml.inc` (includes cursor/autosave Timers and text-change Connections); socket/`lobby_bridge`/`rotation_watcher` are in-tree C++; Lobby/shell QML and `lobby/*.inc` are in-tree too (`68f6e32`). Fork `./assemble-qml.sh` builds committed `main.qml` from `main.qml.in` + helpers + Lobby; `build-keywriter.sh` only asserts + builds.
 
 ## Slices (all checked)
 

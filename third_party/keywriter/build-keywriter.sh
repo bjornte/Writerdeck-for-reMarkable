@@ -81,11 +81,10 @@ grep -q 'qEnvironmentVariableIsEmpty("QMLSCENE_DEVICE")' main.cpp \
 echo "  fork C++ infra OK (socket + lobby_bridge + edit_helper + rotation_watcher + edit.pro)."
 echo
 
-# Phase 3: Lobby/shell QML lives in the fork. CI only inserts edit helpers and
-# concatenates modular lobby/*.inc + sleep screen (tiny deterministic glue).
-echo "=== Asserting fork Lobby/shell QML ==="
+# Fork owns QML assembly (committed main.qml from assemble-qml.sh). Assert only.
+echo "=== Asserting fork Lobby/shell QML (assembled main.qml) ==="
 grep -q 'property bool isLobby: true' main.qml \
-    || { echo "ERROR: main.qml missing isLobby (fork Phase 3 Lobby/shell)" >&2; exit 1; }
+    || { echo "ERROR: main.qml missing isLobby (fork Lobby/shell)" >&2; exit 1; }
 grep -q 'function setLobbyInfo(' main.qml \
     || { echo "ERROR: main.qml missing setLobbyInfo" >&2; exit 1; }
 grep -q 'function showLobby() {' main.qml \
@@ -95,92 +94,40 @@ grep -q 'function handleHome(' main.qml \
 grep -q 'Writerdeck-user-documents' main.qml \
     || { echo "ERROR: main.qml missing Writerdeck-user-documents path" >&2; exit 1; }
 grep -q 'handleMacKeysOnPressed' main.qml \
-    || { echo "ERROR: main.qml missing handleMacKeysOnPressed call site" >&2; exit 1; }
+    || { echo "ERROR: main.qml missing handleMacKeysOnPressed" >&2; exit 1; }
+grep -q 'function handleMacArrow' main.qml \
+    || { echo "ERROR: main.qml missing handleMacArrow (run fork ./assemble-qml.sh before push)" >&2; exit 1; }
+grep -q 'function handleMacBackspace' main.qml \
+    || { echo "ERROR: main.qml missing handleMacBackspace" >&2; exit 1; }
+grep -q 'editHelper.beginTextEdit' main.qml \
+    || { echo "ERROR: main.qml missing editHelper.beginTextEdit" >&2; exit 1; }
+grep -q 'editHelper.notifyTextChanged' main.qml \
+    || { echo "ERROR: main.qml missing editHelper.notifyTextChanged" >&2; exit 1; }
+grep -q 'editHelper.dispatchMacArrow' main.qml \
+    || { echo "ERROR: main.qml missing editHelper.dispatchMacArrow" >&2; exit 1; }
+grep -q 'id: cursorTimer' main.qml \
+    || { echo "ERROR: main.qml missing cursorTimer" >&2; exit 1; }
+grep -q 'id: autosaveTimer' main.qml \
+    || { echo "ERROR: main.qml missing autosaveTimer" >&2; exit 1; }
+grep -q 'id: sleepScreen' main.qml \
+    || { echo "ERROR: main.qml missing sleepScreen (run fork ./assemble-qml.sh before push)" >&2; exit 1; }
+grep -q 'id: lobbyNotesModel' main.qml \
+    || { echo "ERROR: main.qml missing lobbyNotesModel" >&2; exit 1; }
+test -f main.qml.in && test -f edit_mac_helpers.qml.inc && test -f assemble-qml.sh \
+    || { echo "ERROR: fork main.qml.in / edit_mac_helpers.qml.inc / assemble-qml.sh missing" >&2; exit 1; }
 test -d lobby && test -f concat-lobby.sh && test -f lobby/lobby_shell_top.inc \
     || { echo "ERROR: fork lobby/ or concat-lobby.sh missing" >&2; exit 1; }
-echo "  fork Lobby/shell QML OK (main.qml + lobby/)."
-echo
-
-echo "=== QML glue (helpers insert + lobby concat) ==="
+# Sanity: handleKey must close before Component.onCompleted.
 python3 - << 'PYEOF'
-import subprocess
-
 with open('main.qml') as f:
     s = f.read()
-
-# Insert edit_mac_helpers.qml.inc before showLobby().
-old7n_fn = '    function showLobby() {'
-_helpers_path = 'edit_mac_helpers.qml.inc'
-with open(_helpers_path) as _hf:
-    _helpers = _hf.read()
-if not _helpers.endswith('\n'):
-    _helpers += '\n'
-assert 'function handleMacArrow' in _helpers, "edit_mac_helpers.qml.inc missing handleMacArrow"
-assert 'function handleMacBackspace' in _helpers, "edit_mac_helpers.qml.inc missing handleMacBackspace"
-assert 'editHelper.beginTextEdit' in _helpers, "edit_mac_helpers.qml.inc missing editHelper.beginTextEdit (Phase A2 undo)"
-assert 'editHelper.notifyTextChanged' in _helpers, "edit_mac_helpers.qml.inc missing editHelper.notifyTextChanged (Phase A2 undo)"
-assert 'editHelper.dispatchMacArrow' in _helpers, "edit_mac_helpers.qml.inc missing editHelper.dispatchMacArrow (Phase B)"
-assert 'function handleMacUndo' in _helpers, "edit_mac_helpers.qml.inc missing handleMacUndo"
-assert 'property bool cursorStrong' in _helpers, "edit_mac_helpers.qml.inc missing cursorStrong (Phase 2D)"
-assert 'function handleMacKeysOnPressed' in _helpers, "edit_mac_helpers.qml.inc missing handleMacKeysOnPressed (Phase 2D)"
-assert 'id: cursorTimer' in _helpers, "edit_mac_helpers.qml.inc missing cursorTimer (Phase 3)"
-assert 'id: autosaveTimer' in _helpers, "edit_mac_helpers.qml.inc missing autosaveTimer (Phase 3)"
-assert 'Connections {' in _helpers and 'onTextChanged:' in _helpers, "edit_mac_helpers.qml.inc missing text-change Connections (Phase 3)"
-assert old7n_fn in s, "function showLobby not found (helpers insert)"
-s = s.replace(old7n_fn, _helpers + old7n_fn, 1)
-
-# Concat modular Lobby UI + sleep screen at end of Window body.
-subprocess.run(['./concat-lobby.sh'], check=True)
-with open('lobby_subpages.qml.inc', 'r') as lf:
-    lobby_ui = lf.read()
-with open('lobby/lobby_vault_numpad.inc', 'r') as vf:
-    vault_ui = vf.read()
-lobby_rect = (
-    '        ListModel {\n'
-    '            id: lobbyNotesModel\n'
-    '        }\n'
-    + lobby_ui +
-    vault_ui +
-    '        Rectangle {\n'
-    '            id: sleepScreen\n'
-    '            anchors.fill: parent\n'
-    '            color: "white"\n'
-    '            visible: isSleeping\n'
-    '            z: 10\n'
-    '            Column {\n'
-    '                anchors.centerIn: parent\n'
-    '                width: sleepScreen.width * 0.75\n'
-    '                spacing: 24\n'
-    '                Text {\n'
-    '                    text: "Writerdeck is sleeping.\\nWi-Fi is off. Press power to wake."\n'
-    '                    color: "black"\n'
-    '                    font.pointSize: 18\n'
-    '                    font.family: "Noto Sans"\n'
-    '                    width: parent.width\n'
-    '                    wrapMode: Text.WordWrap\n'
-    '                    horizontalAlignment: Text.AlignHCenter\n'
-    '                }\n'
-    '            }\n'
-    '        }'
-)
-quick_close = '        }\n'
-end_anchor = quick_close + '    }\n}'
-assert end_anchor in s, "QML end structure (quick+body+Window close) not found"
-last_pos = s.rfind(end_anchor)
-s = s[:last_pos + len(quick_close)] + lobby_rect + '\n' + s[last_pos + len(quick_close):]
-
-# Sanity: handleKey must close before Component.onCompleted.
 hk = s.find('    function handleKey(event) {')
 co = s.find('    Component.onCompleted: {')
 assert hk >= 0 and co > hk, "handleKey / Component.onCompleted anchors missing"
 assert s[hk:co].count('{') == s[hk:co].count('}'), "handleKey brace mismatch -- QML will fail to load"
-
-with open('main.qml', 'w') as f:
-    f.write(s)
-print('  QML glue applied (helpers insert + lobby concat + sleep screen).')
+print('  handleKey brace balance OK.')
 PYEOF
-echo "  main.qml after glue:"
-grep -n 'property bool isLobby:\|function showLobby\|id: sleepScreen\|handleMacKeysOnPressed' main.qml | head -20 || true
+echo "  fork assembled QML OK (helpers + lobby + sleep in committed main.qml)."
 echo
 
 # No -spec: Qt's configured default XSPEC is already devices/linux-arm-remarkable-g++.
