@@ -12,5 +12,6 @@ Scoreboard for full keyboard tests on the tablet (`bash scripts/test-keyboard-ha
 | 17 Jul 2026, 10:12 | 110/110/0 | 38/38/0 | Phase A3 sign-off; fork `a92ad2b`; Phases 0–A2 critical gates along the way (stub / pure math / undo); first run 109/110 flake (`10-09-05`), retry green |
 | 17 Jul 2026, 10:29 | 110/110/0 | 38/38/0 | Phase B key-chord dispatcher → EditHelper; fork `57bfc21`; Patch LOC **279**; edit-session PASS @ `10-29-19`; full green first run @ `10-29-42` |
 | 17 Jul 2026, 14:52 | 110/110/0 | 38/38/0 | Phase C sign-off; fork `6a15e08` after `b3e2fe0` device miss (invokeMethod arg types; caret width may be 0 — do not gate on `QRectF::isValid()`); first device run 71/110 @ `14-46-12`; edit-session PASS @ `14-51-45`; critical **38/38/0** @ `14-55-48`; Patch LOC **177**. After A–C evaluation (docs only): keep wrap gaps + custom EditHelper undo — [decisions.md](../decisions.md) §30 |
+| 17 Jul 2026, 17:23 | 110/110/0 | 38/38/0 | Fork QML assembly hygiene; CI no longer inserts helpers/Lobby; fork `0bb3b70`; edit-session PASS @ `17-22-06`; critical **38/38/0** @ `17-22-24`; full green first run @ `17-23-47` |
 
 Other landmarks: shortcut-chord tag **25/25**; wrap **15/15**; undo **5/5**.
