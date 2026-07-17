@@ -1,6 +1,6 @@
 # Writerdeck for reMarkable 1
 
-A distraction-free Markdown typewriter for the first-gen reMarkable, with USB and Bluetooth keyboards and optional note sync.
+A distraction-free Markdown typewriter for the first-gen reMarkable, with USB and Bluetooth keyboards and optional note sync. The reMarkable 1 natively supports the "draw", "write by hand" and "read" use cases. With this app, "use as typewriter" is also supported.
 
 Bluetooth keyboards pair to your phone and bridge over Wi-Fi. USB keyboards use an [OTG cable](https://en.wikipedia.org/wiki/USB_On-The-Go#OTG_micro_cables).
 
