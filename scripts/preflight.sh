@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # scripts/preflight.sh -- First-install checks before bootstrap/deploy.
 #
-# Checks: secrets file + password + Wi-Fi IP, go toolchain, tablet ping,
-# editor dist artifacts. Does not print secret values.
+# Checks: secrets file + password + Wi-Fi IP, tablet ping, editor dist artifacts.
+# Go is optional (Release binary used when missing). Does not print secret values.
 #
 # Usage (run from repo root on the Mac):
 #   bash scripts/preflight.sh
-#   bash scripts/preflight.sh --skip-dist   # secrets/go/ping only
+#   bash scripts/preflight.sh --skip-dist   # secrets/ping only
 #   bash scripts/preflight.sh --fetch       # if dist missing, run fetch-keywriter-dist.sh
 #
 set -euo pipefail
@@ -75,21 +75,19 @@ fi
 # shellcheck source=/dev/null
 . "$DIR/_env.sh"
 
-# --- go ----------------------------------------------------------------------
-if ! command -v go >/dev/null 2>&1; then
-  err "go not found -- install Go 1.25+ (see daemon/go.mod)"
-  exit 1
-fi
-GO_VER="$(go version 2>/dev/null || true)"
-ok "$GO_VER"
-# Soft check: warn if major.minor looks older than 1.25
-GO_NUM="$(printf '%s\n' "$GO_VER" | sed -n -E 's/.*go([0-9]+\.[0-9]+).*/\1/p')"
-if [ -n "$GO_NUM" ]; then
-  GO_MAJOR="${GO_NUM%%.*}"
-  GO_MINOR="${GO_NUM#*.}"
-  if [ "$GO_MAJOR" -lt 1 ] || { [ "$GO_MAJOR" -eq 1 ] && [ "$GO_MINOR" -lt 25 ]; }; then
-    echo "  WARN  daemon/go.mod wants go 1.25+; found $GO_NUM" >&2
+# --- go (optional) -----------------------------------------------------------
+if command -v go >/dev/null 2>&1 && GO_VER="$(go version 2>/dev/null)"; then
+  ok "$GO_VER (local server builds)"
+  GO_NUM="$(printf '%s\n' "$GO_VER" | sed -n -E 's/.*go([0-9]+\.[0-9]+).*/\1/p')"
+  if [ -n "$GO_NUM" ]; then
+    GO_MAJOR="${GO_NUM%%.*}"
+    GO_MINOR="${GO_NUM#*.}"
+    if [ "$GO_MAJOR" -lt 1 ] || { [ "$GO_MAJOR" -eq 1 ] && [ "$GO_MINOR" -lt 25 ]; }; then
+      echo "  WARN  daemon/go.mod wants go 1.25+; found $GO_NUM" >&2
+    fi
   fi
+else
+  ok "go not installed -- install will download Writerdeck-server from Releases"
 fi
 
 # --- ping --------------------------------------------------------------------

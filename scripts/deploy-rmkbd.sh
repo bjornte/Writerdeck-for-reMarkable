@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# scripts/deploy-rmkbd.sh -- Cross-build Writerdeck-server (ARMv7 static) and deploy.
+# scripts/deploy-rmkbd.sh -- Build or fetch Writerdeck-server (ARMv7 static) and deploy.
 # Run from the repo root on the Mac (the only machine that can reach the tablet).
 #
 # Usage:
-#   bash scripts/deploy-rmkbd.sh               # build + deploy
-#   bash scripts/deploy-rmkbd.sh --build-only  # just build; no device connection needed
+#   bash scripts/deploy-rmkbd.sh               # build-or-fetch + deploy
+#   bash scripts/deploy-rmkbd.sh --build-only  # just obtain binary; no device connection
 #
-# Requires: go (1.21+) on the Mac.
+# Prefer local go build when go is installed (dev loop). Otherwise curl the
+# rolling GitHub Release tag "server" (visitors need no go).
+#
+# Requires: go 1.25+ OR network to download the Release binary.
 
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -17,12 +20,17 @@ BUILD_ONLY=0
 
 BINARY="${REPO}/Writerdeck-server"
 
-echo "=== Writerdeck-server: cross-build (ARMv7 static) ==="
-cd "${REPO}/daemon"
-go mod tidy
-GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 \
-    go build -trimpath -o "${BINARY}" .
-echo "  built: $(file "${BINARY}")"
+echo "=== Writerdeck-server: obtain ARMv7 binary ==="
+if command -v go >/dev/null 2>&1 && go version >/dev/null 2>&1; then
+    cd "${REPO}/daemon"
+    go mod tidy
+    GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 \
+        go build -trimpath -o "${BINARY}" .
+    echo "  built with go: $(file "${BINARY}")"
+else
+    echo "  go not found -- fetching Release binary"
+    bash "${DIR}/fetch-server-dist.sh"
+fi
 echo
 
 if [ "${BUILD_ONLY}" = "1" ]; then
@@ -36,7 +44,7 @@ fi
 . "${DIR}/migrate-device-layout.sh"
 
 # Flush open editor buffer before stopping the server (slice 11). deploy used to
-# pkill and sleep 0.5s — not long enough for saveAndQuit / loopback PUT to finish.
+# pkill and sleep 0.5s -- not long enough for saveAndQuit / loopback PUT to finish.
 rm_graceful_stop_server() {
   rm_ssh '
     wget -q -O /dev/null --post-data="" http://127.0.0.1:8000/api/flush-save 2>/dev/null || true

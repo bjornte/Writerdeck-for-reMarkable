@@ -1,0 +1,57 @@
+name: Build Writerdeck-server
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'daemon/**'
+      - '.github/workflows/build-server.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: daemon/go.mod
+
+      - name: Cross-build ARMv7 static binary
+        working-directory: daemon
+        run: |
+          set -euo pipefail
+          GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 \
+            go build -trimpath -o ../Writerdeck-server .
+          file ../Writerdeck-server
+          ls -lh ../Writerdeck-server
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: writerdeck-server
+          path: Writerdeck-server
+          retention-days: 90
+
+      # Rolling release tag "server" -- curlable without go or gh.
+      - name: Publish GitHub Release (main only)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=server
+          NOTES="CI-built Writerdeck-server (ARMv7 static) from run ${GITHUB_RUN_ID} ($(date -u +%Y-%m-%d))."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" Writerdeck-server --clobber
+            gh release edit "$TAG" --notes "$NOTES" --latest=false
+          else
+            gh release create "$TAG" Writerdeck-server \
+              --title "Writerdeck-server (latest CI)" \
+              --notes "$NOTES"
+          fi
+          echo "Release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"

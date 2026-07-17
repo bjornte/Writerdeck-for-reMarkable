@@ -18,7 +18,7 @@ A usable appliance. Plenty left to improve; the core loop works.
 
 ## Install
 
-Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**, [Go](https://go.dev/dl/) installed (`go version` should say 1.25 or newer), and the tablet **awake**.
+Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**, and the tablet **awake**.
 
 1. On the [repo page](https://github.com/bjornte/Writerdeck-for-reMarkable), click **Code → Download ZIP** and unzip it. Open a terminal in that folder.
 
