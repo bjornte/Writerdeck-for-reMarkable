@@ -2,7 +2,7 @@
 
 Project reference. Throwaway test logs live in `recon/` (gitignored). Lasting lessons go in DONE, TODO, and lessons.
 
-terms.md — layman definitions. Fork twin: [Writerdeck-keywriter docs/terms.md](https://github.com/bjornte/Writerdeck-keywriter/blob/master/docs/terms.md).
+terms.md — layman definitions for the product and the editor fork.
 
 jargon-to-avoid.md — process slang to drop; keep real tech names — e.g. QML (the screen file), uinput (fake keyboard device).
 
