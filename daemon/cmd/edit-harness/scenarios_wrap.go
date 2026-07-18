@@ -114,6 +114,9 @@ func wrapScenarios() []Scenario {
 			},
 		},
 		{
+			// Kill-test: Down from col 2 must not snap to col 0 of the next
+			// visual row. Up must restore col 2 — index-only Down can false-green
+			// if the landing index is merely "nearby."
 			Name:    "wrap-down-goal-column",
 			Content: goalColContent,
 			Width:   harnessWrapWidth,
@@ -123,6 +126,8 @@ func wrapScenarios() []Scenario {
 				{Expect: &StateExpect{Cursor: intp(2)}},
 				{Label: "down keeps visual x", Keys: []Key{{Name: "ArrowDown"}}},
 				{Expect: &StateExpect{Cursor: intp(wrapGoalColDownCursor), TextLen: intp(goalColLen)}},
+				{Label: "up restores goal column", Keys: []Key{{Name: "ArrowUp"}}},
+				{Expect: &StateExpect{Cursor: intp(2), TextLen: intp(goalColLen)}},
 			},
 		},
 		{
@@ -297,6 +302,30 @@ func wrapScenarios() []Scenario {
 					CursorMin: intp(0),
 					CursorMax: intp(wrapDownOneCursor - 1),
 					TextLen:   intp(n),
+				}},
+			},
+		},
+		{
+			// Kill-test: End at wrap point (shared index) then Down must advance
+			// one visual row to that row's end — not no-op (col 0 of "next") or
+			// skip a row (treating wrap point as already on the next row).
+			Name:    "wrap-end-then-down",
+			Content: wp,
+			Width:   harnessWrapWidth,
+			Steps: []Step{
+				{Keys: []Key{keyMoveDocStart(false)}},
+				{Keys: []Key{{Name: "ArrowDown"}}},
+				{Expect: &StateExpect{Cursor: intp(wrapDownOneCursor), TextLen: intp(n)}},
+				{Label: "capture caretY on visual row 1", CaptureCaretY: true},
+				{Label: "endVisualLine", Keys: []Key{keyEndVisualLine(false)}},
+				{Expect: &StateExpect{Cursor: intp(wrapEndVisualRow1), Assoc: intp(-1), TextLen: intp(n)}},
+				{Label: "caretY stays on visual row 1", ExpectCaretYEqCaptured: true},
+				{Label: "down to next visual row end", Keys: []Key{{Name: "ArrowDown"}}},
+				{Expect: &StateExpect{
+					Cursor:   intp(wrapEndVisualRow2),
+					SelStart: intp(wrapEndVisualRow2),
+					SelEnd:   intp(wrapEndVisualRow2),
+					TextLen:  intp(n),
 				}},
 			},
 		},

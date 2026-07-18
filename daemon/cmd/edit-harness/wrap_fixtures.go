@@ -19,6 +19,7 @@ const (
 	wrapGoalColDownCursor = 14  // "ab"+wordx35, col 2, Downx1 at W=320
 
 	// Visual-line ends (== next row start). Must stay << wrapParagraphLen.
-	wrapEndVisualRow0 = wrapDownOneCursor // End / Ctrl+Right from 0
-	wrapEndVisualRow1 = wrapDownTwoCursor // End / Ctrl+Right from wrapDownOneCursor
+	wrapEndVisualRow0 = wrapDownOneCursor   // End / Ctrl+Right from 0
+	wrapEndVisualRow1 = wrapDownTwoCursor   // End / Ctrl+Right from wrapDownOneCursor
+	wrapEndVisualRow2 = wrapDownThreeCursor // End / Ctrl+Right from wrapDownTwoCursor
 )

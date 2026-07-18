@@ -25,5 +25,7 @@ Rows below keep every run where the **number of tests changed** (full set or bas
 | 18 Jul 2026, 21:01 | 124/124/0 | 44/44/0 | Soft-wrap End affinity + caretY; wrap-ctrl-right-then-left / wrap-end-then-up (fork `5d543f7`) |
 | 18 Jul 2026, 21:08 | (full unchanged) | 45/45/0 | Promoted `wrap-combo-ctrl-bs-line` into critical; critical-only re-run |
 | 18 Jul 2026, 21:11 | (full unchanged) | 54/54/0 | Critical: goal-column, wrap-shift-ctrl-*, Option+Up/Down + blank stops |
+| 18 Jul 2026, 21:32 | (partial) | 57/57/0 | Critical + wrap-end-then-down / Home/End; End+Down EOF fix (fork `19792fc`) |
+| 18 Jul 2026, 21:43 | 125/125/0 | 57/57/0 | Full green after End-then-Down goalX + visual-end snap (fork `19792fc`) |
 
 Wrap group **21/21**; undo group **5/5**.

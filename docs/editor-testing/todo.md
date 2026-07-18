@@ -10,7 +10,7 @@ Same rule as [decisions.md](../decisions.md) **Typing-test strategy is failing**
 
 ## Current score
 
-All 124 checks passed at `21-01-11` (fork commit `5d543f7`). Basic set now **54** of 54 (`21-11-16`): promoted goal-column, wrap Shift+Cmd line select, and Option+Up/Down (+ blank stops) into critical. Do not run edit-session at the same time as these typing tests. Treat this score under the status section above.
+All 125 checks passed at `21-43-24` (fork commit `19792fc`). Basic set **57** of 57 (`21-32-07`): wrap Home/End, End-then-Down kill-test, goal-column Up round-trip. Do not run edit-session at the same time as these typing tests. Treat this score under the status section above.
 
 ## Next
 
@@ -22,4 +22,4 @@ Infer the moving end of a selection from the caret after select. Treat keyboard 
 
 ## Done means
 
-Basic set 54 of 54, full set 124 of 124, edit-session pass, clean journal after deploy.
+Basic set 57 of 57, full set 125 of 125, edit-session pass, clean journal after deploy.

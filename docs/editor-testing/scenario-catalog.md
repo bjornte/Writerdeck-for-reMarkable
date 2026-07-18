@@ -1,6 +1,6 @@
 # Scenario catalog
 
-All **124** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
+All **125** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
 
 **Motion/selection pattern** (reset caret between blocks — never grow-to-N-then-peel):
 
@@ -37,13 +37,13 @@ Writers use two views of the same note at once (Finseth, *The Craft of Text Edit
 | Document | Meaning | Whole note. |
 | Goal column | Layout | Horizontal spot Up/Down tries to keep across uneven rows. |
 
-Layout-motion scenarios that claim “line” under soft wrap must use a wrap fixture and must not accept caret at paragraph end (`motion_test.go`). Index-only checks are not enough at soft-wrap edges: end-of-row and start-of-next-row share one caret index. Affinity scenarios (`wrap-ctrl-right-then-left`, `wrap-end-then-up`, caretY capture on `wrap-ctrl-right` / `wrap-end-on-visual-line`) prove the caret stays on the visual row the writer sees.
+Layout-motion scenarios that claim “line” under soft wrap must use a wrap fixture and must not accept caret at paragraph end (`motion_test.go`). Index-only checks are not enough at soft-wrap edges: end-of-row and start-of-next-row share one caret index. Affinity scenarios (`wrap-ctrl-right-then-left`, `wrap-end-then-up`, `wrap-end-then-down`, caretY capture on `wrap-ctrl-right` / `wrap-end-on-visual-line`) prove the caret stays on the visual row the writer sees.
 
 ### Blind spots (do not trust greens alone)
 
 | Blind spot | Why a green can lie | Catch it with |
 |------------|---------------------|---------------|
-| Shared wrap index | End/⌘→ index == next row’s Down target | `assoc` / `caretY` + `wrap-ctrl-right-then-left` / `wrap-end-then-up` |
+| Shared wrap index | End/⌘→ index == next row’s Down target | `assoc` / `caretY` + `wrap-ctrl-right-then-left` / `wrap-end-then-up` / `wrap-end-then-down` |
 | Stay-on-repeat | Stuck in the wrong place still “stays” | Round-trip Left/Up after End |
 | Hard-`\n` only fixtures | Visual == logical; misses wrap | `wrap-*` with Width pinned |
 | Qt `select()` cursor | Leftward select parks cursor at high end | Assert sel range; do not infer active end from cursor alone |
@@ -81,9 +81,9 @@ Go helpers: `daemon/cmd/edit-harness/motion.go`. Line-boundary scenarios cannot 
 
 Short hard-broken fixtures only prove the no-wrap case (visual = logical). Wrap proof for Ctrl+Left/Right is `wrap-ctrl-*`. Vertical Up/Down preserve **visual x**. Hardware pages: `pageleft`/`pageright` + `contentY`. Reading overscroll: Esc → preview then page cmds.
 
-Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**54**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go` and `motion.go`.
+Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**57**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go` and `motion.go`.
 
-## Critical (54)
+## Critical (57)
 
 Must pass for basic editing. Tag: `critical`. Live scoreboard: [milestone-runs.md](milestone-runs.md). Kill-test status of the writer claims (not scenario names): [basic-claims.md](basic-claims.md).
 
@@ -91,7 +91,7 @@ Framed as manuscript unit-tasks (Card, Moran & Newell / GOMS — locate, then mo
 
 | Goal | Group | Scenarios |
 |------|-------|-----------|
-| Locate (layout) | Visual rows / line ends | `wrap-down-one-visual-line`, `wrap-up-from-visual-line-2`, `wrap-down-goal-column`, `wrap-ctrl-left`, `wrap-ctrl-right`, `wrap-ctrl-right-then-left`, `wrap-end-then-up`, `gap-plain-left-moves-caret`, `gap-plain-right-moves-caret` |
+| Locate (layout) | Visual rows / line ends | `wrap-down-one-visual-line`, `wrap-up-from-visual-line-2`, `wrap-down-goal-column`, `wrap-home-on-visual-line`, `wrap-end-on-visual-line`, `wrap-ctrl-left`, `wrap-ctrl-right`, `wrap-ctrl-right-then-left`, `wrap-end-then-up`, `wrap-end-then-down`, `gap-plain-left-moves-caret`, `gap-plain-right-moves-caret` |
 | Locate (meaning) | Char / hard line / word / doc / paragraph | `down-one-logical-line`, `cm-line-down-basic`, `cm-line-down-last-line`, `cm-line-down-goal-col`, `combo-alt-left`, `combo-alt-right`, `combo-alt-up`, `combo-alt-down`, `combo-alt-up-double-blank`, `combo-alt-down-double-blank`, `combo-alt-up-prose-double-blank`, `combo-ctrl-home`, `combo-ctrl-end`, `gap-up-at-doc-start` |
 | Locate + select | Shift extend / collapse | `load-cursor-at-start`, `home-clears-selection`, `shift-right-from-home`, `shift-left-from-end`, `shift-right-after-home-no-stale-anchor`, `shift-down-after-arrow-down`, `shift-up-after-arrow-down`, `shift-left-repeat-from-end`, `shift-left-repeat-mid-doc`, `ctrl-shift-left-select-line`, `wrap-shift-ctrl-left`, `wrap-shift-ctrl-right`, `gap-collapse-selection-left`, `gap-collapse-selection-right`, `gap-shift-down-mid-wrapping-paras`, `gap-shift-up-mid-wrapping-paras` |
 | Modify | Type / delete / clipboard | `bs-plain`, `gap-delete-forward`, `gap-delete-with-selection`, `gap-empty-doc-backspace`, `alt-backspace-deletes-word`, `ctrl-backspace-deletes-line`, `wrap-combo-ctrl-bs-line`, `gap-enter-new-line`, `gap-type-replaces-selection`, `gap-select-all`, `gap-copy-paste`, `gap-cut-paste` |
@@ -189,7 +189,7 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `wrap-down-last-visual-line` | Down at EOF clamps through uni5. |
 | `wrap-shift-down-last-to-eof` | Shift+Down on last visual row selects through EOF. |
 | `wrap-mixed-newline-and-wrap` | Down from short first line into wrapped second line. |
-| `wrap-down-goal-column` | Down preserves visual x across a wrap break. |
+| `wrap-down-goal-column` | Down preserves visual x across a wrap break; Up restores the same column. |
 | `wrap-combo-alt-left-word` / `wrap-combo-alt-right-word` | Pattern Alt word motion both ways. |
 | `wrap-combo-ctrl-bs-line` | Mid visual row: Ctrl+Backspace deletes to that row’s start only (not whole paragraph). |
 | `wrap-shift-left-across-wrap` | Pattern Shift+Left grow, Shift+Right shrink across wrap boundary. |
@@ -197,6 +197,7 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `wrap-ctrl-left` / `wrap-ctrl-right` | Mid visual row: Ctrl+Left/Right to that row’s ends; further presses stay. Critical. |
 | `wrap-ctrl-right-then-left` | Ctrl+Right then Ctrl+Left returns to **this** visual row’s start (affinity; not stuck on next row). Critical. |
 | `wrap-end-then-up` | End then Up climbs to the previous visual row (not treating wrap point as already on the next). Critical. |
+| `wrap-end-then-down` | End then Down advances one visual row to that row’s end (not no-op at shared wrap index, not skipping a row). Critical. |
 | `wrap-shift-ctrl-left` / `wrap-shift-ctrl-right` | Same motion with Shift: select to visual-line end only. |
 
 ## Undo and redo (5)

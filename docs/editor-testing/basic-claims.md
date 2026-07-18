@@ -20,14 +20,14 @@ Statuses below are honest as of 18 Jul 2026 — not aspirational.
 | Up at document start does not escape or wipe | Up at offset 0 changes mode, clears text, or moves caret | `gap-up-at-doc-start` | Guarded |
 | Down moves one hard-broken line | Down jumps to doc end or stays put on a multi-line block | `down-one-logical-line`, `cm-line-down-basic`, `cm-line-down-last-line` | Guarded (hard `\n` only) |
 | Up/Down on soft-wrapped prose move one **visual** row | Up/Down jump a whole wrap-paragraph, or step by a tall caret rect | `wrap-down-one-visual-line`, `wrap-up-from-visual-line-2` | Guarded for big jumps |
-| Up/Down keep **goal column** (visual x) across uneven/wrap rows | Down from mid-row snaps to column 0 of the next row | `wrap-down-goal-column`, `cm-line-down-goal-col` | Guarded — exact/near-exact cursor after Down from col 2 |
-| Cmd+Left/Right stop at **this visual row’s** start/end under soft wrap | Cmd+Right jumps to paragraph end; or lands at the wrap index but caret is drawn on the **next** row | `wrap-ctrl-left`, `wrap-ctrl-right`, `wrap-ctrl-right-then-left`, `wrap-end-then-up` (+ `assoc` / `caretY`) | Guarded — index alone was a false green; round-trip Left/Up + painted caretY catch “next row” |
+| Up/Down keep **goal column** (visual x) across uneven/wrap rows | Down from mid-row snaps to column 0 of the next row; Up does not restore col | `wrap-down-goal-column`, `cm-line-down-goal-col` | Guarded — Down exact cursor + Up round-trip to col 2 |
+| Cmd+Left/Right stop at **this visual row’s** start/end under soft wrap | Cmd+Right jumps to paragraph end; or lands at the wrap index but caret is drawn on the **next** row | `wrap-ctrl-left`, `wrap-ctrl-right`, `wrap-ctrl-right-then-left`, `wrap-end-then-up`, `wrap-end-then-down`, `wrap-home-on-visual-line`, `wrap-end-on-visual-line` (+ `assoc` / `caretY`) | Guarded — index alone was a false green; round-trip Left/Up/Down + painted caretY catch “next row” |
 | Option+Left/Right move by word | Option+Left acts like plain Left or Cmd+Left | `combo-alt-left`, `combo-alt-right` | Guarded (simple word fixtures) |
 | Option+Up/Down move by paragraph; blank lines are stops | Option+Up skips empty paragraphs to doc start in one press | `combo-alt-up`, `combo-alt-down`, `combo-alt-up-double-blank`, `combo-alt-down-double-blank`, `combo-alt-up-prose-double-blank` | Guarded |
 | Cmd+Home / Cmd+End go to document start/end | Cmd+Home only goes to line start; Cmd+End stays mid-doc | `combo-ctrl-home`, `combo-ctrl-end` | Guarded |
 | After open, caret at start, edit mode, prose present | Empty buffer, wrong mode, or caret at EOF | `load-cursor-at-start` | Guarded |
 
-Not all critical yet (still basic for writers): bare `wrap-home-on-visual-line` / `wrap-end-on-visual-line` (End affinity is covered via `wrap-end-then-up` + caretY on End); short-line `combo-ctrl-left/right` (visual=logical only).
+Still basic for writers but not critical: short-line `combo-ctrl-left/right` (visual=logical only).
 
 ## Select
 
@@ -68,9 +68,9 @@ Not all critical yet (still basic for writers): bare `wrap-home-on-visual-line` 
 - Several wrap Locate/Modify claims and paragraph Option+Up/Down are now Guarded with discriminating checks. That does **not** lift the strategy-failing banner — green still is not proof basic editing works, and some Select claims stay Partial.
 - Rows marked Guarded still assume the fixture creates the case; do not weaken fixtures when editing scenarios.
 
-Count of critical scenarios: 54. Do not equate that number with “all writer claims guarded.”
+Count of critical scenarios: 57. Do not equate that number with “all writer claims guarded.”
 
 ## Next raise (priority)
 
-1. Wrap Home/End themselves in critical (today affinity is proven mainly via End+Up / caretY side paths).
-2. When the next human green-suite miss appears: encode it here first, then kill-test, then fix — do not only promote existing scenarios.
+1. When the next human green-suite miss appears: encode it here first, then kill-test, then fix — do not only promote existing scenarios.
+2. Soft-wrap Shift+Up/Down expects remain Partial (geometry-sensitive).
