@@ -283,3 +283,116 @@ export function submitPaste() {
   typeText(content);
   grab();
 }
+
+// ---- Observation mode (bug demos for LLM) ----
+
+var observing = false;
+var observeReady = false;
+
+export function applyObserveEnabled(on) {
+  state.observeEnabled = !!on;
+  var btn = document.getElementById('typing-observe');
+  if (!btn) return;
+  if (!state.observeEnabled) {
+    btn.style.display = 'none';
+    setObserveBanner(false, 0, false);
+    return;
+  }
+  btn.style.display = '';
+  setObserveButton(observing);
+  setObserveBanner(observing, 0, observeReady && !observing);
+}
+
+function setObserveBanner(active, steps, ready) {
+  var banner = document.getElementById('observe-banner');
+  if (!banner) return;
+  if (!state.observeEnabled) {
+    banner.style.display = 'none';
+    banner.textContent = '';
+  } else if (active) {
+    banner.textContent = 'Observing' + (steps ? ' \u00b7 ' + steps + ' keys' : '') +
+      ' \u2014 Stop when the bug shows.';
+    banner.style.display = 'block';
+  } else if (ready) {
+    banner.textContent = 'Observation ready on the tablet. In Cursor chat, say you found a bug \u2014 it will be pulled automatically.';
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+    banner.textContent = '';
+  }
+  if (deps.updateBannerOffset) deps.updateBannerOffset();
+}
+
+function setObserveButton(active) {
+  var btn = document.getElementById('typing-observe');
+  if (!btn) return;
+  observing = !!active;
+  if (active) {
+    btn.textContent = 'Stop observe';
+    btn.classList.add('observe-on');
+    btn.classList.remove('danger');
+  } else {
+    btn.textContent = 'Observe';
+    btn.classList.remove('observe-on', 'danger');
+  }
+}
+
+export function applyObserveStatus(data) {
+  if (!data) return;
+  if (typeof data.enabled === 'boolean') {
+    applyObserveEnabled(data.enabled);
+  }
+  if (!state.observeEnabled) return;
+  observeReady = !!(data.ready || (data.hasExport && !data.active));
+  setObserveButton(!!data.active);
+  setObserveBanner(!!data.active, data.steps || 0, observeReady);
+}
+
+export function refreshObserveStatus() {
+  if (!state.observeEnabled) {
+    applyObserveEnabled(false);
+    return Promise.resolve(null);
+  }
+  return fetch('/api/observe/status', { credentials: 'same-origin' })
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(st) {
+      if (st) applyObserveStatus(st);
+      return st;
+    })
+    .catch(function() { return null; });
+}
+
+export function toggleObserve(e) {
+  if (e) e.stopPropagation();
+  if (!state.observeEnabled) return;
+  if (observing) {
+    fetch('/api/observe/stop', { method: 'POST', credentials: 'same-origin' })
+      .then(function(r) {
+        if (!r.ok) {
+          return r.text().then(function(t) { throw new Error(t || 'stop failed'); });
+        }
+        return r.text();
+      })
+      .then(function() {
+        applyObserveStatus({ active: false, ready: true, hasExport: true, steps: 0, enabled: true });
+      })
+      .catch(function(err) {
+        alert('Could not stop observation: ' + (err && err.message ? err.message : 'error'));
+        refreshObserveStatus();
+      });
+    return;
+  }
+  fetch('/api/observe/start', { method: 'POST', credentials: 'same-origin' })
+    .then(function(r) {
+      if (!r.ok) {
+        return r.text().then(function(t) { throw new Error(t || 'start failed'); });
+      }
+      return r.json();
+    })
+    .then(function(st) {
+      applyObserveStatus(st);
+    })
+    .catch(function(err) {
+      alert('Could not start observation: ' + (err && err.message ? err.message : 'open a note on the tablet first'));
+    });
+}

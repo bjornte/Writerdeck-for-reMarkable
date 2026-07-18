@@ -52,7 +52,7 @@ export function updateBannerOffset() {
   var h = 40;
   if (stack) {
     var visible = 0;
-    ['sync-banner', 'clash-banner', 'drift-banner'].forEach(function(id) {
+    ['sync-banner', 'clash-banner', 'drift-banner', 'remote-keys-banner', 'observe-banner'].forEach(function(id) {
       var el = document.getElementById(id);
       if (el && el.style.display !== 'none') visible += el.offsetHeight;
     });
@@ -405,6 +405,8 @@ export function loadSyncConfig() {
       if (!data) return;
       state.syncOn = !!data.syncOn;
       state.syncRepo = data.syncRepo || '';
+      if (deps.applyObserveEnabled) deps.applyObserveEnabled(!!data.observe);
+      if (data.observe && deps.refreshObserveStatus) deps.refreshObserveStatus();
       return refreshSyncStatus().then(function(s) { updateSyncBannerFromState(s); });
     })
     .catch(function() {});
@@ -415,6 +417,9 @@ export function checkAuthAndInit() {
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(settings) {
       if (settings) configurePinInput(settings.pinDigits || '6');
+      if (settings && deps.applyObserveEnabled) {
+        deps.applyObserveEnabled(!!settings.observe);
+      }
       if (settings && settings.pinDigits === 'none') {
         document.getElementById('pin-screen').style.display = 'none';
       }

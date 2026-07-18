@@ -10,6 +10,15 @@ After the PIN: upload and download notes from the list. There is no phone previe
 
 When the tablet opens a note for edit, the phone enters Type mode and forwards keys. Paste from phone inserts clipboard text at the tablet cursor — it does not create a file. Bluetooth keyboards pair to the phone. The phone also forwards keys during read preview and Lobby prompts (new, rename, delete confirm).
 
+Observe is off by default. Enable over the LAN (keeps the phone Observe button hidden for everyone else):
+
+```bash
+source scripts/_env.sh
+curl -s -X POST "http://$RM_HOST:8000/api/settings" -H 'Content-Type: application/json' -d '{"observe":true}'
+```
+
+Or edit `/home/root/.Writerdeck/settings.json` (`"observe": true`) over SSH. After Stop, the trace sits at `GET /api/observe/export` — say in Cursor chat that you found a bug and the agent pulls it. USB keys typed on the tablet are not recorded.
+
 Sync setup, connection status, and “Show PIN on tablet” live here too. Download uses a normal file attachment; plain LAN http has no reliable iOS Share sheet.
 
 ## Tablet

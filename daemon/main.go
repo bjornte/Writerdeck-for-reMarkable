@@ -170,6 +170,10 @@ func main() {
 	http.HandleFunc("/api/test/home", testHomeHandler)
 	http.HandleFunc("/api/test/tablet-req", testTabletReqHandler)
 	http.HandleFunc("/api/test/editor-cmd", testEditorCmdHandler)
+	http.HandleFunc("/api/observe/status", observeHandler)
+	http.HandleFunc("/api/observe/start", observeHandler)
+	http.HandleFunc("/api/observe/stop", observeHandler)
+	http.HandleFunc("/api/observe/export", observeHandler)
 
 	if *editorPath != "" {
 		// Supervisor mode: rmkbd is always-on; editor sessions are on-demand.

@@ -52,6 +52,23 @@ After about 20 minutes on one task without a clear finish, stop implementing. Re
 
 Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server). On-device naming: `docs/architecture.md`, `docs/decisions.md` #29.
 
+## Observation (typing bug demos)
+
+When the user says they observed a bug, finished observing, or asks you to look at an observation: immediately fetch it from the tablet on the LAN. Do not ask them to download or paste a file.
+
+```bash
+source scripts/_env.sh
+curl -s "http://$RM_HOST:8000/api/observe/export"
+```
+
+Or `bash scripts/fetch-observation.sh` (writes `docs/recon/last-observation.json`). Status: `GET /api/observe/status` (`ready: true` when a stop is waiting). Phone path only — not USB-on-tablet keys.
+
+The Observe button is hidden unless `settings.observe` is true. Enable for this device:
+
+```bash
+curl -s -X POST "http://$RM_HOST:8000/api/settings" -H 'Content-Type: application/json' -d '{"observe":true}'
+```
+
 ## Constraints
 
 - No jailbreak; preserve OTA (over-the-air updates) → avoid Toltec

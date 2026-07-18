@@ -11,5 +11,6 @@ export var state = {
                         // openedit (phone /api/open or tablet doLoad); clears on exitedit
   editorDiskHash: '',   // disk fingerprint at editor open — drift banner when disk changes (slice 8)
   typingMode: false,     // false=Browse (list/read), true=Type (capture + echo)
-  remoteKeys: ''         // '' | 'read' | 'lobby' -- BT keyboard forward without full Type UI
+  remoteKeys: '',        // '' | 'read' | 'lobby' -- BT keyboard forward without full Type UI
+  observeEnabled: false  // mirrors /api/settings observe -- phone Observe button
 };

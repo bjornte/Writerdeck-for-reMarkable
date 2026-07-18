@@ -139,13 +139,15 @@ function appendEcho(key) {
   echo.scrollTop = echo.scrollHeight;
 }
 
-function send(key, shift, ctrl, alt, meta) {
+function send(key, shift, ctrl, alt, meta, action) {
   if (!ws || ws.readyState !== 1 /* OPEN */) { return; }
-  ws.send(JSON.stringify({
+  var msg = {
     type: 'key', key: key,
     shift: !!shift, ctrl: !!ctrl, alt: !!alt, meta: !!meta
-  }));
-  appendEcho(key);
+  };
+  if (action) msg.action = action;
+  ws.send(JSON.stringify(msg));
+  if (!action) appendEcho(key);
 }
 
 function onKey(e) {
@@ -161,6 +163,11 @@ function onKey(e) {
   }
   e.preventDefault();
   send(e.key, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey);
+  // Esc toggles edit/preview on key-up in Writerdeck. Socket inject no longer
+  // auto-releases Escape (harness sends an explicit release), so the phone must too.
+  if (e.key === 'Escape') {
+    send(e.key, e.shiftKey, e.ctrlKey, e.altKey, e.metaKey, 'release');
+  }
 }
 
 // overlayUp: true when the PIN screen or the paste modal is showing, so the
@@ -259,6 +266,15 @@ function connect() {
         respondToNeedToken();
       } else if (data.type === 'vaultpingranted') {
         deps.loadNotes();
+      } else if (data.type === 'observe') {
+        if (deps.applyObserveStatus) {
+          deps.applyObserveStatus({
+            active: !!data.active,
+            steps: data.steps || 0,
+            ready: !!data.ready,
+            hasExport: !!data.hasExport
+          });
+        }
       }
       // Unknown types are silently ignored -- forward-compatible.
     } catch (e) {}

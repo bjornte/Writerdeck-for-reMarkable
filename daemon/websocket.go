@@ -300,6 +300,7 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 				fmt.Fprintf(os.Stderr, "writerdeck-server: forwarded %d keys\n", keys)
 			}
 			ec.write(line)
+			observe.recordKey(ev)
 		}
 	}
 }

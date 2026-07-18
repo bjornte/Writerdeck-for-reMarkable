@@ -28,7 +28,7 @@ Clear the open filename whenever you return to the Lobby, or a deleted note can 
 
 ## Keys and Home
 
-Edit-mode keys from the socket must go through the QML router on the thread that feeds keys in. Raw Qt events dropped keys or deadlocked. Block Ctrl/Alt navigation key-releases — Qt’s defaults could wipe the screen text while the file on disk stayed fine.
+Edit-mode keys from the socket must go through the QML router on the thread that feeds keys in. Raw Qt events dropped keys or deadlocked. Block Ctrl/Alt navigation key-releases — Qt’s defaults could wipe the screen text while the file on disk stayed fine. Escape toggles edit/preview on key-up; socket inject does not auto-release Escape (that double-fired the harness), so the phone must send an explicit Escape release.
 
 Physical Home is taken over by the server while Writerdeck is open. Do not grab the whole button device from the USB launcher — that starves Home and Power. After Home from edit, Lobby focus must actually handle keys.
 

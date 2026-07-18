@@ -24,6 +24,7 @@ type settingsData struct {
 	PinDigits       string `json:"pinDigits"`       // "6", "4", or "none"; default "6"
 	Rotation        int    `json:"rotation"`        // display rotation in degrees (0, 90, 180, 270)
 	KeyboardLayout  string `json:"keyboardLayout"`  // USB evdev qmap id: "us", "no"; default "us"
+	Observe         bool   `json:"observe"`         // show phone Observe button; off by default
 	SyncOn     bool                       `json:"syncOn"`               // GitHub two-way sync enabled
 	SyncRepo   string                     `json:"syncRepo"`          // "owner/repo" of the notes repo; token never stored here
 	LastSyncAt int64                      `json:"lastSyncAt,omitempty"` // unix seconds of last reconcile
@@ -234,8 +235,9 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 			PinDigits string `json:"pinDigits"`
 			SyncOn    bool   `json:"syncOn"`
 			SyncRepo  string `json:"syncRepo"`
+			Observe   bool   `json:"observe"`
 		}{curSettings.ReadFont, curSettings.PinDigits,
-			curSettings.SyncOn, curSettings.SyncRepo}
+			curSettings.SyncOn, curSettings.SyncRepo, curSettings.Observe}
 		settingsMu.Unlock()
 		json.NewEncoder(w).Encode(resp) //nolint:errcheck
 
@@ -244,6 +246,7 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 			SyncOn    *bool   `json:"syncOn"`
 			SyncRepo  *string `json:"syncRepo"`
 			PinDigits *string `json:"pinDigits"`
+			Observe   *bool   `json:"observe"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "bad request", http.StatusBadRequest)
@@ -275,6 +278,12 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 			settingsMu.Unlock()
 			pushLobbyInfo()
 			pushNotesList()
+		}
+		if req.Observe != nil {
+			settingsMu.Lock()
+			curSettings.Observe = *req.Observe
+			saveSettingsLocked()
+			settingsMu.Unlock()
 		}
 		w.WriteHeader(http.StatusOK)
 

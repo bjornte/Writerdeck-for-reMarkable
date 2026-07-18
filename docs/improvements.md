@@ -4,9 +4,9 @@ Wishlist — not a backlog. Shipped: [../DONE.md](../DONE.md). Open verify: [../
 
 * Editing and modifier keys
     * Multiple Shift+down arrow also sometimes selects wrong (too much). Tests are either incorrect or too soft.
-    * Since all of this crops up after so much test hardening: Is it possible, when dev laptop and remarkable is on same network, for me as a user to turn on "observation" when editing a document, so that when I find a reproducible weakness, then I can demonstrate it to the LLM?
+    * Observation mode (settings.observe, off by default): phone Observe records keys for Cursor to fetch from /api/observe/export. USB-on-tablet typing is not captured.
 * Editing, other issues
-    * When rotated, full screen width is not used in editor or reader
+    * Park for now; seems to be working: When rotated, full screen width is not used in editor or reader
     * Regression: Focus should be on the last edited file when returning to the lobby from a file.
     * Sometimes, touching the screen to move the cursor stops working, then starts working again. Hard to reproduce.
 * Lobby

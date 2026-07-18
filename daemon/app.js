@@ -8,7 +8,8 @@ import { initConnection, connect, grab, applyMode } from './connection.js';
 import {
   loadNotes, hideTypingView, followTabletOpen, uploadFile,
   showPasteModal, hidePasteModal, submitPaste,
-  showReadKeyView, showLobbyKeyView, clearRemoteKeys
+  showReadKeyView, showLobbyKeyView, clearRemoteKeys,
+  toggleObserve, refreshObserveStatus, applyObserveStatus, applyObserveEnabled
 } from './notes-ui.js';
 import {
   showSync, hideSync, showPinScreen,
@@ -23,6 +24,10 @@ deps.showLobbyKeyView = showLobbyKeyView;
 deps.clearRemoteKeys = clearRemoteKeys;
 deps.showPinScreen = showPinScreen;
 deps.connect = connect;
+deps.applyObserveStatus = applyObserveStatus;
+deps.applyObserveEnabled = applyObserveEnabled;
+deps.refreshObserveStatus = refreshObserveStatus;
+deps.updateBannerOffset = updateBannerOffset;
 
 initConnection();
 
@@ -42,6 +47,7 @@ window.addEventListener('load', function () {
   document.getElementById('typing-paste').addEventListener('click', function(e) {
     e.stopPropagation(); showPasteModal();
   });
+  document.getElementById('typing-observe').addEventListener('click', toggleObserve);
   if (/iPhone|iPod/.test(navigator.userAgent) ||
       (/Android/.test(navigator.userAgent) && /Mobile/.test(navigator.userAgent))) {
     document.getElementById('typing-paste').textContent = 'Paste from phone';
@@ -93,4 +99,5 @@ window.addEventListener('load', function () {
   });
   applyMode();
   checkAuthAndInit();
+  refreshObserveStatus();
 });
