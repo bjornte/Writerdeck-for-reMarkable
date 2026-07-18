@@ -1,6 +1,6 @@
 # Scenario catalog
 
-All **118** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac/Linux-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
+All **122** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
 
 **Motion/selection pattern** (reset caret between blocks — never grow-to-N-then-peel):
 
@@ -14,25 +14,77 @@ All **118** device harness scenarios in implementation-agnostic terms. Each load
 
 Both directions on applicable axes. Fixture includes ≥2 long wrapping paragraphs with æøå, two bullet lists, word line, horizontal line, and 12 equal vertical lines.
 
-**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`). Shift+arrow extends selection; plain arrow moves the caret. Alt = word/paragraph; Ctrl/Cmd+Left/Right = line; Ctrl/Cmd+Up/Down and Ctrl+Home/End = document (Mac). Hardware pages: `pageleft`/`pageright` + `contentY`. Reading overscroll: Esc → preview then page cmds.
+## Dialect (who wins)
 
-Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**40**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go`.
+Phone Meta maps to Ctrl ([decisions.md](../decisions.md) §3), so harness **Ctrl = Mac ⌘**.
 
-## Critical (40)
+| Rank | Source | Role |
+|------|--------|------|
+| 1 | **Apple Cocoa** (`StandardKeyBinding.dict`, TextEdit) | Prose chords: ⌘/Option arrows, deletes, paragraph unit |
+| 2 | **CodeMirror** `@codemirror/commands` `standardKeymap` | Home/End caret to visual-line ends (Apple Home/End only scroll); wrap-boundary checks |
+| 3 | **Qt** `QTextEdit` | Not the target keymap (Ctrl+arrow = word there). Use only to know stock widget defaults |
 
-Must pass for basic editing. Tag: `critical`. Grouped by function; each row is one scenario. Live scoreboard: [milestone-runs.md](milestone-runs.md).
+### Units
 
-| Group | Scenarios |
-|-------|-----------|
-| Caret / line home | `load-cursor-at-start`, `home-clears-selection`, `gap-up-at-doc-start` |
-| Plain arrows | `down-one-logical-line`, `cm-line-down-basic`, `cm-line-down-last-line`, `wrap-down-one-visual-line`, `wrap-up-from-visual-line-2`, `gap-plain-left-moves-caret`, `gap-plain-right-moves-caret` |
-| Doc bounds | `combo-ctrl-home`, `combo-ctrl-end` |
-| Shift+arrow select | `shift-right-from-home`, `shift-left-from-end`, `shift-right-after-home-no-stale-anchor`, `shift-down-after-arrow-down`, `shift-up-after-arrow-down`, `shift-left-repeat-from-end`, `shift-left-repeat-mid-doc`, `ctrl-shift-left-select-line`, `gap-collapse-selection-left`, `gap-collapse-selection-right`, `gap-shift-down-mid-wrapping-paras`, `gap-shift-up-mid-wrapping-paras` |
-| Backspace / Delete | `bs-plain`, `gap-delete-forward`, `gap-delete-with-selection`, `gap-empty-doc-backspace`, `alt-backspace-deletes-word`, `ctrl-backspace-deletes-line` |
-| Insert / replace | `gap-enter-new-line`, `gap-type-replaces-selection`, `gap-select-all` |
-| Clipboard | `gap-copy-paste`, `gap-cut-paste` |
-| Undo / redo | `undo-redo-len`, `gap-undo-chain`, `gap-redo-shift-ctrl-z` |
-| Word nav | `combo-alt-left`, `combo-alt-right` |
+Writers use two views of the same note at once (Finseth, *The Craft of Text Editing*, ch. 4 — MIT-hosted). **Meaning** units live in the Markdown file; **layout** units are what you see on the wrapped screen. Mixing them is how “line” tests go green while ⌘→ still jumps a whole paragraph.
+
+| Term | Kind | Meaning |
+|------|------|---------|
+| Visual line | Layout | One soft-wrapped row on screen. |
+| Logical line | Meaning | Text between `\n` characters. |
+| Paragraph | Meaning | Apple `paragraphRange`: each `\n`-delimited segment, **including empty lines**. Option+Up/Down. |
+| Word | Meaning | Apple `moveWord*` / Option+Left/Right (Latin prose; not CM “group”). |
+| Document | Meaning | Whole note. |
+| Goal column | Layout | Horizontal spot Up/Down tries to keep across uneven rows. |
+
+Layout-motion scenarios that claim “line” under soft wrap must use a wrap fixture and must not accept caret at paragraph end (`motion_test.go`).
+
+### Chords
+
+| Chord (harness) | Must do | Source |
+|-----------------|---------|--------|
+| Ctrl+Left / Ctrl+Right | Visual-line start/end; further presses stay if already there | Apple ⌘←/→ |
+| Shift+Ctrl+Left / Right | Extend selection with that motion (visual line, not whole wrap-paragraph) | Apple |
+| Home / End | Visual-line start/end (not scroll-only; not paragraph end) | CodeMirror |
+| Shift+Home / Shift+End | Select to visual-line start/end | CodeMirror (with Home/End) |
+| Alt+Left / Alt+Right | Word | Apple |
+| Alt+Up / Alt+Down | Paragraph boundary; **empty paragraphs count** | Apple |
+| Ctrl+Up / Ctrl+Down, Ctrl+Home / Ctrl+End | Document start/end | Apple ⌘↑/↓ and Mod+Home/End |
+| Ctrl+Backspace | Delete to visual-line start (not whole logical line) | Apple ⌘⌫ / CM `deleteLineBoundaryBackward` |
+| Alt+Backspace | Delete word backward | Apple |
+| Shift + motion | Extend selection with the same unit | Apple / CM |
+| Plain Up/Down | One visual row; keep goal column | Apple / CM |
+
+### Crosswalk (Apple / Lexical / harness)
+
+| Unit (Google Selection API) | Apple (Mac) | Lexical-style name | Harness |
+|----------------------------|-------------|--------------------|---------|
+| `lineboundary` | ⌘← / ⌘→ | `moveToLineBeginning` / `moveToLineEnd` | Ctrl+Left / Ctrl+Right → `wrap-ctrl-*` |
+| `lineboundary` | Home / End (we follow CM, not Apple scroll) | — | Home / End → `wrap-home-*` / `wrap-end-*` |
+| `word` | ⌥← / ⌥→ | `moveToPrevWord` / next | Alt+Left / Alt+Right |
+| `paragraphboundary` | ⌥↑ / ⌥↓ | `moveToParagraphBeginning` / End | Alt+Up / Alt+Down |
+| `documentboundary` | ⌘↑ / ⌘↓ | `moveToEditorBeginning` / End | Ctrl+Up / Ctrl+Down |
+| (delete lineboundary) | ⌘⌫ | `deleteLineBackward` | Ctrl+Backspace → `wrap-combo-ctrl-bs-line` |
+
+Go helpers: `daemon/cmd/edit-harness/motion.go`. Line-boundary scenarios cannot assert caret at paragraph end (`motion_test.go`).
+
+Short hard-broken fixtures only prove the no-wrap case (visual = logical). Wrap proof for Ctrl+Left/Right is `wrap-ctrl-*`. Vertical Up/Down preserve **visual x**. Hardware pages: `pageleft`/`pageright` + `contentY`. Reading overscroll: Esc → preview then page cmds.
+
+Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**42**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go` and `motion.go`.
+
+## Critical (42)
+
+Must pass for basic editing. Tag: `critical`. Live scoreboard: [milestone-runs.md](milestone-runs.md).
+
+Framed as manuscript unit-tasks (Card, Moran & Newell / GOMS — locate, then modify, then check the caret): keyboard path only; no mouse.
+
+| Goal | Group | Scenarios |
+|------|-------|-----------|
+| Locate (layout) | Visual rows / line ends | `wrap-down-one-visual-line`, `wrap-up-from-visual-line-2`, `wrap-ctrl-left`, `wrap-ctrl-right`, `gap-plain-left-moves-caret`, `gap-plain-right-moves-caret` |
+| Locate (meaning) | Char / hard line / word / doc | `down-one-logical-line`, `cm-line-down-basic`, `cm-line-down-last-line`, `combo-alt-left`, `combo-alt-right`, `combo-ctrl-home`, `combo-ctrl-end`, `gap-up-at-doc-start` |
+| Locate + select | Shift extend / collapse | `load-cursor-at-start`, `home-clears-selection`, `shift-right-from-home`, `shift-left-from-end`, `shift-right-after-home-no-stale-anchor`, `shift-down-after-arrow-down`, `shift-up-after-arrow-down`, `shift-left-repeat-from-end`, `shift-left-repeat-mid-doc`, `ctrl-shift-left-select-line`, `gap-collapse-selection-left`, `gap-collapse-selection-right`, `gap-shift-down-mid-wrapping-paras`, `gap-shift-up-mid-wrapping-paras` |
+| Modify | Type / delete / clipboard | `bs-plain`, `gap-delete-forward`, `gap-delete-with-selection`, `gap-empty-doc-backspace`, `alt-backspace-deletes-word`, `ctrl-backspace-deletes-line`, `gap-enter-new-line`, `gap-type-replaces-selection`, `gap-select-all`, `gap-copy-paste`, `gap-cut-paste` |
+| Verify | Undo / redo | `undo-redo-len`, `gap-undo-chain`, `gap-redo-shift-ctrl-z` |
 
 Not critical (still valuable): selection shrink on short lines (`shift-*-shrinks`), cross-paragraph Shift (`gap-shift-*-across-para-break`), mid-column short-line Shift (`gap-shift-down-mid-short-lines`), caret clamps at ends, hardware page scroll (`hw-page-*`), reading overscroll (`read-overscroll-clamps`), goal-column precision, touch tap placement, combo repeat, unicode word boundaries, most wrap/combo permutations.
 
@@ -86,19 +138,19 @@ Word jumps use pattern blocks on the prose word line. Doc-bound jumps use uni1/u
 |----------|----------|
 | `combo-alt-left` / `combo-alt-right` | Pattern word motion both directions. |
 | `combo-alt-up` / `combo-alt-down` | Paragraph motion (current boundary, then prev/next); pattern + clamp. |
-| `combo-alt-up-double-blank` / `combo-alt-down-double-blank` | Same across two consecutive blank lines. |
-| `combo-alt-up-prose-double-blank` | Alt+Up across trailing double-blank section in shared prose fixture. |
-| `combo-ctrl-left` / `combo-ctrl-right` | Line start/end (Mac Cmd); pattern + clamp. |
+| `combo-alt-up-double-blank` / `combo-alt-down-double-blank` | Empty `\n` paragraphs are real stops (Apple); must not skip blanks to the far side in one press. |
+| `combo-alt-up-prose-double-blank` | Alt+Up into trailing double-blank section; next press leaves the blank band toward earlier text. |
+| `combo-ctrl-left` / `combo-ctrl-right` | Hard-`\n` only (`en\nto\ntre`): line start/end where visual equals logical. Wrap proof is `wrap-ctrl-*`. |
 | `combo-ctrl-up` / `combo-ctrl-down` | Doc start/end vertical; pattern + clamp. |
 | `combo-shift-alt-left` / `combo-shift-alt-left-repeat` | Word select backward; pattern. |
 | `combo-shift-alt-left-after-type` | After Shift-select + type, Shift+Alt+Left re-anchors (no stale head). |
 | `combo-shift-left-after-type` | Same type-then-nav guard for plain Shift+Left. |
 | `combo-shift-alt-right` / `combo-shift-alt-right-repeat` | Word select forward; pattern. |
 | `combo-shift-alt-up` / `combo-shift-alt-down` | Paragraph select. |
-| `combo-shift-ctrl-left` / `combo-shift-ctrl-right` | Line/doc select; pattern + clamp. |
+| `combo-shift-ctrl-left` / `combo-shift-ctrl-right` | Line select on one-line docs; pattern + clamp. |
 | `combo-shift-ctrl-left-multiline` | Shift+Ctrl+Left on line 2 selects that line only. |
 | `combo-shift-ctrl-up` / `combo-shift-ctrl-down` | Whole-doc select; pattern + clamp. |
-| `combo-shift-home-line` / `combo-shift-end-line` | Line select via Shift+Home/End. |
+| `combo-shift-home-line` / `combo-shift-end-line` | Line select via Shift+Home/End (CodeMirror Home/End family). |
 | `combo-ctrl-home` / `combo-ctrl-end` | Doc Home/End from mid prose; pattern + clamp. |
 | `combo-shift-ctrl-home` / `combo-shift-ctrl-end` | Shift+Ctrl+Home/End from mid two-line doc. |
 
@@ -112,7 +164,7 @@ Word jumps use pattern blocks on the prose word line. Doc-bound jumps use uni1/u
 | `bs-plain` | Pattern: Backspace from horizontal line end. |
 | `delete-repeat-forward` | Pattern: Delete from horizontal line start (reverse of bs-plain). |
 
-## Wrapped paragraph (15)
+## Wrapped paragraph (19)
 
 Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry). Multi-step visual-line offsets in `wrap_fixtures.go` are provisional until re-calibrated on device.
 
@@ -128,9 +180,11 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `wrap-mixed-newline-and-wrap` | Down from short first line into wrapped second line. |
 | `wrap-down-goal-column` | Down preserves visual x across a wrap break. |
 | `wrap-combo-alt-left-word` / `wrap-combo-alt-right-word` | Pattern Alt word motion both ways. |
-| `wrap-combo-ctrl-bs-line` | Ctrl+Backspace clears the wrapped logical line. |
+| `wrap-combo-ctrl-bs-line` | Mid visual row: Ctrl+Backspace deletes to that row’s start only (not whole paragraph). |
 | `wrap-shift-left-across-wrap` | Pattern Shift+Left grow, Shift+Right shrink across wrap boundary. |
-| `wrap-home-on-visual-line` / `wrap-end-on-visual-line` | Home/End on second visual row. |
+| `wrap-home-on-visual-line` / `wrap-end-on-visual-line` | Home/End on second visual row; End lands at next wrap point (`wrapEndVisualRow1`), not paragraph end. |
+| `wrap-ctrl-left` / `wrap-ctrl-right` | Mid visual row: Ctrl+Left/Right to that row’s ends; further presses stay. Critical. |
+| `wrap-shift-ctrl-left` / `wrap-shift-ctrl-right` | Same motion with Shift: select to visual-line end only. |
 
 ## Undo and redo (5)
 

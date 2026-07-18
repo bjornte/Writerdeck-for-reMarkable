@@ -54,15 +54,17 @@ func comboScenarios() []Scenario {
 			},
 		},
 		{
-			// Two consecutive blank lines between paras; Alt+Up must leave para2
-			// start on the second press (not stick on the multi-newline gap).
+			// Two consecutive blank lines between paras. Apple paragraphs include
+			// empty \n segments — Alt+Up must not skip the blank band to doc start.
 			Name:    "combo-alt-up-double-blank",
 			Content: fixtureDoubleBlankParas,
 			Steps: []Step{
 				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Label: "alt+up to para2 start", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
 				{Expect: &StateExpect{Cursor: intp(8), SelStart: intp(8), SelEnd: intp(8)}},
-				{Label: "alt+up across double blank to doc start", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
+				{Label: "alt+up into blank paragraphs (not doc start)", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
+				{Expect: &StateExpect{CursorMin: intp(5), CursorMax: intp(7)}},
+				{Label: "alt+up further reaches doc start", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 4},
 				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
 			},
 		},
@@ -72,7 +74,9 @@ func comboScenarios() []Scenario {
 			Steps: []Step{
 				{Label: "alt+down to para1 end", Keys: []Key{{Name: "ArrowDown", Alt: true}}, Repeat: 1},
 				{Expect: &StateExpect{Cursor: intp(5), SelStart: intp(5), SelEnd: intp(5)}},
-				{Label: "alt+down across double blank to EOF", Keys: []Key{{Name: "ArrowDown", Alt: true}}, Repeat: 1},
+				{Label: "alt+down into blank paragraphs (not EOF)", Keys: []Key{{Name: "ArrowDown", Alt: true}}, Repeat: 1},
+				{Expect: &StateExpect{CursorMin: intp(6), CursorMax: intp(8)}},
+				{Label: "alt+down further reaches EOF", Keys: []Key{{Name: "ArrowDown", Alt: true}}, Repeat: 4},
 				{Expect: &StateExpect{Cursor: intp(13), SelStart: intp(13), SelEnd: intp(13)}},
 			},
 		},
@@ -84,12 +88,13 @@ func comboScenarios() []Scenario {
 				{SetCursor: intp(proseDoubleBlank + 10)},
 				{Label: "alt+up to double-blank section start", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
 				{Expect: &StateExpect{Cursor: intp(proseDoubleBlank), SelStart: intp(proseDoubleBlank), SelEnd: intp(proseDoubleBlank)}},
-				{Label: "alt+up across double blank", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
-				{Expect: &StateExpect{CursorMax: intp(proseDoubleBlank - 1)}},
+				{Label: "alt+up stays in or just above blank band", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
+				// Must not jump from section start all the way past the blanks in one press.
+				{Expect: &StateExpect{CursorMin: intp(proseDoubleBlank - 3), CursorMax: intp(proseDoubleBlank)}},
 			},
 		},
 		{
-			// Mac Cmd+Left = line start (prose paras are one logical line each).
+			// Hard-\n only: visual line == logical. Wrap proof is wrap-ctrl-*.
 			Name:    "combo-ctrl-left",
 			Content: three,
 			Steps: []Step{
@@ -105,7 +110,7 @@ func comboScenarios() []Scenario {
 			},
 		},
 		{
-			// Mac Cmd+Right = line end.
+			// Hard-\n only: visual line == logical. Wrap proof is wrap-ctrl-*.
 			Name:    "combo-ctrl-right",
 			Content: three,
 			Steps: []Step{

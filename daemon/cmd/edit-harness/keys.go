@@ -139,6 +139,8 @@ var criticalScenarios = map[string]bool{
 	"bs-plain":                               true,
 	"wrap-down-one-visual-line":              true,
 	"wrap-up-from-visual-line-2":             true,
+	"wrap-ctrl-left":                         true,
+	"wrap-ctrl-right":                        true,
 	"undo-redo-len":                          true,
 	"gap-up-at-doc-start":                    true,
 	"gap-plain-left-moves-caret":              true,

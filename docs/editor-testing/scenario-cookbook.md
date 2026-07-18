@@ -13,7 +13,7 @@ CodeMirror uses inline markers in one string:
 
 Harness uses byte offsets in plain UTF-8 (ASCII in these cases). `\n` is one character. After each key step, assert `cursor`, `selStart`, `selEnd`, `textLen`, optional `selLen`.
 
-Writerdeck maps Meta to Ctrl for Mac/Linux-style shortcuts over the phone path ([decisions.md](../decisions.md) §3). Chords are Control/Alt (USB Linux keyboards work as-is; Mac ⌘ is not required).
+Writerdeck maps Meta to Ctrl for Mac-style shortcuts over the phone path ([decisions.md](../decisions.md) §3). Chords are Control/Alt (Ctrl = ⌘). Dialect: Apple Cocoa first, CodeMirror for Home/End, Qt not the target — [scenario-catalog.md](scenario-catalog.md). Named motions live in `daemon/cmd/edit-harness/motion.go` (Lexical-style names; Google `lineboundary` / `paragraphboundary` vocabulary). Layout vs meaning units: Finseth ch. 4; critical set framed as locate / modify / verify (GOMS).
 
 ## Port template
 
@@ -39,7 +39,7 @@ Run: `bash scripts/test-keyboard-harness.sh -s cookbook-short-name --fast`
 | `shift-down-then-up-shrinks` | CodeMirror `selectLineDown` + `selectLineUp` | visual-x shrink |
 | `shift-left-repeat-from-end` | — | Writerdeck bug report |
 | `alt-backspace-deletes-word` | CodeMirror `deleteGroupBackward` | Mac Alt+Backspace |
-| `ctrl-backspace-deletes-line` | CodeMirror `deleteLineBoundaryBackward` | Mac Mod+Backspace |
+| `ctrl-backspace-deletes-line` | Apple ⌘⌫ / CodeMirror `deleteLineBoundaryBackward` | Visual-line start (not whole logical line) |
 
 ## Undo / redo (in `scenarios_undo.go`)
 
@@ -73,7 +73,7 @@ Content uses `\n` for line breaks. Positions counted from 0.
 
 ## CodeMirror — backspace / delete (Mac bindings)
 
-From `commands.ts` keymap: Alt+Backspace = word backward; Mod+Backspace = line backward.
+From Apple / CodeMirror: Alt+Backspace = word backward; Mod/⌘+Backspace = delete to visual-line start.
 
 | Suggested name | Content | Keys | Expect textLen / cursor |
 |----------------|---------|------|-------------------------|

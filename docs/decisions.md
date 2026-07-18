@@ -32,7 +32,7 @@ Going Home clears the on-screen box. Reload and mode toggle must push the real n
 
 ## 3. Socket input, not uinput
 
-This kernel cannot load a uinput (fake keyboard device). Do not retry that path. Keystrokes arrive on a local socket and become Qt key events. The phone resolves the keymap; the tablet gets characters and Mac/Linux-style Ctrl/Alt shortcuts. USB Linux keyboards already use those shortcuts — no second shortcut set.
+This kernel cannot load a uinput (fake keyboard device). Do not retry that path. Keystrokes arrive on a local socket and become Qt key events. The phone resolves the keymap; the tablet gets characters and Mac-style Ctrl/Alt shortcuts (Ctrl stands for ⌘). USB keyboards use that same set — no second map. Binding authority for tests: Apple Cocoa prose first; CodeMirror for Home/End caret-to-visual-line (stock Apple Home only scrolls); Qt’s Ctrl+arrow = word is not the target. Details: [editor-testing/scenario-catalog.md](editor-testing/scenario-catalog.md).
 
 ## 4. Owned keywriter fork
 
