@@ -2,7 +2,7 @@
 import { state } from './state.js';
 import {
   updateSyncBannerFromState, refreshSyncStatus, showSyncClash,
-  recordEditorDiskBaseline, checkDiskDrift, notifyDiskChanged, respondToNeedToken
+  recordEditorDiskBaseline, notifyDiskChanged, respondToNeedToken
 } from './sync.js';
 import { deps } from './deps.js';
 
@@ -94,7 +94,8 @@ function refreshTabletStatus() {
         } else if (!state.editorDiskHash) {
           recordEditorDiskBaseline(data.openNote);
         }
-        checkDiskDrift(data.openNote);
+        // Do not poll-check drift here: tablet autosave changes disk under the open note and
+        // would false-alarm "Disk changed". Real external writes arrive via WS diskchanged.
       }
       updateConnectionBar();
     })

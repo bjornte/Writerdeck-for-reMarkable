@@ -34,7 +34,7 @@ Clear the open filename whenever you return to the Lobby, or a deleted note can 
 
 Edit-mode keys from the socket must go through the QML router on the thread that feeds keys in. Raw Qt events dropped keys or deadlocked. Block Ctrl/Alt navigation key-releases — Qt’s defaults could wipe the screen text while the file on disk stayed fine. Escape toggles edit/preview on key-up; socket inject does not auto-release Escape (that double-fired the harness), so the phone must send an explicit Escape release.
 
-Physical Home is taken over by the server while Writerdeck is open. Do not grab the whole button device from the USB launcher — that starves Home and Power. After Home from edit, Lobby focus must actually handle keys.
+Physical Home is taken over by the server while Writerdeck is open. Do not grab the whole button device from the USB launcher — that starves Home and Power. After Home from edit, Lobby focus must actually handle keys. Remember the open filename before the sync save on Home: that XHR can re-enter the event loop and deliver a noteslist early; keep the prefer-name until select succeeds, and do not bind ListView.currentIndex to the selection property (model clear breaks the binding).
 
 Alt+Left/Right on USB looked like Escape until the keymap was fixed. qmap (USB keyboard map) changes apply at editor launch, not mid-session. The automated typing tests do not exercise USB layouts — check those by hand.
 
@@ -44,7 +44,7 @@ After soft-wrap End, set affinity before remembering goal X — Qt’s rect at t
 
 ## Phone page
 
-Stand down key capture when PIN, paste, or sync overlays are up. The GitHub token is per browser address — a new tablet IP means enter it once for that address. After server restart, watch the journal for token restore after the client connects.
+Stand down key capture when PIN, paste, or sync overlays are up. The GitHub token is per browser address — a new tablet IP means enter it once for that address. After server restart, watch the journal for token restore after the client connects. Do not poll-check editor disk hash on the status timer — tablet autosave would false-alarm “Disk changed”; rely on the WebSocket diskchanged path for real external writes.
 
 ## Sync and vault
 
