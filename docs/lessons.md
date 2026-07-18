@@ -40,6 +40,8 @@ Alt+Left/Right on USB looked like Escape until the keymap was fixed. qmap (USB k
 
 Wrapped Up/Down must walk visual rows, not step by a tall caret rectangle. Shift selection needs a remembered anchor and head; do not trust the caret index after select. Page buttons are not arrow keys.
 
+After soft-wrap End, set affinity before remembering goal X — Qt’s rect at the wrap index is the next row’s left edge, so Down looked like a no-op and fell through to paragraph end. Down from that End must also snap to the next visual row’s exclusive end, not the last glyph.
+
 ## Phone page
 
 Stand down key capture when PIN, paste, or sync overlays are up. The GitHub token is per browser address — a new tablet IP means enter it once for that address. After server restart, watch the journal for token restore after the client connects.
