@@ -10,11 +10,9 @@ Notes are plain Markdown on disk. Most importantly, your documents must be prese
 
 ## Starting the Writerdeck
 
-If the reMarkable is off, turn it on, and the app launches.
+Power on lands in the normal reMarkable interface. The Writerdeck server starts in the background so the phone page stays reachable.
 
-If you're in the main reMarkable user interface, press both left & right pagination buttons simulateously, and you land in the Lobby Files tab. If you have connected a USB keyboard, pressing Esc will also launch the app.
-
-If you have a dev setup for the app on your computer, `wd` will also launch the Writerdeck.
+From that stock UI: press both left and right page buttons together, or Esc on a USB keyboard, to open the Lobby. From a Mac on the same Wi-Fi: `wd` (or `bash scripts/lobby.sh`). On the tablet over SSH: `~/wd`. On the phone page, **Show PIN on tablet** also opens the Lobby when it was closed.
 
 ## How you write
 

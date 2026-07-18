@@ -14,4 +14,6 @@ A read-only Markdown mirror on the phone while you type on e-ink, maybe with tap
 
 Phone niceties: bulk delete, search, HTTPS for a native Share sheet, vault PIN on the phone (tablet-only entry ships today).
 
-Easier first-time install shipped (ZIP + prompted secrets + Release binaries + auto-enable). Open follow-up: boot bricking risk — [install-onboarding/](install-onboarding/).
+No-keyboard tip on the tablet when edit / new / rename (and similar) would need typing: how to connect Bluetooth or USB, with a QR code for the current phone URL — [TODO.md](../TODO.md) Open.
+
+Windows installer still open. Mac/Linux installer remembers password / Wi-Fi / GitHub repo + token and can open a prefilled token page — [TODO.md](../TODO.md) Open.

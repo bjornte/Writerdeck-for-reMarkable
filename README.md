@@ -28,14 +28,15 @@ Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**,
    bash scripts/install.sh --start
    ```
 
-   It asks for the tablet root password (Settings → Help → Copyrights and licenses → General information, scroll down) and the tablet’s Wi-Fi address, then installs and turns on auto-start for the next boot.
+   It asks only for missing details (tablet password, Wi-Fi IP, phone PIN length, optional GitHub notes sync). Saved values in `secrets/remarkable.local.env` are reused. For sync it can open GitHub’s token page, then pushes PIN / repo / token to the tablet after start.
 
 ### You're done when
 
-- Lobby Files is on the e-ink screen
+- Stock reMarkable UI is on the e-ink screen (Writerdeck opens only when you ask)
 - On your phone, `http://<that-Wi-Fi-IP>:8000/` shows your notes list and **Connected** (not stuck on `connecting...`)
+- Optional check: both page buttons together (or `wd`) open the Lobby
 
-If the tablet boots into Writerdeck and something looks wrong:
+If Writerdeck is stuck or something looks wrong after a bad install:
 
 ```bash
 systemctl disable --now writerdeck && systemctl start xochitl
@@ -51,7 +52,7 @@ Use a private personal repo. Conflicts keep both copies rather than overwrite. S
 
 ## Everyday use
 
-Power on — Lobby Files shows the connect address and PIN (also on Home, digit 6). Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. Open a note on the tablet; the phone enters Type mode. Upload and Download live on the phone list. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
+Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Esc, phone **Show PIN on tablet**, or `wd`. Lobby Files shows the connect address and PIN (also on Home, digit 6). Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. Open a note on the tablet; the phone enters Type mode. Upload and Download live on the phone list. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
 
 Show the Lobby from a Mac on the same Wi-Fi with `wd` (after `bash scripts/install-alias.sh`) or `bash scripts/lobby.sh`. On the tablet: `~/wd`.
 

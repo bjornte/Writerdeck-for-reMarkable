@@ -1,4 +1,4 @@
-// Writerdeck-server — see main.go for overview.
+// Writerdeck-server -- see main.go for overview.
 
 package main
 
@@ -241,12 +241,19 @@ func settingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	case http.MethodPost:
 		var req struct {
-			SyncOn   *bool   `json:"syncOn"`
-			SyncRepo *string `json:"syncRepo"`
+			SyncOn    *bool   `json:"syncOn"`
+			SyncRepo  *string `json:"syncRepo"`
+			PinDigits *string `json:"pinDigits"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "bad request", http.StatusBadRequest)
 			return
+		}
+		if req.PinDigits != nil {
+			if !applyPinDigits(*req.PinDigits) {
+				http.Error(w, `pinDigits must be "6", "4", or "none"`, http.StatusBadRequest)
+				return
+			}
 		}
 		if req.SyncRepo != nil {
 			repo := *req.SyncRepo

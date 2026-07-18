@@ -15,7 +15,7 @@
 //   {"t":"cmd","c":"home|open|notedeleted|noterenamed|..."}  -- editor commands
 // Browser <- Writerdeck-server: {"type":"openedit","name":"<file>.md"} on tablet open/rename
 //   {"type":"tabletcrud","op":"createnote|deletenote|renamenote","name":"...","oldName":"..."}
-//     on tablet Lobby Files CRUD — server mirrors to GitHub when sync is configured.
+//     on tablet Lobby Files CRUD -- server mirrors to GitHub when sync is configured.
 //   {"type":"diskchanged","name":"<file>.md"} when disk is written under an open editor (slice 8).
 //
 // Integer codepoints are escaping-proof: JSON special chars in typed text
@@ -198,11 +198,9 @@ func main() {
 		exec.Command("sh", "-c", "for p in $(pidof Writerdeck 2>/dev/null); do kill $p 2>/dev/null; done").Run() //nolint:errcheck
 		time.Sleep(500 * time.Millisecond)
 
-		// Auto-launch first session: power-on = typewriter (unchanged behaviour).
-		fmt.Fprintln(os.Stderr, "writerdeck-server: auto-launching editor session on boot")
-		if err := activeSess.start(); err != nil {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: auto-launch failed: %v\n", err)
-		}
+		// Idle under stock UI (xochitl). Launch on demand: page buttons,
+		// USB Esc, POST /api/lobby (phone / wd), not on boot.
+		fmt.Fprintln(os.Stderr, "writerdeck-server: idle under stock UI (launch via page buttons, USB Esc, or /api/lobby)")
 
 		// Block until SIGTERM/SIGINT; gracefully end any active session first.
 		sigCh := make(chan os.Signal, 1)

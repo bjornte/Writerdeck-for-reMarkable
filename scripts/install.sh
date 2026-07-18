@@ -56,6 +56,9 @@ echo
 echo "--- systemd unit ---"
 if [ "$DO_START" -eq 1 ]; then
   bash "$DIR/install-service.sh" --start
+  echo
+  echo "--- GitHub notes sync (if configured in secrets) ---"
+  bash "$DIR/configure-sync.sh"
 else
   bash "$DIR/install-service.sh"
 fi
@@ -74,10 +77,12 @@ if [ "$DO_START" -ne 1 ]; then
   echo "  Next -- start + enable autostart:"
   echo "    bash scripts/install.sh --start"
   echo "  Or: bash scripts/install-service.sh --start"
+  echo "  Then (if you set SYNC_REPO): bash scripts/configure-sync.sh"
   echo ""
 fi
-echo "  You're done when: Lobby on e-ink; phone list populated;"
+echo "  You're done when: stock UI on e-ink; phone list populated;"
 echo "  connection bar not stuck on connecting..."
+echo "  Open Lobby: both page buttons, USB Esc, or wd"
 echo ""
 echo "  Recovery:"
 echo "    systemctl disable --now writerdeck && systemctl start xochitl"

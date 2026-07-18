@@ -16,4 +16,4 @@ Sync setup, connection status, and “Show PIN on tablet” live here too. Downl
 
 Files tab lists notes. Edit to type; Read to preview. Esc toggles. Rename and delete from Files. Settings holds reading font, PIN length, rotation, and Exit. Keyboard tab picks USB layout. Sync tab can run Sync now.
 
-Home from edit returns to Files with that note selected. Launch from stock UI with USB Esc, both page buttons, or `wd` / `~/wd`. File ops use the trusted socket ([decisions.md](decisions.md) §19).
+Home from edit returns to Files with that note selected. Launch from stock UI with USB Esc, both page buttons, phone **Show PIN on tablet**, or `wd` / `~/wd`. File ops use the trusted socket ([decisions.md](decisions.md) §19).

@@ -12,7 +12,7 @@ Writerdeck-server from `deploy-rmkbd.sh` (local Go build, or Release tag `server
 bash scripts/install.sh --start
 ```
 
-Asks for password + Wi-Fi IP if missing, fetches binaries from Releases, deploys, health-checks the phone page, enables autostart. Checks only: `bash scripts/preflight.sh`. Notes: [install-onboarding](../docs/install-onboarding/).
+Asks only for missing password / Wi-Fi / optional sync / PIN; reuses `secrets/remarkable.local.env`. Fetches binaries from Releases, deploys, health-checks, enables autostart, then `configure-sync.sh` if PIN/sync are saved. Checks only: `bash scripts/preflight.sh`. Reinstall notes: [reinstall-cheatsheet](../docs/install-onboarding/reinstall-cheatsheet.md). Regression: `bash scripts/test-install-reuse.sh`.
 
 ## Everyday commands
 
@@ -31,6 +31,6 @@ Show Lobby: `wd` or `bash scripts/lobby.sh`.
 
 ## Other useful scripts
 
-ensure-secrets.sh — create/fill secrets (prompts on a TTY). bootstrap.sh — SSH key and Wi-Fi SSH. preflight.sh — secrets / optional go / ping / dist. install.sh — first-time chain. fetch-keywriter-dist.sh / fetch-server-dist.sh — Release curl (gh fallback). install-service.sh — systemd unit (`--start` = start + health check + enable). install-alias.sh — Mac shortcuts. fix-hostkey.sh — after OTA host-key change. recover-orphaned-vault-notes.sh — after a vault key mistake.
+ensure-secrets.sh — create/fill secrets (reuses saved values; optional sync + opens GitHub token URL). bootstrap.sh — SSH key and Wi-Fi SSH. preflight.sh — secrets / optional go / ping / dist. install.sh — first-time chain. configure-sync.sh — push SYNC_REPO + GH_TOKEN to a running tablet. fetch-keywriter-dist.sh / fetch-server-dist.sh — Release curl (gh fallback). install-service.sh — systemd unit (`--start` = start + health check + enable). install-alias.sh — Mac shortcuts. fix-hostkey.sh — after OTA host-key change. recover-orphaned-vault-notes.sh — after a vault key mistake.
 
 Never log secrets. Prefer idempotent scripts.

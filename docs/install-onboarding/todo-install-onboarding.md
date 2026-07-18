@@ -36,7 +36,6 @@ The install path worked for the repo owner but assumed expertise: six ordered sc
 
 ## Out of scope (for now)
 
-- Windows-native install path (scripts are bash).
 - reMarkable 2 support.
 - Toltec or jailbreak-based distribution.
 - Phone-only install with no computer.
@@ -44,6 +43,8 @@ The install path worked for the repo owner but assumed expertise: six ordered sc
 ## Follow-up
 
 - [ ] Inspect dangers of bricking on boot now that `--start` auto-enables `writerdeck` after a health check. Confirm the check is strong enough, document failure modes, and whether enable should stay gated (human glance at e-ink, stricter checks, or opt-in flag).
+- [ ] Windows installer — see [TODO.md](../../TODO.md) Open.
+- [x] Mac/Linux installer remembers password / Wi-Fi / sync repo + token and can open GitHub’s token page — see [TODO.md](../../TODO.md) Open (Windows still open).
 
 ## Done when
 

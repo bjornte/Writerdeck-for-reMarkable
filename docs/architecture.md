@@ -37,7 +37,7 @@ Under `/home/root/`: the two binaries, `Writerdeck-user-documents/` for notes, `
 
 No phone app — open Safari to the tablet. Upload, download, paste, and the sync token stay on the phone. Files and settings live in the Lobby ([browser-vs-tablet.md](browser-vs-tablet.md)).
 
-The server stays up under the stock UI. Home from Lobby brings xochitl back; the phone can still reach port 8000. A PIN appears on e-ink each boot. Sync is optional; the token never hits disk ([server-sync-implementation.md](server-sync-implementation.md)).
+The server stays up under the stock UI. Boot leaves xochitl on screen; open Writerdeck with page buttons, USB Esc, or `wd`. Home from Lobby brings xochitl back; the phone can still reach port 8000. The PIN is shown in the Lobby. Sync is optional; the token never hits disk ([server-sync-implementation.md](server-sync-implementation.md)).
 
 ## Constraints
 

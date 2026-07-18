@@ -64,11 +64,11 @@ The server is one static ARM binary. No Python or extra runtimes on the tablet. 
 
 ## 9. Always-on server, on-demand editor
 
-The server keeps the phone reachable under the stock UI. Only the editor session flips xochitl. Keep-awake covers the editor child, not the whole device. Units that start from `/home/root` must wait for that mount or cold boot fails with `203/EXEC`.
+The server keeps the phone reachable under the stock UI. Boot stays on xochitl; Writerdeck opens on demand (page buttons, USB Esc, `/api/lobby` / `wd`). Only the editor session flips xochitl. Keep-awake covers the editor child, not the whole device. Units that start from `/home/root` must wait for that mount or cold boot fails with `203/EXEC`.
 
 ## 10. Companion model
 
-No phone app — the tablet is the server. Day-to-day files and settings live in the Lobby; the phone is for typing, upload/download, paste-at-cursor, and the sync token — [browser-vs-tablet.md](browser-vs-tablet.md). A PIN appears on the e-ink each boot. Home twice: edit to Lobby, Lobby to quit.
+No phone app — the tablet is the server. Day-to-day files and settings live in the Lobby; the phone is for typing, upload/download, paste-at-cursor, the sync token, and launching the Lobby when closed (“Show PIN on tablet”). Home twice: edit to Lobby, Lobby to quit.
 
 ## 11. GitHub sync copies missing notes both ways
 
