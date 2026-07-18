@@ -4,9 +4,13 @@ Automated typing and selection checks on the real tablet, over the same path the
 
 Start here: [todo.md](todo.md).
 
-Calling typing work done means all 112 checks passed. The basic “editing works” set is 40 checks. Policy: [decisions.md](../decisions.md) §13. Gotchas: [lessons.md](../lessons.md).
+Green checks are a score, not proof basic editing works — see [decisions.md](../decisions.md) **Typing-test strategy is failing**. Method theory: [methodology-shortcomings.md](methodology-shortcomings.md) (keep updated). How to run: §13 there. Gotchas: [lessons.md](../lessons.md).
 
 todo.md — current scores and next steps.
+
+methodology-shortcomings.md — why the typing-test attempt keeps failing; revise when we learn new miss patterns.
+
+basic-claims.md — writer claims × kill-tests × guarded/partial/unguarded; update with every green-suite miss.
 
 milestone-runs.md — pass/fail log of full runs; update after each full run.
 

@@ -2,15 +2,19 @@
 
 Prove Mac/Linux-style editing on the tablet with scripted tests — not by typing in the Lobby by hand.
 
-Read: this file, [milestone-runs.md](milestone-runs.md), [lessons.md](../lessons.md), [decisions.md](../decisions.md) §13, [terms.md](../terms.md). Check names: [scenario-catalog.md](scenario-catalog.md).
+Read: this file, [milestone-runs.md](milestone-runs.md), [lessons.md](../lessons.md), [decisions.md](../decisions.md) (**Typing-test strategy is failing**, then §13), [terms.md](../terms.md). Check names: [scenario-catalog.md](scenario-catalog.md).
+
+## Test strategy status (do not remove yet)
+
+Same rule as [decisions.md](../decisions.md) **Typing-test strategy is failing**: we do not have a working strategy yet — only an attempt that keeps going green while basic editing bugs still reach a person. Keep this banner until that decisions section is lifted with solid proof the misses have stopped recurring. Method theory (update when we learn a new failure mode): [methodology-shortcomings.md](methodology-shortcomings.md). Claim kill-tests: [basic-claims.md](basic-claims.md).
 
 ## Current score
 
-All 122 checks passed at `19-39-44` (fork commit `2ca3e2e`). Basic set 42 of 42. Soft-wrap End/Cmd+arrows, Cmd+Backspace, and Option+Up/Down blank stops included. Edit-session passed the same evening. Do not run edit-session at the same time as these typing tests.
+All 124 checks passed at `21-01-11` (fork commit `5d543f7`). Basic set now **54** of 54 (`21-11-16`): promoted goal-column, wrap Shift+Cmd line select, and Option+Up/Down (+ blank stops) into critical. Do not run edit-session at the same time as these typing tests. Treat this score under the status section above.
 
 ## Next
 
-Owner Physical Home check ([user-should-test.md](../user-should-test.md)). Keep all typing checks passing on any future edit change: one push, one deploy, edit-session, full `--fast`, update the pass/fail log.
+Owner Physical Home check ([user-should-test.md](../user-should-test.md)). Keep all typing checks passing on any future edit change: one push, one deploy, edit-session, full `--fast`, update the pass/fail log. When a human finds a basic bug that was green, fix the test’s ability to catch that failure and update [basic-claims.md](basic-claims.md) before calling the strategy improved. Priority raises are listed at the bottom of that inventory.
 
 ## Do not
 
@@ -18,4 +22,4 @@ Infer the moving end of a selection from the caret after select. Treat keyboard 
 
 ## Done means
 
-Basic set 40 of 40, full set 112 of 112, edit-session pass, clean journal after deploy.
+Basic set 54 of 54, full set 124 of 124, edit-session pass, clean journal after deploy.

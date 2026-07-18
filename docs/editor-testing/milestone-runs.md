@@ -22,5 +22,8 @@ Rows below keep every run where the **number of tests changed** (full set or bas
 | 18 Jul 2026, 17:17 | 116/116/0 | 40/40/0 | Shift+Alt stale head after typing (fork `7f1cf36`) |
 | 18 Jul 2026, 17:46 | 118/118/0 | 40/40/0 | Viewport page step (landscape shorter); Shift+Left after type (fork `84e6bf0`) |
 | 18 Jul 2026, 19:39 | 122/122/0 | 42/42/0 | Soft-wrap End/Cmd+Left/Right stay; Cmd+Backspace visual row; Option+Up/Down blank stops (fork `2ca3e2e`) |
+| 18 Jul 2026, 21:01 | 124/124/0 | 44/44/0 | Soft-wrap End affinity + caretY; wrap-ctrl-right-then-left / wrap-end-then-up (fork `5d543f7`) |
+| 18 Jul 2026, 21:08 | (full unchanged) | 45/45/0 | Promoted `wrap-combo-ctrl-bs-line` into critical; critical-only re-run |
+| 18 Jul 2026, 21:11 | (full unchanged) | 54/54/0 | Critical: goal-column, wrap-shift-ctrl-*, Option+Up/Down + blank stops |
 
-Wrap group **15/15**; undo group **5/5**.
+Wrap group **21/21**; undo group **5/5**.

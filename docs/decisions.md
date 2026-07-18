@@ -14,9 +14,15 @@ Notes are UTF-8 Markdown, never Qt HTML. An open note must not be silently overw
 
 No change to the daemon, sync, build script, or note APIs ships without an integrity pass.
 
+## Typing-test strategy is failing
+
+We do **not** have a working automated typing-test strategy. We have an attempt — harness, dialect notes, critical tags, scenario counts — and it keeps failing the same way: suites go green while very basic editing bugs still reach a person typing. A full or critical green run is a score for those checks, not proof that basic editing works.
+
+Do not remove this section (or the matching banners in [editor-testing/todo.md](editor-testing/todo.md) and [lessons.md](lessons.md)) until there is solid proof those misses have stopped recurring — meaning later human finds are ones the suite would already have failed. Working theory: [editor-testing/methodology-shortcomings.md](editor-testing/methodology-shortcomings.md). Claim×kill-test inventory (keep updated): [editor-testing/basic-claims.md](editor-testing/basic-claims.md). How we run the checks today: §13.
+
 ## Device verification
 
-A successful deploy script is not enough. Rebuild when the QML changed, deploy, relaunch, read the tablet journal. Fail on QML parse errors or an editor that exits at once. After QML changes run the edit-session check. After caret or selection work run the automated typing tests (§13). After Lobby or Home run the Lobby keyboard test (§15).
+A successful deploy script is not enough. Rebuild when the QML changed, deploy, relaunch, read the tablet journal. Fail on QML parse errors or an editor that exits at once. After QML changes run the edit-session check. After caret or selection work run the automated typing tests (§13), remembering the strategy above is still failing. After Lobby or Home run the Lobby keyboard test (§15).
 
 ---
 
@@ -78,9 +84,9 @@ Sync runs on the tablet. The token sits in the browser and in tablet RAM — nev
 
 Pairing PIN and vault PIN are separate. Encrypted notes are `.md.enc` beside plain `.md`. Each file is sealed; the vault PIN unlocks a key held in RAM only while that note (or a one-shot encrypt/decrypt) is active. PIN every open, including note switches. Tablet-only entry. Per-note encrypt/decrypt — no bulk lock. Sync copies encrypted files without reading them and mirrors recovery material under `secret/`. Markdown integrity applies to `.md` only. See [integrity-audit.md](integrity-audit.md).
 
-## 13. Automated typing tests
+## 13. Automated typing tests (how we run them)
 
-We prove caret and selection on the real tablet, over the same path the phone uses — not by reading saved files. About 112 checks; 40 are the “basic editing works” set. Pass/fail log: [editor-testing/](editor-testing/). Test notes use the `z-test-` prefix (§32). USB layout quirks still need a human check after qmap changes.
+Harness and scenario mechanics only — strategy status is above under **Typing-test strategy is failing**. We run caret and selection checks on the real tablet, over the same path the phone uses — not by reading saved files. Counts and pass/fail log: [editor-testing/](editor-testing/). Test notes use the `z-test-` prefix (§32). USB layout quirks still need a human check after qmap changes.
 
 ## 14. Edit-session check
 
@@ -172,4 +178,4 @@ Do not start rM2 work unless there is clear community demand. Wishlist: [improve
 
 ## Open risks
 
-Over-the-air update may wipe the boot service and reset the SSH password — redeploy and re-enable. Rootfs is nearly full; everything we ship lives under `/home/root`. Do not resize rootfs. uinput is closed (§3). The editor lives in the fork (§4); residual risk is a clash when merging Singleton’s original, not a patch-script pile. Calling typing work done still means all 110 automated typing checks (§13). Integrity leftovers: [integrity-audit.md](integrity-audit.md).
+Over-the-air update may wipe the boot service and reset the SSH password — redeploy and re-enable. Rootfs is nearly full; everything we ship lives under `/home/root`. Do not resize rootfs. uinput is closed (§3). The editor lives in the fork (§4); residual risk is a clash when merging Singleton’s original, not a patch-script pile. Typing-test strategy is still failing (section above §1) — green is not “basic editing works.” Integrity leftovers: [integrity-audit.md](integrity-audit.md).

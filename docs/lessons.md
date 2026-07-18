@@ -10,6 +10,10 @@ For keyboard work: one run to list all failures, fix several at once, then one e
 
 After about twenty minutes without a clear finish, stop and report what you tried.
 
+## Typing tests — strategy not proven
+
+Standing decision: [decisions.md](decisions.md) **Typing-test strategy is failing**. Theory: [editor-testing/methodology-shortcomings.md](editor-testing/methodology-shortcomings.md). Claims inventory: [editor-testing/basic-claims.md](editor-testing/basic-claims.md). Do not treat critical-or-full green as “basic editing works,” and do not delete this lesson (or that decisions section, or the banner in [editor-testing/todo.md](editor-testing/todo.md)) until there is solid proof those misses have stopped recurring.
+
 ## Deploy traps
 
 Three ways a change looks like it did nothing: GitHub has not built the new editor yet; the phone cached the page; the old editor process is still running.

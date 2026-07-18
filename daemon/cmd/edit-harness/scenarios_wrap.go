@@ -207,8 +207,16 @@ func wrapScenarios() []Scenario {
 				{Keys: []Key{keyMoveDocStart(false)}},
 				{Keys: []Key{{Name: "ArrowDown"}}},
 				{Expect: &StateExpect{Cursor: intp(wrapDownOneCursor), TextLen: intp(n)}},
+				{Label: "capture caretY on visual row 1", CaptureCaretY: true},
 				{Label: "endVisualLine (lineboundary)", Keys: []Key{keyEndVisualLine(false)}},
-				{Expect: expectVisualLineCaret(wrapEndVisualRow1, n)},
+				{Expect: &StateExpect{
+					Cursor:   intp(wrapEndVisualRow1),
+					SelStart: intp(wrapEndVisualRow1),
+					SelEnd:   intp(wrapEndVisualRow1),
+					TextLen:  intp(n),
+					Assoc:    intp(-1),
+				}},
+				{Label: "caretY stays on visual row 1", ExpectCaretYEqCaptured: true},
 			},
 		},
 		{
@@ -239,12 +247,57 @@ func wrapScenarios() []Scenario {
 				{Keys: []Key{{Name: "ArrowDown"}}},
 				{Keys: []Key{{Name: "ArrowRight"}}, Repeat: 5},
 				{Expect: &StateExpect{Cursor: intp(wrapDownOneCursor + 5), TextLen: intp(n)}},
+				{Label: "capture caretY on visual row 1", CaptureCaretY: true},
 				{Label: "moveToVisualLineEnd (N=1)", Keys: []Key{keyMoveToVisualLineEnd(false)}, Repeat: 1},
-				{Expect: expectVisualLineCaret(wrapEndVisualRow1, n)},
+				{Expect: &StateExpect{
+					Cursor:  intp(wrapEndVisualRow1),
+					SelStart: intp(wrapEndVisualRow1),
+					SelEnd:   intp(wrapEndVisualRow1),
+					TextLen:  intp(n),
+					Assoc:    intp(-1),
+				}},
+				// Same painted row as before Ctrl+Right — not the next visual line.
+				{Label: "caretY stays on visual row 1", ExpectCaretYEqCaptured: true},
 				{Label: "moveToVisualLineEnd stays (N=3)", Keys: []Key{keyMoveToVisualLineEnd(false)}, Repeat: 2},
 				{Expect: expectVisualLineCaret(wrapEndVisualRow1, n)},
 				{Label: "moveToVisualLineEnd stays (N=7)", Keys: []Key{keyMoveToVisualLineEnd(false)}, Repeat: 4},
 				{Expect: expectVisualLineCaret(wrapEndVisualRow1, n)},
+			},
+		},
+		{
+			// False-green catch: shared wrap index looks like next-row start unless
+			// affinity sticks. Ctrl+Left must return to *this* visual row's start.
+			Name:    "wrap-ctrl-right-then-left",
+			Content: wp,
+			Width:   harnessWrapWidth,
+			Steps: []Step{
+				{Keys: []Key{keyMoveDocStart(false)}},
+				{Keys: []Key{{Name: "ArrowDown"}}},
+				{Keys: []Key{{Name: "ArrowRight"}}, Repeat: 5},
+				{Keys: []Key{keyMoveToVisualLineEnd(false)}},
+				{Expect: &StateExpect{Cursor: intp(wrapEndVisualRow1), Assoc: intp(-1), TextLen: intp(n)}},
+				{Label: "moveToVisualLineStart of same row", Keys: []Key{keyMoveToVisualLineStart(false)}},
+				{Expect: expectVisualLineCaret(wrapDownOneCursor, n)},
+			},
+		},
+		{
+			// After End on wrap, Up must climb to the previous visual row — not
+			// treat the wrap point as already being on the next row.
+			Name:    "wrap-end-then-up",
+			Content: wp,
+			Width:   harnessWrapWidth,
+			Steps: []Step{
+				{Keys: []Key{keyMoveDocStart(false)}},
+				{Keys: []Key{{Name: "ArrowDown"}}},
+				{Expect: &StateExpect{Cursor: intp(wrapDownOneCursor), TextLen: intp(n)}},
+				{Label: "endVisualLine", Keys: []Key{keyEndVisualLine(false)}},
+				{Expect: &StateExpect{Cursor: intp(wrapEndVisualRow1), Assoc: intp(-1), TextLen: intp(n)}},
+				{Label: "up to previous visual row", Keys: []Key{{Name: "ArrowUp"}}},
+				{Expect: &StateExpect{
+					CursorMin: intp(0),
+					CursorMax: intp(wrapDownOneCursor - 1),
+					TextLen:   intp(n),
+				}},
 			},
 		},
 		{

@@ -55,6 +55,12 @@ type StateExpect struct {
 	ContentY    *int    `json:"contentY,omitempty"`
 	ContentYMin *int    `json:"contentYMin,omitempty"`
 	ContentYMax *int    `json:"contentYMax,omitempty"`
+	// Assoc is soft-wrap caret stickiness (-1 = previous visual row / line end).
+	Assoc *int `json:"assoc,omitempty"`
+	// CaretY is where the caret is painted (may differ from cursor index Y at wraps).
+	CaretY    *int `json:"caretY,omitempty"`
+	CaretYMin *int `json:"caretYMin,omitempty"`
+	CaretYMax *int `json:"caretYMax,omitempty"`
 }
 
 type Step struct {
@@ -77,6 +83,10 @@ type Step struct {
 	ExpectContentYEqCaptured bool `json:"expectContentYEqCaptured,omitempty"`
 	// ExpectContentYLtCaptured requires contentY < last CaptureContentY.
 	ExpectContentYLtCaptured bool `json:"expectContentYLtCaptured,omitempty"`
+	// CaptureCaretY stores painted caret Y (affinity-aware) after this step.
+	CaptureCaretY bool `json:"captureCaretY,omitempty"`
+	// ExpectCaretYEqCaptured requires caretY == last CaptureCaretY (same visual row).
+	ExpectCaretYEqCaptured bool `json:"expectCaretYEqCaptured,omitempty"`
 }
 
 type Scenario struct {
@@ -97,6 +107,8 @@ type EditorState struct {
 	IsLobby     int    `json:"isLobby"`
 	CurrentFile string `json:"currentFile"`
 	ContentY    int    `json:"contentY"`
+	Assoc       int    `json:"assoc"`
+	CaretY      int    `json:"caretY"`
 }
 
 type Harness struct {
@@ -381,6 +393,8 @@ func (h *Harness) RunScenario(sc Scenario) error {
 	modKeyPrimed := false
 	var capturedY int
 	haveCapturedY := false
+	var capturedCaretY int
+	haveCapturedCaretY := false
 	for i, step := range sc.Steps {
 		label := step.Label
 		if label == "" {
@@ -473,6 +487,28 @@ func (h *Harness) RunScenario(sc Scenario) error {
 				}
 				if st.ContentY >= capturedY {
 					return fmt.Errorf("%s: contentY want < captured %d got %d", label, capturedY, st.ContentY)
+				}
+			}
+		}
+		if step.CaptureCaretY || step.ExpectCaretYEqCaptured {
+			st, err := h.queryState()
+			if err != nil {
+				return fmt.Errorf("%s: state for caretY capture: %w", label, err)
+			}
+			if step.CaptureCaretY {
+				capturedCaretY = st.CaretY
+				haveCapturedCaretY = true
+				if h.verbose {
+					fmt.Printf("  %s: captured caretY=%d\n", label, capturedCaretY)
+				}
+			}
+			if step.ExpectCaretYEqCaptured {
+				if !haveCapturedCaretY {
+					return fmt.Errorf("%s: ExpectCaretYEqCaptured with no prior CaptureCaretY", label)
+				}
+				if st.CaretY != capturedCaretY {
+					return fmt.Errorf("%s: caretY want captured %d got %d (wrap affinity: End must stay on same visual row)",
+						label, capturedCaretY, st.CaretY)
 				}
 			}
 		}
@@ -860,6 +896,14 @@ func matchExpect(got EditorState, exp StateExpect, noteText string) error {
 	}
 	if exp.ContentYMax != nil && got.ContentY > *exp.ContentYMax {
 		errs = append(errs, fmt.Sprintf("contentYMax want <= %d got %d", *exp.ContentYMax, got.ContentY))
+	}
+	check("assoc", exp.Assoc, got.Assoc)
+	check("caretY", exp.CaretY, got.CaretY)
+	if exp.CaretYMin != nil && got.CaretY < *exp.CaretYMin {
+		errs = append(errs, fmt.Sprintf("caretYMin want >= %d got %d", *exp.CaretYMin, got.CaretY))
+	}
+	if exp.CaretYMax != nil && got.CaretY > *exp.CaretYMax {
+		errs = append(errs, fmt.Sprintf("caretYMax want <= %d got %d", *exp.CaretYMax, got.CaretY))
 	}
 	if exp.Text != nil && noteText != *exp.Text {
 		errs = append(errs, fmt.Sprintf("text want %q got %q", *exp.Text, noteText))

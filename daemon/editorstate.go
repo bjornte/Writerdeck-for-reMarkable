@@ -14,10 +14,12 @@ type EditorState struct {
 	TextLen      int    `json:"textLen"`
 	Text         string `json:"text,omitempty"` // live edit buffer (harness text asserts)
 	Mode         int    `json:"mode"`           // 0=preview, 1=edit
-	IsLobby      int    `json:"isLobby"`      // 1=Lobby visible
-	VaultOverlay string `json:"vaultOverlay"` // numpad mode when non-empty
+	IsLobby      int    `json:"isLobby"`        // 1=Lobby visible
+	VaultOverlay string `json:"vaultOverlay"`   // numpad mode when non-empty
 	CurrentFile  string `json:"currentFile"`
 	ContentY     int    `json:"contentY"` // Flickable scroll offset (page buttons)
+	Assoc        int    `json:"assoc"`    // soft-wrap caret stickiness (-1 = line end)
+	CaretY       int    `json:"caretY"`   // painted caret Y (affinity-aware)
 }
 
 const stateQueryTimeout = 3 * time.Second
@@ -85,6 +87,8 @@ func parseEditorState(line []byte) (EditorState, bool) {
 		VaultOverlay string `json:"vaultOverlay"`
 		CurrentFile  string `json:"currentFile"`
 		ContentY     int    `json:"contentY"`
+		Assoc        int    `json:"assoc"`
+		CaretY       int    `json:"caretY"`
 	}
 	if err := json.Unmarshal(line, &raw); err != nil || raw.T != "state" {
 		return EditorState{}, false
@@ -100,6 +104,8 @@ func parseEditorState(line []byte) (EditorState, bool) {
 		VaultOverlay: raw.VaultOverlay,
 		CurrentFile:  raw.CurrentFile,
 		ContentY:     raw.ContentY,
+		Assoc:        raw.Assoc,
+		CaretY:       raw.CaretY,
 	}, true
 }
 

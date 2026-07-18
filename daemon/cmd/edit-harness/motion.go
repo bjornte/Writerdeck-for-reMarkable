@@ -69,6 +69,7 @@ func expectVisualLineCaret(pos, textLen int) *StateExpect {
 func isLineBoundaryScenario(name string) bool {
 	switch name {
 	case "wrap-ctrl-left", "wrap-ctrl-right",
+		"wrap-ctrl-right-then-left", "wrap-end-then-up",
 		"wrap-shift-ctrl-left", "wrap-shift-ctrl-right",
 		"wrap-end-on-visual-line", "wrap-home-on-visual-line",
 		"wrap-combo-ctrl-bs-line":
