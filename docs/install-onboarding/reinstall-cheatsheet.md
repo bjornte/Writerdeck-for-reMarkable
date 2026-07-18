@@ -10,7 +10,7 @@ Keep a copy of `secrets/remarkable.local.env` on the computer (gitignored). It s
 |---|---|
 | `RM_ROOT_PASSWORD` | Tablet SSH password (**changes after wipe / OTA** — read the new one from the tablet) |
 | `RM_HOST_WIFI` | Tablet Wi-Fi address |
-| `PIN_DIGITS` | `6`, `4`, or `none` |
+| `PIN_DIGITS` | usually `none` (installer no longer prompts; older saves may be `6`/`4`) |
 | `SYNC_REPO` | Notes repo, e.g. `owner/my-notes` |
 | `GH_TOKEN` | Fine-grained GitHub token (Contents read/write on that repo) |
 
@@ -25,14 +25,14 @@ Also confirm the GitHub repo still has your notes, any `.md.enc` files, and `sec
    bash scripts/install.sh --start
    ```
 
-3. Answer only what is missing. If secrets already have PIN + sync repo + token, it reuses them and pushes PIN + sync to the tablet.
+3. Answer only what is missing. If secrets already have sync repo + token, it reuses them and pushes sync (and PIN=`none` unless you saved another value) to the tablet.
 4. Wait for sync (or open Lobby → Sync). Notes and encrypted files come from GitHub. Vault key material comes from `secret/vault` — open an encrypted note and enter your **vault PIN** (same as before wipe).
 
 ## What comes back automatically
 
 - Plain notes (`.md`) and encrypted notes (`.md.enc`) from the GitHub repo
 - Vault unlock material (`secret/vault`) so the old vault PIN still works
-- Phone PIN length and sync settings, if saved in computer secrets and applied by `configure-sync.sh`
+- Sync settings (and phone PIN length if saved), applied by `configure-sync.sh`
 
 ## What does **not** live in the notes repo
 

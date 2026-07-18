@@ -28,7 +28,7 @@ Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**,
    bash scripts/install.sh --start
    ```
 
-   It asks only for missing details (tablet password, Wi-Fi IP, phone PIN length, optional GitHub notes sync). Saved values in `secrets/remarkable.local.env` are reused. For sync it can open GitHub’s token page, then pushes PIN / repo / token to the tablet after start.
+   It asks only for missing details (Wi-Fi IP, tablet password, optional GitHub notes sync). Saved values in `secrets/remarkable.local.env` are reused. For sync it walks you through GitHub’s token page, then pushes repo / token to the tablet after start. Phone PIN defaults to off (`none`).
 
 If you already cloned this repo, run the same command from the clone instead.
 
@@ -54,7 +54,7 @@ Use a private personal repo. Conflicts keep both copies rather than overwrite. S
 
 ## Everyday use
 
-Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Esc, phone **Show PIN on tablet**, or `wd`. Lobby Files shows the connect address and PIN (also on Home, digit 6). Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. Open a note on the tablet; the phone enters Type mode. Upload and Download live on the phone list. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
+Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Esc, phone **Show PIN on tablet**, or `wd`. Lobby Files shows the connect address and PIN (also on About, digit 6). Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. Open a note on the tablet; the phone enters Type mode. Upload and Download live on the phone list. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
 
 Show the Lobby from a Mac on the same Wi-Fi with `wd` (after `bash scripts/install-alias.sh`) or `bash scripts/lobby.sh`. On the tablet: `~/wd`.
 

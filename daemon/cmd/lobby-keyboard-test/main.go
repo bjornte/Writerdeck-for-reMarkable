@@ -59,9 +59,16 @@ func run(base, wsURL, note string) error {
 	if err != nil {
 		return fmt.Errorf("websocket: %w", err)
 	}
+	// Escape toggles edit/preview on key-up in Writerdeck (press alone is not enough).
 	if err := wsPre.WriteJSON(map[string]string{"type": "key", "key": "Escape"}); err != nil {
 		wsPre.Close()
 		return fmt.Errorf("escape: %w", err)
+	}
+	if err := wsPre.WriteJSON(map[string]interface{}{
+		"type": "key", "key": "Escape", "action": "release",
+	}); err != nil {
+		wsPre.Close()
+		return fmt.Errorf("escape release: %w", err)
 	}
 	wsPre.Close()
 	time.Sleep(400 * time.Millisecond)

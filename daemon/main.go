@@ -96,6 +96,7 @@ func main() {
 
 	loadSettings()
 	startSyncBackground()
+	fmt.Fprintf(os.Stderr, "writerdeck-server: version %s\n", localProductVersion())
 
 	// Determine PIN length from persisted settings (loaded above).
 	var bootPinLen int
@@ -154,6 +155,8 @@ func main() {
 	http.HandleFunc("/api/settings", settingsHandler)
 	http.HandleFunc("/api/lobby", lobbyHandler) // pre-auth: reveals PIN on e-ink only
 	http.HandleFunc("/api/status", statusHandler)
+	http.HandleFunc("/api/version", versionHandler)
+	http.HandleFunc("/api/version/check", versionCheckHandler)
 	http.HandleFunc("/api/sync/ack", syncAckHandler)
 	http.HandleFunc("/api/sync/pending", pendingSyncHandler)
 	http.HandleFunc("/api/sync/pending/clear", pendingClearHandler)

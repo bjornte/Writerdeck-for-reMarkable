@@ -5,6 +5,7 @@
 # Usage:
 #   bash scripts/deploy-rmkbd.sh               # build-or-fetch + deploy
 #   bash scripts/deploy-rmkbd.sh --build-only  # just obtain binary; no device connection
+#   bash scripts/deploy-rmkbd.sh --deploy-only # deploy existing Writerdeck-server binary
 #
 # Prefer local go build when go is installed (dev loop). Otherwise curl the
 # rolling GitHub Release tag "server" (visitors need no go).
@@ -16,33 +17,64 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$DIR/.." && pwd)"
 
 BUILD_ONLY=0
-[ "${1:-}" = "--build-only" ] && BUILD_ONLY=1
+DEPLOY_ONLY=0
+for arg in "$@"; do
+  case "$arg" in
+    --build-only)  BUILD_ONLY=1 ;;
+    --deploy-only) DEPLOY_ONLY=1 ;;
+    -h|--help)
+      sed -n '2,14p' "$0"
+      exit 0
+      ;;
+    *)
+      echo "ERROR: unknown arg: $arg (try --build-only or --deploy-only)" >&2
+      exit 1
+      ;;
+  esac
+done
+if [ "$BUILD_ONLY" -eq 1 ] && [ "$DEPLOY_ONLY" -eq 1 ]; then
+  echo "ERROR: use only one of --build-only / --deploy-only" >&2
+  exit 1
+fi
 
 BINARY="${REPO}/Writerdeck-server"
 
-echo "=== Writerdeck-server: obtain ARMv7 binary ==="
-# Prefer local go build for the full-repo dev loop. Slim installer ZIPs omit
-# daemon/, so fall through to the Release fetch even when go is installed.
-if command -v go >/dev/null 2>&1 && go version >/dev/null 2>&1 \
-  && [ -d "${REPO}/daemon" ] && [ -f "${REPO}/daemon/go.mod" ]; then
-    cd "${REPO}/daemon"
-    go mod tidy
-    GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 \
-        go build -trimpath -o "${BINARY}" .
-    echo "  built with go: $(file "${BINARY}")"
-else
-    if command -v go >/dev/null 2>&1 && [ ! -d "${REPO}/daemon" ]; then
-      echo "  go present but no daemon/ -- fetching Release binary (installer package)"
-    else
-      echo "  go not found -- fetching Release binary"
-    fi
-    bash "${DIR}/fetch-server-dist.sh"
-fi
-echo
+if [ "$DEPLOY_ONLY" -eq 0 ]; then
+  echo "=== Writerdeck-server: obtain ARMv7 binary ==="
+  # Prefer local go build for the full-repo dev loop. Slim installer ZIPs omit
+  # daemon/, so fall through to the Release fetch even when go is installed.
+  if command -v go >/dev/null 2>&1 && go version >/dev/null 2>&1 \
+    && [ -d "${REPO}/daemon" ] && [ -f "${REPO}/daemon/go.mod" ]; then
+      cd "${REPO}/daemon"
+      go mod tidy
+      VER="unknown"
+      if [ -f "${REPO}/VERSION" ]; then
+        VER="$(tr -d '[:space:]' < "${REPO}/VERSION")"
+      fi
+      GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 \
+          go build -trimpath \
+            -ldflags "-X main.productVersion=${VER}" \
+            -o "${BINARY}" .
+      echo "  built with go (version ${VER}): $(file "${BINARY}")"
+  else
+      if command -v go >/dev/null 2>&1 && [ ! -d "${REPO}/daemon" ]; then
+        echo "  go present but no daemon/ -- fetching Release binary (installer package)"
+      else
+        echo "  go not found -- fetching Release binary"
+      fi
+      bash "${DIR}/fetch-server-dist.sh"
+  fi
+  echo
 
-if [ "${BUILD_ONLY}" = "1" ]; then
-    echo "  --build-only: skipping device deploy."
-    exit 0
+  if [ "$BUILD_ONLY" -eq 1 ]; then
+      echo "  --build-only: skipping device deploy."
+      exit 0
+  fi
+fi
+
+if [ ! -f "$BINARY" ]; then
+  echo "ERROR: missing $BINARY (run without --deploy-only, or --build-only first)" >&2
+  exit 1
 fi
 
 # shellcheck source=/dev/null

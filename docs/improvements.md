@@ -4,6 +4,8 @@ Wishlist — not a backlog. Shipped: [../DONE.md](../DONE.md). Open verify: [../
 
 ## Possible later
 
+remove PIN on phone, require all "security sensitive features", e.g. download & upload, to be ackowledged on the device. Update all processes, including install scripts.
+
 More USB keyboard layouts beyond US and Norwegian — add sources under `keymaps/`, generate, check on hardware (the phone path does not exercise USB maps).
 
 Richer edit chrome: indentation helpers, headline jumps, a modest status bar. Not WYSIWYG-in-edit — that stays out ([decisions.md](decisions.md) §1).

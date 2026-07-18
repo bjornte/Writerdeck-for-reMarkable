@@ -69,7 +69,7 @@ Install Writerdeck on a reMarkable **1** from a Mac or Linux computer on the sam
 bash scripts/install.sh --start
 ```
 
-It asks for the tablet password, Wi-Fi IP, phone PIN length, and optional GitHub notes sync. Binaries download from GitHub Releases (no Go required).
+It asks for the tablet Wi-Fi IP, root password, and optional GitHub notes sync. Binaries download from GitHub Releases (no Go required).
 
 Remove later (keeps your notes on GitHub):
 

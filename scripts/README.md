@@ -12,7 +12,7 @@ Writerdeck-server from `deploy-rmkbd.sh` (local Go build, or Release tag `server
 bash scripts/install.sh --start
 ```
 
-Visitors: download the slim [installer ZIP](https://github.com/bjornte/Writerdeck-for-reMarkable/releases/download/installer/Writerdeck-installer.zip) (or rebuild with `bash scripts/pack-installer.sh`). Asks only for missing password / Wi-Fi / optional sync / PIN; reuses `secrets/remarkable.local.env`. Fetches binaries from Releases, deploys, health-checks, enables autostart, then `configure-sync.sh` if PIN/sync are saved. Checks only: `bash scripts/preflight.sh`. Remove from tablet (keeps Mac secrets + GitHub): `bash scripts/uninstall.sh` (`--reboot` optional). Reinstall notes: [reinstall-cheatsheet](../docs/install-onboarding/reinstall-cheatsheet.md). Regression: `bash scripts/test-install-reuse.sh`.
+Visitors: download the slim [installer ZIP](https://github.com/bjornte/Writerdeck-for-reMarkable/releases/download/installer/Writerdeck-installer.zip) (or rebuild with `bash scripts/pack-installer.sh`). Asks only for missing Wi-Fi / password / optional sync; reuses `secrets/remarkable.local.env`. Phone PIN defaults to `none` (no prompt). Fetches binaries from Releases, deploys, health-checks, enables autostart, then `configure-sync.sh` if sync is saved. Checks only: `bash scripts/preflight.sh`. Remove from tablet (keeps Mac secrets + GitHub): `bash scripts/uninstall.sh` (`--reboot` optional). Reinstall notes: [reinstall-cheatsheet](../docs/install-onboarding/reinstall-cheatsheet.md). Regression: `bash scripts/test-install-reuse.sh`.
 
 ## Everyday commands
 

@@ -29,7 +29,10 @@ SYNC_REPO="$(_get SYNC_REPO)"
 GH_TOKEN="$(_get GH_TOKEN)"
 SYNC_SKIP="$(_get SYNC_SKIP)"
 
-echo "=== configure-sync  target=$TARGET ==="
+INSTALL_UI="${WRITERDECK_INSTALL:-0}"
+if [ "$INSTALL_UI" != "1" ]; then
+  echo "=== configure-sync  target=$TARGET ==="
+fi
 
 do_pin=0
 do_sync=0
@@ -39,9 +42,9 @@ esac
 if [ -n "$SYNC_REPO" ] && [ -n "$GH_TOKEN" ]; then
   do_sync=1
 elif [ "$SYNC_SKIP" = "1" ] && [ -z "$SYNC_REPO" ]; then
-  echo "  Sync skipped in secrets."
+  [ "$INSTALL_UI" = "1" ] || echo "  Sync skipped in secrets."
 elif [ -z "$SYNC_REPO" ]; then
-  echo "  No SYNC_REPO in secrets -- sync not pushed."
+  [ "$INSTALL_UI" = "1" ] || echo "  No SYNC_REPO in secrets -- sync not pushed."
 elif [ -z "$GH_TOKEN" ]; then
   err "SYNC_REPO is set but GH_TOKEN is empty"
   echo "  Run: bash scripts/ensure-secrets.sh" >&2
@@ -49,7 +52,7 @@ elif [ -z "$GH_TOKEN" ]; then
 fi
 
 if [ "$do_pin" -eq 0 ] && [ "$do_sync" -eq 0 ]; then
-  echo "  Nothing to push (set PIN_DIGITS and/or SYNC_REPO + GH_TOKEN)."
+  [ "$INSTALL_UI" = "1" ] || echo "  Nothing to push (set PIN_DIGITS and/or SYNC_REPO + GH_TOKEN)."
   exit 0
 fi
 
@@ -103,8 +106,10 @@ PY
 )"
   post_json "Setting syncOn + syncRepo=$SYNC_REPO" "$SETTINGS_JSON" "http://127.0.0.1:8000/api/settings"
   post_json "Verifying GitHub token via tablet" "$TOKEN_JSON" "http://127.0.0.1:8000/api/sync/token"
-  echo "  Sync configured for $SYNC_REPO (token in tablet RAM only)."
-  echo "  Phone browsers may still need the token once per Wi-Fi address (Sync setup)."
+  if [ "$INSTALL_UI" != "1" ]; then
+    echo "  Sync configured for $SYNC_REPO (token in tablet RAM only)."
+    echo "  Phone browsers may still need the token once per Wi-Fi address (Sync setup)."
+  fi
 fi
 
-echo "  Done."
+[ "$INSTALL_UI" = "1" ] || echo "  Done."
