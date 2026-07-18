@@ -71,6 +71,10 @@ _valid_repo() {
   printf '%s' "$1" | grep -Eq '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$'
 }
 
+# Remote probe: is this host a reMarkable? Newer firmware uses Codex Linux in
+# /etc/os-release (no "remarkable" string). Prefer xochitl + hostname.
+_rm_probe_cmd='if [ -x /usr/bin/xochitl ] || hostname 2>/dev/null | grep -qi remarkable || grep -qiE "remarkable|BUILD_MODE_RM" /etc/os-release 2>/dev/null; then echo __rm_ok__; else echo __not_rm__; fi'
+
 # Password SSH check (before key install). Uses SSH_ASKPASS so the password is
 # not typed twice and does not appear in process lists as a flag.
 _password_ssh_ok() {
@@ -87,7 +91,7 @@ _password_ssh_ok() {
           -o PreferredAuthentications=password -o PubkeyAuthentication=no \
           -o NumberOfPasswordPrompts=1 \
           "root@$host" \
-          'if grep -qi remarkable /etc/os-release 2>/dev/null; then echo __rm_ok__; else echo __not_rm__; fi' \
+          "$_rm_probe_cmd" \
           </dev/null 2>/dev/null || true
   )"
   rm -f "$askpass" "$pwfile"
@@ -101,7 +105,7 @@ _key_ssh_is_remarkable() {
     ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 \
         -o BatchMode=yes \
         "root@$host" \
-        'if grep -qi remarkable /etc/os-release 2>/dev/null; then echo __rm_ok__; fi' \
+        "$_rm_probe_cmd" \
         2>/dev/null || true
   )"
   printf '%s' "$out" | grep -q '__rm_ok__'
