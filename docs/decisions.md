@@ -158,6 +158,16 @@ Rotation is saved on the tablet and pushed when the editor connects. Change it f
 
 Automated tests use filenames starting with `z-test-` so they sort last and stay obvious in the Files list.
 
+## 33. reMarkable 1 first; rM2 only if the community wants it
+
+Writerdeck targets the reMarkable 1. Install and docs say so on purpose.
+
+The editor draws through linuxfb on `/dev/fb0` with the epaper scene graph — that path is rM1. On rM2 the panel is driven differently, so the same binary does not light the screen. Community shims such as rm2fb usually mean Toltec; that conflicts with keeping over-the-air updates (§ Constraints in [architecture.md](architecture.md)). A Toltec-free path means a real rM2 display backend while keeping the Qt editor — roughly the same weight of work as making the typewriter trustworthy (EditHelper, wrap, undo, harness). Not insurmountable; not a weekend config change either. Replacing Qt wholesale would be larger, because typing behavior would have to be rebuilt.
+
+Launch without page buttons and Home is already partly covered: phone Show PIN / `/api/lobby`, `wd`, USB Esc. Power-button patterns or touch could fill a tablet-only gap later.
+
+Do not start rM2 work unless there is clear community demand. Wishlist: [improvements.md](improvements.md).
+
 ---
 
 ## Open risks

@@ -36,7 +36,7 @@ The install path worked for the repo owner but assumed expertise: six ordered sc
 
 ## Out of scope (for now)
 
-- reMarkable 2 support.
+- reMarkable 2 support — not started; open if the community wants it ([../decisions.md](../decisions.md) §33, [../improvements.md](../improvements.md)).
 - Toltec or jailbreak-based distribution.
 - Phone-only install with no computer.
 

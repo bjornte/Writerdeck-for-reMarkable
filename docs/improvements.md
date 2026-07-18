@@ -19,3 +19,5 @@ Phone niceties: bulk delete, search, HTTPS for a native Share sheet, vault PIN o
 No-keyboard tip on the tablet when edit / new / rename (and similar) would need typing: how to connect Bluetooth or USB, with a QR code for the current phone URL — [TODO.md](../TODO.md) Open.
 
 Windows installer still open. Mac/Linux installer remembers password / Wi-Fi / GitHub repo + token and can open a prefilled token page — [TODO.md](../TODO.md) Open.
+
+reMarkable 2 — only if people ask for it. The hard part is drawing to the screen without Toltec while keeping the Qt editor; launch can lean on the phone, `wd`, or USB Esc. Effort is in the same ballpark as making typing trustworthy, not a rewrite of the product. Stance: [decisions.md](decisions.md) §33.

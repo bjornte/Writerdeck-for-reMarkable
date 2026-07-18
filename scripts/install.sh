@@ -136,11 +136,10 @@ else
   _ok_line "Ready (will download binaries from GitHub)"
 fi
 
-_progress_start "Setting up SSH access..."
-if bash "$DIR/bootstrap.sh" >>"$INSTALL_LOG" 2>&1; then
-  _progress_ok "SSH access OK"
-else
-  _progress_fail
+if ! bash "$DIR/bootstrap.sh" >>"$INSTALL_LOG" 2>&1; then
+  echo "  FAIL  Could not set up SSH access to the tablet" >&2
+  echo "Details: $INSTALL_LOG" >&2
+  tail -n 40 "$INSTALL_LOG" >&2 || true
   exit 1
 fi
 
