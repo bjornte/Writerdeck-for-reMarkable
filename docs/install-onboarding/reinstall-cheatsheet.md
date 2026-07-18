@@ -1,6 +1,6 @@
 # Reinstall cheat sheet
 
-Wipe the tablet (or fresh device), then get notes and vault back. Installer: [README.md](../../README.md). Regression: `bash scripts/test-install-reuse.sh`.
+Wipe the tablet (or fresh device), then get notes and vault back. Installer: [slim ZIP](https://github.com/bjornte/Writerdeck-for-reMarkable/releases/download/installer/Writerdeck-installer.zip) or [README.md](../../README.md). Remove only Writerdeck (keep root password): `bash scripts/uninstall.sh`. Regression: `bash scripts/test-install-reuse.sh`.
 
 ## Before you wipe
 

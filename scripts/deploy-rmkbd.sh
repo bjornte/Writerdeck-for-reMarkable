@@ -21,14 +21,21 @@ BUILD_ONLY=0
 BINARY="${REPO}/Writerdeck-server"
 
 echo "=== Writerdeck-server: obtain ARMv7 binary ==="
-if command -v go >/dev/null 2>&1 && go version >/dev/null 2>&1; then
+# Prefer local go build for the full-repo dev loop. Slim installer ZIPs omit
+# daemon/, so fall through to the Release fetch even when go is installed.
+if command -v go >/dev/null 2>&1 && go version >/dev/null 2>&1 \
+  && [ -d "${REPO}/daemon" ] && [ -f "${REPO}/daemon/go.mod" ]; then
     cd "${REPO}/daemon"
     go mod tidy
     GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 \
         go build -trimpath -o "${BINARY}" .
     echo "  built with go: $(file "${BINARY}")"
 else
-    echo "  go not found -- fetching Release binary"
+    if command -v go >/dev/null 2>&1 && [ ! -d "${REPO}/daemon" ]; then
+      echo "  go present but no daemon/ -- fetching Release binary (installer package)"
+    else
+      echo "  go not found -- fetching Release binary"
+    fi
     bash "${DIR}/fetch-server-dist.sh"
 fi
 echo

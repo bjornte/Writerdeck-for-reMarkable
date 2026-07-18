@@ -20,7 +20,7 @@ A usable appliance. Plenty left to improve; the core loop works.
 
 Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**, and the tablet **awake**.
 
-1. On the [repo page](https://github.com/bjornte/Writerdeck-for-reMarkable), click **Code → Download ZIP** and unzip it. Open a terminal in that folder.
+1. [Download the installer](https://github.com/bjornte/Writerdeck-for-reMarkable/releases/download/installer/Writerdeck-installer.zip) (small ZIP — scripts only; the tablet binaries download during install). Unzip it and open a terminal in that folder.
 
 2. Run:
 
@@ -29,6 +29,8 @@ Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**,
    ```
 
    It asks only for missing details (tablet password, Wi-Fi IP, phone PIN length, optional GitHub notes sync). Saved values in `secrets/remarkable.local.env` are reused. For sync it can open GitHub’s token page, then pushes PIN / repo / token to the tablet after start.
+
+If you already cloned this repo, run the same command from the clone instead.
 
 ### You're done when
 
@@ -60,7 +62,7 @@ Useful keys: Esc toggles edit and preview inside Writerdeck, or launches to Lobb
 
 ## For developers
 
-Start with [TODO.md](TODO.md) and [DONE.md](DONE.md). Credentials: [secrets/README.md](secrets/README.md). Keep the tablet awake and iterate over Wi-Fi. After editor source changes: push, fetch the CI binary, deploy, run `test-edit-session.sh`. Install notes: [docs/install-onboarding/](docs/install-onboarding/).
+Start with [TODO.md](TODO.md) and [DONE.md](DONE.md). Credentials: [secrets/README.md](secrets/README.md). Keep the tablet awake and iterate over Wi-Fi. After editor source changes: push, fetch the CI binary, deploy, run `test-edit-session.sh`. Rebuild the visitor installer ZIP with `bash scripts/pack-installer.sh`. Install notes: [docs/install-onboarding/](docs/install-onboarding/).
 
 ## Constraints
 
