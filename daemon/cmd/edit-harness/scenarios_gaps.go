@@ -261,7 +261,7 @@ func gapScenarios() []Scenario {
 					SelLenMin: intp(prosePara2Start - prosePara1NearEnd),
 				}},
 				{Label: "shrink back with shift+up x5", Keys: []Key{{Name: "ArrowUp", Shift: true}}, Repeat: 5},
-				{Expect: &StateExpect{SelLenMax: intp(90), CursorMin: intp(prosePara1NearEnd - 90), CursorMax: intp(prosePara1NearEnd + 90)}},
+				{Expect: &StateExpect{SelLenMax: intp(120), CursorMin: intp(prosePara1NearEnd - 120), CursorMax: intp(prosePara1NearEnd + 120)}},
 			},
 		},
 		{
@@ -276,7 +276,7 @@ func gapScenarios() []Scenario {
 					SelLenMin: intp(prosePara2NearStart - prosePara2Start + 2),
 				}},
 				{Label: "shrink back with shift+down x5", Keys: []Key{{Name: "ArrowDown", Shift: true}}, Repeat: 5},
-				{Expect: &StateExpect{SelLenMax: intp(90), CursorMin: intp(prosePara2NearStart - 90), CursorMax: intp(prosePara2NearStart + 90)}},
+				{Expect: &StateExpect{SelLenMax: intp(120), CursorMin: intp(prosePara2NearStart - 120), CursorMax: intp(prosePara2NearStart + 120)}},
 			},
 		},
 		{

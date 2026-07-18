@@ -1,6 +1,6 @@
 # Scenario catalog
 
-All **112** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac/Linux-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
+All **118** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac/Linux-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
 
 **Motion/selection pattern** (reset caret between blocks — never grow-to-N-then-peel):
 
@@ -14,7 +14,7 @@ All **112** device harness scenarios in implementation-agnostic terms. Each load
 
 Both directions on applicable axes. Fixture includes ≥2 long wrapping paragraphs with æøå, two bullet lists, word line, horizontal line, and 12 equal vertical lines.
 
-**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`). Shift+arrow extends selection; plain arrow moves the caret. Alt = word/paragraph; Ctrl = document/line boundaries (Mac). Hardware pages: `pageleft`/`pageright` + `contentY`. Reading overscroll: Esc → preview then page cmds.
+**Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`). Shift+arrow extends selection; plain arrow moves the caret. Alt = word/paragraph; Ctrl/Cmd+Left/Right = line; Ctrl/Cmd+Up/Down and Ctrl+Home/End = document (Mac). Hardware pages: `pageleft`/`pageright` + `contentY`. Reading overscroll: Esc → preview then page cmds.
 
 Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**40**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go`.
 
@@ -78,17 +78,21 @@ Not critical (still valuable): selection shrink on short lines (`shift-*-shrinks
 | `cm-select-down-up-doc-end` | At EOF, Shift+Down clamps then Shift+Up yields bounded selection. |
 | `cm-select-up-basic` | Pattern: Shift+Up grow, Shift+Down shrink from end of vertical block. |
 
-## Modifier combos (25)
+## Modifier combos (29)
 
 Word jumps use pattern blocks on the prose word line. Doc-bound jumps use uni1/uni5 idempotent clamp where applicable.
 
 | Scenario | Behavior |
 |----------|----------|
 | `combo-alt-left` / `combo-alt-right` | Pattern word motion both directions. |
-| `combo-alt-up` / `combo-alt-down` | Paragraph motion; pattern + clamp. |
-| `combo-ctrl-left` / `combo-ctrl-right` | Doc start/end from mid-prose caret; pattern + clamp. |
+| `combo-alt-up` / `combo-alt-down` | Paragraph motion (current boundary, then prev/next); pattern + clamp. |
+| `combo-alt-up-double-blank` / `combo-alt-down-double-blank` | Same across two consecutive blank lines. |
+| `combo-alt-up-prose-double-blank` | Alt+Up across trailing double-blank section in shared prose fixture. |
+| `combo-ctrl-left` / `combo-ctrl-right` | Line start/end (Mac Cmd); pattern + clamp. |
 | `combo-ctrl-up` / `combo-ctrl-down` | Doc start/end vertical; pattern + clamp. |
 | `combo-shift-alt-left` / `combo-shift-alt-left-repeat` | Word select backward; pattern. |
+| `combo-shift-alt-left-after-type` | After Shift-select + type, Shift+Alt+Left re-anchors (no stale head). |
+| `combo-shift-left-after-type` | Same type-then-nav guard for plain Shift+Left. |
 | `combo-shift-alt-right` / `combo-shift-alt-right-repeat` | Word select forward; pattern. |
 | `combo-shift-alt-up` / `combo-shift-alt-down` | Paragraph select. |
 | `combo-shift-ctrl-left` / `combo-shift-ctrl-right` | Line/doc select; pattern + clamp. |
@@ -169,8 +173,9 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 
 | Scenario | Behavior |
 |----------|----------|
-| `hw-page-right-scrolls-edit` | Pattern `pageright`: raises `contentY` by ~1500px each; caret stays put. |
+| `hw-page-right-scrolls-edit` | Pattern `pageright`: raises `contentY` by ~85% of viewport height each; caret stays put. |
 | `hw-page-left-scrolls-edit` | After seeding seven page-rights, pattern `pageleft` returns to `contentY` 0. |
+| `hw-page-step-shrinks-in-landscape` | Landscape page step is smaller than portrait (viewport-relative, not fixed 1500px). |
 
 ## Reading mode (1)
 

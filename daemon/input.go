@@ -104,6 +104,7 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 		}
 
 		// Page-button chord: hold left+right together to launch Writerdeck from stock UI.
+		// While a session is active, a single page button paginates (rotation-aware).
 		if ev.Code == keyLeft || ev.Code == keyRight {
 			if ev.Code == keyLeft {
 				leftDown = ev.Value == 1
@@ -113,6 +114,15 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 			if leftDown && rightDown && ev.Value == 1 && time.Since(chordDebounce) >= keyboardDebounceMs {
 				chordDebounce = time.Now()
 				handleIdleLaunch(s, "page buttons (left+right)")
+				continue
+			}
+			if s != nil && s.isActive() && ev.Value == 1 && !(leftDown && rightDown) {
+				settingsMu.Lock()
+				rot := curSettings.Rotation
+				settingsMu.Unlock()
+				cmd := physicalPageCmd(ev.Code == keyLeft, rot)
+				payload := []byte(`{"t":"cmd","c":"` + cmd + `"}`)
+				go ec.write(payload)
 			}
 			continue
 		}

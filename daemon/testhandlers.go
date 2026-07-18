@@ -137,10 +137,11 @@ func testEditorCmdHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		C    string `json:"c"`
-		Name string `json:"name,omitempty"`
-		W    int    `json:"w,omitempty"`
-		Pos  int    `json:"pos,omitempty"`
+		C       string `json:"c"`
+		Name    string `json:"name,omitempty"`
+		W       int    `json:"w,omitempty"`
+		Pos     int    `json:"pos,omitempty"`
+		Degrees *int   `json:"degrees,omitempty"`
 	}
 	if json.NewDecoder(r.Body).Decode(&req) != nil || req.C == "" {
 		http.Error(w, "bad request: need {c}", http.StatusBadRequest)
@@ -156,6 +157,8 @@ func testEditorCmdHandler(w http.ResponseWriter, r *http.Request) {
 		line = fmt.Sprintf(`{"t":"cmd","c":%q,"w":%d}`, req.C, req.W)
 	case req.Pos > 0 || req.C == "harnesssetcursor":
 		line = fmt.Sprintf(`{"t":"cmd","c":%q,"pos":%d}`, req.C, req.Pos)
+	case req.Degrees != nil:
+		line = fmt.Sprintf(`{"t":"cmd","c":%q,"degrees":%d}`, req.C, *req.Degrees)
 	default:
 		line = fmt.Sprintf(`{"t":"cmd","c":%q}`, req.C)
 	}

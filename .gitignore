@@ -53,9 +53,10 @@ Thumbs.db
 
 # ──────────────────────────────────────────────────────────────
 # Recon output — local device-test logs (regenerable; not committed).
+# Keep docs/recon/.gitkeep only.
 # ──────────────────────────────────────────────────────────────
-/docs/recon/*.txt
-/docs/recon/*.tar.gz
+/docs/recon/*
+!/docs/recon/.gitkeep
 keymaps/.tmp/
 
 # Public release: ship source-only. The keywriter binary + qt5.tar.gz are

@@ -21,6 +21,8 @@ func readScenarios() []Scenario {
 				{Label: "still at end", ExpectContentYEqCaptured: true, Expect: &StateExpect{Mode: intp(0)}},
 				{Label: "one page-up returns into doc", Cmd: "pageleft", Repeat: 1},
 				{Label: "contentY decreased", ExpectContentYLtCaptured: true, Expect: &StateExpect{Mode: intp(0)}},
+				{Label: "Esc back to edit", Keys: []Key{{Name: "Escape"}}},
+				{Expect: &StateExpect{Mode: intp(1)}},
 			},
 		},
 	}

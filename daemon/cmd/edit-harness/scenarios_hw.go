@@ -1,11 +1,13 @@
 package main
 
 // hwScenarios: pageleft/pageright with uni1/uni5/bi1+1/bi3+5/bi7+7.
-// ~1500px per page. Tall content so page 9 (bi 3+5 overshoot) stays below
-// Flickable maxY now that scrollDown clamps at content bottom.
+// Page step is ~85% of Flickable height (see flick.scrollDown), not a fixed
+// 1500px — landscape uses the short side and must step less than portrait.
 func hwScenarios() []Scenario {
 	tall := fixtureTall(600)
-	const step = 1500
+	// Force portrait (rotation 0): body height = screen.height ≈ 1872,
+	// step ≈ round(1872*0.85) = 1591. (Saved tablet rotation may be 90.)
+	const step = 1590
 	const slack = 150
 
 	expectY := func(pages int) *StateExpect {
@@ -16,9 +18,11 @@ func hwScenarios() []Scenario {
 		}
 	}
 	at0 := &StateExpect{Cursor: intp(0), ContentY: intp(0), Mode: intp(1)}
+	forcePortrait := Step{Label: "force portrait", Cmd: "setrotation", Degrees: intp(0), PauseMs: 500}
 
 	pageRightPattern := func() []Step {
 		var out []Step
+		out = append(out, forcePortrait)
 		out = append(out, Step{Expect: at0})
 		// uni 1
 		out = append(out, Step{Label: "uni 1", Cmd: "pageright", Repeat: 1})
@@ -51,6 +55,7 @@ func hwScenarios() []Scenario {
 
 	pageLeftPattern := func() []Step {
 		var out []Step
+		out = append(out, forcePortrait)
 		// Seed to page 7 so Left has room; uni1 from there.
 		out = append(out, Step{Label: "seed to y7", Cmd: "pageright", Repeat: 7})
 		out = append(out, Step{Expect: expectY(7)})
@@ -85,5 +90,27 @@ func hwScenarios() []Scenario {
 	return []Scenario{
 		{Name: "hw-page-right-scrolls-edit", Content: tall, Steps: pageRightPattern()},
 		{Name: "hw-page-left-scrolls-edit", Content: tall, Steps: pageLeftPattern()},
+		{
+			// Portrait (rot 0, tall) must step more than landscape (rot 90, short).
+			// Fixed 1500px treated both as the same height and overshot landscape.
+			Name:    "hw-page-step-shrinks-in-landscape",
+			Content: tall,
+			Steps: []Step{
+				{Label: "portrait", Cmd: "setrotation", Degrees: intp(0), PauseMs: 500},
+				{Expect: at0},
+				{Label: "portrait page", Cmd: "pageright", CaptureContentY: true,
+					Expect: expectY(1)},
+				{Label: "reset portrait", Cmd: "pageleft"},
+				{Expect: at0},
+				{Label: "landscape", Cmd: "setrotation", Degrees: intp(90), PauseMs: 500},
+				{Label: "landscape page", Cmd: "pageright", ExpectContentYLtCaptured: true,
+					Expect: &StateExpect{
+						Cursor: intp(0), Mode: intp(1),
+						// ~0.85 * 1404 ≈ 1193
+						ContentYMin: intp(1000), ContentYMax: intp(1350),
+					}},
+				{Label: "restore portrait", Cmd: "setrotation", Degrees: intp(0), PauseMs: 300},
+			},
+		},
 	}
 }

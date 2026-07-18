@@ -84,9 +84,9 @@ func cmScenarios() []Scenario {
 				{Expect: &StateExpect{
 					SelStart:  intp(proseMidDocCaret),
 					CursorMin: intp(proseMidDocCaret + 1),
-					CursorMax: intp(proseMidDocCaret + 90),
+					CursorMax: intp(proseMidDocCaret + 120),
 					SelLenMin: intp(1),
-					SelLenMax: intp(90),
+					SelLenMax: intp(120),
 				}},
 			},
 		},
@@ -113,7 +113,7 @@ func cmScenarios() []Scenario {
 				{Expect: &StateExpect{
 					SelEnd:    intp(prosePara2Mid),
 					SelLenMin: intp(1),
-					SelLenMax: intp(90),
+					SelLenMax: intp(120),
 				}},
 			},
 		},

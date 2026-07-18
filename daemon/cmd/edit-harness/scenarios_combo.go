@@ -28,11 +28,13 @@ func comboScenarios() []Scenario {
 		{
 			Name:    "combo-alt-up",
 			Content: twoParas,
+			// Mac Option+Up: end of para2 → start of para2 → doc start.
+			// Ctrl+End: plain End is line-end only.
 			Steps: []Step{
-				{Keys: []Key{{Name: "End"}}},
-				{Label: "alt+up x1 (N=1)", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
-				{Label: "alt+up clamp (N=3)", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 2},
+				{Keys: []Key{{Name: "End", Ctrl: true}}},
+				{Label: "alt+up to para2 start (N=1)", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(7), SelStart: intp(7), SelEnd: intp(7)}},
+				{Label: "alt+up to doc start (N=3)", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 2},
 				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
 				{Label: "alt+up clamp (N=7)", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 4},
 				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
@@ -41,9 +43,10 @@ func comboScenarios() []Scenario {
 		{
 			Name:    "combo-alt-down",
 			Content: twoParas,
+			// Mac Option+Down: start → end of para1 → EOF.
 			Steps: []Step{
-				{Label: "alt+down x1 (N=1)", Keys: []Key{{Name: "ArrowDown", Alt: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(7), SelStart: intp(7), SelEnd: intp(7)}},
+				{Label: "alt+down to para1 end (N=1)", Keys: []Key{{Name: "ArrowDown", Alt: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(5), SelStart: intp(5), SelEnd: intp(5)}},
 				{Label: "alt+down further / clamp (N=3)", Keys: []Key{{Name: "ArrowDown", Alt: true}}, Repeat: 2},
 				{Expect: &StateExpect{Cursor: intp(twoParasLen), SelStart: intp(twoParasLen), SelEnd: intp(twoParasLen)}},
 				{Label: "alt+down clamp (N=7)", Keys: []Key{{Name: "ArrowDown", Alt: true}}, Repeat: 4},
@@ -51,29 +54,70 @@ func comboScenarios() []Scenario {
 			},
 		},
 		{
-			Name:    "combo-ctrl-left",
-			Content: fixtureProse,
+			// Two consecutive blank lines between paras; Alt+Up must leave para2
+			// start on the second press (not stick on the multi-newline gap).
+			Name:    "combo-alt-up-double-blank",
+			Content: fixtureDoubleBlankParas,
 			Steps: []Step{
-				{SetCursor: intp(proseMidDocCaret)},
-				{Label: "ctrl+left to doc start (N=1)", Keys: []Key{{Name: "ArrowLeft", Ctrl: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
-				{Label: "ctrl+left stays (N=3)", Keys: []Key{{Name: "ArrowLeft", Ctrl: true}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
-				{Label: "ctrl+left stays (N=7)", Keys: []Key{{Name: "ArrowLeft", Ctrl: true}}, Repeat: 4},
+				{Keys: []Key{{Name: "End", Ctrl: true}}},
+				{Label: "alt+up to para2 start", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(8), SelStart: intp(8), SelEnd: intp(8)}},
+				{Label: "alt+up across double blank to doc start", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
 				{Expect: &StateExpect{Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
 			},
 		},
 		{
-			Name:    "combo-ctrl-right",
+			Name:    "combo-alt-down-double-blank",
+			Content: fixtureDoubleBlankParas,
+			Steps: []Step{
+				{Label: "alt+down to para1 end", Keys: []Key{{Name: "ArrowDown", Alt: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(5), SelStart: intp(5), SelEnd: intp(5)}},
+				{Label: "alt+down across double blank to EOF", Keys: []Key{{Name: "ArrowDown", Alt: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(13), SelStart: intp(13), SelEnd: intp(13)}},
+			},
+		},
+		{
+			// Alt+Up across the prose fixture's trailing double-blank section.
+			Name:    "combo-alt-up-prose-double-blank",
 			Content: fixtureProse,
 			Steps: []Step{
-				{SetCursor: intp(proseList1Start)},
-				{Label: "ctrl+right to doc end (N=1)", Keys: []Key{{Name: "ArrowRight", Ctrl: true}}, Repeat: 1},
-				{Expect: &StateExpect{Cursor: intp(fixtureProseLen), SelStart: intp(fixtureProseLen), SelEnd: intp(fixtureProseLen)}},
+				{SetCursor: intp(proseDoubleBlank + 10)},
+				{Label: "alt+up to double-blank section start", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(proseDoubleBlank), SelStart: intp(proseDoubleBlank), SelEnd: intp(proseDoubleBlank)}},
+				{Label: "alt+up across double blank", Keys: []Key{{Name: "ArrowUp", Alt: true}}, Repeat: 1},
+				{Expect: &StateExpect{CursorMax: intp(proseDoubleBlank - 1)}},
+			},
+		},
+		{
+			// Mac Cmd+Left = line start (prose paras are one logical line each).
+			Name:    "combo-ctrl-left",
+			Content: three,
+			Steps: []Step{
+				{Keys: []Key{{Name: "ArrowDown"}}},
+				{Keys: []Key{{Name: "End"}}},
+				{Expect: &StateExpect{Cursor: intp(5)}}, // end of "to"
+				{Label: "ctrl+left to line start (N=1)", Keys: []Key{{Name: "ArrowLeft", Ctrl: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(3), SelStart: intp(3), SelEnd: intp(3)}},
+				{Label: "ctrl+left stays (N=3)", Keys: []Key{{Name: "ArrowLeft", Ctrl: true}}, Repeat: 2},
+				{Expect: &StateExpect{Cursor: intp(3), SelStart: intp(3), SelEnd: intp(3)}},
+				{Label: "ctrl+left stays (N=7)", Keys: []Key{{Name: "ArrowLeft", Ctrl: true}}, Repeat: 4},
+				{Expect: &StateExpect{Cursor: intp(3), SelStart: intp(3), SelEnd: intp(3)}},
+			},
+		},
+		{
+			// Mac Cmd+Right = line end.
+			Name:    "combo-ctrl-right",
+			Content: three,
+			Steps: []Step{
+				{Keys: []Key{{Name: "ArrowDown"}}},
+				{Keys: []Key{{Name: "Home"}}},
+				{Expect: &StateExpect{Cursor: intp(3)}}, // start of "to"
+				{Label: "ctrl+right to line end (N=1)", Keys: []Key{{Name: "ArrowRight", Ctrl: true}}, Repeat: 1},
+				{Expect: &StateExpect{Cursor: intp(5), SelStart: intp(5), SelEnd: intp(5)}},
 				{Label: "ctrl+right stays (N=3)", Keys: []Key{{Name: "ArrowRight", Ctrl: true}}, Repeat: 2},
-				{Expect: &StateExpect{Cursor: intp(fixtureProseLen), SelStart: intp(fixtureProseLen), SelEnd: intp(fixtureProseLen)}},
+				{Expect: &StateExpect{Cursor: intp(5), SelStart: intp(5), SelEnd: intp(5)}},
 				{Label: "ctrl+right stays (N=7)", Keys: []Key{{Name: "ArrowRight", Ctrl: true}}, Repeat: 4},
-				{Expect: &StateExpect{Cursor: intp(fixtureProseLen), SelStart: intp(fixtureProseLen), SelEnd: intp(fixtureProseLen)}},
+				{Expect: &StateExpect{Cursor: intp(5), SelStart: intp(5), SelEnd: intp(5)}},
 			},
 		},
 		{
@@ -131,6 +175,37 @@ func comboScenarios() []Scenario {
 			},
 		},
 		{
+			// After Shift-select + typing, Shift+Alt+Left must re-anchor at the
+			// post-type caret (not a leftover shiftHead from before the edit).
+			Name:    "combo-shift-alt-left-after-type",
+			Content: "hello world test",
+			Steps: []Step{
+				{Keys: []Key{{Name: "End"}}},
+				{Label: "shift+left seeds stale head", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 4},
+				{Expect: &StateExpect{SelLen: intp(4), TextLen: intp(16)}},
+				{Label: "type replaces selection", Keys: []Key{{Name: "x"}}},
+				{Expect: &StateExpect{Text: strp("hello world x"), TextLen: intp(13), Cursor: intp(13), SelLen: intp(0)}},
+				{Label: "shift+alt+left from post-type caret", Keys: []Key{{Name: "ArrowLeft", Shift: true, Alt: true}}},
+				{Expect: &StateExpect{Cursor: intp(13), SelStart: intp(12), SelEnd: intp(13), SelLen: intp(1)}},
+			},
+		},
+		{
+			// Same stale-head risk on plain Shift+Left (different code path than
+			// Shift+Alt / selectionExtendFrom). One type-then-nav guard is enough
+			// for this axis; not every combo needs an after-type twin.
+			Name:    "combo-shift-left-after-type",
+			Content: "hello world test",
+			Steps: []Step{
+				{Keys: []Key{{Name: "End"}}},
+				{Label: "shift+left seeds stale head", Keys: []Key{{Name: "ArrowLeft", Shift: true}}, Repeat: 4},
+				{Expect: &StateExpect{SelLen: intp(4), TextLen: intp(16)}},
+				{Label: "type replaces selection", Keys: []Key{{Name: "x"}}},
+				{Expect: &StateExpect{Text: strp("hello world x"), TextLen: intp(13), Cursor: intp(13), SelLen: intp(0)}},
+				{Label: "shift+left from post-type caret", Keys: []Key{{Name: "ArrowLeft", Shift: true}}},
+				{Expect: &StateExpect{Cursor: intp(13), SelStart: intp(12), SelEnd: intp(13), SelLen: intp(1)}},
+			},
+		},
+		{
 			Name:    "combo-shift-alt-right",
 			Content: fixtureProse,
 			Steps: []Step{
@@ -162,6 +237,7 @@ func comboScenarios() []Scenario {
 			Steps: []Step{
 				{Keys: []Key{{Name: "End", Ctrl: true}}},
 				{Keys: []Key{{Name: "ArrowUp", Shift: true, Alt: true}}},
+				// From EOF: select back to start of current paragraph (para2).
 				{Expect: &StateExpect{Cursor: intp(twoParasLen), SelStart: intp(7), SelEnd: intp(twoParasLen), SelLen: intp(twoParasLen - 7)}},
 			},
 		},
@@ -170,7 +246,8 @@ func comboScenarios() []Scenario {
 			Content: twoParas,
 			Steps: []Step{
 				{Keys: []Key{{Name: "ArrowDown", Shift: true, Alt: true}}},
-				{Expect: &StateExpect{Cursor: intp(7), SelStart: intp(0), SelEnd: intp(7), SelLen: intp(7)}},
+				// From doc start: select to end of current paragraph (para1).
+				{Expect: &StateExpect{Cursor: intp(5), SelStart: intp(0), SelEnd: intp(5), SelLen: intp(5)}},
 			},
 		},
 		{

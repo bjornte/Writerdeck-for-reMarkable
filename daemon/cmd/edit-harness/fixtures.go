@@ -43,6 +43,7 @@ var (
 	prosePara1Start   int // long wrapping paragraph 1
 	prosePara2Start   int // long wrapping paragraph 2
 	prosePara3Start   int // third body paragraph
+	proseDoubleBlank  int // section after two consecutive blank lines
 	proseList1Start   int
 	proseList2Item2   int
 	proseMidDocCaret    int // mid paragraph 1
@@ -76,9 +77,19 @@ func buildFixtureProse() string {
 		"juliett over kilo, lima over november — ordrekke for Alt-hopp uten å forlate avsnittet.",
 	}, " ")
 
+	// Two consecutive blank lines (three newlines). Kept at the end so mid-doc
+	// wrap/Shift bands for para1/para2 stay stable; Alt scenarios use this
+	// section and fixtureDoubleBlankParas.
+	doubleBlank := strings.Join([]string{
+		"Dobbeltblank seksjon: denne linjen kommer etter to tomme linjer.",
+		"Den finnes for Alt-avsnitt-tester som ikke skal hoppe over newline-gapet feil.",
+	}, " ")
+
 	var b strings.Builder
 	b.WriteString("Writerdeck harness dummy — ikke i vanlig notatliste\n")
-	b.WriteString("\n")
+	b.WriteString("\n\n\n")
+	b.WriteString(doubleBlank)
+	b.WriteString("\n\n")
 	b.WriteString(para1)
 	b.WriteString("\n\n")
 	b.WriteString(para2)
@@ -121,6 +132,7 @@ func init() {
 	prosePara1Start = mustFind("Første avsnitt")
 	prosePara2Start = mustFind("Andre avsnitt")
 	prosePara3Start = mustFind("Tredje avsnitt")
+	proseDoubleBlank = mustFind("Dobbeltblank seksjon")
 	proseMidDocCaret = mustFind("typewriteren klaprer")
 	prosePara2Mid = mustFind("page-up og page-down")
 	prosePara1NearEnd = mustFind("bryter visuelt")
@@ -270,5 +282,7 @@ const (
 	fixtureTwoLines    = "ost\nost"
 	fixtureThreeLines  = "en\nto\ntre"
 	fixtureTwoParas    = "para1\n\npara2"
-	fixtureHelloWorld  = "hello world"
+	// Two consecutive blank lines between paragraphs (three newlines).
+	fixtureDoubleBlankParas = "para1\n\n\npara2"
+	fixtureHelloWorld       = "hello world"
 )

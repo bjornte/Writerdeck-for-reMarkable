@@ -297,7 +297,9 @@ func wordCaretPattern(seedWordIdx int, forwardKey, backKey Key, deltaWord int) [
 // Exact visual-line offsets depend on device width/font, so expects use a sticky
 // anchor plus per-step character bands (one visual line stays under maxStep).
 func shiftVisualProsePattern(seed int, growKey, reverseKey Key, towardLow bool) []Step {
-	return shiftVisualProsePatternStep(seed, growKey, reverseKey, towardLow, 90, 0)
+	// Device visual lines in the long Norwegian paragraphs land ~100–110 chars;
+	// keep a little headroom so soft bands don't false-fail on e-ink width.
+	return shiftVisualProsePatternStep(seed, growKey, reverseKey, towardLow, 120, 0)
 }
 
 // shiftVisualProsePatternStep is the same pattern with a custom per-line char

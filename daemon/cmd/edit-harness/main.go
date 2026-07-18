@@ -61,6 +61,10 @@ type Step struct {
 	Label     string       `json:"label,omitempty"`
 	Keys      []Key        `json:"keys,omitempty"`
 	Cmd       string       `json:"cmd,omitempty"` // editor cmd e.g. pageleft/pageright
+	// Degrees is optional payload for cmds like setrotation.
+	Degrees *int `json:"degrees,omitempty"`
+	// PauseMs sleeps after this step's keys/cmd (e.g. wait for queued setrotation).
+	PauseMs   int          `json:"pauseMs,omitempty"`
 	SetCursor *int         `json:"setCursor,omitempty"`
 	Repeat    int          `json:"repeat,omitempty"`
 	Expect    *StateExpect `json:"expect,omitempty"`
@@ -401,11 +405,18 @@ func (h *Harness) RunScenario(sc Scenario) error {
 				repeat = 1
 			}
 			for r := 0; r < repeat; r++ {
-				if err := h.editorCmd(step.Cmd, "", 0); err != nil {
+				body := map[string]interface{}{"c": step.Cmd}
+				if step.Degrees != nil {
+					body["degrees"] = *step.Degrees
+				}
+				if err := h.editorCmdBody(body); err != nil {
 					return fmt.Errorf("%s: cmd %s: %w", label, step.Cmd, err)
 				}
 				time.Sleep(stepPause)
 			}
+		}
+		if step.PauseMs > 0 {
+			time.Sleep(time.Duration(step.PauseMs) * time.Millisecond)
 		}
 		if !modKeyPrimed && len(step.Keys) > 0 && stepNeedsModifiedPrime(step) {
 			st, err := h.queryState()

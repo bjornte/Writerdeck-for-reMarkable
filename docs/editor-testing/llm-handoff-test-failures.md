@@ -160,8 +160,7 @@ Soft-reset full suite had known cascade failures (scenarios pass in isolation wi
 | Artifact | What to look for |
 |----------|------------------|
 | `docs/editor-testing/milestone-runs.md` | Full-suite scoreboard — update after each `--fast` run |
-| `docs/recon/harness-runs.md` | Consolidated run log and per-scenario matrix |
-| `docs/recon/test-keyboard-harness-*.{md,txt}` | Per-run reports from each harness invocation; pre-2026-07-15 batch consolidated in harness-runs.md |
+| `docs/recon/` | Throwaway per-run harness/deploy logs (gitignored; regenerable) |
 | `daemon/cmd/edit-harness/scenarios_*.go` | Scenarios across core, combo, wrap, gap, hw, read, undo, touch, selection (see [todo.md](todo.md) / [scenario-catalog.md](scenario-catalog.md) for live count) |
 | `third_party/keywriter/build-keywriter.sh` | `handleMacArrow`, `lineDownPos` vs `positionToRectangle` |
 | Git log around `1a77f7b`–`d5ab632` | QML fixes vs doc "shipped" claims |

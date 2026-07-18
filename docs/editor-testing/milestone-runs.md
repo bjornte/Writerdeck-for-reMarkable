@@ -18,5 +18,8 @@ Rows below keep every run where the **number of tests changed** (full set or bas
 | 17 Jul 2026, 00:29 | 110/110/0 | 38/38/0 | |
 | 17 Jul 2026, 17:23 | 110/110/0 | 38/38/0 | After QML -> c++ migration |
 | 18 Jul 2026, 15:40 | 112/112/0 | 40/40/0 | In-editor Ctrl+C/X/V (fork `df1d38b`) |
+| 18 Jul 2026, 16:53 | 115/115/0 | 40/40/0 | Mac Cmd+Left/Right line; Option+Up/Down paragraph; double-blank fixture; page buttons + rotation (fork `fa205c2`) |
+| 18 Jul 2026, 17:17 | 116/116/0 | 40/40/0 | Shift+Alt stale head after typing (fork `7f1cf36`) |
+| 18 Jul 2026, 17:46 | 118/118/0 | 40/40/0 | Viewport page step (landscape shorter); Shift+Left after type (fork `84e6bf0`) |
 
 Wrap group **15/15**; undo group **5/5**.
