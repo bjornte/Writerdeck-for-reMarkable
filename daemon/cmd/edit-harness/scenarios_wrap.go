@@ -258,7 +258,8 @@ func wrapScenarios() []Scenario {
 				{Expect: &StateExpect{Cursor: intp(wrapDownOneCursor + 5), TextLen: intp(n)}},
 				{Label: "selectToVisualLineStart", Keys: []Key{keyMoveToVisualLineStart(true)}},
 				{Expect: &StateExpect{
-					Cursor:   intp(wrapDownOneCursor),
+					// Qt select() parks cursorPosition at the high end; shiftHead is low.
+					Cursor:   intp(wrapDownOneCursor + 5),
 					SelStart: intp(wrapDownOneCursor),
 					SelEnd:   intp(wrapDownOneCursor + 5),
 					SelLen:   intp(5),

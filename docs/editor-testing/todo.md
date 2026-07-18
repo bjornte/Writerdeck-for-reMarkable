@@ -6,7 +6,7 @@ Read: this file, [milestone-runs.md](milestone-runs.md), [lessons.md](../lessons
 
 ## Current score
 
-All 112 checks passed at `15-40-20` (fork commit `df1d38b`). Basic set 40 of 40, including copy/cut/paste. Edit-session and lobby-keyboard passed the same day. Do not run edit-session at the same time as these typing tests.
+All 122 checks passed at `19-39-44` (fork commit `2ca3e2e`). Basic set 42 of 42. Soft-wrap End/Cmd+arrows, Cmd+Backspace, and Option+Up/Down blank stops included. Edit-session passed the same evening. Do not run edit-session at the same time as these typing tests.
 
 ## Next
 
