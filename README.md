@@ -20,7 +20,7 @@ A usable appliance. Plenty left to improve; the core loop works.
 
 Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**, and the tablet **awake**.
 
-1. [Download the installer](https://github.com/bjornte/Writerdeck-for-reMarkable/releases/download/installer/Writerdeck-installer.zip) (small ZIP — scripts only; the tablet binaries download during install). Unzip it and open a terminal in that folder.
+1. [Download the installer](https://github.com/bjornte/Writerdeck-for-reMarkable/releases/download/installer/Writerdeck-installer.zip). Unzip it and open a terminal in that folder.
 
 2. Run:
 
