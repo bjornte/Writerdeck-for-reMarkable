@@ -1,6 +1,6 @@
 # Scenario catalog
 
-All **110** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac/Linux-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
+All **112** device harness scenarios in implementation-agnostic terms. Each loads a note (usually the shared Norwegian prose fixture into harness-only `z-test-keyboard-harness.md`), performs keystrokes (Mac/Linux-style modifiers — Ctrl/Alt — over the phone/WebSocket path), then asserts caret position, selection range, and document length or content.
 
 **Motion/selection pattern** (reset caret between blocks — never grow-to-N-then-peel):
 
@@ -16,9 +16,9 @@ Both directions on applicable axes. Fixture includes ≥2 long wrapping paragrap
 
 **Conventions:** Doc start/end = beginning/end of document. Line start/end = start/end of current logical line (between newlines). Visual line = displayed row; a single logical line may wrap. Vertical Up/Down preserve **visual x** (`positionToRectangle`). Shift+arrow extends selection; plain arrow moves the caret. Alt = word/paragraph; Ctrl = document/line boundaries (Mac). Hardware pages: `pageleft`/`pageright` + `contentY`. Reading overscroll: Esc → preview then page cmds.
 
-Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**38**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go`.
+Filter critical: `bash scripts/test-keyboard-harness.sh -t critical --fast` (**40**). Authoritative names: `--list`. Implementation: `daemon/cmd/edit-harness/scenarios_*.go`, helpers in `pattern.go`.
 
-## Critical (38)
+## Critical (40)
 
 Must pass for basic editing. Tag: `critical`. Grouped by function; each row is one scenario. Live scoreboard: [milestone-runs.md](milestone-runs.md).
 
@@ -30,6 +30,7 @@ Must pass for basic editing. Tag: `critical`. Grouped by function; each row is o
 | Shift+arrow select | `shift-right-from-home`, `shift-left-from-end`, `shift-right-after-home-no-stale-anchor`, `shift-down-after-arrow-down`, `shift-up-after-arrow-down`, `shift-left-repeat-from-end`, `shift-left-repeat-mid-doc`, `ctrl-shift-left-select-line`, `gap-collapse-selection-left`, `gap-collapse-selection-right`, `gap-shift-down-mid-wrapping-paras`, `gap-shift-up-mid-wrapping-paras` |
 | Backspace / Delete | `bs-plain`, `gap-delete-forward`, `gap-delete-with-selection`, `gap-empty-doc-backspace`, `alt-backspace-deletes-word`, `ctrl-backspace-deletes-line` |
 | Insert / replace | `gap-enter-new-line`, `gap-type-replaces-selection`, `gap-select-all` |
+| Clipboard | `gap-copy-paste`, `gap-cut-paste` |
 | Undo / redo | `undo-redo-len`, `gap-undo-chain`, `gap-redo-shift-ctrl-z` |
 | Word nav | `combo-alt-left`, `combo-alt-right` |
 
@@ -137,7 +138,7 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `redo-cleared-by-new-edit` | After Undo, a new edit clears the redo stack. |
 | `undo-after-select-delete` | Shift+Home select, delete, Undo restores collapsed caret at end. |
 
-## Gap coverage (24)
+## Gap coverage (26)
 
 | Scenario | Behavior |
 |----------|----------|
@@ -149,6 +150,8 @@ Fixed editor width (320px). Default fixture: `word ` × 40 (specialized geometry
 | `gap-delete-forward` | Pattern Delete from mid horizontal line. |
 | `gap-delete-with-selection` | Delete clears a mid-line selection. |
 | `gap-select-all` | Ctrl+A selects entire prose document. |
+| `gap-copy-paste` | Ctrl+C then Ctrl+V duplicates selected text at the caret (in-editor clipboard). Critical. |
+| `gap-cut-paste` | Ctrl+X removes selection; Ctrl+V inserts it elsewhere. Critical. |
 | `gap-enter-new-line` | Enter at horizontal line end inserts newline. |
 | `gap-type-replaces-selection` | Typing replaces a mid-line selection. |
 | `gap-redo-shift-ctrl-z` | Shift+Ctrl+Z redoes after Undo. |

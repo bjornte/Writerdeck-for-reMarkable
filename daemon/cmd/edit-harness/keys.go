@@ -115,7 +115,7 @@ func validateScenarioKey(k Key) string {
 // criticalScenarios are keyboard behaviors that must work for basic editing.
 // Sourced from Microsoft/Obsidian/macOS text-editing conventions: plain and
 // shift+arrow navigation, backspace/delete, enter, select-all, typing over
-// selection, word/line delete, doc home/end, and undo/redo.
+// selection, word/line delete, doc home/end, undo/redo, and copy/cut/paste.
 var criticalScenarios = map[string]bool{
 	"load-cursor-at-start": true,
 	"home-clears-selection": true,
@@ -148,6 +148,8 @@ var criticalScenarios = map[string]bool{
 	"gap-delete-forward":                     true,
 	"gap-delete-with-selection":              true,
 	"gap-select-all":                         true,
+	"gap-copy-paste":                         true,
+	"gap-cut-paste":                          true,
 	"gap-enter-new-line":                     true,
 	"gap-type-replaces-selection":            true,
 	"gap-redo-shift-ctrl-z":                  true,

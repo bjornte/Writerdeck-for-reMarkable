@@ -4,7 +4,7 @@ Automated typing and selection checks on the real tablet, over the same path the
 
 Start here: [todo.md](todo.md).
 
-Calling typing work done means all 110 checks passed. The basic “editing works” set is 38 checks. Policy: [decisions.md](../decisions.md) §13. Gotchas: [lessons.md](../lessons.md).
+Calling typing work done means all 112 checks passed. The basic “editing works” set is 40 checks. Policy: [decisions.md](../decisions.md) §13. Gotchas: [lessons.md](../lessons.md).
 
 todo.md — current scores and next steps.
 

@@ -128,6 +128,33 @@ func gapScenarios() []Scenario {
 			},
 		},
 		{
+			// In-editor clipboard over the phone/WebSocket path (Bluetooth).
+			Name:    "gap-copy-paste",
+			Content: "hello world",
+			Steps: []Step{
+				{Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 5},
+				{Expect: &StateExpect{SelStart: intp(0), SelEnd: intp(5), SelLen: intp(5), TextLen: intp(11)}},
+				{Label: "ctrl+c copy", Keys: []Key{{Name: "c", Ctrl: true}}},
+				{Expect: &StateExpect{TextLen: intp(11), Text: strp("hello world")}},
+				{Keys: []Key{{Name: "End"}}},
+				{Label: "ctrl+v paste", Keys: []Key{{Name: "v", Ctrl: true}}},
+				{Expect: &StateExpect{TextLen: intp(16), Text: strp("hello worldhello"), Cursor: intp(16), SelStart: intp(16), SelEnd: intp(16)}},
+			},
+		},
+		{
+			Name:    "gap-cut-paste",
+			Content: "hello world",
+			Steps: []Step{
+				{Keys: []Key{{Name: "ArrowRight", Shift: true}}, Repeat: 5},
+				{Expect: &StateExpect{SelStart: intp(0), SelEnd: intp(5), SelLen: intp(5), TextLen: intp(11)}},
+				{Label: "ctrl+x cut", Keys: []Key{{Name: "x", Ctrl: true}}},
+				{Expect: &StateExpect{TextLen: intp(6), Text: strp(" world"), Cursor: intp(0), SelStart: intp(0), SelEnd: intp(0)}},
+				{Keys: []Key{{Name: "End"}}},
+				{Label: "ctrl+v paste", Keys: []Key{{Name: "v", Ctrl: true}}},
+				{Expect: &StateExpect{TextLen: intp(11), Text: strp(" worldhello"), Cursor: intp(11), SelStart: intp(11), SelEnd: intp(11)}},
+			},
+		},
+		{
 			Name:    "gap-enter-new-line",
 			Content: fixtureProse,
 			Steps: []Step{

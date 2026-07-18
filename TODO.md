@@ -23,10 +23,11 @@ Verify on the tablet before checking anything off. Keys use a socket, not uinput
 - [ ] Before actions that need a keyboard (edit note, new note, rename, and any similar Lobby prompts), check whether a Bluetooth (phone) or USB keyboard is present. If neither is available, show a short tip on how to connect either, including a QR code for the current phone-interface URL. Wishlist pointer: [docs/improvements.md](docs/improvements.md).
 - [ ] Windows installer (native or clearly supported path). Mac/Linux stays bash; Windows is missing today — [install-onboarding/todo-install-onboarding.md](docs/install-onboarding/todo-install-onboarding.md).
 - [x] Installer credential memory (Mac/Linux): `ensure-secrets.sh` reuses password / Wi-Fi / optional `SYNC_REPO` + `GH_TOKEN`; opens prefilled GitHub token page when needed; `configure-sync.sh` pushes sync to the tablet after start. Windows still open. Tablet still must not store the GitHub token on disk.
+- [x] In-editor copy / cut / paste (Ctrl+C / Ctrl+X / Ctrl+V) over the Bluetooth path — fork `df1d38b`; critical `gap-copy-paste` / `gap-cut-paste` pass ([editor-testing/todo.md](docs/editor-testing/todo.md)).
 
 ## Settled (kept for pointers)
 
-Editor fork, EditHelper, wrap/undo keep, QML assembly, and linking git history to Singleton’s original are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Automated typing tests: all 110 passed ([editor-testing/todo.md](docs/editor-testing/todo.md)).
+Editor fork, EditHelper, wrap/undo keep, QML assembly, and linking git history to Singleton’s original are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Automated typing tests: all 112 passed ([editor-testing/todo.md](docs/editor-testing/todo.md)).
 
 ## Open question
 
@@ -37,6 +38,6 @@ Install now auto-enables `writerdeck` on boot after a health check — inspect b
 ## Resume prompt
 
 > Project: reMarkable 1 Markdown typewriter (USB and Bluetooth keyboards). Server in `daemon/`; editor from Writerdeck-keywriter fork; notes in `Writerdeck-user-documents/`. Mac deploys; phone types.
-> Next: owner Physical Home check ([docs/user-should-test.md](docs/user-should-test.md)). Typing tests all 110 passed at fork commit `0bb3b70`. Stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
+> Next: owner Physical Home check ([docs/user-should-test.md](docs/user-should-test.md)). Typing tests all 112 passed at fork commit `df1d38b` (includes Ctrl+C/X/V). Stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
 > Read: architecture, decisions, DONE, lessons, terms, integrity-audit. Device: `secrets/remarkable.local.env`.
 > Constraints: no jailbreak / Toltec; keep OTA (over-the-air updates); one static Go ARM binary.

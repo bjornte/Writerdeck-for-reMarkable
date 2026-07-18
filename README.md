@@ -58,7 +58,7 @@ Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Es
 
 Show the Lobby from a Mac on the same Wi-Fi with `wd` (after `bash scripts/install-alias.sh`) or `bash scripts/lobby.sh`. On the tablet: `~/wd`.
 
-Useful keys: Esc toggles edit and preview inside Writerdeck, or launches to Lobby from the stock UI with a USB keyboard. Left and right page buttons together do the same launch without USB. Ctrl-K switches notes. Ctrl-R rotates. Home from edit returns to Files; Home from Lobby quits to the stock UI.
+Useful keys: Esc toggles edit and preview inside Writerdeck, or launches to Lobby from the stock UI with a USB keyboard. Left and right page buttons together do the same launch without USB. Ctrl-C / Ctrl-X / Ctrl-V copy, cut, and paste. Ctrl-K switches notes. Ctrl-R rotates. Home from edit returns to Files; Home from Lobby quits to the stock UI.
 
 ## For developers
 

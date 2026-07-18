@@ -80,7 +80,7 @@ Pairing PIN and vault PIN are separate. Encrypted notes are `.md.enc` beside pla
 
 ## 13. Automated typing tests
 
-We prove caret and selection on the real tablet, over the same path the phone uses — not by reading saved files. About 110 checks; 38 are the “basic editing works” set. Pass/fail log: [editor-testing/](editor-testing/). Test notes use the `z-test-` prefix (§32). USB layout quirks still need a human check after qmap changes.
+We prove caret and selection on the real tablet, over the same path the phone uses — not by reading saved files. About 112 checks; 40 are the “basic editing works” set. Pass/fail log: [editor-testing/](editor-testing/). Test notes use the `z-test-` prefix (§32). USB layout quirks still need a human check after qmap changes.
 
 ## 14. Edit-session check
 

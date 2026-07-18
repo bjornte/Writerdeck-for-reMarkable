@@ -6,7 +6,7 @@ Read: this file, [milestone-runs.md](milestone-runs.md), [lessons.md](../lessons
 
 ## Current score
 
-All 110 checks passed at `17-23-47` (fork commit `0bb3b70`). Basic set 38 of 38. Wrap and undo groups also passed. Edit-session passed the same day. Do not run edit-session at the same time as these typing tests.
+All 112 checks passed at `15-40-20` (fork commit `df1d38b`). Basic set 40 of 40, including copy/cut/paste. Edit-session and lobby-keyboard passed the same day. Do not run edit-session at the same time as these typing tests.
 
 ## Next
 
@@ -18,4 +18,4 @@ Infer the moving end of a selection from the caret after select. Treat keyboard 
 
 ## Done means
 
-Basic set 38 of 38, full set 110 of 110, edit-session pass, clean journal after deploy.
+Basic set 40 of 40, full set 112 of 112, edit-session pass, clean journal after deploy.
