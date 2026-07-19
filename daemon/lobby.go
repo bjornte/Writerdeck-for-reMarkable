@@ -57,6 +57,9 @@ func formatLastSyncAgo(unix int64) string {
 	return fmt.Sprintf("%d days ago", days)
 }
 
+// listenPort is the HTTP/WebSocket port (set from main after flag parse).
+var listenPort = defaultPort
+
 // pushLobbyInfo sends {"t":"info",...} to the editor socket so the Lobby
 // reflects current connect, sync, and notes state.
 func pushLobbyInfo() {
@@ -95,6 +98,12 @@ func pushLobbyInfo() {
 	if syncOn && syncRepo != "" && syncReady && !wifi {
 		syncErr = "No Wi-Fi - cannot reach GitHub"
 	}
+	phoneURL := ""
+	qrPath := ""
+	if ip != "" {
+		phoneURL = fmt.Sprintf("http://%s:%d", ip, listenPort)
+		qrPath = ensurePhoneQR(phoneURL)
+	}
 	infoMsg, _ := json.Marshal(struct {
 		T                 string `json:"t"`
 		IP                string `json:"ip"`
@@ -110,7 +119,13 @@ func pushLobbyInfo() {
 		KeyboardLayout    string `json:"keyboardLayout"`
 		PinDigits         string `json:"pinDigits"`
 		EncryptionEnabled bool   `json:"encryptionEnabled"`
-	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, syncErr, wifi, keyboardLayout, pinDigits, vaultEnabled()})
+		PhoneConnected    bool   `json:"phoneConnected"`
+		UsbKeyboard       bool   `json:"usbKeyboard"`
+		Port              int    `json:"port"`
+		PhoneURL          string `json:"phoneUrl"`
+		QrPath            string `json:"qrPath"`
+	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, syncErr, wifi, keyboardLayout, pinDigits, vaultEnabled(),
+		phoneConnected(), usbKeyboardPresent(), listenPort, phoneURL, qrPath})
 	if globalEC != nil {
 		globalEC.write(infoMsg)
 	}
@@ -121,24 +136,33 @@ func pushLobbyInfo() {
 }
 
 // watchLobbyIP re-pushes lobby info when wlan0 gets an address after boot or
-// when the DHCP lease changes, or when Wi-Fi goes up/down (sync status).
+// when the DHCP lease changes, when Wi-Fi goes up/down, or when phone/USB
+// keyboard presence changes (Lobby no-keyboard tip).
 func watchLobbyIP() {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 	var lastWifi bool
 	var haveWifi bool
+	var lastPhone, lastUSB bool
+	var havePresence bool
 	for range ticker.C {
 		ip := getLocalIP()
 		w := wifiUp()
+		phone := phoneConnected()
+		usb := usbKeyboardPresent()
 		lobbyIPMu.Lock()
 		ipChanged := ip != lastPushedLobbyIP
 		lobbyIPMu.Unlock()
 		wifiChanged := !haveWifi || w != lastWifi
-		if (!ipChanged && !wifiChanged) || globalEC == nil || !globalEC.ready() {
+		presenceChanged := !havePresence || phone != lastPhone || usb != lastUSB
+		if (!ipChanged && !wifiChanged && !presenceChanged) || globalEC == nil || !globalEC.ready() {
 			continue
 		}
 		lastWifi = w
 		haveWifi = true
+		lastPhone = phone
+		lastUSB = usb
+		havePresence = true
 		pushLobbyInfo()
 		if ipChanged {
 			pushNotesList()

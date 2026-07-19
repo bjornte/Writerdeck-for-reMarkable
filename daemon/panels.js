@@ -389,6 +389,12 @@ export function showPinScreen() {
   stopStatusPoll();
   document.getElementById('pin-screen').style.display = 'flex';
   startPinPoll();
+  var pinInput = document.getElementById('pin-input');
+  if (pinInput) {
+    pinInput.focus();
+    // Soft keyboards / USB on phone: ensure the field is ready without a tap.
+    try { pinInput.select(); } catch (e) {}
+  }
 }
 
 export function hidePinScreen() {

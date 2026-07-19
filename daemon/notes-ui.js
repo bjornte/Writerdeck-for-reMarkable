@@ -15,7 +15,9 @@ var LOBBY_INPUT_LABELS = {
   'new': 'Type the new note name on the tablet keyboard.',
   'rename': 'Type the new name on the tablet keyboard.',
   'new-encrypted': 'Type the encrypted note name on the tablet keyboard.',
-  'confirm-delete': 'Delete on tablet: Enter confirms, Esc cancels.'
+  'confirm-delete': 'Delete on tablet: tap Delete or Cancel (Enter / Esc also work).',
+  'pin': 'Type the private PIN digits — they go to the tablet.',
+  'no-keyboard': 'Scan the QR on the tablet (or open the URL) to connect this phone as a keyboard.'
 };
 
 // ---- Notes API ----

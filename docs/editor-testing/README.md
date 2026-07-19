@@ -1,6 +1,6 @@
 # Editor testing
 
-Automated typing and selection checks on the real tablet, over the same path the phone uses. USB layout quirks still need a human.
+Automated typing and selection checks on the real tablet, over the same path the phone uses. USB layout quirks still need a human. To capture a phone-typed bug for Cursor: phone Observe ([browser-vs-tablet.md](../browser-vs-tablet.md)); USB-on-tablet keys are not recorded.
 
 Start here: [todo.md](todo.md).
 

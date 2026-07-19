@@ -8,7 +8,7 @@ The phone is a keyboard bridge, import/export helper, and place to paste the Git
 
 After the PIN: upload and download notes from the list. There is no phone preview and no phone Edit.
 
-When the tablet opens a note for edit, the phone enters Type mode and forwards keys. Paste from phone inserts clipboard text at the tablet cursor — it does not create a file. Bluetooth keyboards pair to the phone. The phone also forwards keys during read preview and Lobby prompts (new, rename, delete confirm).
+When the tablet opens a note for edit, the phone enters Type mode and forwards keys. Paste from phone inserts clipboard text at the tablet cursor — it does not create a file. Bluetooth keyboards pair to the phone. The phone also forwards keys during read preview, Lobby name prompts, delete confirm, and private PIN entry. The pairing PIN field on the phone focuses itself when that screen appears.
 
 Observe is off by default. Enable over the LAN (keeps the phone Observe button hidden for everyone else):
 
@@ -23,6 +23,8 @@ Sync setup, connection status, and “Show PIN on tablet” live here too. Downl
 
 ## Tablet
 
-Files tab lists notes. Edit to type; Read to preview. Esc toggles. Rename and delete from Files. Settings holds reading font, PIN length, rotation, and Exit. Keyboard tab picks USB layout. Sync tab can run Sync now.
+Files tab lists notes on fixed pages (Up/Down, PgUp/PgDn) — no flick scroll. Edit to type; Read to preview. Esc toggles. Rename and delete from Files. Settings holds reading font, PIN length, rotation, and Exit. Keyboard tab picks USB layout. Sync tab can run Sync now.
+
+Lobby is driven by the keyboard: focus returns after touch, and every main control has a chord (Shortcuts tab). Private PIN on the tablet accepts USB digits and digits forwarded from the phone.
 
 Home from edit returns to Files with that note selected. Launch from stock UI with USB Esc, both page buttons, phone **Show PIN on tablet**, or `wd` / `~/wd`. File ops use the trusted socket ([decisions.md](decisions.md) §19).

@@ -94,7 +94,7 @@ Opening a note from outside must keep the editor up for several seconds. Instant
 
 ## 15. Lobby keyboard check
 
-After Home from edit, Lobby keys must still work. The Lobby keyboard script checks that path. Run it with edit-session after Lobby or Home QML changes.
+After Home from edit, Lobby keys must still work. Focus stays on Lobby after touch. The Lobby keyboard script checks the Home path. Run it with edit-session after Lobby or Home QML changes.
 
 ## 16. Physical Home: exclusive gpio grab
 
@@ -114,7 +114,7 @@ Lobby file ops use the same local socket as keystrokes. The server does the disk
 
 ## 20. Bluetooth remote key capture on the phone
 
-Bluetooth pairs to the phone. Capture only when the tablet asks (edit, read, or a Lobby text field). Leave Browse alone so normal browser shortcuts still work.
+Bluetooth pairs to the phone. Capture only when the tablet asks (edit, read, a Lobby text field, or private PIN). Leave Browse alone so normal browser shortcuts still work.
 
 ## 21. Lobby Files: Edit and Read
 

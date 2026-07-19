@@ -4,22 +4,17 @@ Wishlist — not a backlog. Shipped: [../DONE.md](../DONE.md). Open verify: [../
 
 * Editing and modifier keys
     * Multiple Shift+down arrow also sometimes selects wrong (too much). Tests are either incorrect or too soft.
-    * Observation mode (settings.observe, off by default): phone Observe records keys for Cursor to fetch from /api/observe/export. USB-on-tablet typing is not captured.
 * Editing, other issues
     * Park for now; seems to be working: When rotated, full screen width is not used in editor or reader
     * Sometimes, touching the screen to move the cursor stops working, then starts working again. Hard to reproduce.
 * General
-    * Parked, evaluate later: When necessary functionality is migrated away from the phone and over to the reMarkable, hopefully, the PIN to connect from the phone can be removed. BUT this needs consideration. Requires all "security sensitive features", e.g. download, upload, copy & paste, to be ackowledged on the device. When done (if at all): Update all processes, including install scripts.
+    * Parked, evaluate later: When necessary functionality is migrated away from the phone and over to the reMarkable, hopefully, the PIN to connect from the phone can be removed. BUT this needs consideration. Requires all "security sensitive features", e.g. download, upload, copy & paste, to be acknowledged on the device. When done (if at all): Update all processes, including install scripts.
     * Windows installer still open. Mac/Linux installer remembers Wi-Fi / password / GitHub repo + token and can open a prefilled token page — [TODO.md](../TODO.md) Open.
 * Lobby
     * The download button must move to the reMarkable, and be removed from the phone browser. It should prompt a "Download here?" type message in the open phone browser(s)
-    * Keyboard focus should be in the lobby the entire time to allow keyboard navigation.
-    * All affordances in the lobby should be examined to see if they can be navigated by keyboard
-    * PIN entry should also support USB & Bluetooth keyboards.
-    * Slow e-ink means file list should paginate, not scroll
-    * No-keyboard tip on the tablet when edit / new / rename (and similar) would need typing: how to connect Bluetooth or USB, with a QR code for the current phone URL — [TODO.md](../TODO.md) Open.
+    * No-keyboard tip on the tablet when edit / new / rename (and similar) would need typing: how to connect Bluetooth or USB, with a QR code for the current phone URL — done (fork `dfd0736`; server pushes phone/USB presence + QR PNG).
 * Phone
-    * Unless something critical dictaties it from being so, focus should _always_ be on the keyboard. So inverse of today. Keyboard focus is the _basic_ state, not an exception.
+    * Unless something critical dictates it from being so, focus should _always_ be on the keyboard. So inverse of today. Keyboard focus is the _basic_ state, not an exception.
     * The file list must presumably be removed to give way to keyboard focus, and so that we can remove the PIN
     * Maybe only "Paste from phone" and any connection debugging should remain.
 

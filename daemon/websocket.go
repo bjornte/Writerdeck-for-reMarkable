@@ -246,12 +246,14 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 		wsClientsMu.Lock()
 		wsClients[client] = true
 		wsClientsMu.Unlock()
+		pushLobbyInfo() // Lobby tip: phone path just became available
 		defer func() {
 			wsClientsMu.Lock()
 			delete(wsClients, client)
 			wsClientsMu.Unlock()
 			close(client.send) // signals writer goroutine to drain and exit
 			conn.Close()
+			pushLobbyInfo() // Lobby tip: phone path may have gone away
 		}()
 		go func() {
 			for msg := range client.send {

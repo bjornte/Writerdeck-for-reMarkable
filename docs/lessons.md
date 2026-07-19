@@ -34,13 +34,19 @@ Clear the open filename whenever you return to the Lobby, or a deleted note can 
 
 Edit-mode keys from the socket must go through the QML router on the thread that feeds keys in. Raw Qt events dropped keys or deadlocked. Block Ctrl/Alt navigation key-releases — Qt’s defaults could wipe the screen text while the file on disk stayed fine. Escape toggles edit/preview on key-up; socket inject does not auto-release Escape (that double-fired the harness), so the phone must send an explicit Escape release.
 
-Physical Home is taken over by the server while Writerdeck is open. Do not grab the whole button device from the USB launcher — that starves Home and Power. After Home from edit, Lobby focus must actually handle keys. Remember the open filename before the sync save on Home: that XHR can re-enter the event loop and deliver a noteslist early; keep the prefer-name until select succeeds, and do not bind ListView.currentIndex to the selection property (model clear breaks the binding).
+Physical Home is taken over by the server while Writerdeck is open. Do not grab the whole button device from the USB launcher — that starves Home and Power. After Home from edit, Lobby focus must actually handle keys; Lobby now re-focuses after touch and pages the file list instead of flicking. Remember the open filename before the sync save on Home: that XHR can re-enter the event loop and deliver a noteslist early; keep the prefer-name until select succeeds. Do not bind a scrolling ListView.currentIndex to the selection property (model clear breaks the binding) — the Files list is a fixed page of rows keyed off lobbyFilesIndex.
 
 Alt+Left/Right on USB looked like Escape until the keymap was fixed. qmap (USB keyboard map) changes apply at editor launch, not mid-session. The automated typing tests do not exercise USB layouts — check those by hand.
 
 Wrapped Up/Down must walk visual rows, not step by a tall caret rectangle. Shift selection needs a remembered anchor and head; do not trust the caret index after select. Page buttons are not arrow keys.
 
 After soft-wrap End, set affinity before remembering goal X — Qt’s rect at the wrap index is the next row’s left edge, so Down looked like a no-op and fell through to paragraph end. Down from that End must also snap to the next visual row’s exclusive end, not the last glyph.
+
+## Lobby dialogs
+
+A confirmation or other dialog must read as one piece — title, body, and actions together — not a prompt above the list and buttons far below it. Scattered chrome blends into the note list (especially when type size and weight match list rows) and people miss the question. At minimum put a clear divider between dialog and the rest of the UI; a floating black-on-white box is fine and expected. Do not copy the inherited Ctrl-K note picker (black panel, white type) for Lobby confirms. Shared chrome lives in `lobby/lobby_dialog.inc` (scrim + white box) so later changes (for example letting the list show through the scrim) apply to every Lobby dialog.
+
+Typing actions from a touch tap (edit, new, rename, new encrypted) show a Connect-a-keyboard tip unless a USB keyboard is present. An open phone browser alone does not skip the tip — Continue (or a key from the phone) does. The same actions from a keyboard chord skip the tip, because a keystroke already proves a keyboard path.
 
 ## Phone page
 

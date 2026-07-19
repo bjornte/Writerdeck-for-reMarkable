@@ -93,6 +93,7 @@ func main() {
 	flag.StringVar(&notesDirPath, "notes-dir", notesDirPath, "directory for .md notes (default: /home/root/Writerdeck-user-documents; override for local dev)")
 	flag.StringVar(&settingsFilePath, "settings-file", settingsFilePath, "path to settings JSON (default /home/root/.Writerdeck/settings.json; override for local dev)")
 	flag.Parse()
+	listenPort = *port
 
 	loadSettings()
 	startSyncBackground()

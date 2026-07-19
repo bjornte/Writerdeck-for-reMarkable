@@ -36,6 +36,10 @@ Except for setting the sync token, which is done on the phone, all settings are 
 
 When using a Bluetooth keyboard, the phone is a bridge for typing. However, the interface has several secondary functions, which are useful also from a laptop: upload, download, paste-at-cursor, and sync token entry. Details: [docs/browser-vs-tablet.md](docs/browser-vs-tablet.md).
 
+## Lobby
+
+The Lobby is keyboard-first: focus returns after touch, tabs and actions have chords (Shortcuts lists them), the file list pages instead of scrolling, and the private PIN accepts USB or phone-forwarded digits. Edit, new, rename, and similar prompts that need typing first check for a phone connection or USB keyboard; if neither is there, a tip shows how to connect, with a QR code for the phone page.
+
 ## Security and private notes
 
 PIN each boot — six digits, four, or none. **Note!** Without a PIN, anyone on your Wi-Fi can reach your notes. Five wrong guesses lock that IP for a minute.
