@@ -10,7 +10,7 @@ export var state = {
   tabletOpenNote: '',   // .md filename the tablet editor holds open; set by server
                         // openedit (phone /api/open or tablet doLoad); clears on exitedit
   editorDiskHash: '',   // disk fingerprint at editor open — drift banner when disk changes (slice 8)
-  typingMode: false,     // false=Browse (list/read), true=Type (capture + echo)
+  typingMode: true,      // keyboard shell (capture + echo); default after auth
   remoteKeys: '',        // '' | 'read' | 'lobby' -- BT keyboard forward without full Type UI
   observeEnabled: false  // mirrors /api/settings observe -- phone Observe button
 };

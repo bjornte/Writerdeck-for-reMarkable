@@ -47,15 +47,54 @@ const (
 	keyboardDebounceMs = 800 * time.Millisecond
 )
 
-// wsMsg is the JSON message received from the browser on keydown.
+// wsMsg is the JSON message received from the browser on keydown / paste.
 type wsMsg struct {
-	Type   string `json:"type"`             // "key" or "hello"
+	Type   string `json:"type"`             // "key", "hello", or "paste"
 	Key    string `json:"key"`              // KeyboardEvent.key value (key messages)
+	Text   string `json:"text,omitempty"`   // paste body (paste messages)
 	Shift  bool   `json:"shift"`            // event.shiftKey
 	Ctrl   bool   `json:"ctrl"`             // event.ctrlKey
 	Alt    bool   `json:"alt"`              // event.altKey
 	Meta   bool   `json:"meta"`             // event.metaKey (Cmd on Mac/iPhone)
 	Action string `json:"action,omitempty"` // "release" for key-up replay
+}
+
+// maxPasteRunes caps a single phone paste (Lobby Files never accepts paste).
+const maxPasteRunes = 200000
+
+// forwardPaste inserts clipboard text at the editor cursor. Refused when no
+// note is open (Lobby Files / idle) so paste cannot dump into name prompts.
+func forwardPaste(ec *editorConn, text string) {
+	if ec == nil || text == "" {
+		return
+	}
+	currentNoteMu.Lock()
+	note := currentNote
+	currentNoteMu.Unlock()
+	if note == "" {
+		fmt.Fprintln(os.Stderr, "writerdeck-server: paste ignored (no note open)")
+		return
+	}
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+	n := 0
+	for _, r := range text {
+		if n >= maxPasteRunes {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: paste truncated at %d runes\n", maxPasteRunes)
+			break
+		}
+		n++
+		var line []byte
+		switch r {
+		case '\n':
+			line = []byte(`{"t":"key","k":"Return"}`)
+		case '\t':
+			line = []byte(`{"t":"key","k":"Tab"}`)
+		default:
+			line = []byte(fmt.Sprintf(`{"t":"text","cp":%d}`, r))
+		}
+		ec.write(line)
+	}
 }
 
 // namedKeys maps browser KeyboardEvent.key values to keywriter named keys.
@@ -513,6 +552,20 @@ func handleEditorReq(op, name, oldName string) {
 		}
 	case "shutdown":
 		requestShutdown("tablet Settings")
+	case "offerdownload":
+		p := notesSafe(name)
+		if p == "" {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: offerdownload: bad name %q\n", name)
+			return
+		}
+		if _, err := os.Stat(p); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: offerdownload: %v\n", err)
+			return
+		}
+		if !phoneConnected() {
+			fmt.Fprintln(os.Stderr, "writerdeck-server: offerdownload: no phone page connected")
+		}
+		broadcastDownloadOffer(name)
 	default:
 		fmt.Fprintf(os.Stderr, "writerdeck-server: unknown editor req op %q\n", op)
 	}

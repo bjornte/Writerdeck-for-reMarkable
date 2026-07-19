@@ -74,7 +74,7 @@ The server keeps the phone reachable under the stock UI. Boot stays on xochitl; 
 
 ## 10. Companion model
 
-No phone app — the tablet is the server. Day-to-day files and settings live in the Lobby; the phone is for typing, upload/download, paste-at-cursor, the sync token, and launching the Lobby when closed (“Show PIN on tablet”). Home twice: edit to Lobby, Lobby to quit.
+No phone app — the tablet is the server. Day-to-day files and settings live in the Lobby; the phone is for typing, paste-at-cursor, accepting a tablet Download offer, the sync token, and launching the Lobby when closed (“Show PIN on tablet”). Home twice: edit to Lobby, Lobby to quit.
 
 ## 11. GitHub sync copies missing notes both ways
 
@@ -114,7 +114,7 @@ Lobby file ops use the same local socket as keystrokes. The server does the disk
 
 ## 20. Bluetooth remote key capture on the phone
 
-Bluetooth pairs to the phone. Capture only when the tablet asks (edit, read, a Lobby text field, or private PIN). Leave Browse alone so normal browser shortcuts still work.
+Bluetooth pairs to the phone. After connect, the phone stays on the keyboard shell and captures keys by default (Lobby navigation included). Cmd/Ctrl+R/T/W/N/L still pass through so the browser stays manageable. Overlays (PIN, paste, download offer, sync setup) pause capture.
 
 ## 21. Lobby Files: Edit and Read
 
@@ -173,6 +173,10 @@ The editor draws through linuxfb on `/dev/fb0` with the epaper scene graph — t
 Launch without page buttons and Home is already partly covered: phone Show PIN / `/api/lobby`, `wd`, USB Esc. Power-button patterns or touch could fill a tablet-only gap later.
 
 Do not start rM2 work unless there is clear community demand. Wishlist: [improvements.md](improvements.md).
+
+## 34. Lobby tip: real browsers only, not Cursor
+
+Touch Edit / New / Rename (and similar) show a connect tip unless a USB keyboard is present or a phone/laptop page has sent WebSocket `hello`. A real Safari/Chrome/Firefox session must count. Cursor’s embedded browser must not — it loads the same page for agent checks and was skipping the tip with no intentional keyboard. The page skips `hello` when it detects Cursor/Electron; the server also ignores `hello` from User-Agents containing `Cursor/` or `Electron/`. How: [architecture.md](architecture.md). Gotcha: [lessons.md](lessons.md).
 
 ---
 

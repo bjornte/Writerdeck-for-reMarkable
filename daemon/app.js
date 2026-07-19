@@ -1,14 +1,14 @@
 // app.js — phone UI bootstrap: wire modules and event listeners.
-// connection.js — WebSocket + key capture; notes-ui.js — upload/download list;
+// connection.js — WebSocket + key capture; notes-ui.js — typing / paste / download;
 // panels.js — PIN screen, Notes sync setup overlays; sync.js — GitHub engine.
-import { state } from './state.js';
 import { initSync } from './sync.js';
 import { deps } from './deps.js';
-import { initConnection, connect, grab, applyMode } from './connection.js';
+import { initConnection, connect, applyMode } from './connection.js';
 import {
-  loadNotes, hideTypingView, followTabletOpen, uploadFile,
+  loadNotes, hideTypingView, followTabletOpen, showIdleKeyboardView,
   showPasteModal, hidePasteModal, submitPaste,
   showReadKeyView, showLobbyKeyView, clearRemoteKeys,
+  showDownloadOffer, hideDownloadOffer, acceptDownloadOffer,
   toggleObserve, refreshObserveStatus, applyObserveStatus, applyObserveEnabled
 } from './notes-ui.js';
 import {
@@ -19,9 +19,11 @@ import {
 deps.loadNotes = loadNotes;
 deps.hideTypingView = hideTypingView;
 deps.followTabletOpen = followTabletOpen;
+deps.showIdleKeyboardView = showIdleKeyboardView;
 deps.showReadKeyView = showReadKeyView;
 deps.showLobbyKeyView = showLobbyKeyView;
 deps.clearRemoteKeys = clearRemoteKeys;
+deps.showDownloadOffer = showDownloadOffer;
 deps.showPinScreen = showPinScreen;
 deps.connect = connect;
 deps.applyObserveStatus = applyObserveStatus;
@@ -34,16 +36,6 @@ initConnection();
 window.addEventListener('load', function () {
   initSync({ onNotesChanged: loadNotes, onBannerChange: updateBannerOffset });
   updateBannerOffset();
-  document.getElementById('upload-btn').addEventListener('click', function(e) {
-    e.stopPropagation();
-    var fi = document.getElementById('file-input');
-    fi.value = '';
-    fi.click();
-  });
-  document.getElementById('file-input').addEventListener('change', function() {
-    uploadFile(this.files[0]);
-    this.value = '';
-  });
   document.getElementById('typing-paste').addEventListener('click', function(e) {
     e.stopPropagation(); showPasteModal();
   });
@@ -58,7 +50,12 @@ window.addEventListener('load', function () {
   document.getElementById('paste-cancel').addEventListener('click', function(e) {
     e.stopPropagation(); hidePasteModal();
   });
-  document.getElementById('typing-back').addEventListener('click', hideTypingView);
+  document.getElementById('download-accept').addEventListener('click', function(e) {
+    e.stopPropagation(); acceptDownloadOffer();
+  });
+  document.getElementById('download-cancel').addEventListener('click', function(e) {
+    e.stopPropagation(); hideDownloadOffer();
+  });
   document.getElementById('pin-btn').addEventListener('click', submitPIN);
   document.getElementById('pin-input').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.stopPropagation(); submitPIN(); }
@@ -93,9 +90,11 @@ window.addEventListener('load', function () {
     e.stopPropagation(); hideSync();
   });
   wireOverlayDismiss('sync-screen', 'sync-box', hideSync);
+  wireOverlayDismiss('download-modal', 'download-box', hideDownloadOffer);
   document.addEventListener('keydown', function(e) {
     if (e.key !== 'Escape') return;
     if (document.getElementById('sync-screen').style.display === 'flex') hideSync();
+    if (document.getElementById('download-modal').style.display === 'flex') hideDownloadOffer();
   });
   applyMode();
   checkAuthAndInit();

@@ -29,7 +29,7 @@
            maxlength="6" placeholder="000000" autocomplete="off" autocorrect="off">
     <button id="pin-btn">Connect</button>
     <p id="pin-err"></p>
-    <button id="lobby-btn" style="margin-top:8px;background:#444;color:#ccc;border:none;border-radius:8px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;-webkit-tap-highlight-color:transparent">Show PIN on tablet</button>
+    <button id="lobby-btn" class="lobby-pin-btn">Show PIN on tablet</button>
     <p id="lobby-msg" style="font-size:12px;color:#888;margin:6px 0 0;text-align:center"></p>
   </div>
 </div>
@@ -43,13 +43,15 @@
   </div>
 </div>
 
-<div id="notes">
-  <div id="notes-head">
-    <span id="notes-label">Notes</span>
-    <button id="upload-btn">Upload</button>
-    <input id="file-input" type="file" accept=".md,.markdown,.txt" style="display:none">
+<div id="download-modal">
+  <div id="download-box">
+    <p id="download-title">Download here?</p>
+    <p id="download-name"></p>
+    <div id="download-actions">
+      <button id="download-accept">Download</button>
+      <button id="download-cancel">Not now</button>
+    </div>
   </div>
-  <div id="notes-items"></div>
 </div>
 
 <div id="paste-modal">
@@ -65,17 +67,15 @@
 
 <div id="typing">
   <div id="typing-head">
-    <button id="typing-back">&larr; Notes</button>
-    <span id="typing-note"></span>
+    <span id="typing-note">Writerdeck</span>
     <div style="display:flex;gap:6px;flex-shrink:0">
       <button id="typing-observe" class="note-btn" title="Record keys for a bug report" style="display:none">Observe</button>
-      <button id="typing-paste" class="note-btn">Paste from here</button>
+      <button id="typing-paste" class="note-btn" disabled aria-disabled="true">Paste from here</button>
     </div>
   </div>
   <div id="typing-body">
     <p>Open notes on the tablet Files tab.</p>
-    <p>Type here — your words appear on e-ink.</p>
-    <p>Press Home on the tablet when done.</p>
+    <p>Type here — keys go to the tablet.</p>
   </div>
 </div>
 

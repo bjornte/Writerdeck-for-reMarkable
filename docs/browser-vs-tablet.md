@@ -2,13 +2,15 @@
 
 What the phone is for vs what the tablet is for. How the system fits: [architecture.md](architecture.md). Wishlist: [improvements.md](improvements.md).
 
-The phone is a keyboard bridge, import/export helper, and place to paste the GitHub token. Day-to-day files and settings live on the tablet Lobby.
+The phone is a keyboard bridge, paste helper, and place to paste the GitHub token. Day-to-day files and settings live on the tablet Lobby. Download starts on the tablet and asks open phone browsers to save the file.
 
 ## Phone
 
-After the PIN: upload and download notes from the list. There is no phone preview and no phone Edit.
+After the PIN (or with PIN set to none): the page lands on the keyboard shell. Keys forward to the tablet whenever the page is connected. There is no phone note list and no phone Edit.
 
-When the tablet opens a note for edit, the phone enters Type mode and forwards keys. Paste from phone inserts clipboard text at the tablet cursor — it does not create a file. Bluetooth keyboards pair to the phone. The phone also forwards keys during read preview, Lobby name prompts, delete confirm, and private PIN entry. The pairing PIN field on the phone focuses itself when that screen appears.
+When the tablet opens a note for edit, the phone shows that note’s name and keeps capturing keys. Paste from phone inserts clipboard text at the tablet cursor — only while that note is open for edit, not on Lobby Files. Bluetooth keyboards pair to the phone. The phone also forwards keys during read preview, Lobby name prompts, delete confirm, and private PIN entry.
+
+When Lobby taps Download, open phone pages get a “Download here?” prompt. Accepting uses the normal attachment download (encrypted notes still ask for the private PIN on the tablet first).
 
 Observe is off by default. Enable over the LAN (keeps the phone Observe button hidden for everyone else):
 
@@ -19,12 +21,12 @@ curl -s -X POST "http://$RM_HOST:8000/api/settings" -H 'Content-Type: applicatio
 
 Or edit `/home/root/.Writerdeck/settings.json` (`"observe": true`) over SSH. After Stop, the trace sits at `GET /api/observe/export` — say in Cursor chat that you found a bug and the agent pulls it. USB keys typed on the tablet are not recorded.
 
-Sync setup, connection status, and “Show PIN on tablet” live here too. Download uses a normal file attachment; plain LAN http has no reliable iOS Share sheet.
+Sync setup, connection status, and “Show PIN on tablet” live here too. Plain LAN http has no reliable iOS Share sheet.
 
 ## Tablet
 
-Files tab lists notes on fixed pages (Up/Down, PgUp/PgDn) — no flick scroll. Edit to type; Read to preview. Esc toggles. Rename and delete from Files. Settings holds reading font, PIN length, rotation, and Exit. Keyboard tab picks USB layout. Sync tab can run Sync now.
+Files tab lists notes on fixed pages (Up/Down, PgUp/PgDn) — no flick scroll. Edit to type; Read to preview; Download offers the selected note to open phone browsers. Esc toggles edit/preview. Rename and delete from Files. Settings holds reading font, PIN length, rotation, and Exit. Keyboard tab has two boxes: Bluetooth first (phone URL, PIN, and the same QR as the connect tip), then USB layout. Sync tab can run Sync now.
 
-Lobby is driven by the keyboard: focus returns after touch, and every main control has a chord (Shortcuts tab). Private PIN on the tablet accepts USB digits and digits forwarded from the phone. Without a USB keyboard or an open phone/laptop page, Edit / New / Rename show a short connect tip (QR for the phone URL).
+Lobby is driven by the keyboard: focus returns after touch, and every main control has a chord (Shortcuts tab). Private PIN on the tablet accepts USB digits and digits forwarded from the phone. Without a USB keyboard or an open phone/laptop page, Edit / New / Rename show a short connect tip (QR for the phone URL). An open page counts after WebSocket `hello`; Cursor’s embedded browser is excluded (User-Agent `Cursor/` or `Electron/`), so agent tabs do not hide the tip.
 
 Home from edit returns to Files with that note selected. Launch from stock UI with USB Esc, both page buttons, phone **Show PIN on tablet**, or `wd` / `~/wd`. File ops use the trusted socket ([decisions.md](decisions.md) §19).

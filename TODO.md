@@ -24,7 +24,7 @@ Verify on the tablet before checking anything off. Keys use a socket, not uinput
 
 ## Settled (kept for pointers)
 
-Editor fork, EditHelper, wrap/undo keep, QML assembly, and linking git history to Singleton’s original are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Automated typing tests: all 112 passed ([editor-testing/todo.md](docs/editor-testing/todo.md)). In-editor copy/cut/paste over Bluetooth: fork `df1d38b`. Mac/Linux installer credential memory and sync push: done (Windows still open). No-keyboard Lobby tip with phone QR: fork `80f568b`; phone path counts only after the page sends `hello` (daemon WebSocket ping/pong).
+Editor fork, EditHelper, wrap/undo keep, QML assembly, and linking git history to Singleton’s original are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Automated typing tests: all 112 passed ([editor-testing/todo.md](docs/editor-testing/todo.md)). In-editor copy/cut/paste over Bluetooth: fork `df1d38b`. Mac/Linux installer credential memory and sync push: done (Windows still open). No-keyboard Lobby tip with phone QR: fork `80f568b`; phone path needs WebSocket `hello`, excluding Cursor/Electron ([decisions.md](docs/decisions.md) §34).
 
 ## Open question
 
@@ -35,6 +35,6 @@ Install now auto-enables `writerdeck` on boot after a health check — inspect b
 ## Resume prompt
 
 > Project: reMarkable 1 Markdown typewriter (USB and Bluetooth keyboards). Server in `daemon/`; editor from Writerdeck-keywriter fork; notes in `Writerdeck-user-documents/`. Mac deploys; phone types.
-> Next: owner Physical Home check ([docs/user-should-test.md](docs/user-should-test.md)). Typing tests all 112 passed at fork commit `df1d38b` (includes Ctrl+C/X/V). No-keyboard Lobby tip + QR at fork `80f568b` (phone path needs WebSocket `hello`). Stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
+> Next: owner Physical Home check ([docs/user-should-test.md](docs/user-should-test.md)). Typing tests all 112 passed at fork commit `df1d38b` (includes Ctrl+C/X/V). No-keyboard Lobby tip + QR at fork `80f568b`; Cursor agent tabs do not count as a phone keyboard ([decisions.md](docs/decisions.md) §34). Stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
 > Read: architecture, decisions, DONE, lessons, terms, integrity-audit. Device: `secrets/remarkable.local.env`.
 > Constraints: no jailbreak / Toltec; keep OTA (over-the-air updates); one static Go ARM binary.

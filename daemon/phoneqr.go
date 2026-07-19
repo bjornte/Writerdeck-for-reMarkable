@@ -5,10 +5,17 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	qrcode "github.com/skip2/go-qrcode"
 )
+
+// ideBrowserUA is true for Cursor's embedded browser (and Electron shells).
+// Those clients must not count as a keyboard path for the Lobby tip.
+func ideBrowserUA(ua string) bool {
+	return strings.Contains(ua, "Cursor/") || strings.Contains(ua, "Electron/")
+}
 
 const phoneQRPath = "/tmp/writerdeck-phone-qr.png"
 
@@ -43,7 +50,7 @@ func phoneConnected() bool {
 	wsClientsMu.Lock()
 	defer wsClientsMu.Unlock()
 	for c := range wsClients {
-		if c.hello {
+		if c.hello && !ideBrowserUA(c.ua) {
 			return true
 		}
 	}

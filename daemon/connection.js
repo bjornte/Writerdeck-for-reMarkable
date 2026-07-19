@@ -9,6 +9,17 @@ import { deps } from './deps.js';
 var RETRY_MS = 2000;
 var ECHO_MAX = 300;
 
+// Cursor (and Electron shells) load this page for agent checks; they must not
+// count as a keyboard path for the Lobby tip. Real Safari/Chrome/Firefox do not match.
+function isIdeBrowser() {
+  try {
+    if (typeof window !== 'undefined' && window.cursorBrowser) return true;
+    var ua = (typeof navigator !== 'undefined' && navigator.userAgent) ? navigator.userAgent : '';
+    if (ua.indexOf('Cursor/') !== -1 || ua.indexOf('Electron/') !== -1) return true;
+  } catch (e) {}
+  return false;
+}
+
 var dot  = document.getElementById('dot');
 var msg  = document.getElementById('msg');
 var echo = document.getElementById('echo');
@@ -16,8 +27,8 @@ var trap = document.getElementById('trap');
 var buf = '';
 var ws;
 var allowReconnect = true;
-// state.typingMode: false=Browse (list, no capture), true=Type (capture + echo).
-// state.remoteKeys: '' | 'read' | 'lobby' -- forward BT keys without full Type UI.
+// state.typingMode: true = keyboard shell (capture + echo). Default after auth.
+// state.remoteKeys: '' | 'read' | 'lobby' -- still set for banners / Esc into edit.
 function keysActive() {
   return state.typingMode || state.remoteKeys !== '';
 }
@@ -152,6 +163,14 @@ function send(key, shift, ctrl, alt, meta, action) {
   if (!action) appendEcho(key);
 }
 
+// Bulk paste for the typing view. Server accepts only while a note is open (not Lobby Files).
+export function sendPaste(text) {
+  if (!ws || ws.readyState !== 1 /* OPEN */) { return; }
+  if (!text) return;
+  ws.send(JSON.stringify({ type: 'paste', text: text }));
+  appendEcho('[paste]');
+}
+
 function onKey(e) {
   // Capture keys in Type mode and when the tablet asked for remote input (read/lobby).
   if (!keysActive()) { return; }
@@ -181,6 +200,10 @@ function overlayUp() {
   if (ps && ps.style.display !== 'none') return true;
   var pm = document.getElementById('paste-modal');
   if (pm && pm.style.display === 'flex') return true;
+  var dm = document.getElementById('download-modal');
+  if (dm && dm.style.display === 'flex') return true;
+  var ss = document.getElementById('sync-screen');
+  if (ss && ss.style.display === 'flex') return true;
   return false;
 }
 
@@ -215,9 +238,13 @@ function connect() {
   ws.onopen = function () {
     wsReady = true;
     updateConnectionBar();
-    // Marks this tab as a real phone UI for the Lobby keyboard tip.
-    try { ws.send(JSON.stringify({ type: 'hello' })); } catch (e) {}
-    grab();
+    // Marks this tab as a real phone/laptop UI for the Lobby keyboard tip.
+    // Cursor's embedded browser must not count (skips the tip otherwise).
+    if (!isIdeBrowser()) {
+      try { ws.send(JSON.stringify({ type: 'hello' })); } catch (e) {}
+    }
+    if (deps.showIdleKeyboardView) deps.showIdleKeyboardView();
+    else grab();
     deps.loadNotes();
     refreshSyncStatus();
   };
@@ -255,8 +282,8 @@ function connect() {
       } else if (data.type === 'exitedit') {
         state.tabletOpenNote = '';
         state.editorDiskHash = '';
-        if (state.typingMode) { deps.hideTypingView(); }
-        else { deps.clearRemoteKeys(); }
+        if (deps.hideTypingView) deps.hideTypingView();
+        else if (deps.clearRemoteKeys) deps.clearRemoteKeys();
       } else if (data.type === 'tabletcrud') {
         if (data.op === 'deletenote' && state.tabletOpenNote === data.name) {
           state.tabletOpenNote = '';
@@ -272,6 +299,10 @@ function connect() {
         respondToNeedToken();
       } else if (data.type === 'vaultpingranted') {
         deps.loadNotes();
+      } else if (data.type === 'downloadoffer') {
+        if (data.name && deps.showDownloadOffer && !overlayUp()) {
+          deps.showDownloadOffer(data.name);
+        }
       } else if (data.type === 'observe') {
         if (deps.applyObserveStatus) {
           deps.applyObserveStatus({
@@ -316,4 +347,4 @@ window.addEventListener('pageshow', function () {
   allowReconnect = true;
 });
 
-export { connect, send, grab, startStatusPoll, stopStatusPoll, setStatus, overlayUp };
+export { connect, send, sendPaste, grab, startStatusPoll, stopStatusPoll, setStatus, overlayUp };

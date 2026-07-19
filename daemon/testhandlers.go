@@ -105,7 +105,8 @@ func testTabletReqHandler(w http.ResponseWriter, r *http.Request) {
 	switch req.Op {
 	case "setreadfont", "setpindigits", "setkeyboardlayout",
 		"setvaultpin", "changevaultpin", "verifyvaultpin",
-		"encryptnote", "decryptnote", "disablevault":
+		"encryptnote", "decryptnote", "disablevault",
+		"offerdownload":
 		handleEditorReq(req.Op, req.Name, req.Old)
 	case "vaultrewrap":
 		if err := vaultRewrapFromOldSecret(req.Old, req.Name, req.Notes); err != nil {

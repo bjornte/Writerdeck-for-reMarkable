@@ -17,6 +17,7 @@
 //   {"type":"tabletcrud","op":"createnote|deletenote|renamenote","name":"...","oldName":"..."}
 //     on tablet Lobby Files CRUD -- server mirrors to GitHub when sync is configured.
 //   {"type":"diskchanged","name":"<file>.md"} when disk is written under an open editor (slice 8).
+//   {"type":"downloadoffer","name":"<file>.md"} when Lobby asks phones to save a note locally.
 //
 // Integer codepoints are escaping-proof: JSON special chars in typed text
 // can never corrupt the naive C++ substring parser (see socket-inject.patch).

@@ -43,7 +43,8 @@ const (
 type wsClient struct {
 	conn  *websocket.Conn
 	send  chan []byte
-	hello bool // true after {"type":"hello"} — required for phoneConnected
+	hello bool   // true after {"type":"hello"} — required for phoneConnected
+	ua    string // User-Agent from the upgrade request
 }
 
 var (
@@ -124,6 +125,18 @@ func broadcastLobbyInput(mode string) {
 		Type string `json:"type"`
 		Mode string `json:"mode"`
 	}{"lobbyinput", mode})
+	broadcast(msg)
+}
+
+// broadcastDownloadOffer asks open phone browsers to confirm saving a note locally.
+func broadcastDownloadOffer(name string) {
+	if name == "" {
+		return
+	}
+	msg, _ := json.Marshal(struct {
+		Type string `json:"type"`
+		Name string `json:"name"`
+	}{"downloadoffer", name})
 	broadcast(msg)
 }
 
@@ -250,11 +263,11 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 			return
 		}
 		// Register in the broadcast hub; writer goroutine owns all conn writes.
-		client := &wsClient{conn: conn, send: make(chan []byte, 8)}
+		client := &wsClient{conn: conn, send: make(chan []byte, 8), ua: r.UserAgent()}
 		wsClientsMu.Lock()
 		wsClients[client] = true
 		wsClientsMu.Unlock()
-		pushLobbyInfo() // Lobby tip: phone path just became available
+		pushLobbyInfo() // Lobby tip: presence may change (hello still required)
 		defer func() {
 			wsClientsMu.Lock()
 			delete(wsClients, client)
@@ -320,6 +333,10 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 				continue
 			}
 			if ev.Type == "hello" {
+				// Cursor/Electron load this page for checks; do not count as a keyboard.
+				if ideBrowserUA(client.ua) {
+					continue
+				}
 				wsClientsMu.Lock()
 				was := client.hello
 				client.hello = true
@@ -327,6 +344,10 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 				if !was {
 					pushLobbyInfo() // Lobby tip: phone page is fully ready
 				}
+				continue
+			}
+			if ev.Type == "paste" {
+				forwardPaste(ec, ev.Text)
 				continue
 			}
 			if ev.Type != "key" {

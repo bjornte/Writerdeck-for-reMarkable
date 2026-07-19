@@ -35,11 +35,11 @@ Under `/home/root/`: the two binaries, `Writerdeck-user-documents/` for notes, `
 
 ## Phone and Lobby
 
-No phone app — open Safari to the tablet. Upload, download, paste, and the sync token stay on the phone. Files and settings live in the Lobby ([browser-vs-tablet.md](browser-vs-tablet.md)).
+No phone app — open Safari to the tablet. The phone is a keyboard bridge: paste, sync token, and accepting a Lobby Download offer. Files and settings live in the Lobby ([browser-vs-tablet.md](browser-vs-tablet.md)).
 
 The server stays up under the stock UI. Boot leaves xochitl on screen; open Writerdeck with page buttons, USB Esc, or `wd`. Home from Lobby brings xochitl back; the phone can still reach port 8000. The PIN is shown in the Lobby. Sync is optional; the token never hits disk ([server-sync-implementation.md](server-sync-implementation.md)).
 
-Touch Edit / New / Rename (and similar) without a USB keyboard or an open phone page shows a connect tip with the phone URL and a QR image. An open page counts once it sends WebSocket `hello`; leftover sockets without hello do not.
+Touch Edit / New / Rename (and similar) without a USB keyboard or an open phone page shows a connect tip with the phone URL and a QR image. An open page counts once it sends WebSocket `hello`; leftover sockets without hello do not. Cursor’s embedded browser (User-Agent contains `Cursor/` or `Electron/`) does not send or count as hello, so agent tabs do not suppress the tip ([decisions.md](decisions.md) §34).
 
 ## Constraints
 

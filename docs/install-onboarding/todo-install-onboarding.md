@@ -14,7 +14,7 @@ The install path worked for the repo owner but assumed expertise: six ordered sc
 
 - [x] Short Install in README: reMarkable 1, Mac/Linux same Wi-Fi, tablet awake; Download ZIP; one command.
 - [x] Prompt for root password + Wi-Fi IP (`ensure-secrets.sh`) instead of requiring a hand-edited secrets file first.
-- [x] **You're done when**: Lobby on e-ink; phone list populated; connection bar not stuck on `connecting...`.
+- [x] **You're done when**: Lobby on e-ink; phone shows keyboard shell (not a notes list); connection bar not stuck on `connecting...`.
 - [x] Recovery one-liner and OTA note in README.
 
 ### Binaries without `gh` / without Go — done 2026-07-18

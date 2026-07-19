@@ -48,7 +48,7 @@ A confirmation or other dialog must read as one piece — title, body, and actio
 
 On the Files tab, use a fixed stack: header (feedback), list, footer (page label and action bars). The list only fills between header and footer. Do not lay feedback, list, and bars out in one Column while hand-computing the list height, and do not paint the list above the footer — either mistake pushes buttons off-screen or draws rows on top of them.
 
-Typing actions from a touch tap (edit, new, rename, new encrypted) show a Connect-a-keyboard tip when neither a USB keyboard nor an open phone/laptop page is present. An open page counts as a keyboard path (Type field). Keyboard chords skip the tip. Continue, or any key while the tip is up, runs that one pending action once — never a sticky ready flag. Dead WebSocket clients and leftover Cursor/browser tabs were keeping phoneConnected true and skipping the tip with no intentional page open. The tip counts a phone path only after the page sends a hello on connect; ping/pong drops half-dead sockets.
+Typing actions from a touch tap (edit, new, rename, new encrypted) show a Connect-a-keyboard tip when neither a USB keyboard nor an open phone/laptop page is present. An open page counts as a keyboard path (Type field). Keyboard chords skip the tip. Continue, or any key while the tip is up, runs that one pending action once — never a sticky ready flag. Dead WebSocket clients kept phoneConnected true without an intentional page; hello plus ping/pong fixed that. Cursor’s embedded browser also sent hello and skipped the tip — the phone page skips hello there, and the server ignores hello from User-Agents containing Cursor/ or Electron/ ([decisions.md](decisions.md) §34).
 
 
 ## Phone page

@@ -163,7 +163,7 @@ func watchLobbyIP() {
 			n, ready := 0, 0
 			for c := range wsClients {
 				n++
-				if c.hello {
+				if c.hello && !ideBrowserUA(c.ua) {
 					ready++
 				}
 			}

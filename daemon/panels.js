@@ -6,13 +6,13 @@ import {
 } from './sync.js';
 import { deps } from './deps.js';
 import { connect, grab, setStatus, startStatusPoll, stopStatusPoll } from './connection.js';
-import { renderNotes, loadNotes } from './notes-ui.js';
+import { loadNotes, showIdleKeyboardView } from './notes-ui.js';
 
 // state.syncOn and state.syncRepo (in state.js) mirror /api/settings
 
 // Auto-advance poll: while the PIN screen is up, poll GET /api/notes every
 // ~3 s. On 200 (owner switched to no-PIN, or PIN accepted from another
-// client) auto-advance to the notes view.
+// client) auto-advance to the keyboard shell.
 var pinPollTimer = null;
 function startPinPoll() {
   if (pinPollTimer) return;
@@ -24,10 +24,10 @@ function startPinPoll() {
           hidePinScreen();
           connect();
           loadSyncConfig();
+          showIdleKeyboardView();
           return r.json();
         }
       })
-      .then(function(notes) { if (notes) renderNotes(notes); })
       .catch(function() {});
   }, 3000);
 }
@@ -440,8 +440,7 @@ export function checkAuthAndInit() {
       if (notes === null) return;
       hidePinScreen();
       connect();
-      grab();
-      renderNotes(notes);
+      showIdleKeyboardView();
       loadSyncConfig();
     })
     .catch(function() {
@@ -474,7 +473,7 @@ export function submitPIN(e) {
     if (!r.ok) { errEl.textContent = 'Server error.'; return; }
     hidePinScreen();
     connect();
-    grab();
+    showIdleKeyboardView();
     loadNotes();
     loadSyncConfig();
   }).catch(function() { errEl.textContent = 'Could not reach server.'; });

@@ -16,7 +16,7 @@ From that stock UI: press both left and right page buttons together, or Esc on a
 
 ## How you write
 
-Hook up a physical keyboard, either USB (with an OTG cable) or Bluetooth (via your phone. The lobby's keyboard page tells you how).
+Hook up a physical keyboard, either USB (with an OTG cable) or Bluetooth (via your phone. The Lobby Keyboard tab shows both: Bluetooth first with the phone URL and QR, then USB layout).
 
 ## Saving & exiting
 
@@ -34,11 +34,13 @@ Except for setting the sync token, which is done on the phone, all settings are 
 
 ## Connection between tablet and phone
 
-When using a Bluetooth keyboard, the phone is a bridge for typing. However, the interface has several secondary functions, which are useful also from a laptop: upload, download, paste-at-cursor, and sync token entry. Details: [docs/browser-vs-tablet.md](docs/browser-vs-tablet.md).
+When using a Bluetooth keyboard, the phone is a bridge for typing. Secondary jobs on the same page: paste-at-cursor while a note is open for edit (not on Lobby Files), accepting a tablet Download offer, and sync token entry. Details: [docs/browser-vs-tablet.md](docs/browser-vs-tablet.md).
+
+Phone keyboard-first: the notes list and Upload are gone from the browser; Lobby Files Download prompts open phones with “Download here?”.
 
 ## Lobby
 
-The Lobby is keyboard-first: focus returns after touch, tabs and actions have chords (Shortcuts lists them), the file list pages instead of scrolling, and the private PIN accepts USB or phone-forwarded digits. Edit, new, rename, and similar prompts that need typing first check for a USB keyboard or an open phone/laptop page; if neither is there, a tip shows how to connect, with a QR code for the phone URL. A wrong private PIN on Encrypt (and similar) stays on the pad with a clear message.
+The Lobby is keyboard-first: focus returns after touch, tabs and actions have chords (Shortcuts lists them), the file list pages instead of scrolling, and the private PIN accepts USB or phone-forwarded digits. Edit, new, rename, and similar prompts that need typing first check for a USB keyboard or an open phone/laptop page; if neither is there, a tip shows how to connect, with a QR code for the phone URL. Cursor’s built-in browser does not count as that page — only a real phone or laptop browser does. A wrong private PIN on Encrypt (and similar) stays on the pad with a clear message.
 
 ## Security and private notes
 
