@@ -12,7 +12,6 @@ Wishlist — not a backlog. Shipped: [../DONE.md](../DONE.md). Open verify: [../
     * Windows installer still open. Mac/Linux installer remembers Wi-Fi / password / GitHub repo + token and can open a prefilled token page — [TODO.md](../TODO.md) Open.
 * Lobby
     * The download button must move to the reMarkable, and be removed from the phone browser. It should prompt a "Download here?" type message in the open phone browser(s)
-    * No-keyboard tip on the tablet when edit / new / rename (and similar) would need typing: how to connect Bluetooth or USB, with a QR code for the current phone URL — done (fork `dfd0736`; server pushes phone/USB presence + QR PNG).
 * Phone
     * Unless something critical dictates it from being so, focus should _always_ be on the keyboard. So inverse of today. Keyboard focus is the _basic_ state, not an exception.
     * The file list must presumably be removed to give way to keyboard focus, and so that we can remove the PIN

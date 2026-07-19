@@ -158,6 +158,18 @@ func watchLobbyIP() {
 		if (!ipChanged && !wifiChanged && !presenceChanged) || globalEC == nil || !globalEC.ready() {
 			continue
 		}
+		if presenceChanged {
+			wsClientsMu.Lock()
+			n, ready := 0, 0
+			for c := range wsClients {
+				n++
+				if c.hello {
+					ready++
+				}
+			}
+			wsClientsMu.Unlock()
+			fmt.Fprintf(os.Stderr, "writerdeck-server: lobby presence phone=%v usb=%v ws=%d hello=%d\n", phone, usb, n, ready)
+		}
 		lastWifi = w
 		haveWifi = true
 		lastPhone = phone

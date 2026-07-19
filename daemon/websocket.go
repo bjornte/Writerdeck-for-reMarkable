@@ -26,6 +26,13 @@ var upgrader = websocket.Upgrader{
 // the device log with one line per keystroke.
 const logEvery = 25
 
+// Drop half-dead browser tabs so phoneConnected stays truthful for the Lobby tip.
+const (
+	wsWriteWait  = 10 * time.Second
+	wsPongWait   = 45 * time.Second
+	wsPingPeriod = 30 * time.Second // must be less than wsPongWait
+)
+
 // --- WS broadcast hub ---
 //
 // Every connected browser is registered as a wsClient. A dedicated writer
@@ -34,8 +41,9 @@ const logEvery = 25
 // clients; sends are non-blocking so a slow/dead client cannot stall the
 // caller.
 type wsClient struct {
-	conn *websocket.Conn
-	send chan []byte
+	conn  *websocket.Conn
+	send  chan []byte
+	hello bool // true after {"type":"hello"} — required for phoneConnected
 }
 
 var (
@@ -255,11 +263,30 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 			conn.Close()
 			pushLobbyInfo() // Lobby tip: phone path may have gone away
 		}()
+		_ = conn.SetReadDeadline(time.Now().Add(wsPongWait))
+		conn.SetPongHandler(func(string) error {
+			_ = conn.SetReadDeadline(time.Now().Add(wsPongWait))
+			return nil
+		})
 		go func() {
-			for msg := range client.send {
-				if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
-					conn.Close() // read loop will see error and exit
-					return
+			ticker := time.NewTicker(wsPingPeriod)
+			defer ticker.Stop()
+			for {
+				select {
+				case msg, ok := <-client.send:
+					_ = conn.SetWriteDeadline(time.Now().Add(wsWriteWait))
+					if !ok {
+						_ = conn.WriteMessage(websocket.CloseMessage, []byte{})
+						return
+					}
+					if err := conn.WriteMessage(websocket.TextMessage, msg); err != nil {
+						return
+					}
+				case <-ticker.C:
+					_ = conn.SetWriteDeadline(time.Now().Add(wsWriteWait))
+					if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+						return
+					}
 				}
 			}
 		}()
@@ -287,8 +314,22 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 				fmt.Fprintf(os.Stderr, "writerdeck-server: client disconnected %s: %v (%d keys forwarded)\n", remote, err, keys)
 				return
 			}
+			_ = conn.SetReadDeadline(time.Now().Add(wsPongWait))
 			var ev wsMsg
-			if err := json.Unmarshal(msg, &ev); err != nil || ev.Type != "key" {
+			if err := json.Unmarshal(msg, &ev); err != nil {
+				continue
+			}
+			if ev.Type == "hello" {
+				wsClientsMu.Lock()
+				was := client.hello
+				client.hello = true
+				wsClientsMu.Unlock()
+				if !was {
+					pushLobbyInfo() // Lobby tip: phone page is fully ready
+				}
+				continue
+			}
+			if ev.Type != "key" {
 				continue
 			}
 			line := translate(ev)

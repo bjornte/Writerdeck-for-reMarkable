@@ -39,6 +39,8 @@ No phone app — open Safari to the tablet. Upload, download, paste, and the syn
 
 The server stays up under the stock UI. Boot leaves xochitl on screen; open Writerdeck with page buttons, USB Esc, or `wd`. Home from Lobby brings xochitl back; the phone can still reach port 8000. The PIN is shown in the Lobby. Sync is optional; the token never hits disk ([server-sync-implementation.md](server-sync-implementation.md)).
 
+Touch Edit / New / Rename (and similar) without a USB keyboard or an open phone page shows a connect tip with the phone URL and a QR image. An open page counts once it sends WebSocket `hello`; leftover sockets without hello do not.
+
 ## Constraints
 
 No jailbreak; keep OTA (over-the-air updates) — so no Toltec. One static Go binary on the tablet. Markdown on disk; HTML there is a bug. Device scripts are ASCII and LF. The tablet drops Wi-Fi when it sleeps — keep it awake while developing.

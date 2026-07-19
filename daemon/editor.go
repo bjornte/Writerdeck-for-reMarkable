@@ -49,8 +49,8 @@ const (
 
 // wsMsg is the JSON message received from the browser on keydown.
 type wsMsg struct {
-	Type   string `json:"type"`             // always "key"
-	Key    string `json:"key"`              // KeyboardEvent.key value
+	Type   string `json:"type"`             // "key" or "hello"
+	Key    string `json:"key"`              // KeyboardEvent.key value (key messages)
 	Shift  bool   `json:"shift"`            // event.shiftKey
 	Ctrl   bool   `json:"ctrl"`             // event.ctrlKey
 	Alt    bool   `json:"alt"`              // event.altKey
@@ -487,6 +487,15 @@ func handleEditorReq(op, name, oldName string) {
 		keepSession := oldName == "session"
 		if err := vaultVerifyPIN(name, keepSession); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: verifyvaultpin: %v\n", err)
+			msg := "Wrong PIN. Try again."
+			if strings.Contains(err.Error(), "too many") {
+				msg = "Too many attempts. Wait and try again."
+			} else if strings.Contains(err.Error(), "invalid PIN") {
+				msg = "PIN must be 6 digits."
+			} else if strings.Contains(err.Error(), "not enabled") {
+				msg = "Encryption is not enabled."
+			}
+			pushVaultOpFailed(msg)
 		}
 	case "encryptnote":
 		if err := vaultEncryptNote(name); err != nil {

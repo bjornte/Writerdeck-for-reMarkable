@@ -46,7 +46,10 @@ After soft-wrap End, set affinity before remembering goal X — Qt’s rect at t
 
 A confirmation or other dialog must read as one piece — title, body, and actions together — not a prompt above the list and buttons far below it. Scattered chrome blends into the note list (especially when type size and weight match list rows) and people miss the question. At minimum put a clear divider between dialog and the rest of the UI; a floating black-on-white box is fine and expected. Do not copy the inherited Ctrl-K note picker (black panel, white type) for Lobby confirms. Shared chrome lives in `lobby/lobby_dialog.inc` (scrim + white box) so later changes (for example letting the list show through the scrim) apply to every Lobby dialog.
 
-Typing actions from a touch tap (edit, new, rename, new encrypted) show a Connect-a-keyboard tip unless a USB keyboard is present. An open phone browser alone does not skip the tip — Continue (or a key from the phone) does. The same actions from a keyboard chord skip the tip, because a keystroke already proves a keyboard path.
+On the Files tab, use a fixed stack: header (feedback), list, footer (page label and action bars). The list only fills between header and footer. Do not lay feedback, list, and bars out in one Column while hand-computing the list height, and do not paint the list above the footer — either mistake pushes buttons off-screen or draws rows on top of them.
+
+Typing actions from a touch tap (edit, new, rename, new encrypted) show a Connect-a-keyboard tip when neither a USB keyboard nor an open phone/laptop page is present. An open page counts as a keyboard path (Type field). Keyboard chords skip the tip. Continue, or any key while the tip is up, runs that one pending action once — never a sticky ready flag. Dead WebSocket clients and leftover Cursor/browser tabs were keeping phoneConnected true and skipping the tip with no intentional page open. The tip counts a phone path only after the page sends a hello on connect; ping/pong drops half-dead sockets.
+
 
 ## Phone page
 
@@ -54,7 +57,7 @@ Stand down key capture when PIN, paste, or sync overlays are up. The GitHub toke
 
 ## Sync and vault
 
-Never mass-delete from a failed remote list. Never push empty over a previously synced note. Disabling the vault while encrypted notes exist orphans them — refuse that; recover from GitHub history if it already happened. A failed decrypt must show an error on Files, not a blank editor.
+Never mass-delete from a failed remote list. Never push empty over a previously synced note. Disabling the vault while encrypted notes exist orphans them — refuse that; recover from GitHub history if it already happened. A failed decrypt must show an error on Files, not a blank editor. A wrong vault PIN must keep the pad open with a short message (for example Wrong PIN. Try again.), not dismiss silently.
 
 ## Build
 

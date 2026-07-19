@@ -25,6 +25,6 @@ Sync setup, connection status, and “Show PIN on tablet” live here too. Downl
 
 Files tab lists notes on fixed pages (Up/Down, PgUp/PgDn) — no flick scroll. Edit to type; Read to preview. Esc toggles. Rename and delete from Files. Settings holds reading font, PIN length, rotation, and Exit. Keyboard tab picks USB layout. Sync tab can run Sync now.
 
-Lobby is driven by the keyboard: focus returns after touch, and every main control has a chord (Shortcuts tab). Private PIN on the tablet accepts USB digits and digits forwarded from the phone.
+Lobby is driven by the keyboard: focus returns after touch, and every main control has a chord (Shortcuts tab). Private PIN on the tablet accepts USB digits and digits forwarded from the phone. Without a USB keyboard or an open phone/laptop page, Edit / New / Rename show a short connect tip (QR for the phone URL).
 
 Home from edit returns to Files with that note selected. Launch from stock UI with USB Esc, both page buttons, phone **Show PIN on tablet**, or `wd` / `~/wd`. File ops use the trusted socket ([decisions.md](decisions.md) §19).

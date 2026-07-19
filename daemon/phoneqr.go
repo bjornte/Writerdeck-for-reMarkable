@@ -41,9 +41,13 @@ func ensurePhoneQR(url string) string {
 
 func phoneConnected() bool {
 	wsClientsMu.Lock()
-	n := len(wsClients)
-	wsClientsMu.Unlock()
-	return n > 0
+	defer wsClientsMu.Unlock()
+	for c := range wsClients {
+		if c.hello {
+			return true
+		}
+	}
+	return false
 }
 
 func usbKeyboardPresent() bool {

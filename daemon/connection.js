@@ -15,6 +15,7 @@ var echo = document.getElementById('echo');
 var trap = document.getElementById('trap');
 var buf = '';
 var ws;
+var allowReconnect = true;
 // state.typingMode: false=Browse (list, no capture), true=Type (capture + echo).
 // state.remoteKeys: '' | 'read' | 'lobby' -- forward BT keys without full Type UI.
 function keysActive() {
@@ -214,6 +215,8 @@ function connect() {
   ws.onopen = function () {
     wsReady = true;
     updateConnectionBar();
+    // Marks this tab as a real phone UI for the Lobby keyboard tip.
+    try { ws.send(JSON.stringify({ type: 'hello' })); } catch (e) {}
     grab();
     deps.loadNotes();
     refreshSyncStatus();
@@ -222,7 +225,9 @@ function connect() {
   ws.onclose = function () {
     wsReady = false;
     updateConnectionBar();
-    setTimeout(connect, RETRY_MS);
+    // Do not reconnect after pagehide/unload — leftover tabs were keeping
+    // phoneConnected true and skipping the Lobby keyboard tip.
+    if (allowReconnect) setTimeout(connect, RETRY_MS);
   };
 
   ws.onerror = function () {
@@ -294,7 +299,21 @@ export function initConnection() {
   });
 }
 export function closeWebSocket() {
+  allowReconnect = false;
   if (ws && ws.readyState === WebSocket.OPEN) { ws.close(); }
+  ws = null;
 }
+
+window.addEventListener('pagehide', function () {
+  allowReconnect = false;
+  if (ws) {
+    try { ws.close(); } catch (e) {}
+    ws = null;
+  }
+});
+
+window.addEventListener('pageshow', function () {
+  allowReconnect = true;
+});
 
 export { connect, send, grab, startStatusPoll, stopStatusPoll, setStatus, overlayUp };
