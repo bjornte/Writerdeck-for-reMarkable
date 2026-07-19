@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -53,6 +54,56 @@ func isNoteListName(name string) bool {
 		return true
 	}
 	return false
+}
+
+// noteTitleKey is the case-insensitive stem used for uniqueness and list order.
+// "Doc.md", "doc.md.enc", and "DOC" all share the key "doc".
+func noteTitleKey(name string) string {
+	base := filepath.Base(name)
+	base = strings.TrimSuffix(base, ".md.enc")
+	base = strings.TrimSuffix(base, ".md")
+	return strings.ToLower(base)
+}
+
+// noteNameConflict reports whether another note already uses the same title key
+// (case-insensitive; plain and encrypted share a key). ignore is a full path or
+// basename to skip (the file being renamed/encrypted).
+func noteNameConflict(candidate, ignore string) bool {
+	candKey := noteTitleKey(candidate)
+	if candKey == "" {
+		return false
+	}
+	ignoreBase := ""
+	if ignore != "" {
+		ignoreBase = filepath.Base(ignore)
+	}
+	entries, err := os.ReadDir(notesDirPath)
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		if e.IsDir() || !isNoteListName(e.Name()) {
+			continue
+		}
+		if ignoreBase != "" && e.Name() == ignoreBase {
+			continue
+		}
+		if noteTitleKey(e.Name()) == candKey {
+			return true
+		}
+	}
+	return false
+}
+
+// sortNotesByTitle orders notes by case-insensitive title, then by name for ties.
+func sortNotesByTitle(notes []noteInfo) {
+	sort.Slice(notes, func(i, j int) bool {
+		ki, kj := noteTitleKey(notes[i].Name), noteTitleKey(notes[j].Name)
+		if ki != kj {
+			return ki < kj
+		}
+		return strings.ToLower(notes[i].Name) < strings.ToLower(notes[j].Name)
+	})
 }
 
 // rejectsHtmlNoteContent reports Qt qrichtext / HTML accidentally saved as .md.

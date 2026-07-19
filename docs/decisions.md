@@ -110,7 +110,7 @@ A second phone mid-edit sees the note, not the PIN. Ask the tablet to return to 
 
 ## 19. Tablet file create/rename/delete via trusted socket
 
-Lobby file ops use the same local socket as keystrokes. The server does the disk work and can nudge the phone. Launch Lobby with `wd` on the Mac or `~/wd` on the tablet.
+Lobby file ops use the same local socket as keystrokes. The server does the disk work and can nudge the phone. Launch Lobby with `wd` on the Mac or `~/wd` on the tablet. A create or rename that hits an existing name fails on the server and shows the message inside the New / Rename / New encrypted dialog (same pattern as a wrong vault PIN staying on the pad). Other Files feedback (vault open errors, “open the phone page” for Download) still uses the dismissable box above the list.
 
 ## 20. Bluetooth remote key capture on the phone
 
@@ -181,6 +181,10 @@ Touch Edit / New / Rename (and similar) show a connect tip unless a USB keyboard
 ## 35. Lobby Files paginates on e-ink
 
 The Files list shows a fixed page of rows that fit the screen. Up/Down move the selection one row within the page; crossing the edge turns to the next or previous page. PgUp/PgDn jump a full page. Do not flick-scroll and do not slide the window one row at a time — both fight e-ink (extra redraws, muddy motion). How: [browser-vs-tablet.md](browser-vs-tablet.md), [lessons.md](lessons.md).
+
+## 36. Lobby look and chords on disk
+
+Lobby borders, colors, sizes, dialog/help copy, and Ctrl-letter chords live in `/home/root/.Writerdeck/lobby-ui.json` — not baked into every binary change. Edit over SSH; Writerdeck reloads without a rebuild. Repo default is `config/lobby-ui.json`; `deploy-keywriter.sh` copies it only when the tablet file is missing so local edits survive. Digit tabs 1–6, Enter, and reserved Ctrl-K / Ctrl-Q stay in code. Missing or corrupt JSON falls back to embedded defaults (or keeps the last good load after a successful start). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md).
 
 ---
 

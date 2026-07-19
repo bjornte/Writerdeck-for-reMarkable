@@ -18,7 +18,7 @@ Standing decision: [decisions.md](decisions.md) **Typing-test strategy is failin
 
 Three ways a change looks like it did nothing: GitHub has not built the new editor yet; the phone cached the page; the old editor process is still running.
 
-`rmkw` pushes the binary only. Font changes need the full Qt tree forced onto the tablet. After deploying the server, start the service again before checking the phone UI.
+`rmkw` pushes the binary only. Font changes need the full Qt tree forced onto the tablet. After deploying the server, start the service again before checking the phone UI. Lobby chrome edits go in `lobby-ui.json` on the tablet — do not expect a binary-only deploy to clobber that file (seed only when missing).
 
 `scp` stalls on this link — use gzip over SSH. Never `pkill -f /home/root/Writerdeck`; that also kills the server. Use `pidof Writerdeck`.
 
@@ -48,7 +48,11 @@ After soft-wrap End, set affinity before remembering goal X — Qt’s rect at t
 
 A confirmation or other dialog must read as one piece — title, body, and actions together — not a prompt above the list and buttons far below it. Scattered chrome blends into the note list (especially when type size and weight match list rows) and people miss the question. At minimum put a clear divider between dialog and the rest of the UI; a floating black-on-white box is fine and expected. Do not copy the inherited Ctrl-K note picker (black panel, white type) for Lobby confirms. Shared chrome lives in `lobby/lobby_dialog.inc` (scrim + white box) so later changes (for example letting the list show through the scrim) apply to every Lobby dialog.
 
-On the Files tab, use a fixed stack: header (feedback), list, footer (page label and action bars). The list only fills between header and footer. Do not lay feedback, list, and bars out in one Column while hand-computing the list height, and do not paint the list above the footer — either mistake pushes buttons off-screen or draws rows on top of them.
+Lobby look, wording, and Ctrl-letter chords live in `/home/root/.Writerdeck/lobby-ui.json`. Writerdeck reloads that file when it changes (file/directory watch plus a short mtime poll — rename replaces often miss inotify on the tablet). Start that poll only after QApplication exists; a timer started from a static constructed before the app never fires. Bad or unreadable JSON keeps the last good load (or the baked-in defaults if nothing has loaded yet) — fix the file rather than restarting for a blank Lobby.
+
+Name collisions on New / Rename / New encrypted stay in that dialog — keep it open with a short line under the typed name; clear the line when the user edits. Do not close the dialog and park the same message in the Files header. The header box is for other Files feedback (failed decrypt, Download without a phone page, and the like). The server still refuses the duplicate and can push `vaultopfailed` so a race reopens the dialog with the same sentence.
+
+On the Files tab, use a fixed stack: header (feedback), list, footer (Prev / Page N/M / Next when notes spill a page, a hairline, then the action bars). The list only fills between header and footer. Do not lay feedback, list, and bars out in one Column while hand-computing the list height, and do not paint the list above the footer — either mistake pushes buttons off-screen or draws rows on top of them. Gray 9pt page text is invisible on e-ink; use black labels and a separator so the strip does not blend into New/Edit.
 
 Typing actions from a touch tap (edit, new, rename, new encrypted) show a Connect-a-keyboard tip when neither a USB keyboard nor an open phone/laptop page is present. An open page counts as a keyboard path (Type field). Keyboard chords skip the tip. Continue, or any key while the tip is up, runs that one pending action once — never a sticky ready flag. Dead WebSocket clients kept phoneConnected true without an intentional page; hello plus ping/pong fixed that. Cursor’s embedded browser also sent hello and skipped the tip — the phone page skips hello there, and the server ignores hello from User-Agents containing Cursor/ or Electron/ ([decisions.md](decisions.md) §34).
 

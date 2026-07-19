@@ -31,11 +31,13 @@ Writerdeck is the full-screen editor, built from our fork of [keywriter](https:/
 
 New editor behavior belongs in [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). CI (GitHub Actions) clones, checks, and compiles — it does not stitch QML.
 
-Under `/home/root/`: the two binaries, `Writerdeck-user-documents/` for notes, `.Writerdeck/settings.json`, a Qt runtime, and the launcher script. They meet on `/run/Writerdeck.sock`. The phone page is embedded in the server.
+Under `/home/root/`: the two binaries, `Writerdeck-user-documents/` for notes, `.Writerdeck/settings.json`, `.Writerdeck/lobby-ui.json`, a Qt runtime, and the launcher script. They meet on `/run/Writerdeck.sock`. The phone page is embedded in the server.
+
+Lobby look, wording, and Ctrl-letter shortcuts are owned by `lobby-ui.json` ([decisions.md](decisions.md) §36). Edit that file on the tablet; Writerdeck reloads it (watch plus a short mtime poll). Repo source of truth for first install is `config/lobby-ui.json`; `deploy-keywriter.sh` seeds the tablet path only when missing. Journal shows `lobby-ui: loaded … (rev N)` on each successful load.
 
 ## Phone and Lobby
 
-No phone app — open Safari to the tablet. The phone is a keyboard bridge: paste, sync token, and accepting a Lobby Download offer. Files and settings live in the Lobby ([browser-vs-tablet.md](browser-vs-tablet.md)). Lobby Files paginates on e-ink — fixed pages, no flick ([decisions.md](decisions.md) §35).
+No phone app — open Safari to the tablet. The phone is a keyboard bridge: paste, sync token, and accepting a Lobby Download offer. Files and settings live in the Lobby ([browser-vs-tablet.md](browser-vs-tablet.md)). Lobby Files paginates on e-ink — fixed pages, no flick; when notes spill a page, Prev / Page N/M / Next sits above the action buttons ([decisions.md](decisions.md) §35). Create and rename go through the trusted editor socket; a name that already exists is refused and shown inside the New / Rename dialog ([decisions.md](decisions.md) §19).
 
 The server stays up under the stock UI. Boot leaves xochitl on screen; open Writerdeck with page buttons, USB Esc, or `wd`. Home from Lobby brings xochitl back; the phone can still reach port 8000. The PIN is shown in the Lobby. Lobby → Keyboard lists Bluetooth (phone URL, PIN, QR) then USB layout, with live `(connected)` / `(not connected)` on each headline while that tab is open. Sync is optional; the token never hits disk ([server-sync-implementation.md](server-sync-implementation.md)).
 
@@ -67,4 +69,4 @@ Editor from CI (GitHub Actions); QML is inside the binary:
 git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywriter.sh -b
 ```
 
-Then relaunch the editor and read `journalctl -u writerdeck`. After QML changes: edit-session check. After caret work: automated typing tests. After Lobby/Home: Lobby keyboard test. Deploy uses gzip over SSH, not scp.
+Then relaunch the editor and read `journalctl -u writerdeck`. After QML changes: edit-session check. After caret work: automated typing tests. After Lobby/Home: Lobby keyboard test. Deploy uses gzip over SSH, not scp. The same deploy seeds `lobby-ui.json` only if that file is absent on the tablet.

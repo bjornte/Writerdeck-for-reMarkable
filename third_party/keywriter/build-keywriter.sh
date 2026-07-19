@@ -66,6 +66,10 @@ test -f rotation_watcher.h && test -f rotation_watcher.cpp \
     || { echo "ERROR: rotation_watcher.{h,cpp} missing from fork checkout" >&2; exit 1; }
 test -f lobby_bridge.h && test -f lobby_bridge.cpp \
     || { echo "ERROR: lobby_bridge.{h,cpp} missing from fork checkout" >&2; exit 1; }
+grep -q 'lobby_ui_config.cpp' edit.pro \
+    || { echo "ERROR: edit.pro missing lobby_ui_config.cpp" >&2; exit 1; }
+test -f lobby_ui_config.h && test -f lobby_ui_config.cpp \
+    || { echo "ERROR: lobby_ui_config.{h,cpp} missing from fork checkout" >&2; exit 1; }
 test -f edit_helper.h && test -f edit_helper.cpp \
     || { echo "ERROR: edit_helper.{h,cpp} missing from fork checkout" >&2; exit 1; }
 grep -q 'clearUndoStacks' edit_helper.cpp \

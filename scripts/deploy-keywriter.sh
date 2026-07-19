@@ -187,6 +187,20 @@ rm_deploy_wd "$TARGET"
 echo "  ${DEVICE_WD} OK"
 echo
 
+# Seed Lobby UI config once (never overwrite local tablet edits).
+LOBBY_UI_SRC="$REPO/config/lobby-ui.json"
+if [ -f "$LOBBY_UI_SRC" ]; then
+    echo "--- Lobby UI config (${DEVICE_LOBBY_UI_FILE}) ---"
+    rm_ssh "mkdir -p '${DEVICE_SETTINGS_DIR}'" "$TARGET"
+    if rm_ssh "[ -f '${DEVICE_LOBBY_UI_FILE}' ] && echo EXISTS || echo MISSING" "$TARGET" | grep -q EXISTS; then
+        echo "  already on tablet (left unchanged)"
+    else
+        rm_send_file "$LOBBY_UI_SRC" "${DEVICE_LOBBY_UI_FILE}" "$TARGET"
+        echo "  seeded from config/lobby-ui.json"
+    fi
+    echo
+fi
+
 # Push the Qt5 sysroot tarball UNLESS RM_BINARY_ONLY=1 and the sysroot already
 # exists on the device.  RM_FORCE_SYSROOT=1 always re-pushes (use after a Qt
 # or Dockerfile rebuild).  Binary-only cuts the iteration loop from ~90s -> ~1s.
