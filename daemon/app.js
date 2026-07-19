@@ -9,7 +9,8 @@ import {
   showPasteModal, hidePasteModal, submitPaste,
   showReadKeyView, showLobbyKeyView, clearRemoteKeys,
   showDownloadOffer, hideDownloadOffer, acceptDownloadOffer,
-  toggleObserve, refreshObserveStatus, applyObserveStatus, applyObserveEnabled
+  toggleObserve, refreshObserveStatus, applyObserveStatus, applyObserveEnabled,
+  applyEditorActive, launchWriterdeck
 } from './notes-ui.js';
 import {
   showSync, hideSync, showPinScreen,
@@ -23,6 +24,7 @@ deps.showIdleKeyboardView = showIdleKeyboardView;
 deps.showReadKeyView = showReadKeyView;
 deps.showLobbyKeyView = showLobbyKeyView;
 deps.clearRemoteKeys = clearRemoteKeys;
+deps.applyEditorActive = applyEditorActive;
 deps.showDownloadOffer = showDownloadOffer;
 deps.showPinScreen = showPinScreen;
 deps.connect = connect;
@@ -40,6 +42,7 @@ window.addEventListener('load', function () {
     e.stopPropagation(); showPasteModal();
   });
   document.getElementById('typing-observe').addEventListener('click', toggleObserve);
+  document.getElementById('typing-launch').addEventListener('click', launchWriterdeck);
   if (/iPhone|iPod/.test(navigator.userAgent) ||
       (/Android/.test(navigator.userAgent) && /Mobile/.test(navigator.userAgent))) {
     document.getElementById('typing-paste').textContent = 'Paste from phone';

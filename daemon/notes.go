@@ -452,12 +452,30 @@ func deleteNoteFile(name string) error {
 	return nil
 }
 
+// noteOpErrMsg maps create/rename disk errors to a short Lobby sentence.
+func noteOpErrMsg(op string, err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := err.Error()
+	if strings.Contains(msg, "already exists") || strings.Contains(msg, "name already taken") {
+		return "A note with that name already exists."
+	}
+	if op == "rename" {
+		return "Could not rename note."
+	}
+	return "Could not create note."
+}
+
 // renameNoteFile renames a note on disk and notifies the editor if it was open.
 func renameNoteFile(oldName, newName string) error {
 	oldP := notesSafe(oldName)
 	newP := notesSafe(newName)
 	if oldP == "" || newP == "" {
 		return fmt.Errorf("invalid name")
+	}
+	if oldP == newP {
+		return nil // same path — no-op (avoids false "already exists")
 	}
 	if _, err := os.Stat(newP); err == nil {
 		return fmt.Errorf("name already taken")

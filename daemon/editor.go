@@ -473,9 +473,13 @@ func handleEditorReq(op, name, oldName string) {
 	switch op {
 	case "noteslist":
 		pushNotesList()
+	case "lobbyinfo":
+		// Lobby Keyboard tab polls presence (phone page / USB).
+		pushLobbyInfo()
 	case "createnote":
 		if err := createNoteFile(name, ""); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: editor createnote: %v\n", err)
+			pushVaultOpFailed(noteOpErrMsg("create", err))
 		} else {
 			notifyTabletCrud("createnote", name, "")
 		}
@@ -488,7 +492,8 @@ func handleEditorReq(op, name, oldName string) {
 	case "renamenote":
 		if err := renameNoteFile(oldName, name); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: editor renamenote: %v\n", err)
-		} else {
+			pushVaultOpFailed(noteOpErrMsg("rename", err))
+		} else if notesSafe(oldName) != notesSafe(name) {
 			notifyTabletCrud("renamenote", name, oldName)
 		}
 	case "syncnow":

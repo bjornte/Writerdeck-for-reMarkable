@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>Writerdeck</title>
+<title></title>
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -67,15 +67,16 @@
 
 <div id="typing">
   <div id="typing-head">
-    <span id="typing-note">Writerdeck</span>
+    <span id="typing-note"></span>
     <div style="display:flex;gap:6px;flex-shrink:0">
       <button id="typing-observe" class="note-btn" title="Record keys for a bug report" style="display:none">Observe</button>
       <button id="typing-paste" class="note-btn" disabled aria-disabled="true">Paste from here</button>
     </div>
   </div>
   <div id="typing-body">
-    <p>Open notes on the tablet Files tab.</p>
-    <p>Type here — keys go to the tablet.</p>
+    <img id="typing-logo" src="/logo-gray.svg" alt="Writerdeck" width="120" height="104">
+    <button id="typing-launch" type="button" style="display:none">Launch Writerdeck</button>
+    <div id="typing-guide"></div>
   </div>
 </div>
 
@@ -84,11 +85,6 @@
   autocorrect="off"
   autocapitalize="none"
   spellcheck="false"></textarea>
-
-<div id="foot">
-  <div id="echo-label">Echo</div>
-  <div id="echo"></div>
-</div>
 
 <script type="module" src="/app.js"></script>
 </body>

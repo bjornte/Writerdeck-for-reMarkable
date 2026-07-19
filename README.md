@@ -39,7 +39,7 @@ If you already cloned this repo, run the same command from the clone instead.
 ### You're done when
 
 - Stock reMarkable UI is on the e-ink screen (Writerdeck opens only when you ask)
-- On your phone, `http://<that-Wi-Fi-IP>:8000/` shows your notes list and **Connected** (not stuck on `connecting...`)
+- On your phone, `http://<that-Wi-Fi-IP>:8000/` shows the keyboard shell and **Connected** (not stuck on `connecting...`)
 - Optional check: both page buttons together (or `wd`) open the Lobby
 
 If Writerdeck is stuck or something looks wrong after a bad install:

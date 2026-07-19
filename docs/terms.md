@@ -9,6 +9,7 @@ Short definitions for Writerdeck and its editor fork.
 * **Writerdeck (app)**: The full-screen editor you see. Built from our fork of Singleton’s keywriter: [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). Made primarily in QML & C++.
 * **keywriter**: Singleton’s original Qt Markdown notepad — the project that fork started from. Made primarily in QML & C++. Uses Qt’s TextEdit.
 * **Lobby**: In-app home on the tablet — files, settings, sleep — not the stock reMarkable UI. Made primarily in QML.
+* **Phone page**: Browser UI on port 8000 — keyboard bridge with the gray Writerdeck mark, paste, sync token, and “Download here?” when Lobby offers a file. Not a notes browser.
 * **Document integrity**: Your prose must survive as plain Markdown on disk.
 
 ## Editor

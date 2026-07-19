@@ -4,7 +4,7 @@ Always-on Go program on the tablet. Deploys as `/home/root/Writerdeck-server`. H
 
 Feeds the editor over `/run/Writerdeck.sock` — this kernel has no usable uinput (fake keyboard device).
 
-Serves the phone page and WebSocket on port 8000. Handles notes, settings, PIN, Lobby launches, GitHub sync, and device tests under `/api/test/`. Phone UI is the keyboard shell (paste, sync, download offer) — [browser-vs-tablet.md](../docs/browser-vs-tablet.md). WebSocket `hello` marks a real browser as a keyboard path for the Lobby tip; Cursor/Electron User-Agents are excluded ([decisions.md](../docs/decisions.md) §34).
+Serves the phone page and WebSocket on port 8000. Handles notes, settings, PIN, Lobby launches, GitHub sync, and device tests under `/api/test/`. Phone UI is the keyboard shell (gray logo, paste, sync, download offer) — assets include embedded `logo-gray.svg` at `/logo-gray.svg` ([browser-vs-tablet.md](../docs/browser-vs-tablet.md)). WebSocket `hello` marks a real browser as a keyboard path for the Lobby tip; Cursor/Electron User-Agents are excluded ([decisions.md](../docs/decisions.md) §34). Lobby Keyboard polls `lobbyinfo` for phone/USB presence while that tab is open.
 
 Build and ship: `bash ../scripts/deploy-rmkbd.sh`.
 

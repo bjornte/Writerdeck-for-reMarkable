@@ -42,7 +42,8 @@ import (
 )
 
 // Static assets embedded at compile time; all served with Cache-Control: no-store.
-// app.css, app.js (+ connection/notes-ui/panels/deps modules), state.js, sync.js.
+// app.css, app.js (+ connection/notes-ui/panels/deps modules), state.js, sync.js,
+// logo-gray.svg (phone keyboard-shell mark).
 //
 //go:embed index.html
 var indexHTML []byte
@@ -70,6 +71,9 @@ var stateJS []byte
 
 //go:embed sync.js
 var syncJS []byte
+
+//go:embed logo-gray.svg
+var logoGraySVG []byte
 
 func serveJS(w http.ResponseWriter, data []byte) {
 	w.Header().Set("Cache-Control", "no-store")
@@ -139,6 +143,11 @@ func main() {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")
 		w.Write(appCSS) //nolint:errcheck
+	})
+	http.HandleFunc("/logo-gray.svg", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Type", "image/svg+xml")
+		w.Write(logoGraySVG) //nolint:errcheck
 	})
 	http.HandleFunc("/app.js", func(w http.ResponseWriter, r *http.Request) { serveJS(w, appJS) })
 	http.HandleFunc("/deps.js", func(w http.ResponseWriter, r *http.Request) { serveJS(w, depsJS) })

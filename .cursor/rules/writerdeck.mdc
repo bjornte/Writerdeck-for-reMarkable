@@ -28,10 +28,10 @@ After `daemon/`, `build-keywriter.sh`, Lobby/QML (fork), or deploy-script change
 1. Deploy (`deploy-rmkbd.sh`; ensure `systemctl start writerdeck` if service stopped)
 2. **Load the page** at `http://$RM_HOST:8000/` (browser tools or real browser) — hard refresh if cached
 3. Confirm **JavaScript actually ran**:
-   - Notes list populated (not empty with only the static top bar)
+   - Keyboard shell visible (gray logo above guide text, Paste; no notes list)
    - Connection bar shows **Connected** or **Tablet offline** — not stuck on HTML default `connecting...`
    - PIN screen hidden when `pinDigits` is `none`
-4. Spot-check changed UI (e.g. Sync setup modal, Save/Sync buttons)
+4. Spot-check changed UI (e.g. Sync setup, Download here? modal, Paste)
 5. If modules fail to load, fix before moving on (common: duplicate `export` in `connection.js`)
 
 Cursor’s embedded browser must not count as a Lobby keyboard path (no WebSocket `hello` / ignored by User-Agent). Journal after Lobby up: `lobby presence phone=false` is expected when only Cursor tabs are connected — see [docs/decisions.md](docs/decisions.md) §34.

@@ -10,10 +10,8 @@ Wishlist — not a backlog. Shipped: [../DONE.md](../DONE.md). Open verify: [../
 * General
     * Parked, evaluate later: When necessary functionality is migrated away from the phone and over to the reMarkable, hopefully, the PIN to connect from the phone can be removed. BUT this needs consideration. Requires all "security sensitive features", e.g. download, upload, copy & paste, to be acknowledged on the device. When done (if at all): Update all processes, including install scripts.
     * Windows installer still open. Mac/Linux installer remembers Wi-Fi / password / GitHub repo + token and can open a prefilled token page — [TODO.md](../TODO.md) Open.
-* Lobby / phone (partially shipped)
-    * Download starts on the tablet and prompts open phone browsers — done. Upload is no longer on the phone list (list removed); bring Upload back on the Lobby or a thin phone control when needed.
-    * Phone keyboard shell is the default; file list removed. PIN removal still parked above.
-    * Maybe only "Paste from phone" and any connection debugging should remain — mostly true now; Sync setup and Observe stay.
+* Lobby / phone
+    * Bring Upload/import back on the Lobby or a thin phone control when needed (API route still exists — [decisions.md](decisions.md) §30).
 
 ## Possible later
 * More USB keyboard layouts beyond US and Norwegian — add sources under `keymaps/`, generate, check on hardware (the phone path does not exercise USB maps).

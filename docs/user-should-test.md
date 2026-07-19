@@ -22,7 +22,9 @@ When these pass, check them off or tell the agent. Detail: [todo-handoff-physica
 
 After USB keymap work: Norwegian characters and the Lobby layout picker.
 
-After phone UI deploy: hard-refresh the page — notes list loads; the bar shows Connected or Tablet offline, not stuck on connecting.
+After phone UI deploy: hard-refresh the page — keyboard shell with the gray logo (no notes list); the bar shows Connected or Tablet offline, not stuck on connecting. After Exit (stock UI) Launch Writerdeck appears under the logo; on the Files tab that button is hidden. Paste and Sync setup still open.
+
+After Lobby Download: with the phone page open, Download (or **g**) on Files should prompt “Download here?” on the phone; without a phone page, the tablet should say to open one first.
 
 After sync or vault work: Sync setup still runs; a wrong vault PIN shows an error, not a blank editor.
 

@@ -28,4 +28,4 @@ install-onboarding/ — visitor install (ZIP, prompts, Releases); boot-enable fo
 
 server-sync-implementation.md — how GitHub sync and token restore work.
 
-External: [keywriter](https://github.com/dps/remarkable-keywriter) · [input docs](https://remarkable.guide/devel/device/input.html)
+External: [keywriter](https://github.com/dps/remarkable-keywriter) · [awesome-reMarkable](https://github.com/reHackable/awesome-reMarkable) · [input docs](https://remarkable.guide/devel/device/input.html)

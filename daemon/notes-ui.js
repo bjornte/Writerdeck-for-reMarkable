@@ -7,20 +7,18 @@ import { grab, sendPaste, applyMode } from './connection.js';
 var currentTypingFile = '';
 var pendingDownloadName = '';
 
-var IDLE_BODY_HTML =
-  '<p>Open notes on the tablet Files tab.</p>' +
-  '<p>Type here — keys go to the tablet.</p>';
+var IDLE_BODY_HTML = '';
 
-var TYPING_BODY_HTML =
-  '<p>Type here — your words appear on e-ink.</p>' +
-  '<p>Press Home on the tablet when done.</p>';
+// Writerdeck quit — tablet is back on stock xochitl; Launch button only.
+var CLOSED_BODY_HTML = '';
 
+var TYPING_BODY_HTML = '';
+
+var editorActive = null; // null until first /api/status (avoid Launch flash)
+
+// Only modes that still need a phone banner. Name/PIN prompts stay silent.
 var LOBBY_INPUT_LABELS = {
-  'new': 'Type the new note name on the tablet keyboard.',
-  'rename': 'Type the new name on the tablet keyboard.',
-  'new-encrypted': 'Type the encrypted note name on the tablet keyboard.',
   'confirm-delete': 'Delete on tablet: tap Delete or Cancel (Enter / Esc also work).',
-  'pin': 'Type the private PIN digits — they go to the tablet.',
   'no-keyboard': 'Scan the QR on the tablet (or open the URL) to connect this phone as a keyboard.'
 };
 
@@ -57,9 +55,85 @@ function setPasteEnabled(on) {
   btn.style.display = '';
 }
 
+function setTypingGuide(html) {
+  var guide = document.getElementById('typing-guide');
+  if (guide) guide.innerHTML = html;
+}
+
+function isIdleShell() {
+  return !currentTypingFile && state.remoteKeys !== 'read' && state.remoteKeys !== 'lobby';
+}
+
+function setLaunchVisible(on) {
+  var btn = document.getElementById('typing-launch');
+  if (!btn) return;
+  btn.style.display = on ? 'inline-block' : 'none';
+  if (!on) {
+    btn.disabled = false;
+    btn.textContent = 'Launch Writerdeck';
+  }
+}
+
+function updateIdleChrome() {
+  if (!isIdleShell()) {
+    setLaunchVisible(false);
+    return;
+  }
+  // Only show Launch when status has confirmed the editor is down.
+  if (editorActive === false) {
+    setTypingGuide(CLOSED_BODY_HTML);
+    setLaunchVisible(true);
+  } else {
+    setTypingGuide(IDLE_BODY_HTML);
+    setLaunchVisible(false);
+  }
+  setPasteEnabled(false);
+}
+
+// Called from /api/status polls and WebSocket open/exit so the shell
+// matches Files-tab vs stock UI without waiting for a note open.
+export function applyEditorActive(active) {
+  editorActive = !!active;
+  if (isIdleShell()) updateIdleChrome();
+  else setLaunchVisible(false);
+}
+
+export function launchWriterdeck(e) {
+  if (e) e.stopPropagation();
+  var btn = document.getElementById('typing-launch');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Launching\u2026';
+  }
+  fetch('/api/launch', { method: 'POST', credentials: 'same-origin' })
+    .then(function(r) {
+      if (r.status === 401) {
+        deps.showPinScreen();
+        return null;
+      }
+      // 409 = already running — treat as success and refresh chrome.
+      if (r.ok || r.status === 409) {
+        applyEditorActive(true);
+        return null;
+      }
+      return r.text().then(function(t) {
+        throw new Error(t || ('HTTP ' + r.status));
+      });
+    })
+    .catch(function(err) {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Launch Writerdeck';
+      }
+      alert('Could not launch Writerdeck: ' +
+        (err && err.message ? err.message : 'error'));
+    });
+}
+
 function resetTypingBody() {
-  document.getElementById('typing-body').innerHTML = TYPING_BODY_HTML;
+  setTypingGuide(TYPING_BODY_HTML);
   setPasteEnabled(true);
+  setLaunchVisible(false);
 }
 
 export function clearRemoteKeys() {
@@ -67,7 +141,7 @@ export function clearRemoteKeys() {
   var banner = document.getElementById('remote-keys-banner');
   if (banner) banner.style.display = 'none';
   if (!state.typingMode || !currentTypingFile) {
-    document.getElementById('typing-body').innerHTML = IDLE_BODY_HTML;
+    updateIdleChrome();
   } else {
     resetTypingBody();
   }
@@ -79,10 +153,10 @@ export function showIdleKeyboardView() {
   clearRemoteKeys();
   currentTypingFile = '';
   state.tabletOpenNote = state.tabletOpenNote || '';
-  document.getElementById('typing-note').textContent = 'Writerdeck';
-  document.getElementById('typing-body').innerHTML = IDLE_BODY_HTML;
+  document.getElementById('typing-note').textContent = '';
+  updateIdleChrome();
   setPasteEnabled(false);
-  document.getElementById('typing').style.display = 'block';
+  document.getElementById('typing').style.display = 'flex';
   state.typingMode = true;
   applyMode();
 }
@@ -92,26 +166,28 @@ export function showIdleKeyboardView() {
 // overlay (PIN, settings, paste) has focus.
 export function followTabletOpen(filename) {
   if (!filename) return;
+  applyEditorActive(true);
   if (state.typingMode && currentTypingFile === filename) return;
   showTypingView(filename.replace(/\.md(\.enc)?$/, ''), filename);
 }
 
 export function showReadKeyView(filename) {
   if (!filename) return;
+  applyEditorActive(true);
   state.remoteKeys = 'read';
   state.tabletOpenNote = filename;
   currentTypingFile = '';
   state.typingMode = true;
-  document.getElementById('typing-note').textContent = displayName(filename);
-  document.getElementById('typing-body').innerHTML =
-    '<p>Reading on the tablet.</p>' +
-    '<p>Press Esc on your keyboard to switch to edit mode.</p>';
+  document.getElementById('typing-note').textContent = '';
+  setTypingGuide('');
   setPasteEnabled(false);
-  document.getElementById('typing').style.display = 'block';
+  setLaunchVisible(false);
+  document.getElementById('typing').style.display = 'flex';
   applyMode();
 }
 
 export function showLobbyKeyView(mode) {
+  applyEditorActive(true);
   if (!mode) {
     clearRemoteKeys();
     showIdleKeyboardView();
@@ -120,23 +196,31 @@ export function showLobbyKeyView(mode) {
   state.remoteKeys = 'lobby';
   state.typingMode = true;
   currentTypingFile = '';
-  document.getElementById('typing-note').textContent = 'Writerdeck';
-  document.getElementById('typing-body').innerHTML = IDLE_BODY_HTML;
+  document.getElementById('typing-note').textContent = '';
+  setTypingGuide(IDLE_BODY_HTML);
   setPasteEnabled(false);
-  document.getElementById('typing').style.display = 'block';
+  setLaunchVisible(false);
+  document.getElementById('typing').style.display = 'flex';
   var banner = document.getElementById('remote-keys-banner');
-  banner.textContent = LOBBY_INPUT_LABELS[mode] || 'Keys go to the tablet.';
-  banner.style.display = 'block';
+  var label = LOBBY_INPUT_LABELS[mode];
+  if (label) {
+    banner.textContent = label;
+    banner.style.display = 'block';
+  } else {
+    banner.textContent = '';
+    banner.style.display = 'none';
+  }
   applyMode();
   if (deps.updateBannerOffset) deps.updateBannerOffset();
 }
 
 // showTypingView: show the "typing on the tablet" panel for an open note.
 export function showTypingView(noteName, filename) {
+  applyEditorActive(true);
   clearRemoteKeys();
-  document.getElementById('typing-note').textContent = noteName;
+  document.getElementById('typing-note').textContent = '';
   resetTypingBody();
-  document.getElementById('typing').style.display = 'block';
+  document.getElementById('typing').style.display = 'flex';
   currentTypingFile = filename || '';
   state.tabletOpenNote = filename || '';
   state.typingMode = true;
@@ -144,6 +228,7 @@ export function showTypingView(noteName, filename) {
 }
 
 // hideTypingView: tablet left the note — stay on the keyboard shell.
+// Caller sets applyEditorActive when the whole app quit (exitedit).
 export function hideTypingView(e) {
   if (e) e.stopPropagation();
   currentTypingFile = '';
@@ -255,7 +340,6 @@ export function submitPaste() {
 // ---- Observation mode (bug demos for LLM) ----
 
 var observing = false;
-var observeReady = false;
 
 export function applyObserveEnabled(on) {
   state.observeEnabled = !!on;
@@ -263,15 +347,15 @@ export function applyObserveEnabled(on) {
   if (!btn) return;
   if (!state.observeEnabled) {
     btn.style.display = 'none';
-    setObserveBanner(false, 0, false);
+    setObserveBanner(false, 0);
     return;
   }
   btn.style.display = '';
   setObserveButton(observing);
-  setObserveBanner(observing, 0, observeReady && !observing);
+  setObserveBanner(observing, 0);
 }
 
-function setObserveBanner(active, steps, ready) {
+function setObserveBanner(active, steps) {
   var banner = document.getElementById('observe-banner');
   if (!banner) return;
   if (!state.observeEnabled) {
@@ -280,9 +364,6 @@ function setObserveBanner(active, steps, ready) {
   } else if (active) {
     banner.textContent = 'Observing' + (steps ? ' \u00b7 ' + steps + ' keys' : '') +
       ' \u2014 Stop when the bug shows.';
-    banner.style.display = 'block';
-  } else if (ready) {
-    banner.textContent = 'Observation ready on the tablet. In Cursor chat, say you found a bug \u2014 it will be pulled automatically.';
     banner.style.display = 'block';
   } else {
     banner.style.display = 'none';
@@ -311,9 +392,8 @@ export function applyObserveStatus(data) {
     applyObserveEnabled(data.enabled);
   }
   if (!state.observeEnabled) return;
-  observeReady = !!(data.ready || (data.hasExport && !data.active));
   setObserveButton(!!data.active);
-  setObserveBanner(!!data.active, data.steps || 0, observeReady);
+  setObserveBanner(!!data.active, data.steps || 0);
 }
 
 export function refreshObserveStatus() {
