@@ -7,9 +7,9 @@ Natively, the reMarkable 1 supports the "draw", "write by hand" and "read" use c
 Bluetooth keyboards pair to your phone and bridge over Wi-Fi. USB keyboards use an [OTG cable](https://en.wikipedia.org/wiki/USB_On-The-Go#OTG_micro_cables).
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/bjornte/Writerdeck-for-reMarkable/main/docs/Writerdeck-for-reMarkable-two-photos-dark-bg.jpg">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/bjornte/Writerdeck-for-reMarkable/main/docs/Writerdeck-for-reMarkable-two-photos-light-bg.jpg">
-  <img alt="Two photos of Writerdeck for reMarkable 1" src="https://raw.githubusercontent.com/bjornte/Writerdeck-for-reMarkable/main/docs/Writerdeck-for-reMarkable-two-photos.jpg">
+  <source media="(prefers-color-scheme: dark)" srcset="/docs/Writerdeck-for-reMarkable-two-photos-dark-bg.jpg">
+  <source media="(prefers-color-scheme: light)" srcset="/docs/Writerdeck-for-reMarkable-two-photos-light-bg.jpg">
+  <img alt="Two photos of Writerdeck for reMarkable 1" src="/docs/Writerdeck-for-reMarkable-two-photos.jpg">
 </picture>
 
 The reMarkable 1 has a large e-ink screen and a quiet OS, but no word processor and no keyboard support. This fills the gap.
