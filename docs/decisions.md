@@ -152,9 +152,9 @@ Wrong line endings or stray fancy characters break shell and systemd on the tabl
 
 On the tablet the names are Writerdeck, Writerdeck-server, Writerdeck-user-documents, and `/run/Writerdeck.sock`. Some repo script names are older history.
 
-## 30. Upload reuses the safe create route
+## 30. Note create stays on the safe create route
 
-Phone upload goes through the same create API as a new note — path checks and “already exists” included. The server enforces size; the client check is courtesy.
+New notes (Lobby New, and any future import UI) go through the same create API — path checks and “already exists” included. The server enforces size. The old phone Upload control is gone with the phone notes list; bringing import back should reuse this route, not invent a second path.
 
 ## 31. Display rotation persists in settings
 
@@ -177,6 +177,10 @@ Do not start rM2 work unless there is clear community demand. Wishlist: [improve
 ## 34. Lobby tip: real browsers only, not Cursor
 
 Touch Edit / New / Rename (and similar) show a connect tip unless a USB keyboard is present or a phone/laptop page has sent WebSocket `hello`. A real Safari/Chrome/Firefox session must count. Cursor’s embedded browser must not — it loads the same page for agent checks and was skipping the tip with no intentional keyboard. The page skips `hello` when it detects Cursor/Electron; the server also ignores `hello` from User-Agents containing `Cursor/` or `Electron/`. How: [architecture.md](architecture.md). Gotcha: [lessons.md](lessons.md).
+
+## 35. Lobby Files paginates on e-ink
+
+The Files list shows a fixed page of rows that fit the screen. Up/Down move the selection one row within the page; crossing the edge turns to the next or previous page. PgUp/PgDn jump a full page. Do not flick-scroll and do not slide the window one row at a time — both fight e-ink (extra redraws, muddy motion). How: [browser-vs-tablet.md](browser-vs-tablet.md), [lessons.md](lessons.md).
 
 ---
 

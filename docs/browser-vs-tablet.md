@@ -6,7 +6,7 @@ The phone is a keyboard bridge, paste helper, and place to paste the GitHub toke
 
 ## Phone
 
-After the PIN (or with PIN set to none): the page lands on the keyboard shell. Keys forward to the tablet whenever the page is connected. There is no phone note list and no phone Edit.
+After the PIN (or with PIN set to none): the page lands on the keyboard shell — gray Writerdeck mark centered. Keys forward to the tablet whenever the page is connected. There is no phone note list and no phone Edit. When Writerdeck has quit (stock UI) a Launch Writerdeck button appears under the logo; on the Files tab that button is hidden.
 
 When the tablet opens a note for edit, the phone shows that note’s name and keeps capturing keys. Paste from phone inserts clipboard text at the tablet cursor — only while that note is open for edit, not on Lobby Files. Bluetooth keyboards pair to the phone. The phone also forwards keys during read preview, Lobby name prompts, delete confirm, and private PIN entry.
 
@@ -25,7 +25,7 @@ Sync setup, connection status, and “Show PIN on tablet” live here too. Plain
 
 ## Tablet
 
-Files tab lists notes on fixed pages (Up/Down, PgUp/PgDn) — no flick scroll. Edit to type; Read to preview; Download offers the selected note to open phone browsers. Esc toggles edit/preview. Rename and delete from Files. Settings holds reading font, PIN length, rotation, and Exit. Keyboard tab has two boxes: Bluetooth first (phone URL, PIN, and the same QR as the connect tip), then USB layout. Sync tab can run Sync now.
+Files tab lists notes on fixed pages (Up/Down, PgUp/PgDn) — no flick scroll, no sliding one-row window ([decisions.md](decisions.md) §35). Edit to type; Read to preview; Download offers the selected note to open phone browsers. Esc toggles edit/preview. Rename and delete from Files. Settings holds reading font, PIN length, rotation, and Exit. Keyboard tab: two boxes — Bluetooth first (phone URL, PIN, same QR as the connect tip), then USB layout. Each headline shows `(connected)` or `(not connected)` and refreshes about every two seconds while you stay on that tab. Sync tab can run Sync now.
 
 Lobby is driven by the keyboard: focus returns after touch, and every main control has a chord (Shortcuts tab). Private PIN on the tablet accepts USB digits and digits forwarded from the phone. Without a USB keyboard or an open phone/laptop page, Edit / New / Rename show a short connect tip (QR for the phone URL). An open page counts after WebSocket `hello`; Cursor’s embedded browser is excluded (User-Agent `Cursor/` or `Electron/`), so agent tabs do not hide the tip.
 

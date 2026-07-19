@@ -7,7 +7,6 @@ import {
 import { deps } from './deps.js';
 
 var RETRY_MS = 2000;
-var ECHO_MAX = 300;
 
 // Cursor (and Electron shells) load this page for agent checks; they must not
 // count as a keyboard path for the Lobby tip. Real Safari/Chrome/Firefox do not match.
@@ -22,19 +21,16 @@ function isIdeBrowser() {
 
 var dot  = document.getElementById('dot');
 var msg  = document.getElementById('msg');
-var echo = document.getElementById('echo');
 var trap = document.getElementById('trap');
-var buf = '';
 var ws;
 var allowReconnect = true;
-// state.typingMode: true = keyboard shell (capture + echo). Default after auth.
+// state.typingMode: true = keyboard shell (capture). Default after auth.
 // state.remoteKeys: '' | 'read' | 'lobby' -- still set for banners / Esc into edit.
 function keysActive() {
   return state.typingMode || state.remoteKeys !== '';
 }
 
 export function applyMode() {
-  document.getElementById('foot').style.display = keysActive() ? 'block' : 'none';
   document.body.classList.toggle('typing-dark', state.typingMode);
   if (keysActive()) { grab(); }
 }
@@ -109,6 +105,9 @@ function refreshTabletStatus() {
         // Do not poll-check drift here: tablet autosave changes disk under the open note and
         // would false-alarm "Disk changed". Real external writes arrive via WS diskchanged.
       }
+      if (deps.applyEditorActive) {
+        deps.applyEditorActive(!!data.editorActive);
+      }
       updateConnectionBar();
     })
     .catch(function() {
@@ -133,25 +132,6 @@ function stopStatusPoll() {
   updateConnectionBar();
 }
 
-function appendEcho(key) {
-  if (key === 'Backspace') {
-    buf = buf.slice(0, -1);
-  } else if (key === 'Enter') {
-    buf += '\n';
-  } else if (key === 'Tab') {
-    buf += '\t';
-  } else if (key === 'Escape') {
-    buf += '[Esc]';
-  } else if (key.length === 1) {
-    buf += key;
-  }
-  if (buf.length > ECHO_MAX) { buf = buf.slice(-ECHO_MAX); }
-  echo.textContent = buf;
-  // Keep the latest keystrokes in view -- the box clips its top, not its
-  // bottom -- so the echo always reflects what you just typed.
-  echo.scrollTop = echo.scrollHeight;
-}
-
 function send(key, shift, ctrl, alt, meta, action) {
   if (!ws || ws.readyState !== 1 /* OPEN */) { return; }
   var msg = {
@@ -160,7 +140,6 @@ function send(key, shift, ctrl, alt, meta, action) {
   };
   if (action) msg.action = action;
   ws.send(JSON.stringify(msg));
-  if (!action) appendEcho(key);
 }
 
 // Bulk paste for the typing view. Server accepts only while a note is open (not Lobby Files).
@@ -168,7 +147,6 @@ export function sendPaste(text) {
   if (!ws || ws.readyState !== 1 /* OPEN */) { return; }
   if (!text) return;
   ws.send(JSON.stringify({ type: 'paste', text: text }));
-  appendEcho('[paste]');
 }
 
 function onKey(e) {
@@ -212,22 +190,6 @@ function grab() {
   if (overlayUp()) return;
   trap.focus();
 }
-
-// Primary listener on the trap textarea.
-trap.addEventListener('keydown', onKey);
-
-// Fallback: catch keydown on the whole document in case focus escapes.
-// Skip entirely while the PIN screen is up so the PIN input can receive typed digits.
-document.addEventListener('keydown', function (e) {
-  if (overlayUp()) return;
-  if (document.activeElement !== trap) { onKey(e); }
-});
-
-// Any click/tap on the page re-focuses the trap -- but not while the PIN screen is up.
-document.addEventListener('click', function(e) {
-  if (overlayUp()) return;
-  grab();
-});
 
 function connect() {
   wsReady = false;
@@ -282,8 +244,16 @@ function connect() {
       } else if (data.type === 'exitedit') {
         state.tabletOpenNote = '';
         state.editorDiskHash = '';
+        // Home returns to Files (session still up). Quit/power leave the stock UI.
+        // Delete-while-open also sends exitedit — refreshTabletStatus corrects that.
+        if (deps.applyEditorActive) {
+          deps.applyEditorActive(data.source === 'home');
+        }
         if (deps.hideTypingView) deps.hideTypingView();
         else if (deps.clearRemoteKeys) deps.clearRemoteKeys();
+        if (data.source !== 'home') {
+          refreshTabletStatus();
+        }
       } else if (data.type === 'tabletcrud') {
         if (data.op === 'deletenote' && state.tabletOpenNote === data.name) {
           state.tabletOpenNote = '';
@@ -319,6 +289,8 @@ function connect() {
 }
 
 export function initConnection() {
+  // Register once here only. Top-level listeners used to duplicate these and
+  // every phone key (Lobby arrows included) was forwarded twice.
   trap.addEventListener('keydown', onKey);
   document.addEventListener('keydown', function (e) {
     if (overlayUp()) return;
@@ -347,4 +319,4 @@ window.addEventListener('pageshow', function () {
   allowReconnect = true;
 });
 
-export { connect, send, sendPaste, grab, startStatusPoll, stopStatusPoll, setStatus, overlayUp };
+export { connect, send, grab, startStatusPoll, stopStatusPoll, setStatus, overlayUp };

@@ -16,7 +16,7 @@ From that stock UI: press both left and right page buttons together, or Esc on a
 
 ## How you write
 
-Hook up a physical keyboard, either USB (with an OTG cable) or Bluetooth (via your phone. The Lobby Keyboard tab shows both: Bluetooth first with the phone URL and QR, then USB layout).
+Hook up a physical keyboard, either USB (with an OTG cable) or Bluetooth via your phone. Lobby → Keyboard shows both in separate boxes (Bluetooth first, with the phone URL and QR); each title says `(connected)` or `(not connected)`.
 
 ## Saving & exiting
 
@@ -36,11 +36,11 @@ Except for setting the sync token, which is done on the phone, all settings are 
 
 When using a Bluetooth keyboard, the phone is a bridge for typing. Secondary jobs on the same page: paste-at-cursor while a note is open for edit (not on Lobby Files), accepting a tablet Download offer, and sync token entry. Details: [docs/browser-vs-tablet.md](docs/browser-vs-tablet.md).
 
-Phone keyboard-first: the notes list and Upload are gone from the browser; Lobby Files Download prompts open phones with “Download here?”.
+Phone keyboard-first: the notes list and Upload are gone from the browser; Lobby Files Download prompts open phones with “Download here?”. The keyboard shell shows the gray Writerdeck mark (`img/logo-gray.svg`, served from the embedded daemon copy).
 
 ## Lobby
 
-The Lobby is keyboard-first: focus returns after touch, tabs and actions have chords (Shortcuts lists them), the file list pages instead of scrolling, and the private PIN accepts USB or phone-forwarded digits. Edit, new, rename, and similar prompts that need typing first check for a USB keyboard or an open phone/laptop page; if neither is there, a tip shows how to connect, with a QR code for the phone URL. Cursor’s built-in browser does not count as that page — only a real phone or laptop browser does. A wrong private PIN on Encrypt (and similar) stays on the pad with a clear message.
+The Lobby is keyboard-first: focus returns after touch, tabs and actions have chords (Shortcuts lists them), the file list paginates on e-ink instead of scrolling ([docs/decisions.md](docs/decisions.md) §35), and the private PIN accepts USB or phone-forwarded digits. Keyboard tab shows Bluetooth then USB in boxes, with `(connected)` / `(not connected)` on the titles. Edit, new, rename, and similar prompts that need typing first check for a USB keyboard or an open phone/laptop page; if neither is there, a tip shows how to connect, with a QR code for the phone URL (same code as Keyboard). Cursor’s built-in browser does not count as that page — only a real phone or laptop browser does. A wrong private PIN on Encrypt (and similar) stays on the pad with a clear message.
 
 ## Security and private notes
 
@@ -61,3 +61,7 @@ After editor changes: edit-session check, then automated typing tests if caret w
 ## First-time install
 
 Visitors: Download ZIP, `bash scripts/install.sh --start`, answer password + Wi-Fi prompts. Binaries come from GitHub Releases (`keywriter`, `server`) — no `gh` login, no Go. Autostart is enabled only after a phone-page health check. Details and boot-risk follow-up: [docs/install-onboarding/](docs/install-onboarding/).
+
+## Discovery
+
+Listed under Applications on [awesome-reMarkable](https://github.com/reHackable/awesome-reMarkable) ([PR #268](https://github.com/reHackable/awesome-reMarkable/pull/268)).
