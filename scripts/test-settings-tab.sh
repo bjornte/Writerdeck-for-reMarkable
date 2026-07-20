@@ -2,7 +2,7 @@
 # scripts/test-settings-tab.sh -- tablet Settings socket ops + lobby navigation.
 #
 # Exercises setreadfont/setpindigits via the trusted socket path (test hook),
-# navigates to Settings tab (digit 5) over WebSocket, restores prior settings.
+# navigates to Settings (Tab from Files) over WebSocket, restores prior settings.
 #
 # Run after Writerdeck QML deploy (deploy-keywriter.sh -b).
 set -euo pipefail

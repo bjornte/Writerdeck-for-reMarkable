@@ -107,7 +107,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	if err := goLobby(base); err != nil {
 		return err
 	}
-	if err := wsKey(ws, "4"); err != nil {
+	if err := lobbyTab(ws, 3); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -151,7 +151,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	fmt.Println("  github: secret/pin and secret/vault present")
 
 	// Files tab -> new note -> edit content -> encrypt.
-	if err := wsKey(ws, "1"); err != nil {
+	if err := goLobby(base); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -188,7 +188,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 
 	_ = sshRm(host, testEncNote)
 
-	if err := wsKey(ws, "1"); err != nil {
+	if err := goLobby(base); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -219,7 +219,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	fmt.Println("  files: encrypted note (PIN via Files UI, encrypt confirmed)")
 
 	// Settings -> Change PIN via keyboard.
-	if err := wsKey(ws, "4"); err != nil {
+	if err := lobbyTab(ws, 3); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -262,7 +262,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	fmt.Println("  github: secret/pin updated")
 
 	// Edit encrypted note (unlock PIN on open).
-	if err := wsKey(ws, "1"); err != nil {
+	if err := goLobby(base); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -294,7 +294,7 @@ func run(base, wsURL, host string, cleanup bool) error {
 	fmt.Println("  github: encrypted note synced as opaque bytes")
 
 	// Decrypt and verify plain on GitHub.
-	if err := wsKey(ws, "1"); err != nil {
+	if err := goLobby(base); err != nil {
 		return err
 	}
 	time.Sleep(stepPause)
@@ -433,6 +433,17 @@ func goLobby(base string) error {
 	}
 	if st.IsLobby != 1 {
 		return fmt.Errorf("lobby want isLobby=1 got %d", st.IsLobby)
+	}
+	return nil
+}
+
+// lobbyTab sends Tab n times from Files (goLobby resets to page 0).
+func lobbyTab(ws *websocket.Conn, n int) error {
+	for i := 0; i < n; i++ {
+		if err := wsKey(ws, "Tab"); err != nil {
+			return err
+		}
+		time.Sleep(keyPause)
 	}
 	return nil
 }

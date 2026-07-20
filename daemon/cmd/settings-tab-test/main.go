@@ -77,11 +77,15 @@ func run(base, wsURL, host string) error {
 		return fmt.Errorf("websocket: %w", err)
 	}
 	defer ws.Close()
-	if err := ws.WriteJSON(map[string]string{"type": "key", "key": "5"}); err != nil {
-		return fmt.Errorf("key 5: %w", err)
+	// Files -> Keyboard -> Sync -> Settings (Tab three times).
+	for i := 0; i < 3; i++ {
+		if err := ws.WriteJSON(map[string]string{"type": "key", "key": "Tab"}); err != nil {
+			return fmt.Errorf("Tab to Settings: %w", err)
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
-	time.Sleep(300 * time.Millisecond)
-	fmt.Println("  sent Settings tab key (5)")
+	time.Sleep(200 * time.Millisecond)
+	fmt.Println("  sent Tab×3 to Settings")
 
 	targetFont := "Literata"
 	if before.ReadFont == targetFont {

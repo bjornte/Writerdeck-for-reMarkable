@@ -58,11 +58,11 @@ Use a private personal repo. Conflicts keep both copies rather than overwrite. S
 
 ## Everyday use
 
-Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Esc, phone **Show PIN on tablet**, or `wd`. Lobby Files shows the connect address and PIN (also on About, digit 6). Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. The phone lands on the keyboard shell — keys go to the tablet. Open a note on the tablet to type on e-ink. Download starts from Lobby Files and asks the phone to save the file. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
+Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Esc, phone **Show PIN on tablet**, or `wd`. Lobby Files shows the connect address and PIN (also on About / Home). Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. The phone lands on the keyboard shell — keys go to the tablet. Open a note on the tablet to type on e-ink. Download starts from Lobby Files and asks the phone to save the file. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
 
 Show the Lobby from a Mac on the same Wi-Fi with `wd` (after `bash scripts/install-alias.sh`) or `bash scripts/lobby.sh`. On the tablet: `~/wd`.
 
-Useful keys: Esc toggles edit and preview inside Writerdeck, or launches to Lobby from the stock UI with a USB keyboard. Left and right page buttons together do the same launch without USB. Ctrl-C / Ctrl-X / Ctrl-V copy, cut, and paste. Ctrl-K switches notes. Ctrl-R rotates. Home from edit returns to Files; Home from Lobby quits to the stock UI.
+Useful keys: Esc toggles edit and preview inside Writerdeck, or launches to Lobby from the stock UI with a USB keyboard. Left and right page buttons together do the same launch without USB. Ctrl-C / Ctrl-X / Ctrl-V copy, cut, and paste. Ctrl-K switches notes. Ctrl-O rotates. Home from edit returns to Files; Home from Lobby quits to the stock UI. Lobby pages: Tab / Shift-Tab / arrows.
 
 ## For developers
 

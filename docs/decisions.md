@@ -78,7 +78,7 @@ No phone app — the tablet is the server. Day-to-day files and settings live in
 
 ## 11. GitHub sync copies missing notes both ways
 
-Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Sync is change-driven (Home, power sleep, CRUD, Sync now, token verify, boot) — not a timer. Unchanged notes and vault secrets are not pushed, so clean runs do not create empty GitHub commits. Sync copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused. Details: [server-sync-implementation.md](server-sync-implementation.md).
+Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Sync is change-driven (Home, power sleep, CRUD, Sync now, token verify, boot) — not a timer. Unchanged notes and vault secrets are not pushed, so clean runs do not create empty GitHub commits. The journal tells a short story (`sync: pushed …`, coalesced `nothing to do` streaks) rather than one line per quiet skip. Sync copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused. Details: [server-sync-implementation.md](server-sync-implementation.md).
 
 ## 12. Optional at-rest encryption (private notes)
 
@@ -114,15 +114,15 @@ Lobby file ops use the same local socket as keystrokes. The server does the disk
 
 ## 20. Bluetooth remote key capture on the phone
 
-Bluetooth pairs to the phone. After connect, the phone stays on the keyboard shell and captures keys by default (Lobby navigation included). Cmd/Ctrl+R/T/W/N/L still pass through so the browser stays manageable. Overlays (PIN, paste, download offer, sync setup) pause capture.
+Bluetooth pairs to the phone. After connect, the phone stays on the keyboard shell and captures keys by default (Lobby navigation included). Cmd/Ctrl+R/T/W/N/L still pass through so the browser stays manageable — phones also reserve Cmd/Ctrl+1–9 for browser tabs. Overlays (PIN, paste, download offer, sync setup) pause capture. Lobby Ctrl-letter chords avoid those reserved combos (§37).
 
 ## 21. Lobby Files: Edit and Read
 
-Two opens: Edit to type, Read to preview. The phone learns which mode so a Bluetooth keyboard can still Esc into edit. Enter edits; `v` reads.
+Two opens: Edit to type, Read to preview. The phone learns which mode so a Bluetooth keyboard can still Esc into edit. Enter edits; Ctrl-V reads.
 
 ## 22. Lobby tab order (Files first)
 
-Boot and Home land on the note list, not the welcome screen. Coming back from edit reselects the note you left.
+Boot and Home land on the note list, not the welcome screen. Coming back from edit reselects the note you left. Switch Lobby pages with Tab, Shift-Tab, or Left/Right — not digit keys (§37).
 
 ## 23. Idle launch from stock UI
 
@@ -158,7 +158,7 @@ New notes (Lobby New, and any future import UI) go through the same create API �
 
 ## 31. Display rotation persists in settings
 
-Rotation is saved on the tablet and pushed when the editor connects. Change it from Lobby Settings or Ctrl-R / Ctrl-arrows. Phone Preferences no longer rotate.
+Rotation is saved on the tablet and pushed when the editor connects. Change it from Lobby Settings or Ctrl-O / Ctrl+arrows. Phone Preferences no longer rotate.
 
 ## 32. Device test note names
 
@@ -184,7 +184,15 @@ The Files list shows a fixed page of rows that fit the screen. Up/Down move the 
 
 ## 36. Lobby look and chords on disk
 
-Lobby borders, colors, sizes, dialog/help copy, and Ctrl-letter chords live in `/home/root/.Writerdeck/lobby-ui.json` — not baked into every binary change. Edit over SSH; Writerdeck reloads without a rebuild. Repo default is `config/lobby-ui.json`; `deploy-keywriter.sh` copies it only when the tablet file is missing so local edits survive. Digit tabs 1–6, Enter, and reserved Ctrl-K / Ctrl-Q stay in code. Missing or corrupt JSON falls back to embedded defaults (or keeps the last good load after a successful start). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md).
+Lobby borders, colors, sizes, dialog/help copy, and Ctrl-letter chords live in `/home/root/.Writerdeck/lobby-ui.json` — not baked into every binary change. Edit over SSH; Writerdeck reloads without a rebuild. Repo default is `config/lobby-ui.json`; `deploy-keywriter.sh` copies it only when the tablet file is missing so local edits survive. Enter and reserved Ctrl-K / Ctrl-Q stay in code. Missing or corrupt JSON falls back to embedded defaults (or keeps the last good load after a successful start). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md).
+
+## 37. Phone-safe Lobby chords; bare keys for Finder-style jump
+
+Phone browsers (Safari/Chrome) keep Cmd/Ctrl+R, T, W, N, L and Cmd/Ctrl+1–9 for their own chrome. Those never reach Writerdeck reliably, so Lobby action chords must not use them. Current map (in `lobby-ui.json`): New Ctrl-M, Rename Ctrl-I, Delete Ctrl-B, Font Ctrl-A, PIN length Ctrl-M, Rotate Ctrl-O; Sync is Enter only. Copy/cut/paste and editor Mac chords stay Ctrl-C/X/V/A/Z.
+
+Lobby page switching is Tab / Shift-Tab / Left / Right only — no digit badges on the tab bar and no 1–6 page jump. Plain letters and digits (without Ctrl) are reserved for a later MacOS Finder-style jump to documents by typing. Do not bind Lobby chrome to bare letters or digits.
+
+How: [browser-vs-tablet.md](browser-vs-tablet.md). Defaults: `config/lobby-ui.json`.
 
 ---
 
