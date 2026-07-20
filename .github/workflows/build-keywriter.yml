@@ -7,6 +7,7 @@ on:
       - 'third_party/keywriter/Dockerfile'
       - 'third_party/keywriter/build-keywriter.sh'
       - '.github/workflows/build-keywriter.yml'
+      - 'scripts/product-version.sh'
 
 permissions:
   contents: write
@@ -20,6 +21,14 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Bump product VERSION
+        id: ver
+        run: |
+          set -euo pipefail
+          VER="$(bash scripts/product-version.sh --write)"
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+          echo "productVersion=${VER}"
+
       - name: Build Docker image
         run: docker build -t rm1-writerdeck-keywriter-builder third_party/keywriter/
 
@@ -29,6 +38,7 @@ jobs:
           docker run --rm \
             -e KEYWRITER_REPO=https://github.com/bjornte/Writerdeck-keywriter.git \
             -e KEYWRITER_REF=master \
+            -e PRODUCT_VERSION=${{ steps.ver.outputs.version }} \
             -v "$PWD/third_party/keywriter/dist:/out" \
             rm1-writerdeck-keywriter-builder
           sudo chown -R "$(id -u):$(id -g)" third_party/keywriter/dist
@@ -78,7 +88,8 @@ jobs:
         run: |
           set -euo pipefail
           TAG=keywriter
-          NOTES="CI-built Writerdeck editor + Qt5 sysroot from run ${GITHUB_RUN_ID} ($(date -u +%Y-%m-%d))."
+          VER="${{ steps.ver.outputs.version }}"
+          NOTES="CI-built Writerdeck editor ${VER} + Qt5 sysroot from run ${GITHUB_RUN_ID}."
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" \
               third_party/keywriter/dist/Writerdeck \
@@ -94,3 +105,20 @@ jobs:
               --latest
           fi
           echo "Release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
+
+      - name: Publish VERSION on main
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VER="${{ steps.ver.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add VERSION
+          if git diff --staged --quiet; then
+            echo "VERSION already ${VER}"
+            exit 0
+          fi
+          git commit -m "$(printf 'Bump VERSION to %s.\n\n[skip ci]\n' "${VER}")"
+          git push

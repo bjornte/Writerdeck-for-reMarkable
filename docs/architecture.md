@@ -25,7 +25,7 @@ Files are UTF-8 Markdown. An open note is protected from silent sync overwrite. 
 
 ## Two programs on the tablet
 
-Writerdeck-server is a static Go binary — Wi-Fi, APIs, sync, PIN, launching the editor. Source in `daemon/`. Product version is the date string in repo-root `VERSION` (for example `2026-07-18`, or `2026-07-18.2` for a second build the same day). CI and local `deploy-rmkbd.sh` bake it into the binary. Lobby About (Home tab) shows it and compares to `VERSION` on GitHub `main`.
+Writerdeck-server is a static Go binary — Wi-Fi, APIs, sync, PIN, launching the editor. Source in `daemon/`. Product version is an auto date stamp (`YYYY-MM-DD`, or `.N` for later builds the same day). Server and editor each carry it; About shows one number (the older if they differ) and compares to repo-root `VERSION` on GitHub `main`. CI and `deploy-rmkbd.sh` bump `VERSION` via `scripts/product-version.sh`.
 
 Writerdeck is the full-screen editor, built from our fork of [keywriter](https://github.com/dps/remarkable-keywriter). QML draws the screen and applies edits. C++ starts the app, talks to the display, feeds keys from the socket, and runs EditHelper (math, shortcuts, wrap, undo). Keep hand-tuned wrap gaps and custom undo; do not replace Qt’s text box ([decisions.md](decisions.md) §5–§6).
 

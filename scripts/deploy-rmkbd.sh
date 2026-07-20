@@ -47,10 +47,7 @@ if [ "$DEPLOY_ONLY" -eq 0 ]; then
     && [ -d "${REPO}/daemon" ] && [ -f "${REPO}/daemon/go.mod" ]; then
       cd "${REPO}/daemon"
       go mod tidy
-      VER="unknown"
-      if [ -f "${REPO}/VERSION" ]; then
-        VER="$(tr -d '[:space:]' < "${REPO}/VERSION")"
-      fi
+      VER="$(bash "${DIR}/product-version.sh" --write)"
       GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 \
           go build -trimpath \
             -ldflags "-X main.productVersion=${VER}" \
