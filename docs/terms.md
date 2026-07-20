@@ -18,7 +18,7 @@ Short definitions for Writerdeck and its editor fork.
 * **QML (the screen file)**: Screen language — layout and applying edits on screen (the main file is `main.qml`).
 * **C++ / EditHelper**: Startup, display, socket keys, and the math behind shortcuts, wrap, and undo. Made primarily in C++.
 * **TextEdit (Qt’s on-screen text box)**: Fine for drawing; weak for “which wrapped row am I on?” Shipped with Qt (C++); not ours.
-* **Shortcut (chord)**: A key held with Ctrl, Alt, or Shift. Phone ⌘ is sent as Ctrl ([decisions.md](decisions.md) §3). Lobby action chords are Ctrl+letter and avoid browser-reserved keys ([decisions.md](decisions.md) §37). Plain letters and digits are reserved for a later Finder-style document jump.
+* **Shortcut (chord)**: A key held with Ctrl, Alt, or Shift. Phone ⌘ is sent as Ctrl ([decisions.md](decisions.md) §3). Lobby action chords are Ctrl+letter ([decisions.md](decisions.md) §37).
 * **Visual line**: Layout unit — one soft-wrapped row on screen. ⌘←/→ and Home/End go to its ends (Apple line ends; CodeMirror Home/End).
 * **Logical line**: Meaning unit — text between newline characters. Jumping to its end on a wrapped paragraph is not “line end.”
 * **Paragraph**: Meaning unit — Apple `\n`-delimited segment, including empty lines. Option+Up/Down.

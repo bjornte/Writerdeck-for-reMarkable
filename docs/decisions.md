@@ -122,7 +122,7 @@ Two opens: Edit to type, Read to preview. The phone learns which mode so a Bluet
 
 ## 22. Lobby tab order (Files first)
 
-Boot and Home land on the note list, not the welcome screen. Coming back from edit reselects the note you left. Switch Lobby pages with Tab, Shift-Tab, or Left/Right — not digit keys (§37).
+Boot and Home land on the note list, not the welcome screen. Coming back from edit reselects the note you left. Switch Lobby pages with Tab, Shift-Tab, Left/Right, or digits 1–6.
 
 ## 23. Idle launch from stock UI
 
@@ -158,7 +158,7 @@ New notes (Lobby New, and any future import UI) go through the same create API �
 
 ## 31. Display rotation persists in settings
 
-Rotation is saved on the tablet and pushed when the editor connects. Change it from Lobby Settings or Ctrl-O / Ctrl+arrows. Phone Preferences no longer rotate.
+Rotation is saved on the tablet and pushed when the editor connects. Change it from Lobby Settings or Ctrl-R / Ctrl-O / Ctrl+arrows. Phone Preferences no longer rotate.
 
 ## 32. Device test note names
 
@@ -186,11 +186,11 @@ The Files list shows a fixed page of rows that fit the screen. Up/Down move the 
 
 Lobby borders, colors, sizes, dialog/help copy, and Ctrl-letter chords live in `/home/root/.Writerdeck/lobby-ui.json` — not baked into every binary change. Edit over SSH; Writerdeck reloads without a rebuild. Repo default is `config/lobby-ui.json`; `deploy-keywriter.sh` copies it only when the tablet file is missing so local edits survive. Enter and reserved Ctrl-K / Ctrl-Q stay in code. Missing or corrupt JSON falls back to embedded defaults (or keeps the last good load after a successful start). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md).
 
-## 37. Phone-safe Lobby chords; bare keys for Finder-style jump
+## 37. Phone-safe Lobby chords; Finder-style jump later
 
-Phone browsers (Safari/Chrome) keep Cmd/Ctrl+R, T, W, N, L and Cmd/Ctrl+1–9 for their own chrome. Those never reach Writerdeck reliably, so Lobby action chords must not use them. Current map (in `lobby-ui.json`): New Ctrl-M, Rename Ctrl-I, Delete Ctrl-B, Font Ctrl-A, PIN length Ctrl-M, Rotate Ctrl-O; Sync is Enter only. Copy/cut/paste and editor Mac chords stay Ctrl-C/X/V/A/Z.
+Phone browsers (Safari/Chrome) keep Cmd/Ctrl+R, T, W, N, L and Cmd/Ctrl+1–9 for their own chrome. Those often never reach Writerdeck from a phone keyboard, so Lobby *action* Ctrl-letters avoid R/T/W/N/L. Current map (in `lobby-ui.json`): New Ctrl-M, Rename Ctrl-I, Delete Ctrl-B, Font Ctrl-A, PIN length Ctrl-M, Rotate letter Ctrl-O; Sync is Enter only. Copy/cut/paste and editor Mac chords stay Ctrl-C/X/V/A/Z.
 
-Lobby page switching is Tab / Shift-Tab / Left / Right only — no digit badges on the tab bar and no 1–6 page jump. Plain letters and digits (without Ctrl) are reserved for a later MacOS Finder-style jump to documents by typing. Do not bind Lobby chrome to bare letters or digits.
+Digit 1–6 Lobby page jump and Ctrl-R rotate stay available in code (USB / when the browser delivers them). Plain letters without Ctrl are still free for a later MacOS Finder-style document jump — do not bind new Lobby chrome to bare letters without deciding that trade-off.
 
 How: [browser-vs-tablet.md](browser-vs-tablet.md). Defaults: `config/lobby-ui.json`.
 

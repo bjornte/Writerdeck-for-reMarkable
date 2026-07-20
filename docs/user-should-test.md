@@ -30,7 +30,7 @@ After Files pagination chrome: with more notes than fit one screen, Prev / Page 
 
 After New / Rename dialogs: try a name that already exists — the dialog should stay open with a short message under the name, not only a box above the list. Also try the same letters in different case (`Doc` vs `doc`), and a plain name that already exists as encrypted (or the reverse).
 
-After editing `/home/root/.Writerdeck/lobby-ui.json` over SSH: a color, help line, or Ctrl-letter (for example change Read from `v` to `g`) should update on Lobby within a couple of seconds without redeploying the binary. Bad JSON should leave the previous look in place. Defaults live in repo `config/lobby-ui.json`. Avoid browser-reserved letters (R T W N L) and do not bind Lobby chrome to bare letters or digits ([decisions.md](decisions.md) §37).
+After editing `/home/root/.Writerdeck/lobby-ui.json` over SSH: a color, help line, or Ctrl-letter (for example change Read from `v` to `g`) should update on Lobby within a couple of seconds without redeploying the binary. Bad JSON should leave the previous look in place. Defaults live in repo `config/lobby-ui.json`. Prefer not to use browser-reserved action letters (R T W N L) for phone keyboards ([decisions.md](decisions.md) §37).
 
 After sync or vault work: Sync setup still runs; a wrong vault PIN shows an error, not a blank editor. With change-driven sync: idle tablet should stay quiet in the journal (one `sync: nothing to do` at most per quiet streak, then a ×N summary when something finally changes). Edit a note, Home — expect `sync: pushed … (home)`.
 
