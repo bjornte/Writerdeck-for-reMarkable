@@ -296,7 +296,6 @@ func (e *syncEngine) pushNote(name string) (bool, error) {
 		}
 		e.setMeta(name, newSHA, h)
 		e.setLastError("")
-		fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s\n", name)
 		return true, nil
 	}
 	content, ok := readNoteContent(name)
@@ -322,7 +321,6 @@ func (e *syncEngine) pushNote(name string) (bool, error) {
 	}
 	e.setMeta(name, newSHA, h)
 	e.setLastError("")
-	fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s\n", name)
 	return true, nil
 }
 
@@ -357,7 +355,6 @@ func (e *syncEngine) pullNote(name string) (bool, error) {
 		pushLobbyInfo()
 		pushNotesList()
 		e.setMeta(name, gh.SHA, strHash(string(raw)))
-		fmt.Fprintf(os.Stderr, "writerdeck-server: sync pull %s\n", name)
 		return true, nil
 	}
 	ghContent, err := ghDecodeContent(gh.Content)
@@ -368,7 +365,6 @@ func (e *syncEngine) pullNote(name string) (bool, error) {
 		return false, err
 	}
 	e.setMeta(name, gh.SHA, strHash(ghContent))
-	fmt.Fprintf(os.Stderr, "writerdeck-server: sync pull %s\n", name)
 	return true, nil
 }
 
@@ -384,7 +380,6 @@ func (e *syncEngine) ghDeleteNote(name string) (bool, error) {
 		return false, err
 	}
 	e.removeMeta(name)
-	fmt.Fprintf(os.Stderr, "writerdeck-server: sync delete %s\n", name)
 	return true, nil
 }
 
@@ -443,11 +438,10 @@ func (e *syncEngine) applyRemoteDelete(name string) (bool, error) {
 		return false, err
 	}
 	e.removeMeta(name)
-	fmt.Fprintf(os.Stderr, "writerdeck-server: sync remote-delete %s\n", name)
 	return true, nil
 }
 
-func (e *syncEngine) reconcileOne(name, remoteSHA string) (int, error) {
+func (e *syncEngine) reconcileOne(name, remoteSHA string) (string, error) {
 	hasRemote := remoteSHA != ""
 	content, hasLocal := readNoteContent(name)
 	if hasLocal && !hasRemote {
@@ -455,65 +449,65 @@ func (e *syncEngine) reconcileOne(name, remoteSHA string) (int, error) {
 		if !hasMeta || meta.SHA == "" {
 			ok, err := e.pushNote(name)
 			if ok {
-				return 1, err
+				return "pushed " + name, err
 			}
-			return 0, err
+			return "", err
 		}
 		if meta.LocalHash != strHash(content) {
 			ok, err := e.pushNote(name)
 			if ok {
-				return 1, err
+				return "pushed " + name, err
 			}
-			return 0, err
+			return "", err
 		}
 		ok, err := e.applyRemoteDelete(name)
 		if ok {
-			return 1, err
+			return "removed local " + name + " (gone on GitHub)", err
 		}
-		return 0, err
+		return "", err
 	}
 	if !hasLocal && hasRemote {
 		ok, err := e.pullNote(name)
 		if ok {
-			return 1, err
+			return "pulled " + name, err
 		}
-		return 0, err
+		return "", err
 	}
 	if !hasLocal && !hasRemote {
-		return 0, nil
+		return "", nil
 	}
 	meta, _ := e.getMeta(name)
 	remoteChanged := meta.SHA != remoteSHA
 	localChanged := meta.LocalHash != strHash(content)
 	if remoteChanged && localChanged {
 		if err := e.handleClash(name, content); err != nil {
-			return 0, err
+			return "", err
 		}
-		return 1, nil
+		return "clash on " + name, nil
 	}
 	if localChanged {
 		emptyHash := strHash("")
 		if content == "" && meta.LocalHash != "" && meta.LocalHash != emptyHash && hasRemote {
 			ok, err := e.pullNote(name)
 			if ok {
-				return 1, err
+				return "pulled " + name, err
 			}
-			return 0, err
+			return "", err
 		}
 		ok, err := e.pushNote(name)
 		if ok {
-			return 1, err
+			return "pushed " + name, err
 		}
-		return 0, err
+		return "", err
 	}
 	if remoteChanged {
 		ok, err := e.pullNote(name)
 		if ok {
-			return 1, err
+			return "pulled " + name, err
 		}
-		return 0, err
+		return "", err
 	}
-	return 0, nil
+	return "", nil
 }
 
 func (e *syncEngine) drainPendingSyncOps() {
@@ -581,7 +575,7 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 	if !syncReasonForcesRemote(reason) {
 		dirty := e.localDirtyCount(true)
 		if dirty == 0 {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: sync skipped (%s): no local changes\n", reason)
+			logSyncIdle(reason)
 			signalSyncAck()
 			return 0, nil
 		}
@@ -589,13 +583,11 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 
 	pushLobbyInfo()
 
-	fmt.Fprintf(os.Stderr, "writerdeck-server: sync reconcile (%s)\n", reason)
-
 	e.drainPendingSyncOps()
 
 	open := e.openNote()
 	if open != "" {
-		fmt.Fprintf(os.Stderr, "writerdeck-server: sync skipping open note %s\n", open)
+		fmt.Fprintf(os.Stderr, "writerdeck-server: sync: leaving open note %s alone\n", open)
 	}
 
 	entries, status, err := e.ghListNotes()
@@ -620,7 +612,8 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 		}
 	}
 
-	changed := e.syncVaultSecrets(remoteMap)
+	var details []string
+	details = append(details, e.syncVaultSecrets(remoteMap)...)
 
 	names := map[string]bool{}
 	for n := range remoteMap {
@@ -634,21 +627,20 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 		if name == open {
 			continue
 		}
-		n, err := e.reconcileOne(name, remoteMap[name])
+		detail, err := e.reconcileOne(name, remoteMap[name])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: sync %s: %v\n", name, err)
+			fmt.Fprintf(os.Stderr, "writerdeck-server: sync: %s failed: %v\n", name, err)
+			continue
 		}
-		changed += n
+		if detail != "" {
+			details = append(details, detail)
+		}
 	}
 
 	e.setLastError("")
 	e.markSyncComplete()
-	if changed == 0 {
-		fmt.Fprintf(os.Stderr, "writerdeck-server: sync skipped (%s): no changes\n", reason)
-	} else {
-		fmt.Fprintf(os.Stderr, "writerdeck-server: sync executed (%s): %d files changed\n", reason, changed)
-	}
-	return changed, nil
+	logSyncChanged(reason, details)
+	return len(details), nil
 }
 
 func (e *syncEngine) reconcileAllBlocking(reason string, timeout time.Duration) {
@@ -710,21 +702,20 @@ func (e *syncEngine) tryPushVaultSecrets() {
 	go func() { e.pushVaultSecrets() }()
 }
 
-func (e *syncEngine) pushVaultSecrets() int {
+func (e *syncEngine) pushVaultSecrets() []string {
 	if !e.ready() || !vaultEnabled() {
-		return 0
+		return nil
 	}
-	changed := 0
+	var details []string
 	if pin, ok := vaultSecretPinBytes(); ok {
 		if e.contentNeedsPush(secretPinPath, pin) {
 			meta, _ := e.getMeta(secretPinPath)
 			sha, _, err := e.ghPutBytes(secretPinPath, pin, meta.SHA)
 			if err == nil {
 				e.setMeta(secretPinPath, sha, strHash(string(pin)))
-				fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s\n", secretPinPath)
-				changed++
+				details = append(details, "pushed "+secretPinPath)
 			} else {
-				fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s: %v\n", secretPinPath, err)
+				fmt.Fprintf(os.Stderr, "writerdeck-server: sync: %s failed: %v\n", secretPinPath, err)
 			}
 		}
 	}
@@ -734,24 +725,23 @@ func (e *syncEngine) pushVaultSecrets() int {
 			sha, _, err := e.ghPutBytes(secretVaultPath, vaultJSON, meta.SHA)
 			if err == nil {
 				e.setMeta(secretVaultPath, sha, strHash(string(vaultJSON)))
-				fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s\n", secretVaultPath)
-				changed++
+				details = append(details, "pushed "+secretVaultPath)
 			} else {
-				fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s: %v\n", secretVaultPath, err)
+				fmt.Fprintf(os.Stderr, "writerdeck-server: sync: %s failed: %v\n", secretVaultPath, err)
 			}
 		}
 	}
-	return changed
+	return details
 }
 
-func (e *syncEngine) syncVaultSecrets(remoteMap map[string]string) int {
+func (e *syncEngine) syncVaultSecrets(remoteMap map[string]string) []string {
 	if !e.ready() {
-		return 0
+		return nil
 	}
 	_ = remoteMap
-	changed := 0
+	var details []string
 	if vaultEnabled() {
-		changed += e.pushVaultSecrets()
+		details = append(details, e.pushVaultSecrets()...)
 	}
 	if gh, _, err := e.ghGetFile(secretVaultPath); err == nil && gh != nil {
 		meta, _ := e.getMeta(secretVaultPath)
@@ -760,8 +750,7 @@ func (e *syncEngine) syncVaultSecrets(remoteMap map[string]string) int {
 			if err == nil {
 				_ = vaultApplySecretVault(raw)
 				e.setMeta(secretVaultPath, gh.SHA, strHash(string(raw)))
-				fmt.Fprintf(os.Stderr, "writerdeck-server: sync pull %s\n", secretVaultPath)
-				changed++
+				details = append(details, "pulled "+secretVaultPath)
 			}
 		}
 	}
@@ -772,10 +761,9 @@ func (e *syncEngine) syncVaultSecrets(remoteMap map[string]string) int {
 			if err == nil {
 				vaultApplySecretPin(strings.TrimSpace(string(raw)))
 				e.setMeta(secretPinPath, gh.SHA, strHash(string(raw)))
-				fmt.Fprintf(os.Stderr, "writerdeck-server: sync pull %s\n", secretPinPath)
-				changed++
+				details = append(details, "pulled "+secretPinPath)
 			}
 		}
 	}
-	return changed
+	return details
 }

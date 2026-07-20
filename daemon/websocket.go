@@ -319,7 +319,7 @@ func wsHandler(ec *editorConn, verbose bool) http.HandlerFunc {
 		}
 		sendNeedToken(client)
 		remote := r.RemoteAddr
-		fmt.Fprintf(os.Stderr, "writerdeck-server: client connected %s\n", remote)
+		logClientConnected(remote)
 		var keys int
 		for {
 			_, msg, err := conn.ReadMessage()

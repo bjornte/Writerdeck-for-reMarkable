@@ -2,9 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 )
 
 func syncTokenHandler(w http.ResponseWriter, r *http.Request) {
@@ -71,14 +69,21 @@ func syncTokenHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "github error", http.StatusBadGateway)
 		return
 	}
+	already := syncEng.getToken() == req.Token && req.Token != ""
 	syncEng.setToken(req.Token)
 	syncEng.setLastError("")
 	pushLobbyInfo()
+	if already {
+		// Extra browser tabs often re-POST the same token after needtoken;
+		// one reconcile is enough.
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{ //nolint:errcheck
+			"ok": true, "configured": true, "verified": true,
+		})
+		return
+	}
 	go func() {
-		n, err := syncEng.reconcileAll("token")
-		if err == nil {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: token verify reconcile: %d files changed\n", n)
-		}
+		_, _ = syncEng.reconcileAll("token")
 	}()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{ //nolint:errcheck

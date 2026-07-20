@@ -59,11 +59,13 @@ Typing actions from a touch tap (edit, new, rename, new encrypted) show a Connec
 
 ## Phone page
 
-Stand down key capture when PIN, paste, or sync overlays are up. The GitHub token is per browser address — a new tablet IP means enter it once for that address. After server restart, watch the journal for token restore after the client connects. Do not poll-check editor disk hash on the status timer — tablet autosave would false-alarm “Disk changed”; rely on the WebSocket diskchanged path for real external writes.
+Stand down key capture when PIN, paste, or sync overlays are up. The GitHub token is per browser address — a new tablet IP means enter it once for that address. After server restart, watch the journal for `sync: nothing to do (token)` (or a push/pull line) after the client connects — not a burst of duplicate token reconciles. Do not poll-check editor disk hash on the status timer — tablet autosave would false-alarm “Disk changed”; rely on the WebSocket diskchanged path for real external writes.
 
 ## Sync and vault
 
-Never mass-delete from a failed remote list. Never push empty over a previously synced note. Do not PUT a note or vault secret whose local fingerprint already matches `syncMeta` — that was filling GitHub with empty commits every few minutes when a timer still ran. Sync is event-driven now; a clean tablet logs skip, not a no-op commit. Disabling the vault while encrypted notes exist orphans them — refuse that; recover from GitHub history if it already happened. A failed decrypt must show an error on Files, not a blank editor. A wrong vault PIN must keep the pad open with a short message (for example Wrong PIN. Try again.), not dismiss silently.
+Never mass-delete from a failed remote list. Never push empty over a previously synced note. Do not PUT a note or vault secret whose local fingerprint already matches `syncMeta` — that was filling GitHub with empty commits every few minutes when a timer still ran. Sync is event-driven now; a clean tablet logs at most one `sync: nothing to do` per quiet streak, then a ×N summary when something finally changes — not a no-op commit. Re-POSTing the same GitHub token from extra browser tabs must not each start a reconcile. Disabling the vault while encrypted notes exist orphans them — refuse that; recover from GitHub history if it already happened. A failed decrypt must show an error on Files, not a blank editor. A wrong vault PIN must keep the pad open with a short message (for example Wrong PIN. Try again.), not dismiss silently.
+
+`journalctl -u writerdeck` is Writerdeck’s slice only (tens of KB on a quiet device). Almost all of `/var/log` is the stock reMarkable journal — do not treat multi-megabyte disk use as Writerdeck log spam.
 
 ## Build
 
