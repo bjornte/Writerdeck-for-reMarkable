@@ -98,7 +98,7 @@ After Home from edit, Lobby keys must still work. Focus stays on Lobby after tou
 
 ## 16. Physical Home: exclusive gpio grab
 
-While Writerdeck is open, the server exclusively grabs the tablet’s Home/Power/page buttons so Qt never sees a second Home. Release on exit so the stock UI works again. Note → Lobby and Lobby → stock UI are two bindings in `lobby-ui.json` (`global.toLobby`, `global.quit`); both default to `hardware_home` (the physical middle button). The USB / phone keyboard Home key is not that button — it keeps caret Home/End and must not drive those two paths. Idle page-button launch (§23) needs no grab. Handoff: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md). Remaining chord move onto disk: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md).
+While Writerdeck is open, the server exclusively grabs the tablet’s Home/Power/page buttons so Qt never sees a second Home. Release on exit so the stock UI works again. Note → Lobby and Lobby → stock UI are two bindings in `lobby-ui.json` (`global.toLobby`, `global.quit`); both default to `hardware_home` (the physical middle button). The USB / phone keyboard Home key is not that button — it keeps caret Home/End and must not drive those two paths. Idle page-button launch (§23) needs no grab. Handoff: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md). Chord defaults: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md), `config/lobby-ui.json`.
 
 ## 17. PIN and per-IP lockout
 
@@ -184,7 +184,7 @@ The Files list shows a fixed page of rows that fit the screen. Up/Down move the 
 
 ## 36. Lobby look and chords on disk
 
-Lobby borders, colors, sizes, dialog/help copy, and shortcut chords live in `/home/root/.Writerdeck/lobby-ui.json` — not baked into every binary change. Edit over SSH; Writerdeck reloads without a rebuild. Repo default is `config/lobby-ui.json`; `deploy-keywriter.sh` copies it only when the tablet file is missing so local edits survive. That file is the source of truth for which key each Lobby action uses — do not mirror chord tables here. Letter values mean Ctrl (or Cmd) plus that letter. Two special values need no Ctrl: `enter` (badge glyph always ↩) and `hardware_home` (tablet physical Home, not keyboard Home). Note → Lobby and Lobby → stock UI are separate lines (`global.toLobby`, `global.quit`), both defaulting to `hardware_home`. Tab lines (`tabs.files` … `tabs.about`) ship as `""`. No hardwired Ctrl-K note picker; K and Q are ordinary letters. Missing or corrupt JSON falls back to embedded defaults (or keeps the last good load after a successful start). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md). Remaining wiring: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md).
+Lobby borders, colors, sizes, dialog/help copy, and shortcut chords live in `/home/root/.Writerdeck/lobby-ui.json` — not baked into every binary change. Edit over SSH; Writerdeck reloads without a rebuild. Repo default is `config/lobby-ui.json`; `deploy-keywriter.sh` copies it only when the tablet file is missing so local edits survive. That file is the source of truth for which key each Lobby action uses — do not mirror chord tables here. Letter values mean Ctrl (or Cmd) plus that letter. Two special values need no Ctrl: `enter` (badge glyph always ↩) and `hardware_home` (tablet physical Home, not keyboard Home). Note → Lobby and Lobby → stock UI are separate lines (`global.toLobby`, `global.quit`), both defaulting to `hardware_home`. Tab lines (`tabs.files` … `tabs.about`) ship as `""`. No hardwired Ctrl-K note picker; K and Q are ordinary letters. Missing or corrupt JSON falls back to embedded defaults (or keeps the last good load after a successful start). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md). Defaults and checklist: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md).
 
 ## 37. Phone-safe Lobby chords; Finder-style jump later
 
@@ -192,7 +192,7 @@ Phone browsers (Safari/Chrome) keep Cmd/Ctrl+R, T, W, N, L and Cmd/Ctrl+1–9 fo
 
 Do not hardwire digits 1–6 for Lobby tab jump. Plain letters and digits without Ctrl stay free for a later MacOS Finder-style document jump — do not spend bare digits on Lobby tabs without deciding that trade-off.
 
-How: [browser-vs-tablet.md](browser-vs-tablet.md). Defaults: `config/lobby-ui.json`. Remaining move onto disk: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md).
+How: [browser-vs-tablet.md](browser-vs-tablet.md). Defaults: `config/lobby-ui.json`.
 
 ## 38. One product version, auto date, no stale lies
 

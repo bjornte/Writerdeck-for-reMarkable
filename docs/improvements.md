@@ -12,7 +12,7 @@ Wishlist — not a backlog. Shipped: [../DONE.md](../DONE.md). Open verify: [../
     * Windows installer still open. Mac/Linux installer remembers Wi-Fi / password / GitHub repo + token and can open a prefilled token page — [TODO.md](../TODO.md) Open.
 * Lobby / phone
     * Bring Upload/import back on the Lobby or a thin phone control when needed (API route still exists — [decisions.md](decisions.md) §30).
-    * Lobby chords and chrome still missing from `lobby-ui.json` — track in [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md) and [todo-lobby-ui-chrome.md](todo-lobby-ui-chrome.md).
+    * Lobby chrome still missing from `lobby-ui.json` — [todo-lobby-ui-chrome.md](todo-lobby-ui-chrome.md). Shortcuts are on disk ([todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md)).
 
 ## Possible later
 * More USB keyboard layouts beyond US and Norwegian — add sources under `keymaps/`, generate, check on hardware (the phone path does not exercise USB maps).

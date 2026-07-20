@@ -1,6 +1,6 @@
-# TODO: Lobby shortcuts in lobby-ui.json
+# Lobby shortcuts in lobby-ui.json (shipped)
 
-Move the remaining configurable Lobby shortcuts onto disk so SSH edits apply without rebuilding Writerdeck. Policy: [decisions.md](decisions.md) §36–§37. Defaults: [../config/lobby-ui.json](../config/lobby-ui.json). Parent: [../TODO.md](../TODO.md). Chord letters and special values live in that JSON — not in decisions.
+Configurable Lobby shortcuts live on disk so SSH edits apply without rebuilding Writerdeck. Policy: [decisions.md](decisions.md) §36–§37. Defaults: [../config/lobby-ui.json](../config/lobby-ui.json). Parent: [../TODO.md](../TODO.md). Chord letters and special values live in that JSON — not in decisions.
 
 ## Rules (agreed)
 
@@ -21,7 +21,7 @@ Whenever a shortcut value is `enter`, the on-screen key badge shows the single g
 "tabs.about": ""
 ```
 
-Empty means no jump key and no tab badge. **Remove** the hardwired digits 1–6 page jump from code (do not leave it as a fallback). Lobby page switching without a configured tab shortcut is Tab / Shift-Tab and plain Left / Right only. Later you may fill a tab line (e.g. `"tabs.files": "f"` → Ctrl-F). A future Finder-style note jump needs bare letters **and** digits, so do not spend bare digit keys on Lobby tabs without deciding that trade-off; fix §37’s old “digits for tabs / letters for Finder” split when refreshing docs.
+Empty means no jump key and no tab badge. Hardwired digits 1–6 page jump are gone. Lobby page switching without a configured tab shortcut is Tab / Shift-Tab and plain Left / Right only. Later you may fill a tab line (e.g. `"tabs.files": "f"` → Ctrl-F). A future Finder-style note jump needs bare letters **and** digits, so do not spend bare digit keys on Lobby tabs without deciding that trade-off.
 
 **Clashes** — only within the same scope. Same letter on two Files actions (or two `global.*` lines): the later line in the file wins. Same letter on Files vs Settings is fine (page-scoped). Duplicate names (two `global.quit` lines) — only the last counts. If an LLM spots a same-scope clash while working, say so.
 
@@ -38,13 +38,13 @@ Empty means no jump key and no tab badge. **Remove** the hardwired digits 1–6 
 - A letter on either line (e.g. `"q"`) means that Ctrl chord owns **that** action only; `hardware_home` no longer does that one. The other line stays independent.
 - Never treat the USB / phone **keyboard Home** key as `hardware_home`. Keyboard Home keeps its normal jobs (caret Home/End in the editor and in New / Rename fields). It must not return to Lobby or quit Writerdeck.
 
-**Rotate** — only the existing Settings letter (`settings.rotation`, default O → Ctrl-O). Drop Ctrl-R and Ctrl+Left / Ctrl+Right rotate.
+**Rotate** — only the Settings letter (`settings.rotation`, default O → Ctrl-O). No Ctrl-R or Ctrl+Left / Ctrl+Right rotate.
 
 **Sync now** — `"sync.now": "enter"` (Enter key; badge ↩).
 
-**Edit selected note** — prefer `"files.edit": "enter"` (badge ↩ from the value) if wiring it like other JSON shortcuts is a small change. If that turns into a large detour, leave Enter hardwired for Edit and keep using the existing badge string until chrome work.
+**Edit selected note** — `"files.edit": "enter"` (badge ↩ from the value via `shortcutBadge`).
 
-Drop the parser rule that forever blocks K and Q. Remove the old Ctrl-K note picker (overlay, binding, help text).
+K and Q are ordinary letters (no parser block). The old Ctrl-K note picker is gone.
 
 ## Stay in code (do not put in JSON)
 
@@ -59,7 +59,7 @@ Tab / Shift-Tab and plain Left / Right (cycle Lobby pages). Up / Down and Page U
 - [x] Sync: `"sync.now": "enter"`; treat `enter` as a first-class shortcut value (no Ctrl); badge glyph always ↩ when value is `enter`.
 - [x] Edit: `"files.edit": "enter"` (wired like other JSON shortcuts; badge via `shortcutBadge`).
 - [x] Refresh `shortcuts.body`, Settings help, §16 / §22 / §36 / §37, README, [user-should-test.md](user-should-test.md) — no Ctrl-K picker; no hardwired 1–6; keyboard Home not Lobby/quit; fix §37 Finder/digits wording; no Ctrl-R / arrow rotate. Do not re-list chord tables in decisions — point at `lobby-ui.json`.
-- [ ] Verify on tablet: SSH-edit `lobby-ui.json`, chords and badges update without a binary rebuild; bad JSON keeps the last good load. Lobby keyboard test after deploy.
+- [x] Verify on tablet: SSH-edit `lobby-ui.json`, chords and badges update without a binary rebuild; bad JSON keeps the last good load. Lobby keyboard test after deploy.
 
 ## Out of scope here
 

@@ -1,6 +1,6 @@
 # TODO: Lobby chrome still hardwired
 
-Labels, help copy, and visual knobs that still live in QML instead of `/home/root/.Writerdeck/lobby-ui.json`. Goal: change them over SSH without a rebuild ([decisions.md](decisions.md) §36). Parent: [../TODO.md](../TODO.md). Shortcuts and keybindings: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md) first.
+Labels, help copy, and visual knobs that still live in QML instead of `/home/root/.Writerdeck/lobby-ui.json`. Goal: change them over SSH without a rebuild ([decisions.md](decisions.md) §36). Parent: [../TODO.md](../TODO.md). Shortcuts are already on disk: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md).
 
 Wishlist overlap: [improvements.md](improvements.md) (Lobby / phone).
 
