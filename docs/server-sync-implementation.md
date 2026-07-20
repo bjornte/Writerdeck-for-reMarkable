@@ -8,6 +8,8 @@ Reconciler behaviour: [decisions.md](decisions.md) §11. Integrity contract: [in
 
 Engine code lives in `daemon/syncengine.go`, `syncgithub.go`, `syncmeta.go`, and `synclog.go`. The GitHub token sits in browser `localStorage` (`ghToken`) and tablet RAM via `POST /api/sync/token` — never on disk. Per-note sha and localHash (djb2, same as the old phone engine) persist in `settings.json` as `syncMeta`.
 
+`pullNote` treats a matching GitHub blob SHA as “already up to date” only when the file is still on disk. If `syncMeta` still has that SHA but the note was removed outside the app’s delete path, pull rewrites the file from GitHub so the note is restored.
+
 ### Token restore after restart
 
 Tablet RAM clears on every `writerdeck` restart. A browser that already saved a token restores sync without manual Save:
