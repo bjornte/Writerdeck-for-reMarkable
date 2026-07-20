@@ -1,0 +1,8 @@
+---
+description: ARCHIVED — keywriter fork migration complete; see writerdeck.mdc
+alwaysApply: false
+---
+
+# Keywriter fork migration (archived)
+
+Migration 1 complete. Checklist: [docs/editor-migration-1-to-QML/todo-handoff-keywriter-fork.md](docs/editor-migration-1-to-QML/todo-handoff-keywriter-fork.md). While migration 2 runs, active rule is [edit-helper-cpp-migration.mdc](edit-helper-cpp-migration.mdc); [writerdeck.mdc](writerdeck.mdc) is paused. Do not re-enable this file as `alwaysApply: true`.

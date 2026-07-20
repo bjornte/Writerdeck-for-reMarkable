@@ -1,0 +1,976 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/gorilla/websocket"
+)
+
+const (
+	harnessNote   = "z-test-keyboard-harness.md"
+	defaultKeyMs  = 120
+	defaultStepMs = 200
+	fastKeyMs     = 40
+	fastStepMs    = 80
+	httpTimeout   = 30 * time.Second
+)
+
+var (
+	keyPause  = defaultKeyMs * time.Millisecond
+	stepPause = defaultStepMs * time.Millisecond
+)
+
+var harnessHTTP = &http.Client{Timeout: httpTimeout}
+
+type Key struct {
+	Name  string `json:"name"`
+	Shift bool   `json:"shift,omitempty"`
+	Ctrl  bool   `json:"ctrl,omitempty"`
+	Alt   bool   `json:"alt,omitempty"`
+	Meta  bool   `json:"meta,omitempty"`
+}
+
+type StateExpect struct {
+	Cursor      *int    `json:"cursor,omitempty"`
+	CursorMin   *int    `json:"cursorMin,omitempty"`
+	CursorMax   *int    `json:"cursorMax,omitempty"`
+	SelStart    *int    `json:"selStart,omitempty"`
+	SelEnd      *int    `json:"selEnd,omitempty"`
+	SelLen      *int    `json:"selLen,omitempty"`
+	SelLenMin   *int    `json:"selLenMin,omitempty"`
+	SelLenMax   *int    `json:"selLenMax,omitempty"`
+	TextLen     *int    `json:"textLen,omitempty"`
+	Text        *string `json:"text,omitempty"` // full note body from /api/notes
+	Mode        *int    `json:"mode,omitempty"`
+	IsLobby     *int    `json:"isLobby,omitempty"`
+	ContentY    *int    `json:"contentY,omitempty"`
+	ContentYMin *int    `json:"contentYMin,omitempty"`
+	ContentYMax *int    `json:"contentYMax,omitempty"`
+	// Assoc is soft-wrap caret stickiness (-1 = previous visual row / line end).
+	Assoc *int `json:"assoc,omitempty"`
+	// CaretY is where the caret is painted (may differ from cursor index Y at wraps).
+	CaretY    *int `json:"caretY,omitempty"`
+	CaretYMin *int `json:"caretYMin,omitempty"`
+	CaretYMax *int `json:"caretYMax,omitempty"`
+}
+
+type Step struct {
+	Label     string       `json:"label,omitempty"`
+	Keys      []Key        `json:"keys,omitempty"`
+	Cmd       string       `json:"cmd,omitempty"` // editor cmd e.g. pageleft/pageright
+	// Degrees is optional payload for cmds like setrotation.
+	Degrees *int `json:"degrees,omitempty"`
+	// PauseMs sleeps after this step's keys/cmd (e.g. wait for queued setrotation).
+	PauseMs   int          `json:"pauseMs,omitempty"`
+	SetCursor *int         `json:"setCursor,omitempty"`
+	Repeat    int          `json:"repeat,omitempty"`
+	Expect    *StateExpect `json:"expect,omitempty"`
+	// Reprepare re-writes scenario Content and runs harnessprepare (after mutating
+	// edits such as Backspace, before another absolute SetCursor block).
+	Reprepare bool `json:"reprepare,omitempty"`
+	// CaptureContentY stores live contentY after this step's keys/cmd.
+	CaptureContentY bool `json:"captureContentY,omitempty"`
+	// ExpectContentYEqCaptured requires contentY == last CaptureContentY.
+	ExpectContentYEqCaptured bool `json:"expectContentYEqCaptured,omitempty"`
+	// ExpectContentYLtCaptured requires contentY < last CaptureContentY.
+	ExpectContentYLtCaptured bool `json:"expectContentYLtCaptured,omitempty"`
+	// CaptureCaretY stores painted caret Y (affinity-aware) after this step.
+	CaptureCaretY bool `json:"captureCaretY,omitempty"`
+	// ExpectCaretYEqCaptured requires caretY == last CaptureCaretY (same visual row).
+	ExpectCaretYEqCaptured bool `json:"expectCaretYEqCaptured,omitempty"`
+}
+
+type Scenario struct {
+	Name    string   `json:"name"`
+	Content string   `json:"content"`
+	Width   int      `json:"width,omitempty"` // harness wrap width in pixels; 0 = default
+	Tags    []string `json:"tags,omitempty"`
+	Steps   []Step   `json:"steps"`
+}
+
+type EditorState struct {
+	Cursor      int    `json:"cursor"`
+	SelStart    int    `json:"selStart"`
+	SelEnd      int    `json:"selEnd"`
+	TextLen     int    `json:"textLen"`
+	Text        string `json:"text,omitempty"` // live edit buffer when present
+	Mode        int    `json:"mode"`
+	IsLobby     int    `json:"isLobby"`
+	CurrentFile string `json:"currentFile"`
+	ContentY    int    `json:"contentY"`
+	Assoc       int    `json:"assoc"`
+	CaretY      int    `json:"caretY"`
+}
+
+type Harness struct {
+	base       string
+	host       string
+	port       int
+	verbose    bool
+	noPrepare  bool
+	failFast   bool
+	reloadPoll time.Duration
+}
+
+func main() {
+	host := flag.String("host", "127.0.0.1", "tablet host")
+	port := flag.Int("port", 8000, "server port")
+	scenario := flag.String("scenario", "", "run one scenario by exact name")
+	match := flag.String("match", "", "run scenarios whose name contains this substring")
+	tag := flag.String("tag", "", "run scenarios with this tag (wrap, combo, gap, undo, ...)")
+	list := flag.Bool("list", false, "list scenario names")
+	listTags := flag.Bool("list-tags", false, "list known scenario tags")
+	verbose := flag.Bool("v", false, "verbose step output")
+	unit := flag.Bool("unit", false, "run translate unit tests only (no device)")
+	fast := flag.Bool("fast", false, "shorter key/step pauses for dev iteration")
+	noPrepare := flag.Bool("no-prepare", false, "skip sandbox prepare (reuse open buffer; same scenario only)")
+	failFast := flag.Bool("fail-fast", true, "stop suite when editor is unhealthy after a failure")
+	reportMD := flag.String("report-md", "", "write markdown results table to this path")
+	flag.Parse()
+
+	if *fast {
+		keyPause = fastKeyMs * time.Millisecond
+		stepPause = fastStepMs * time.Millisecond
+	}
+
+	if *unit {
+		fmt.Println("Run: go test -run TestTranslate ./...")
+		os.Exit(0)
+	}
+
+	h := &Harness{
+		base:       fmt.Sprintf("http://%s:%d", *host, *port),
+		host:       *host,
+		port:       *port,
+		verbose:    *verbose,
+		noPrepare:  *noPrepare,
+		failFast:   *failFast,
+		reloadPoll: 200 * time.Millisecond,
+	}
+	if *fast {
+		h.reloadPoll = 100 * time.Millisecond
+	}
+
+	names := scenarioNames()
+	if *listTags {
+		seen := map[string]bool{}
+		for _, sc := range AllScenarios() {
+			for _, t := range sc.Tags {
+				seen[t] = true
+			}
+		}
+		for _, t := range sortedTagNames(seen) {
+			fmt.Println(t)
+		}
+		return
+	}
+	if *list {
+		for _, n := range names {
+			fmt.Println(n)
+		}
+		return
+	}
+
+	if countSet(*scenario, *match, *tag) > 1 {
+		fmt.Fprintln(os.Stderr, "use only one of -scenario, -match, -tag")
+		os.Exit(2)
+	}
+
+	var run []Scenario
+	switch {
+	case *scenario != "":
+		sc, ok := findScenario(*scenario)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "unknown scenario %q\n", *scenario)
+			os.Exit(2)
+		}
+		run = []Scenario{sc}
+	case *match != "":
+		var ok bool
+		run, ok = findScenariosByPrefix(*match)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "no scenarios match %q\n", *match)
+			os.Exit(2)
+		}
+	case *tag != "":
+		var ok bool
+		run, ok = findScenariosByTag(*tag)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "no scenarios with tag %q\n", *tag)
+			os.Exit(2)
+		}
+	default:
+		run = AllScenarios()
+	}
+
+	if msg := validateAllScenarioKeys(); msg != "" {
+		fmt.Fprintf(os.Stderr, "invalid scenario key: %s\n", msg)
+		os.Exit(2)
+	}
+
+	if h.verbose {
+		fmt.Println("mode: sandbox-prepare (no editor restart)")
+	}
+
+	runStarted := time.Now()
+	modeLabel := "sandbox-prepare (single session)"
+
+	var results []scenarioResult
+	stoppedEarly := false
+	for _, sc := range run {
+		res := h.runScenarioTimed(sc)
+		results = append(results, res)
+		switch res.Kind {
+		case outcomePass:
+			fmt.Printf("PASS %s (%.1fs)\n", sc.Name, res.Duration.Seconds())
+		case outcomePrepareFail:
+			fmt.Fprintf(os.Stderr, "PREPARE_FAIL %s (%.1fs): %s\n", sc.Name, res.Duration.Seconds(), res.Err)
+		default:
+			fmt.Fprintf(os.Stderr, "FAIL %s (%.1fs): %s\n", sc.Name, res.Duration.Seconds(), res.Err)
+		}
+		if h.failFast && res.Kind == outcomeFail && len(res.HealthNotes) > 0 {
+			fmt.Fprintf(os.Stderr, "FAIL-FAST: editor unhealthy after %s — stopping suite\n", sc.Name)
+			stoppedEarly = true
+			break
+		}
+		linkContamination(results)
+		if h.failFast && len(results) >= 2 && results[len(results)-2].PossiblePoisoner &&
+			results[len(results)-1].Kind == outcomePrepareFail {
+			fmt.Fprintf(os.Stderr, "FAIL-FAST: %s poisoned prepare for %s — stopping suite\n",
+				results[len(results)-2].Name, sc.Name)
+			stoppedEarly = true
+			break
+		}
+	}
+	if stoppedEarly {
+		fmt.Fprintf(os.Stderr, "Stopped early (%d/%d scenarios). Re-check with: bash scripts/test-keyboard-harness.sh -s NAME --fast\n",
+			len(results), len(run))
+	}
+	if report := formatContaminationReport(results); report != "" {
+		fmt.Fprint(os.Stderr, report)
+	}
+	if *reportMD != "" {
+		meta := runMeta{
+			StartedAt:     runStarted,
+			Target:        fmt.Sprintf("%s:%d", *host, *port),
+			Mode:          modeLabel,
+			Fast:          *fast,
+			ScenarioCount: len(run),
+		}
+		md := formatMarkdownReport(meta, results)
+		if err := os.WriteFile(*reportMD, []byte(md), 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "report-md: %v\n", err)
+		} else {
+			fmt.Printf("report: %s\n", *reportMD)
+		}
+	}
+	h.returnToLobby()
+	failed := 0
+	for _, r := range results {
+		if r.Kind != outcomePass {
+			failed++
+		}
+	}
+	if failed > 0 {
+		os.Exit(1)
+	}
+}
+
+func (h *Harness) runScenarioTimed(sc Scenario) scenarioResult {
+	start := time.Now()
+	res := h.runScenarioTracked(sc)
+	res.Duration = time.Since(start)
+	return res
+}
+
+func (h *Harness) runScenarioTracked(sc Scenario) scenarioResult {
+	if h.noPrepare {
+		if err := h.RunScenario(sc); err != nil {
+			return scenarioResult{Name: sc.Name, Kind: outcomeFail, Err: err.Error()}
+		}
+		return scenarioResult{Name: sc.Name, Kind: outcomePass}
+	}
+	retries, err := h.prepareWithRetry(sc)
+	if err != nil {
+		return scenarioResult{
+			Name:            sc.Name,
+			Kind:            outcomePrepareFail,
+			Err:             err.Error(),
+			PrepareRecovered: retries > 0,
+		}
+	}
+	if err := h.RunScenario(sc); err != nil {
+		health := h.notePostScenarioHealth(sc.Name)
+		return scenarioResult{Name: sc.Name, Kind: outcomeFail, Err: err.Error(), PrepareRecovered: retries > 0, HealthNotes: health}
+	}
+	return scenarioResult{Name: sc.Name, Kind: outcomePass, PrepareRecovered: retries > 0}
+}
+
+// prepareWithRetry sandbox-resets the live editor without quitting.
+func (h *Harness) prepareWithRetry(sc Scenario) (retries int, err error) {
+	const attempts = 5
+	var last error
+	for i := 0; i < attempts; i++ {
+		if err := h.sandboxPrepare(sc); err == nil {
+			return retries, nil
+		} else {
+			last = err
+			retries = i
+		}
+		if i+1 < attempts {
+			time.Sleep(time.Duration(i+1) * 150 * time.Millisecond)
+		}
+	}
+	return retries, last
+}
+
+func (h *Harness) sandboxPrepare(sc Scenario) error {
+	if err := h.writeNote(sc.Content); err != nil {
+		return fmt.Errorf("write: %w", err)
+	}
+	if err := h.ensureHarnessEditor(); err != nil {
+		return fmt.Errorf("ensure editor: %w", err)
+	}
+	st, err := h.queryState()
+	if err != nil {
+		return fmt.Errorf("state: %w", err)
+	}
+	if st.IsLobby == 1 || st.CurrentFile != harnessNote {
+		if err := h.editorCmd("harnessopen", harnessNote, 0); err != nil {
+			return fmt.Errorf("harnessopen: %w", err)
+		}
+	}
+	if err := h.editorCmd("harnessprepare", "", sc.Width); err != nil {
+		return fmt.Errorf("harnessprepare: %w", err)
+	}
+	if err := h.verifyPrepareState(sc.Content); err != nil {
+		return err
+	}
+	if sc.Width > 0 {
+		// Let TextEdit reflow at harness width before the first Down/End assertion.
+		time.Sleep(2 * stepPause)
+	}
+	return nil
+}
+
+func (h *Harness) notePostScenarioHealth(scenario string) []string {
+	st, err := h.queryState()
+	if err != nil {
+		msg := fmt.Sprintf("editor unreachable after fail: %v", err)
+		fmt.Fprintf(os.Stderr, "  HEALTH %s: %s\n", scenario, msg)
+		return []string{msg}
+	}
+	var notes []string
+	if st.IsLobby == 1 {
+		msg := "editor in lobby after fail"
+		fmt.Fprintf(os.Stderr, "  HEALTH %s: %s\n", scenario, msg)
+		notes = append(notes, msg)
+	}
+	if st.Mode != 1 {
+		msg := fmt.Sprintf("not in edit mode (mode=%d) after fail", st.Mode)
+		fmt.Fprintf(os.Stderr, "  HEALTH %s: %s\n", scenario, msg)
+		notes = append(notes, msg)
+	}
+	return notes
+}
+
+func (h *Harness) RunScenario(sc Scenario) error {
+	ws, err := h.dialWS()
+	if err != nil {
+		return fmt.Errorf("websocket: %w", err)
+	}
+	defer ws.Close()
+
+	modKeyPrimed := false
+	var capturedY int
+	haveCapturedY := false
+	var capturedCaretY int
+	haveCapturedCaretY := false
+	for i, step := range sc.Steps {
+		label := step.Label
+		if label == "" {
+			label = fmt.Sprintf("step %d", i+1)
+		}
+		if step.Reprepare {
+			if err := h.sandboxPrepare(sc); err != nil {
+				return fmt.Errorf("%s: reprepare: %w", label, err)
+			}
+			modKeyPrimed = false
+			time.Sleep(stepPause)
+		}
+		if step.SetCursor != nil {
+			if err := h.setCursor(*step.SetCursor); err != nil {
+				return fmt.Errorf("%s: setCursor: %w", label, err)
+			}
+			time.Sleep(stepPause)
+		}
+		if step.Cmd != "" {
+			repeat := step.Repeat
+			if repeat <= 0 {
+				repeat = 1
+			}
+			for r := 0; r < repeat; r++ {
+				body := map[string]interface{}{"c": step.Cmd}
+				if step.Degrees != nil {
+					body["degrees"] = *step.Degrees
+				}
+				if err := h.editorCmdBody(body); err != nil {
+					return fmt.Errorf("%s: cmd %s: %w", label, step.Cmd, err)
+				}
+				time.Sleep(stepPause)
+			}
+		}
+		if step.PauseMs > 0 {
+			time.Sleep(time.Duration(step.PauseMs) * time.Millisecond)
+		}
+		if !modKeyPrimed && len(step.Keys) > 0 && stepNeedsModifiedPrime(step) {
+			st, err := h.queryState()
+			if err != nil {
+				return fmt.Errorf("%s: state before prime: %w", label, err)
+			}
+			if st.Cursor == 0 {
+				if err := h.primeModifiedKeys(ws, step); err != nil {
+					return fmt.Errorf("%s: prime modified keys: %w", label, err)
+				}
+				if h.verbose {
+					fmt.Printf("  %s: primed modified keys from cursor 0\n", label)
+				}
+				modKeyPrimed = true
+			}
+		}
+		if len(step.Keys) > 0 {
+			repeat := step.Repeat
+			if repeat <= 0 {
+				repeat = 1
+			}
+			for r := 0; r < repeat; r++ {
+				for _, k := range step.Keys {
+					if err := h.sendKey(ws, k); err != nil {
+						return fmt.Errorf("%s: send %s: %w", label, k.Name, err)
+					}
+				}
+			}
+			time.Sleep(stepPause)
+		}
+		if step.CaptureContentY || step.ExpectContentYEqCaptured || step.ExpectContentYLtCaptured {
+			st, err := h.queryState()
+			if err != nil {
+				return fmt.Errorf("%s: state for contentY capture: %w", label, err)
+			}
+			if step.CaptureContentY {
+				capturedY = st.ContentY
+				haveCapturedY = true
+				if h.verbose {
+					fmt.Printf("  %s: captured contentY=%d\n", label, capturedY)
+				}
+			}
+			if step.ExpectContentYEqCaptured {
+				if !haveCapturedY {
+					return fmt.Errorf("%s: ExpectContentYEqCaptured with no prior CaptureContentY", label)
+				}
+				if st.ContentY != capturedY {
+					return fmt.Errorf("%s: contentY want captured %d got %d", label, capturedY, st.ContentY)
+				}
+			}
+			if step.ExpectContentYLtCaptured {
+				if !haveCapturedY {
+					return fmt.Errorf("%s: ExpectContentYLtCaptured with no prior CaptureContentY", label)
+				}
+				if st.ContentY >= capturedY {
+					return fmt.Errorf("%s: contentY want < captured %d got %d", label, capturedY, st.ContentY)
+				}
+			}
+		}
+		if step.CaptureCaretY || step.ExpectCaretYEqCaptured {
+			st, err := h.queryState()
+			if err != nil {
+				return fmt.Errorf("%s: state for caretY capture: %w", label, err)
+			}
+			if step.CaptureCaretY {
+				capturedCaretY = st.CaretY
+				haveCapturedCaretY = true
+				if h.verbose {
+					fmt.Printf("  %s: captured caretY=%d\n", label, capturedCaretY)
+				}
+			}
+			if step.ExpectCaretYEqCaptured {
+				if !haveCapturedCaretY {
+					return fmt.Errorf("%s: ExpectCaretYEqCaptured with no prior CaptureCaretY", label)
+				}
+				if st.CaretY != capturedCaretY {
+					return fmt.Errorf("%s: caretY want captured %d got %d (wrap affinity: End must stay on same visual row)",
+						label, capturedCaretY, st.CaretY)
+				}
+			}
+		}
+		if step.Expect != nil {
+			if err := h.checkExpect(label, *step.Expect); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// waitCursorMoved polls editorstate until cursor leaves from (or timeout).
+func (h *Harness) waitCursorMoved(from int, timeout time.Duration) (EditorState, error) {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		st, err := h.queryState()
+		if err != nil {
+			return st, err
+		}
+		if st.Cursor != from {
+			return st, nil
+		}
+		time.Sleep(h.reloadPoll)
+	}
+	st, err := h.queryState()
+	if err != nil {
+		return st, err
+	}
+	if st.Cursor == from {
+		return st, fmt.Errorf("cursor stuck at %d", from)
+	}
+	return st, nil
+}
+
+// primeModifiedKeys wakes the modified-key socket path on this WebSocket without
+// moving the cursor to EOF (plain End before Ctrl+Right poisoned text/position).
+func (h *Harness) primeModifiedKeys(ws *websocket.Conn, step Step) error {
+	if err := h.sendKeyEvent(ws, Key{Name: "ArrowUp"}, false); err != nil {
+		return err
+	}
+	time.Sleep(stepPause)
+	want := stepExpectedCursor(step)
+	if want != nil && *want == 0 {
+		if err := h.sendKeyEvent(ws, Key{Name: "Home", Ctrl: true}, false); err != nil {
+			return err
+		}
+		time.Sleep(stepPause)
+	}
+	return nil
+}
+
+func (h *Harness) checkExpect(label string, exp StateExpect) error {
+	st, err := h.queryState()
+	if err != nil {
+		return fmt.Errorf("%s: state: %w", label, err)
+	}
+	if h.verbose {
+		b, _ := json.Marshal(st)
+		fmt.Printf("  %s: got %s\n", label, b)
+	}
+	var noteText string
+	if exp.Text != nil {
+		noteText, err = h.queryNoteText()
+		if err != nil {
+			return fmt.Errorf("%s: note text: %w", label, err)
+		}
+	}
+	if err := matchExpect(st, exp, noteText); err != nil {
+		return fmt.Errorf("%s: %w", label, err)
+	}
+	return nil
+}
+
+func (h *Harness) verifyPrepareState(content string) error {
+	st, err := h.queryState()
+	if err != nil {
+		return fmt.Errorf("post-prepare state: %w", err)
+	}
+	wantLen := editorLen(content)
+	if st.TextLen != wantLen {
+		return fmt.Errorf("textLen want %d got %d", wantLen, st.TextLen)
+	}
+	if st.Cursor != 0 || st.SelStart != 0 || st.SelEnd != 0 {
+		return fmt.Errorf("cursor/selection not clean: %v", st)
+	}
+	if st.Mode != 1 {
+		return fmt.Errorf("want edit mode 1 got %d", st.Mode)
+	}
+	if st.IsLobby == 1 {
+		return fmt.Errorf("editor in lobby")
+	}
+	if st.CurrentFile != harnessNote {
+		return fmt.Errorf("currentFile want %q got %q", harnessNote, st.CurrentFile)
+	}
+	return nil
+}
+
+func (h *Harness) ensureHarnessEditor() error {
+	st, err := h.queryState()
+	if err == nil && st.Mode == 1 && st.IsLobby == 0 {
+		return nil
+	}
+	if err := h.openNote(); err != nil {
+		return err
+	}
+	deadline := time.Now().Add(12 * time.Second)
+	for time.Now().Before(deadline) {
+		st, err := h.queryState()
+		if err == nil && st.Mode == 1 && st.IsLobby == 0 {
+			return nil
+		}
+		time.Sleep(h.reloadPoll)
+	}
+	return fmt.Errorf("editor not ready after open")
+}
+
+func (h *Harness) editorCmd(c, name string, width int) error {
+	body := map[string]interface{}{"c": c}
+	if name != "" {
+		body["name"] = name
+	}
+	if width > 0 {
+		body["w"] = width
+	}
+	return h.editorCmdBody(body)
+}
+
+func (h *Harness) editorCmdBody(body map[string]interface{}) error {
+	if name, _ := body["name"].(string); name == "" {
+		delete(body, "name")
+	}
+	if w, _ := body["w"].(int); w <= 0 {
+		delete(body, "w")
+	}
+	raw, _ := json.Marshal(body)
+	code, err := h.post("/api/test/editor-cmd", raw)
+	if err != nil {
+		return err
+	}
+	if code != 200 {
+		c, _ := body["c"].(string)
+		return fmt.Errorf("editor-cmd %s HTTP %d", c, code)
+	}
+	time.Sleep(h.reloadPoll)
+	return nil
+}
+
+func (h *Harness) setCursor(pos int) error {
+	return h.editorCmdBody(map[string]interface{}{"c": "harnesssetcursor", "pos": pos})
+}
+
+func (h *Harness) returnToLobby() {
+	if err := h.editorCmd("showlobby", "", 0); err != nil {
+		fmt.Fprintf(os.Stderr, "harness: return to lobby: %v\n", err)
+		return
+	}
+	time.Sleep(2 * stepPause)
+	fmt.Println("Returned editor to lobby.")
+}
+
+// writeNote upserts harness content without deleting the file or quitting the editor.
+func (h *Harness) writeNote(content string) error {
+	get, err := harnessHTTP.Get(h.base + "/api/notes/" + harnessNote)
+	if err != nil {
+		return err
+	}
+	io.Copy(io.Discard, get.Body) //nolint:errcheck
+	status := get.StatusCode
+	get.Body.Close()
+	if status == 200 {
+		return h.putNoteContent(content)
+	}
+	if status != 404 {
+		return fmt.Errorf("read note HTTP %d", status)
+	}
+	body, _ := json.Marshal(map[string]string{
+		"name":    strings.TrimSuffix(harnessNote, ".md"),
+		"content": content,
+	})
+	code, err := h.post("/api/notes", body)
+	if err != nil {
+		return err
+	}
+	if code == 200 || code == 201 {
+		return nil
+	}
+	if code == 409 {
+		return h.putNoteContent(content)
+	}
+	return fmt.Errorf("create note HTTP %d", code)
+}
+
+func (h *Harness) putNoteContent(content string) error {
+	get, err := harnessHTTP.Get(h.base + "/api/notes/" + harnessNote)
+	if err != nil {
+		return err
+	}
+	io.Copy(io.Discard, get.Body) //nolint:errcheck
+	etag := get.Header.Get("ETag")
+	status := get.StatusCode
+	get.Body.Close()
+	if status != 200 {
+		return fmt.Errorf("read note HTTP %d", status)
+	}
+	body, _ := json.Marshal(map[string]string{"content": content})
+	req, err := http.NewRequest(http.MethodPut, h.base+"/api/notes/"+harnessNote, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if etag != "" {
+		req.Header.Set("If-Match", etag)
+	}
+	resp, err := harnessHTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	io.Copy(io.Discard, resp.Body) //nolint:errcheck
+	resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("put note HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func (h *Harness) openNote() error {
+	body, _ := json.Marshal(map[string]string{"name": harnessNote})
+	for attempt := 0; attempt < 3; attempt++ {
+		code, err := h.post("/api/open", body)
+		if err == nil && code == 200 {
+			return nil
+		}
+		time.Sleep(time.Second)
+		if err != nil && attempt < 2 {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if code != 200 {
+			return fmt.Errorf("open HTTP %d", code)
+		}
+	}
+	return fmt.Errorf("open failed after retries")
+}
+
+func (h *Harness) queryState() (EditorState, error) {
+	resp, err := harnessHTTP.Get(h.base + "/api/test/editor-state")
+	if err != nil {
+		return EditorState{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		b, _ := io.ReadAll(resp.Body)
+		return EditorState{}, fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
+	var st EditorState
+	if err := json.NewDecoder(resp.Body).Decode(&st); err != nil {
+		return EditorState{}, err
+	}
+	return st, nil
+}
+
+func (h *Harness) post(path string, body []byte) (int, error) {
+	var r io.Reader
+	if body != nil {
+		r = bytes.NewReader(body)
+	}
+	req, err := http.NewRequest(http.MethodPost, h.base+path, r)
+	if err != nil {
+		return 0, err
+	}
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	resp, err := harnessHTTP.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	io.Copy(io.Discard, resp.Body) //nolint:errcheck
+	resp.Body.Close()
+	return resp.StatusCode, nil
+}
+
+func (h *Harness) dialWS() (*websocket.Conn, error) {
+	u := url.URL{Scheme: "ws", Host: fmt.Sprintf("%s:%d", h.host, h.port), Path: "/ws"}
+	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	return conn, err
+}
+
+func (h *Harness) queryNoteText() (string, error) {
+	st, err := h.queryState()
+	if err != nil {
+		return "", err
+	}
+	if st.TextLen == 0 {
+		return "", nil
+	}
+	if st.Text != "" {
+		return st.Text, nil
+	}
+	// Fallback: older Writerdeck without live text in editor-state.
+	resp, err := harnessHTTP.Get(h.base + "/api/notes/" + harnessNote)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		b, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(b)))
+	}
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func (h *Harness) sendKey(ws *websocket.Conn, k Key) error {
+	if err := h.sendKeyEvent(ws, k, false); err != nil {
+		return err
+	}
+	if k.needsExplicitRelease() {
+		time.Sleep(keyPause / 2)
+		if err := h.sendKeyEvent(ws, k, true); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h *Harness) sendKeyEvent(ws *websocket.Conn, k Key, release bool) error {
+	ev := map[string]interface{}{
+		"type": "key",
+		"key":  k.Name,
+	}
+	if release {
+		ev["action"] = "release"
+	}
+	if k.Shift {
+		ev["shift"] = true
+	}
+	if k.Ctrl {
+		ev["ctrl"] = true
+	}
+	if k.Alt {
+		ev["alt"] = true
+	}
+	if k.Meta {
+		ev["meta"] = true
+	}
+	if err := ws.WriteJSON(ev); err != nil {
+		return err
+	}
+	time.Sleep(keyPause)
+	return nil
+}
+
+func matchExpect(got EditorState, exp StateExpect, noteText string) error {
+	var errs []string
+	check := func(name string, want *int, have int) {
+		if want == nil {
+			return
+		}
+		if *want != have {
+			errs = append(errs, fmt.Sprintf("%s want %d got %d", name, *want, have))
+		}
+	}
+	check("cursor", exp.Cursor, got.Cursor)
+	if exp.CursorMin != nil && got.Cursor < *exp.CursorMin {
+		errs = append(errs, fmt.Sprintf("cursorMin want >= %d got %d", *exp.CursorMin, got.Cursor))
+	}
+	if exp.CursorMax != nil && got.Cursor > *exp.CursorMax {
+		errs = append(errs, fmt.Sprintf("cursorMax want <= %d got %d", *exp.CursorMax, got.Cursor))
+	}
+	check("selStart", exp.SelStart, got.SelStart)
+	check("selEnd", exp.SelEnd, got.SelEnd)
+	check("textLen", exp.TextLen, got.TextLen)
+	check("mode", exp.Mode, got.Mode)
+	check("isLobby", exp.IsLobby, got.IsLobby)
+	check("contentY", exp.ContentY, got.ContentY)
+	if exp.ContentYMin != nil && got.ContentY < *exp.ContentYMin {
+		errs = append(errs, fmt.Sprintf("contentYMin want >= %d got %d", *exp.ContentYMin, got.ContentY))
+	}
+	if exp.ContentYMax != nil && got.ContentY > *exp.ContentYMax {
+		errs = append(errs, fmt.Sprintf("contentYMax want <= %d got %d", *exp.ContentYMax, got.ContentY))
+	}
+	check("assoc", exp.Assoc, got.Assoc)
+	check("caretY", exp.CaretY, got.CaretY)
+	if exp.CaretYMin != nil && got.CaretY < *exp.CaretYMin {
+		errs = append(errs, fmt.Sprintf("caretYMin want >= %d got %d", *exp.CaretYMin, got.CaretY))
+	}
+	if exp.CaretYMax != nil && got.CaretY > *exp.CaretYMax {
+		errs = append(errs, fmt.Sprintf("caretYMax want <= %d got %d", *exp.CaretYMax, got.CaretY))
+	}
+	if exp.Text != nil && noteText != *exp.Text {
+		errs = append(errs, fmt.Sprintf("text want %q got %q", *exp.Text, noteText))
+	}
+	if exp.SelLen != nil {
+		have := got.selLen()
+		if *exp.SelLen != have {
+			errs = append(errs, fmt.Sprintf("selLen want %d got %d", *exp.SelLen, have))
+		}
+	}
+	if exp.SelLenMin != nil {
+		have := got.selLen()
+		if have < *exp.SelLenMin {
+			errs = append(errs, fmt.Sprintf("selLenMin want >= %d got %d", *exp.SelLenMin, have))
+		}
+	}
+	if exp.SelLenMax != nil {
+		have := got.selLen()
+		if have > *exp.SelLenMax {
+			errs = append(errs, fmt.Sprintf("selLenMax want <= %d got %d", *exp.SelLenMax, have))
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("%s; state=%v", strings.Join(errs, "; "), got)
+	}
+	return nil
+}
+
+func countSet(a, b, c string) int {
+	n := 0
+	if a != "" {
+		n++
+	}
+	if b != "" {
+		n++
+	}
+	if c != "" {
+		n++
+	}
+	return n
+}
+
+func sortedTagNames(seen map[string]bool) []string {
+	out := make([]string, 0, len(seen))
+	for t := range seen {
+		out = append(out, t)
+	}
+	for i := 0; i < len(out); i++ {
+		for j := i + 1; j < len(out); j++ {
+			if out[j] < out[i] {
+				out[i], out[j] = out[j], out[i]
+			}
+		}
+	}
+	return out
+}
+
+func intp(v int) *int { return &v }
+
+func strp(s string) *string { return &s }
+
+func (s EditorState) selLen() int {
+	if s.SelStart == s.SelEnd {
+		return 0
+	}
+	if s.SelStart < s.SelEnd {
+		return s.SelEnd - s.SelStart
+	}
+	return s.SelStart - s.SelEnd
+}

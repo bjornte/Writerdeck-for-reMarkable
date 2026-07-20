@@ -1,48 +1,43 @@
-# Writerdeck for reMarkable 1 — TODO
+# TODO
 
-> rM1-Writerdeck turns a first-gen reMarkable 1 e-paper tablet into a distraction-free Markdown typewriter: type on an iPhone (or laptop) keyboard, the keystrokes travel over Wi-Fi to the tablet, which shows the text on e-ink and saves `.md`.
->
-> This file is just the open work. How it works (architecture, environment, dev loop) → [docs/architecture.md](docs/architecture.md). Why each choice was made (the ADR) → [docs/decisions.md](docs/decisions.md). What's already done (the dated progress log) → [DONE.md](DONE.md).
->
-> Keystrokes reach the editor over a local socket, not `/dev/uinput` (this kernel can't load uinput — see [docs/decisions.md](docs/decisions.md)). Verify each item on the device before checking it off.
+Writerdeck turns a first-gen reMarkable into a Markdown typewriter with USB and Bluetooth keyboards. Most of the product is finished — see [DONE.md](DONE.md).
 
----
+How: [docs/architecture.md](docs/architecture.md). Why: [docs/decisions.md](docs/decisions.md). Gotchas: [docs/lessons.md](docs/lessons.md). Words: [docs/terms.md](docs/terms.md).
 
-## Status
+Verify on the tablet before checking anything off. Keys use a socket, not uinput (a fake keyboard device) ([decisions.md](docs/decisions.md) §3).
 
-Phases 0–8 are done and device-verified — the Companion appliance works end-to-end (the full flow and phase table are in [DONE.md](DONE.md)). All planned build work is done; only the optional Phase 9 polish below remains.
+## Open for you
 
----
+1. Physical Home — please press the middle button once from edit, once from read, and once from the Lobby. Scripts cannot do this. [user-should-test.md](docs/user-should-test.md); [decisions.md](docs/decisions.md) §16.
 
-## Phase 9 — Polish / stretch (optional)
+2. Tell people about Writerdeck — best places to post (reMarkable 1, no Toltec / OTA-safe angle):
+   - **Reddit** — [r/reMarkableTablet](https://www.reddit.com/r/reMarkableTablet) (main user hub; reMarkable’s site points here)
+   - **reMarkable Community Discord** — invite via [awesome-reMarkable](https://github.com/reHackable/awesome-reMarkable) / [remarkable.guide](https://remarkable.guide/) (technical + power users; say clearly this is SSH + systemd, not Toltec)
+   - **Facebook** — official reMarkable user group (from [Join the community](https://remarkable.com/join-the-community))
+   - **MobileRead** — [More E-Book Readers](https://www.mobileread.com/forums/forumdisplay.php?f=140) (e-ink audience; quieter than Reddit)
+   - Optional launch posts: **Hacker News** (Show HN), **Lobsters** — one-shot, not ongoing forums
 
-- [ ] Cursor navigation niceties (QML patch): ArrowDown on the last line → move cursor to end of line; ArrowUp on the first line → move cursor to start. (Intercept in `Keys.onPressed` when `cursorPosition` is already on the boundary line.)
-- [ ] Mac-style modifier+arrow navigation: Alt+Arrow = word jump, Cmd+Arrow = line/doc start/end, Shift+Arrow = select, Shift+Alt/Cmd+Arrow = select by word/line. Match macOS TextEdit behavior.
-- [ ] Word/character count, simple status line.
-- [ ] Multiple notes / quick-switch UX review.
-- [ ] Battery/Wi-Fi indicators on the capture page.
-- [ ] Paragraph spacing in Read view (postponed, was spec item C): Qt 5.15 RichText ignores `margin-bottom` on `<p>`/`<li>`, so the inter-paragraph gap didn't change on e-ink (the `readHtml()` helper stays wired, so resuming only swaps the injected CSS). Next approaches: `line-height` on `<p>`, an injected spacer paragraph (`<p>&nbsp;</p>`), or pre-process the Markdown for vertical rhythm — see [DONE.md](DONE.md) 2026-06-27.
-- [ ] Sync: marker-aware delete/rename so an external delete isn't resurrected. *Delete half built (Opus-reviewed; browser/device-verify pending) — see [DONE.md](DONE.md) 2026-07-05 + [docs/decisions.md](docs/decisions.md) #19; verify on device, then check off.* The reconciler now treats "on the tablet + stored `sha` marker + pristine + gone from GitHub" as a real delete (confirmed by a per-note 404), so a GitHub-side / committed-VS-Code delete propagates instead of resurrecting, and an external rename reconciles as delete-old + pull-new instead of duplicating. Still open by design: a purely-local unpushed tablet delete is left alone (GitHub stays authoritative), and an unpushed local edit resurrects rather than deletes.
-- [ ] Landscape/rotate: verify on device that `libqsgepaper` repaints a rotated QML tree cleanly on e-ink — then check off. The "Rotate" button is built (CI-build; device-verify pending — see [DONE.md](DONE.md) 2026-07-05).
-- [ ] Fallback spike (only if keywriter becomes a blocker): a self-contained on-device editor using `libremarkable` (Rust framebuffer) that takes text over the socket — removes the keywriter-compat risk at the cost of building an editor. Documented fallback (see [docs/decisions.md](docs/decisions.md)), not the default.
+   Listed on [awesome-reMarkable](https://github.com/reHackable/awesome-reMarkable) Applications ([PR #268](https://github.com/reHackable/awesome-reMarkable/pull/268)).
 
-> Dev-ergonomics polish is already done (deploy ticker, binary-only `rmkw` redeploy, SSH preflight) — see [docs/architecture.md](docs/architecture.md).
+## Open
 
-> Shipped Phase 9 polish was pruned once device-verified — upload, the 6/4/none PIN chooser and Lobby-on-demand (P/L), the reading-view font picker, and the edit-view ↔ browser sync (S0/S1/S2) all used to live here as checklist items + specs; their durable lessons are now in [DONE.md](DONE.md) (the dated log) and [docs/decisions.md](docs/decisions.md) (#16–#18). Recover full specs from git history if a regression needs them.
+- [ ] Windows installer (native or clearly supported path). Mac/Linux stays bash; Windows is missing today — [install-onboarding/todo-install-onboarding.md](docs/install-onboarding/todo-install-onboarding.md).
+- [x] Lobby shortcuts on disk (tabs, Home path, sync/edit Enter, rotate; remove old Ctrl-K picker) — [todo-lobby-ui-shortcuts.md](docs/todo-lobby-ui-shortcuts.md).
+- [ ] Lobby chrome still hardwired (labels, copy, fills, radii, type sizes) — [todo-lobby-ui-chrome.md](docs/todo-lobby-ui-chrome.md).
 
----
+## Settled (kept for pointers)
 
-## Open questions
+Editor fork, EditHelper, wrap/undo keep, QML assembly, and linking git history to Singleton’s original are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Automated typing tests: all 112 passed ([editor-testing/todo.md](docs/editor-testing/todo.md)). In-editor copy/cut/paste over Bluetooth: fork `df1d38b`. Mac/Linux installer credential memory and sync push: done (Windows still open). No-keyboard Lobby tip with phone QR: fork `80f568b`; phone path needs WebSocket `hello`, excluding Cursor/Electron ([decisions.md](docs/decisions.md) §34). Phone keyboard-first (no notes list); Lobby Download offers to open phones: fork `3cfff08`. Lobby Keyboard tab boxes + live `(connected)` status: fork `55da42b`. Lobby on-disk UI config (`lobby-ui.json`): fork `21ed25a` ([decisions.md](docs/decisions.md) §36).
 
-1. Stay firmware-update-current? Each OTA resets the SSH password and may wipe the systemd unit ⇒ a re-deploy + re-`enable` cadence (low-risk; recovery documented in [docs/decisions.md](docs/decisions.md)).
+## Open question
 
----
+Stay on current firmware forever? Each OTA (over-the-air update) resets the SSH password and may wipe the boot service — redeploy and re-enable.
 
-## Resume prompt (paste into a fresh chat)
+Install now auto-enables `writerdeck` on boot after a health check — inspect bricking risk: [install-onboarding/todo-install-onboarding.md](docs/install-onboarding/todo-install-onboarding.md) (Follow-up).
 
-> Project rM1-Writerdeck — a reMarkable 1 as a Wi-Fi Markdown typewriter. A static Go daemon (`rmkbd`) on the tablet serves a WebSocket + HTML capture page and feeds a patched keywriter over a local socket (this kernel can't load `/dev/uinput`); keywriter saves `.md`. The client is the Mac in dev, the iPhone in use.
-> State: Phases 0–8 and most of Phase 9 polish are done & device-verified (see Status above + [DONE.md](DONE.md)); only the optional Phase 9 stretch backlog above remains. Do not redo finished phases, retry uinput, or rebuild keywriter from scratch.
-> Read first: [docs/architecture.md](docs/architecture.md) (how it works), [docs/decisions.md](docs/decisions.md) (the why / ADR), [DONE.md](DONE.md) (what's done), then pick an item from the Phase 9 — Polish / stretch list above.
-> Dev: the assistant commits on one machine; device SSH/deploy runs on the dev machine over Wi-Fi `192.168.1.8`; git bridges them.
-> Constraints: no jailbreak; preserve OTA; no Toltec; static Go binary (`CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7`). SSH password gitignored in `secrets/remarkable.local.env`. Iterate over Wi-Fi; keep the tablet awake.
-> Refs: editor https://github.com/dps/remarkable-keywriter · input docs https://remarkable.guide/devel/device/input.html.
+## Resume prompt
+
+> Project: reMarkable 1 Markdown typewriter (USB and Bluetooth keyboards). Server in `daemon/`; editor from Writerdeck-keywriter fork; notes in `Writerdeck-user-documents/`. Mac deploys; phone types.
+> Next: owner Physical Home check ([docs/user-should-test.md](docs/user-should-test.md)). Phone is keyboard-first (paste, sync token, Download here?); Lobby Download at fork `3cfff08`. Lobby Keyboard boxes + live `(connected)` at fork `55da42b`. Lobby UI config on disk (`lobby-ui.json`) at fork `21ed25a` ([docs/decisions.md](docs/decisions.md) §36). Typing tests all 112 passed at fork commit `df1d38b` (includes Ctrl+C/X/V). No-keyboard Lobby tip + QR; Cursor agent tabs do not count as a phone keyboard ([decisions.md](docs/decisions.md) §34). Stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
+> Read: architecture, decisions, DONE, lessons, terms, integrity-audit, browser-vs-tablet. Device: `secrets/remarkable.local.env`.
+> Constraints: no jailbreak / Toltec; keep OTA (over-the-air updates); one static Go ARM binary.

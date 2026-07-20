@@ -5,12 +5,14 @@
 
 # Resolve repo paths relative to this script.
 _THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+# shellcheck source=/dev/null
+. "$_THIS_DIR/paths.sh"
 _SECRETS="$_THIS_DIR/../secrets/remarkable.local.env"
 
 if [ ! -f "$_SECRETS" ]; then
   echo "ERROR: missing secrets file: $_SECRETS" >&2
-  echo "  cp secrets/remarkable.local.env.example secrets/remarkable.local.env" >&2
-  echo "  then fill in RM_ROOT_PASSWORD (and RM_HOST_WIFI)." >&2
+  echo "  Run: bash scripts/install.sh --start  (prompts for Wi-Fi IP + password)" >&2
+  echo "  Or:  bash scripts/ensure-secrets.sh" >&2
   return 1 2>/dev/null || exit 1
 fi
 
@@ -31,8 +33,9 @@ RM_HOST_WIFI="$(_get_env RM_HOST_WIFI)"
 RM_ROOT_PASSWORD="$(_get_env RM_ROOT_PASSWORD)"
 
 # Default device target. USB-ethernet is currently inactive (no DHCP lease) on
-# the Mac, so prefer Wi-Fi when an IP is recorded. Override per call with the
-# optional target arg, or globally:  export RM_HOST=10.11.99.1
+# the Mac, so prefer Wi-Fi when an IP is recorded. On iPhone Personal Hotspot,
+# export RM_HOST=172.20.10.5 (see RM_HOST_HOTSPOT in secrets). Override per
+# call with the optional target arg, or globally:  export RM_HOST=10.11.99.1
 RM_HOST="${RM_HOST:-${RM_HOST_WIFI:-$RM_HOST_USB}}"
 export RM_HOST_USB RM_HOST_WIFI RM_ROOT_PASSWORD RM_HOST
 
@@ -129,4 +132,11 @@ with_ticker() {
   kill "$_ticker" 2>/dev/null; wait "$_ticker" 2>/dev/null || true
   printf ' %ds\n' "$(( $(date +%s) - _t0 ))"
   return "$rc"
+}
+
+# Ship the on-device wd helper (Lobby one-liner). Usage: rm_deploy_wd [target]
+rm_deploy_wd() {
+  local target="${1:-$RM_HOST}"
+  rm_send_file "${_THIS_DIR}/wd" "$DEVICE_WD" "$target"
+  rm_ssh "chmod +x $DEVICE_WD" "$target"
 }

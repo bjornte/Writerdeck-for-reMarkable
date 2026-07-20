@@ -7,7 +7,10 @@
 export var state = {
   syncOn: false,        // mirrors /api/settings syncOn
   syncRepo: '',         // mirrors /api/settings syncRepo
-  tabletOpenNote: '',   // .md filename the tablet editor actually holds open;
-                        // clears only on exitedit (post-save), not phone-back
-  typingMode: false     // false=Browse (list/read), true=Type (capture + echo)
+  tabletOpenNote: '',   // .md filename the tablet editor holds open; set by server
+                        // openedit (phone /api/open or tablet doLoad); clears on exitedit
+  editorDiskHash: '',   // disk fingerprint at editor open — drift banner when disk changes (slice 8)
+  typingMode: true,      // keyboard shell (capture); default after auth
+  remoteKeys: '',        // '' | 'read' | 'lobby' -- BT keyboard forward without full Type UI
+  observeEnabled: false  // mirrors /api/settings observe -- phone Observe button
 };

@@ -15,8 +15,8 @@
 #   /out/qt5/qml/           -- QML import modules (QtQuick, folderlistmodel, ...)
 #   /out/qt5/plugins/       -- platform + imageformat plugins
 #
-# Usage: see third_party/keywriter/build.sh (Linux/macOS) or
-#        .github/workflows/build-keywriter.yml (CI).
+# Usage: CI only (.github/workflows/build-keywriter.yml). Docker runs in GHA, not on Mac.
+# Mac deploy: git push → scripts/fetch-keywriter-dist.sh → deploy-keywriter.sh -b
 # The caller mounts a host directory to /out.
 FROM ghcr.io/toltec-dev/qt:v3.3
 
@@ -85,7 +85,13 @@ RUN set -eux; \
     fc-cache -f; \
     fc-list "EB Garamond" | grep -qi "garamond" || { echo "ERROR: EB Garamond missing (fonts-ebgaramond apt?)" >&2; exit 1; }
 
-COPY socket-inject.patch /socket-inject.patch
+# Phase 1 pin: clone Writerdeck-owned fork (no behavior change vs upstream yet).
+# Override at docker run time with -e KEYWRITER_REPO=... -e KEYWRITER_REF=...
+ENV KEYWRITER_REPO=https://github.com/bjornte/Writerdeck-keywriter.git \
+    KEYWRITER_REF=master
+
+# C++ + Lobby/shell QML live in the Writerdeck-keywriter fork (Phase 3).
+# Image only carries build glue; lobby/*.inc is cloned with the fork.
 COPY build-keywriter.sh /build-keywriter.sh
 RUN chmod +x /build-keywriter.sh
 

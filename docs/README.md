@@ -1,15 +1,31 @@
 # docs/
 
-Reference material and generated artifacts.
+Project reference. Throwaway test logs live in `recon/` (gitignored). Lasting lessons go in DONE, TODO, and lessons.
 
-## Contents
-- `architecture.md` — how the system works: architecture, environment facts, the dev/deploy loop.
-- `decisions.md` — the Architecture Decision Record (ADR): the *why* behind every choice.
-- `recon/` — regenerable device output, self-logged via `tee` by `scripts/*`. Timestamped `recon-*.txt` logs are committed, then pruned once their lesson lands in TODO/DONE — the folder persists via `.gitkeep`. Large `*.tar.gz` backups are gitignored.
+terms.md — layman definitions for the product and the editor fork.
 
-## External references
-- Editor (keywriter): https://github.com/dps/remarkable-keywriter
-- reMarkable input subsystem (evdev): https://remarkable.guide/devel/device/input.html
-- Awesome-reMarkable index: https://github.com/reHackable/awesome-reMarkable
-- ~~uinput Go lib~~ (not usable — this kernel can't load uinput; the editor is fed over a socket instead): https://github.com/bendahl/uinput
-- libremarkable (fallback self-editor spike): https://github.com/canselcik/libremarkable
+jargon-to-avoid.md — process slang to drop; keep real tech names — e.g. QML (the screen file), uinput (fake keyboard device).
+
+architecture.md — how the pieces fit, device facts, deploy loop.
+
+decisions.md — why we chose this shape.
+
+lessons.md — gotchas that still bite.
+
+browser-vs-tablet.md — what the phone does vs the Lobby.
+
+integrity-audit.md — document integrity status and open risks.
+
+improvements.md — wishlist, not committed work.
+
+user-should-test.md — checks only human fingers can do.
+
+editor-testing/ — automated typing-test scores and check names.
+
+editor-migration-1-to-QML/ and editor-migration-2-to-cpp/ — finished migrations; policy lives in decisions §4–§6.
+
+install-onboarding/ — visitor install (ZIP, prompts, Releases); boot-enable follow-up still open.
+
+server-sync-implementation.md — how GitHub sync and token restore work.
+
+External: [keywriter](https://github.com/dps/remarkable-keywriter) · [awesome-reMarkable](https://github.com/reHackable/awesome-reMarkable) · [input docs](https://remarkable.guide/devel/device/input.html)

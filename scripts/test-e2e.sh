@@ -58,8 +58,8 @@ echo
 _restore() {
     echo
     echo "--- Cleanup ---"
-    rm_ssh 'pkill -f /home/root/rmkbd 2>/dev/null; for p in $(pidof rmkbd); do kill "$p" 2>/dev/null; done; echo "  rmkbd stopped."' "$TARGET" || true
-    rm_ssh 'pkill -f /home/root/keywriter 2>/dev/null; for p in $(pidof keywriter); do kill "$p" 2>/dev/null; done; echo "  keywriter stopped."' "$TARGET" || true
+    rm_ssh 'pkill -f /home/root/Writerdeck-server 2>/dev/null; for p in $(pidof Writerdeck-server); do kill "$p" 2>/dev/null; done; echo "  rmkbd stopped."' "$TARGET" || true
+    rm_ssh 'for p in $(pidof Writerdeck 2>/dev/null); do kill "$p" 2>/dev/null; done; echo "  Writerdeck stopped."' "$TARGET" || true
     rm_ssh 'systemctl start xochitl 2>/dev/null; echo "  xochitl restored."' "$TARGET" || true
 }
 trap _restore EXIT
@@ -86,10 +86,10 @@ echo
 # ---------------------------------------------------------------------------
 # 2. Deploy rmkbd to device (kill-first + atomic mv to avoid ETXTBSY).
 # ---------------------------------------------------------------------------
-echo "--- Deploying rmkbd -> /home/root/rmkbd ---"
-rm_ssh 'pkill -f /home/root/rmkbd 2>/dev/null; for p in $(pidof rmkbd); do kill "$p" 2>/dev/null; done; sleep 0.5; true' "$TARGET"
-printf '  '; with_ticker 50 rm_scp_to "$REPO/rmkbd" /home/root/rmkbd.new "$TARGET"
-rm_ssh 'mv -f /home/root/rmkbd.new /home/root/rmkbd && chmod +x /home/root/rmkbd' "$TARGET"
+echo "--- Deploying rmkbd -> /home/root/Writerdeck-server ---"
+rm_ssh 'pkill -f /home/root/Writerdeck-server 2>/dev/null; for p in $(pidof Writerdeck-server); do kill "$p" 2>/dev/null; done; sleep 0.5; true' "$TARGET"
+printf '  '; with_ticker 50 rm_scp_to "$REPO/rmkbd" /home/root/Writerdeck-server.new "$TARGET"
+rm_ssh 'mv -f /home/root/Writerdeck-server.new /home/root/Writerdeck-server && chmod +x /home/root/Writerdeck-server' "$TARGET"
 echo "  OK"
 echo
 
@@ -115,7 +115,7 @@ KW_ENV="$KW_ENV QT_FONT_DPI=226"
 KW_ENV="$KW_ENV QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS=rotate=180"
 KW_ENV="$KW_ENV QT_QPA_GENERIC_PLUGINS=evdevtablet"
 
-rm_ssh "env $KW_ENV /home/root/keywriter >/tmp/kw-phase4.log 2>&1 &
+rm_ssh "env $KW_ENV /home/root/Writerdeck >/tmp/kw-phase4.log 2>&1 &
         sleep 0.5; echo 'keywriter launched'" "$TARGET"
 printf '  Qt init: '; with_ticker 5 sleep 5
 echo
@@ -124,8 +124,8 @@ echo
 # 5. Launch rmkbd daemon (background on device, port 8000).
 # ---------------------------------------------------------------------------
 echo "--- Launching rmkbd daemon (port $PORT) ---"
-rm_ssh 'pkill -f /home/root/rmkbd 2>/dev/null; for p in $(pidof rmkbd); do kill "$p" 2>/dev/null; done; true' "$TARGET"
-rm_ssh "/home/root/rmkbd --port $PORT $VERBOSE >/tmp/rmkbd-phase4.log 2>&1 &
+rm_ssh 'pkill -f /home/root/Writerdeck-server 2>/dev/null; for p in $(pidof Writerdeck-server); do kill "$p" 2>/dev/null; done; true' "$TARGET"
+rm_ssh "/home/root/Writerdeck-server --port $PORT $VERBOSE >/tmp/rmkbd-phase4.log 2>&1 &
         sleep 1; echo 'rmkbd started'" "$TARGET"
 printf '  WS ready: '; with_ticker 2 sleep 2
 echo
@@ -161,7 +161,7 @@ rm_ssh 'tail -20 /tmp/kw-phase4.log 2>/dev/null || echo "(log not found)"' "$TAR
 echo
 
 echo "--- scratch.md on device ---"
-rm_ssh 'cat /home/root/edit/scratch.md 2>/dev/null || echo "(not found)"' "$TARGET" \
+rm_ssh 'cat /home/root/Writerdeck-user-documents/scratch.md 2>/dev/null || echo "(not found)"' "$TARGET" \
     | sed 's/^/  /'
 echo
 

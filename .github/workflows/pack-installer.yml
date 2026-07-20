@@ -1,0 +1,55 @@
+name: Pack installer
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/**'
+      - 'keymaps/*.qmap'
+      - 'secrets/remarkable.local.env.example'
+      - '.github/workflows/pack-installer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pack installer ZIP
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zip
+          bash scripts/pack-installer.sh
+          ls -lh dist/Writerdeck-installer.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Writerdeck-installer
+          path: dist/Writerdeck-installer.zip
+          retention-days: 90
+
+      # Rolling release tag "installer" -- curlable end-user package.
+      - name: Publish GitHub Release (main only)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG=installer
+          NOTES="Slim installer (scripts + keymaps). Binaries come from Releases keywriter + server. Run ${GITHUB_RUN_ID} ($(date -u +%Y-%m-%d))."
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/Writerdeck-installer.zip --clobber
+            gh release edit "$TAG" --notes "$NOTES" --latest=false
+          else
+            gh release create "$TAG" dist/Writerdeck-installer.zip \
+              --title "Writerdeck installer (slim)" \
+              --notes "$NOTES"
+          fi
+          echo "Release: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${TAG}"
+          echo "Download: https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/Writerdeck-installer.zip"

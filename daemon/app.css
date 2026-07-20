@@ -19,10 +19,32 @@ html, body {
 }
 #dot.on  { background: #4caf50; }
 #dot.off { background: #e53935; }
-/* PIN auth screen */
+#msg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Top-bar actions — same affordance language as .note-btn (Observe / Paste). */
+#sync-btn {
+  flex-shrink: 0;
+  background: #333;
+  color: #eee;
+  border: 1px solid #999;
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 5px 10px;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+}
+#sync-btn:active {
+  background: #444;
+  color: #fff;
+  border-color: #ccc;
+}
+#banner-stack {
+  position: fixed; top: 40px; left: 0; right: 0; z-index: 90;
+}
+/* PIN auth screen — hidden until 401 or explicit showPinScreen() */
 #pin-screen {
   position: fixed; inset: 0; background: #f5f5f0;
-  display: flex; align-items: center; justify-content: center;
+  display: none; align-items: center; justify-content: center;
   z-index: 100;
 }
 #pin-box {
@@ -43,23 +65,14 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 #pin-err { color: #e53935; font-size: 14px; min-height: 20px; text-align: center; }
-/* Notes panel */
-#notes {
-  position: fixed; top: 40px; left: 0; right: 0; bottom: 0;
-  overflow-y: auto; -webkit-overflow-scrolling: touch;
-  background: #f5f5f0;
-}
-#notes-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px; border-bottom: 1px solid #e0e0e0;
-  background: #f5f5f0; position: sticky; top: 0; z-index: 1;
-}
-#notes-label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; }
-#new-btn, #upload-btn {
-  background: #222; color: #eee; border: none; border-radius: 6px;
-  padding: 6px 14px; font-size: 14px; cursor: pointer;
+.lobby-pin-btn {
+  margin-top: 8px; width: 100%;
+  background: #444; color: #ccc; border: 1px solid #666; border-radius: 8px;
+  padding: 10px 14px; font-size: 14px; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+.lobby-pin-btn:active { background: #555; border-color: #888; color: #fff; }
+:root { --below-bar: 40px; }
 /* Paste-note modal */
 #paste-modal {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -88,76 +101,97 @@ html, body {
   background: #444; color: #ccc; border: none; border-radius: 8px;
   padding: 12px 16px; font-size: 16px; cursor: pointer;
 }
-.note-row {
-  display: flex; align-items: center; padding: 0 14px; min-height: 52px;
-  border-bottom: 1px solid #eee;
+/* Download offer from tablet Lobby */
+#download-modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200;
 }
-.note-name {
-  flex: 1; font-size: 16px; color: #222; padding: 14px 0; cursor: pointer;
-  user-select: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+#download-box {
+  background: #222; border-radius: 16px; padding: 28px 24px;
+  display: flex; flex-direction: column; gap: 12px;
+  width: 340px; max-width: 92vw;
 }
-.note-name:active { opacity: 0.5; }
+#download-title { color: #ccc; font-size: 15px; }
+#download-name {
+  color: #eee; font-size: 17px; word-break: break-word; text-align: center;
+  padding: 4px 0 8px;
+}
+#download-actions { display: flex; gap: 8px; }
+#download-accept {
+  flex: 1; background: #4caf50; color: #fff; border: none;
+  border-radius: 8px; padding: 12px 0; font-size: 16px; cursor: pointer;
+}
+#download-cancel {
+  background: #444; color: #ccc; border: none; border-radius: 8px;
+  padding: 12px 16px; font-size: 16px; cursor: pointer;
+}
 .note-btn {
   background: none; border: 1px solid #bbb; border-radius: 5px;
   padding: 5px 10px; font-size: 12px; color: #555; cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
+.note-btn:disabled {
+  opacity: 0.4;
+  color: #999;
+  border-color: #ddd;
+  cursor: not-allowed;
+}
 .note-btn.danger { border-color: #e53935; color: #e53935; }
-#notes-empty { padding: 40px 14px; text-align: center; color: #bbb; font-size: 15px; }
-/* Preview */
-#preview {
-  position: fixed; top: 40px; left: 0; right: 0; bottom: 0;
-  overflow-y: auto; -webkit-overflow-scrolling: touch;
-  background: #f5f5f0; display: none;
-}
-#preview-head {
-  display: flex; align-items: center; gap: 12px; padding: 10px 14px;
-  border-bottom: 1px solid #e0e0e0; background: #f5f5f0;
-  position: sticky; top: 0;
-}
-#preview-back {
-  background: none; border: none; font-size: 14px; color: #4caf50;
-  cursor: pointer; padding: 4px 0;
-}
-#preview-acts { display: flex; gap: 6px; flex-shrink: 0; }
-#preview-title { font-size: 15px; color: #333; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#preview-body {
-  padding: 16px 14px; font-family: 'Courier New', monospace; font-size: 14px;
-  line-height: 1.7; white-space: pre-wrap; word-break: break-word; color: #333; margin: 0;
-}
-/* Typing view: shown while an editor session is active on the tablet */
+/* Typing view: default phone surface (keyboard bridge) */
 #typing {
-  position: fixed; top: 40px; left: 0; right: 0; bottom: 110px;
-  background: #f5f5f0; display: none; overflow-y: auto;
+  position: fixed; left: 0; right: 0; bottom: 0;
+  top: var(--below-bar);
+  background: #f5f5f0;
+  display: flex; flex-direction: column;
+  overflow: hidden;
 }
 #typing-head {
   display: flex; align-items: center; gap: 12px; padding: 10px 14px;
   border-bottom: 1px solid #e0e0e0; background: #f5f5f0;
-  position: sticky; top: 0;
-}
-#typing-back {
-  background: none; border: none; font-size: 14px; color: #4caf50;
-  cursor: pointer; padding: 4px 0;
+  flex-shrink: 0;
 }
 #typing-note { font-size: 15px; color: #333; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #typing-body {
-  padding: 40px 14px; text-align: center; color: #999; font-size: 15px; line-height: 2.2;
+  flex: 1; min-height: 0;
+  padding: 24px 14px;
+  text-align: center; color: #999; font-size: 15px; line-height: 2.2;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
-#foot {
-  position: fixed; bottom: 0; left: 0; right: 0; height: 110px;
-  background: #fff; border-top: 1px solid #ddd;
-  padding: 8px 14px; display: none;
+#typing-logo {
+  display: block;
+  width: 120px;
+  height: auto;
+  margin: 0 0 20px;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
-#echo-label {
-  font-size: 11px; color: #aaa; margin-bottom: 4px;
-  letter-spacing: 0.06em; text-transform: uppercase;
+#typing-launch {
+  display: none;
+  margin: 0 0 20px;
+  background: #333;
+  color: #eee;
+  border: 1px solid #999;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-size: 15px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
-#echo {
-  font-family: monospace; font-size: 15px; line-height: 1.5;
-  white-space: pre-wrap; word-break: break-all;
-  color: #333; overflow-y: auto; max-height: 72px;
+#typing-launch:active { background: #444; border-color: #ccc; color: #fff; }
+#typing-launch:disabled { opacity: 0.55; cursor: default; }
+body.typing-dark #typing-launch {
+  background: #222;
+  color: #ddd;
+  border-color: #666;
 }
-#echo::-webkit-scrollbar { width: 0; height: 0; }
+body.typing-dark #typing-launch:active {
+  background: #333;
+  border-color: #999;
+  color: #fff;
+}
+#typing-guide { width: 100%; }
 /* Hidden textarea: gives the browser a real input target so hardware
    keyboards work on iOS; disabled attrs prevent iOS autocorrect/caps.
    Positioned off-screen, not display:none, so it can hold focus. */
@@ -169,34 +203,36 @@ html, body {
    OLED phones while writing. Toggled by body.typing-dark in applyMode();
    Browse mode stays light. */
 body.typing-dark #typing,
-body.typing-dark #typing-head,
-body.typing-dark #foot { background: #000; }
+body.typing-dark #typing-head { background: #000; }
 body.typing-dark #typing-head { border-bottom-color: #222; }
-body.typing-dark #foot { border-top-color: #222; }
-body.typing-dark #typing-note,
-body.typing-dark #echo { color: #ddd; }
+body.typing-dark #typing-note { color: #ddd; }
 body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
-/* Settings gear button in #bar */
-#settings-btn {
-  margin-left: auto;
-  background: transparent; color: #aaa; border: none;
-  font-size: 18px; cursor: pointer; padding: 4px 6px;
-  -webkit-tap-highlight-color: transparent;
-}
-#settings-btn:active { color: #fff; }
-/* Settings overlay */
-#settings-screen {
+body.typing-dark #typing .note-btn:disabled { color: #666; border-color: #333; opacity: 0.5; }
+body.typing-dark #typing .note-btn.danger { color: #ff8a80; border-color: #e53935; }
+body.typing-dark #typing .note-btn.observe-on { color: #ffcc88; border-color: #ff9800; }
+/* Sync setup overlay */
+#sync-screen {
   position: fixed; inset: 0; background: rgba(0,0,0,0.75);
   display: flex; align-items: center; justify-content: center;
   z-index: 100;
 }
-#settings-box {
+#sync-box {
   background: #222; border-radius: 16px; padding: 28px 24px;
   display: flex; flex-direction: column; align-items: stretch; gap: 14px;
   width: 320px; max-width: 90vw;
+  position: relative;
+  overflow-y: auto; max-height: 80vh;
 }
-#settings-title { color: #ccc; font-size: 15px; text-align: center; margin-bottom: 4px; }
-#settings-list { display: flex; flex-direction: column; gap: 6px; }
+.overlay-close {
+  position: absolute; top: 10px; right: 12px;
+  background: #333; border: 1px solid #666; border-radius: 5px;
+  color: #ccc; font-size: 20px; line-height: 1; cursor: pointer;
+  padding: 4px 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+.overlay-close:active { background: #444; color: #fff; border-color: #888; }
+#sync-title { color: #ccc; font-size: 15px; text-align: center; margin-bottom: 4px; }
+#sync-list { display: flex; flex-direction: column; gap: 6px; }
 .font-row {
   background: #333; border-radius: 8px; padding: 12px 14px;
   display: flex; justify-content: space-between; align-items: center;
@@ -206,24 +242,32 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
 .font-row:active { background: #444; }
 .font-row.active { background: #1b4c20; color: #fff; }
 .font-row .font-check { color: #4caf50; font-size: 16px; }
-#settings-done {
+#sync-done {
   background: #4caf50; color: #fff; border: none; border-radius: 8px;
   padding: 12px 0; font-size: 16px; cursor: pointer; margin-top: 4px;
   -webkit-tap-highlight-color: transparent;
 }
-/* Settings section sub-heading */
-.settings-section { color: #888; font-size: 12px; margin-top: 10px; padding: 0 2px; letter-spacing: 0.5px; text-transform: uppercase; }
-/* Warning label inside a PIN row */
-.row-warn { font-size: 11px; color: #e57373; margin-top: 4px; }
-/* Allow settings box to scroll on small screens */
-#settings-box { overflow-y: auto; max-height: 80vh; }
 /* GitHub sync banners and token input */
-#sync-banner, #clash-banner {
-  margin: 8px 14px; padding: 10px 14px; border-radius: 8px;
-  font-size: 13px; line-height: 1.5;
+#sync-banner, #clash-banner, #drift-banner, #remote-keys-banner, #observe-banner {
+  padding: 10px 14px; font-size: 13px; line-height: 1.5;
 }
-#sync-banner  { background: #2a2000; color: #ffcc44; border: 1px solid #554400; }
-#clash-banner { background: #2a0000; color: #ff8888; border: 1px solid #550000; }
+#sync-banner  { background: #2a2000; color: #ffcc44; border-bottom: 1px solid #554400; }
+#clash-banner { background: #2a0000; color: #ff8888; border-bottom: 1px solid #550000; }
+#drift-banner { background: #1a2233; color: #a8c8ff; border-bottom: 1px solid #334466; }
+#remote-keys-banner { background: #1a2a1a; color: #b8e0b8; border-bottom: 1px solid #335533; }
+#observe-banner { background: #2a1a00; color: #ffcc88; border-bottom: 1px solid #664400; }
+#drift-banner button {
+  margin-left: 8px; background: transparent; color: #e8f0ff;
+  border: 1px solid #8899bb; border-radius: 5px;
+  padding: 5px 10px; font-size: 12px; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+#drift-banner button:active { background: #334466; }
+.repo-link {
+  font-size: 13px; padding: 4px 2px 0;
+}
+.repo-link a { color: #64b5f6; text-decoration: none; }
+.repo-link a:active { text-decoration: underline; }
 .token-input {
   flex: 1; font-size: 14px; padding: 8px 10px; border: 2px solid #555;
   border-radius: 8px; background: #333; color: #eee; outline: none;
@@ -244,3 +288,9 @@ body.typing-dark #typing .note-btn { color: #ccc; border-color: #555; }
   -webkit-tap-highlight-color: transparent;
 }
 .sync-btn-secondary:active { background: #555; }
+.sync-btn-danger {
+  background: transparent; color: #e57373; border: 1px solid #e57373;
+  border-radius: 8px; padding: 10px 16px; font-size: 14px; cursor: pointer;
+  width: 100%; -webkit-tap-highlight-color: transparent;
+}
+.sync-btn-danger:active { background: #3a2020; }

@@ -5,18 +5,20 @@
 # Everything is written to /out, which the caller mounts from the host.
 #
 # Environment variables (all have sensible defaults):
-#   KEYWRITER_REPO   git repo to clone (default: dps/remarkable-keywriter)
+#   KEYWRITER_REPO   git repo to clone (default: bjornte/Writerdeck-keywriter)
 #   KEYWRITER_REF    branch/tag/sha to build (default: master)
 
 set -euo pipefail
 
-KEYWRITER_REPO="${KEYWRITER_REPO:-https://github.com/dps/remarkable-keywriter.git}"
+KEYWRITER_REPO="${KEYWRITER_REPO:-https://github.com/bjornte/Writerdeck-keywriter.git}"
 KEYWRITER_REF="${KEYWRITER_REF:-master}"
+PRODUCT_VERSION="${PRODUCT_VERSION:-unknown}"
 OUT_DIR="/out"
 
 echo "=== rM1-Writerdeck: build keywriter for reMarkable 1 ==="
 echo "  Repo : ${KEYWRITER_REPO}"
 echo "  Ref  : ${KEYWRITER_REF}"
+echo "  Product version: ${PRODUCT_VERSION}"
 echo "  SYSROOT from image: ${SYSROOT:-<not set; using image default>}"
 echo
 
@@ -49,510 +51,101 @@ echo "  qmake         = $(command -v qmake || echo '<not found>')"
 echo "  default XSPEC = $(qmake -query QMAKE_XSPEC 2>/dev/null || echo '?')"
 echo
 
-# Rewrite the hardcoded OE spec inside edit.pro to the toltec device spec.
-echo "  edit.pro spec line(s) before sed:"
-grep -n 'linux-oe-g++' edit.pro || echo "    (no linux-oe-g++ found -- pro file may already be patched)"
-sed -i 's/linux-oe-g++/linux-arm-remarkable-g++/' edit.pro
-
-# Patch main.cpp: guard the two display qputenv() calls so an exported env var
-# wins, while the stock 'epaper' default is preserved when nothing is set.
-# This is required because:
-#  (a) the toltec toolchain has no 'epaper' QPA platform plugin -- only linuxfb
-#      (and later rm2fb) are available, so we need QT_QPA_PLATFORM to be
-#      overridable from the outside.
-#  (b) the same file will be patched again in Phase 2 (socket injection),
-#      so doing it here is consistent and cheap.
-# qEnvironmentVariableIsEmpty() is in <QtGlobal>, already included via
-# <QGuiApplication>.
-echo "  Patching main.cpp: guarding qputenv with qEnvironmentVariableIsEmpty ..."
-grep -n 'qputenv.*QT_QPA_PLATFORM\|qputenv.*QMLSCENE_DEVICE' main.cpp \
-    || echo "    (no matching qputenv lines found -- may already be patched)"
-sed -i \
-    's|qputenv("QT_QPA_PLATFORM",|if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")) qputenv("QT_QPA_PLATFORM",|' \
-    main.cpp
-sed -i \
-    's|qputenv("QMLSCENE_DEVICE",|if (qEnvironmentVariableIsEmpty("QMLSCENE_DEVICE")) qputenv("QMLSCENE_DEVICE",|' \
-    main.cpp
-echo "  main.cpp after patch:"
-grep -n 'QT_QPA_PLATFORM\|QMLSCENE_DEVICE' main.cpp || true
+# Phase 3: C++ infra lives in the Writerdeck-keywriter fork (not patched here).
+# Assert so a bad KEYWRITER_REF fails loudly before qmake.
+echo "=== Asserting fork C++ infra ==="
+grep -q 'linux-arm-remarkable-g++' edit.pro \
+    || { echo "ERROR: edit.pro missing linux-arm-remarkable-g++ (fork Phase 3)" >&2; exit 1; }
+grep -q 'rotation_watcher.cpp' edit.pro \
+    || { echo "ERROR: edit.pro missing rotation_watcher.cpp" >&2; exit 1; }
+grep -q 'lobby_bridge.cpp' edit.pro \
+    || { echo "ERROR: edit.pro missing lobby_bridge.cpp" >&2; exit 1; }
+grep -q 'edit_helper.cpp' edit.pro \
+    || { echo "ERROR: edit.pro missing edit_helper.cpp" >&2; exit 1; }
+grep -q '\-pthread' edit.pro \
+    || { echo "ERROR: edit.pro missing -pthread" >&2; exit 1; }
+test -f rotation_watcher.h && test -f rotation_watcher.cpp \
+    || { echo "ERROR: rotation_watcher.{h,cpp} missing from fork checkout" >&2; exit 1; }
+test -f lobby_bridge.h && test -f lobby_bridge.cpp \
+    || { echo "ERROR: lobby_bridge.{h,cpp} missing from fork checkout" >&2; exit 1; }
+grep -q 'lobby_ui_config.cpp' edit.pro \
+    || { echo "ERROR: edit.pro missing lobby_ui_config.cpp" >&2; exit 1; }
+test -f lobby_ui_config.h && test -f lobby_ui_config.cpp \
+    || { echo "ERROR: lobby_ui_config.{h,cpp} missing from fork checkout" >&2; exit 1; }
+test -f edit_helper.h && test -f edit_helper.cpp \
+    || { echo "ERROR: edit_helper.{h,cpp} missing from fork checkout" >&2; exit 1; }
+# Stamp product_version.h before compile (YYYY-MM-DD breaks -D macros as arithmetic).
+printf '%s\n' \
+  '#pragma once' \
+  "/* Auto-generated for PRODUCT_VERSION=${PRODUCT_VERSION} */" \
+  "#define WRITERDECK_PRODUCT_VERSION \"${PRODUCT_VERSION}\"" \
+  > product_version.h
+grep -q "WRITERDECK_PRODUCT_VERSION \"${PRODUCT_VERSION}\"" product_version.h \
+    || { echo "ERROR: failed to write product_version.h" >&2; exit 1; }
+grep -q 'product_version.h' lobby_bridge.cpp \
+    || { echo "ERROR: lobby_bridge.cpp missing product_version.h include" >&2; exit 1; }
+grep -q 'productVersion' lobby_bridge.h \
+    || { echo "ERROR: lobby_bridge.h missing productVersion" >&2; exit 1; }
+grep -q 'clearUndoStacks' edit_helper.cpp \
+    || { echo "ERROR: edit_helper.cpp missing clearUndoStacks (Phase A2 undo)" >&2; exit 1; }
+grep -q 'dispatchMacArrow' edit_helper.cpp \
+    || { echo "ERROR: edit_helper.cpp missing dispatchMacArrow (Phase B key dispatch)" >&2; exit 1; }
+grep -q 'rmkbdSocketReader' main.cpp \
+    || { echo "ERROR: main.cpp missing socket reader (fork Phase 3)" >&2; exit 1; }
+grep -q 'qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM")' main.cpp \
+    || { echo "ERROR: main.cpp missing QT_QPA_PLATFORM guard" >&2; exit 1; }
+grep -q 'qEnvironmentVariableIsEmpty("QMLSCENE_DEVICE")' main.cpp \
+    || { echo "ERROR: main.cpp missing QMLSCENE_DEVICE guard" >&2; exit 1; }
+echo "  fork C++ infra OK (socket + lobby_bridge + edit_helper + rotation_watcher + edit.pro)."
 echo
 
-# Apply the Phase 2 socket-injection patch (socket reader thread).
-echo "=== Applying socket-injection patch ==="
-# --recount: the patch is hand-authored, so trust the diff body, not the @@
-#   line counts (git apply is strict and does no fuzz; --recount infers counts).
-# --ignore-whitespace: tolerate any whitespace/CRLF drift in upstream main.cpp.
-git apply --recount --ignore-whitespace /socket-inject.patch
-echo "  Patch applied."
-# Add -pthread to edit.pro for std::thread (socket reader thread).
-printf '\nQMAKE_CXXFLAGS += -pthread\nQMAKE_LFLAGS += -pthread\n' >> edit.pro
-echo "  -pthread added to edit.pro."
-echo
-
-# Apply Phase 4+7 QML edits via Python3 (not git apply / sed: Python does exact
-# string replacement -- no line-number dependency, robust to upstream whitespace).
-# Changes: boot in edit mode, saveAndQuit() for home-button exit, Ctrl-K/Q fix.
-echo "=== Patching main.qml (Python3) ==="
+# Fork owns QML assembly (committed main.qml from assemble-qml.sh). Assert only.
+echo "=== Asserting fork Lobby/shell QML (assembled main.qml) ==="
+grep -q 'property bool isLobby: true' main.qml \
+    || { echo "ERROR: main.qml missing isLobby (fork Lobby/shell)" >&2; exit 1; }
+grep -q 'function setLobbyInfo(' main.qml \
+    || { echo "ERROR: main.qml missing setLobbyInfo" >&2; exit 1; }
+grep -q 'function showLobby() {' main.qml \
+    || { echo "ERROR: main.qml missing showLobby" >&2; exit 1; }
+grep -q 'function handleHome(' main.qml \
+    || { echo "ERROR: main.qml missing handleHome" >&2; exit 1; }
+grep -q 'Writerdeck-user-documents' main.qml \
+    || { echo "ERROR: main.qml missing Writerdeck-user-documents path" >&2; exit 1; }
+grep -q 'handleMacKeysOnPressed' main.qml \
+    || { echo "ERROR: main.qml missing handleMacKeysOnPressed" >&2; exit 1; }
+grep -q 'function handleMacArrow' main.qml \
+    || { echo "ERROR: main.qml missing handleMacArrow (run fork ./assemble-qml.sh before push)" >&2; exit 1; }
+grep -q 'function handleMacBackspace' main.qml \
+    || { echo "ERROR: main.qml missing handleMacBackspace" >&2; exit 1; }
+grep -q 'editHelper.beginTextEdit' main.qml \
+    || { echo "ERROR: main.qml missing editHelper.beginTextEdit" >&2; exit 1; }
+grep -q 'editHelper.notifyTextChanged' main.qml \
+    || { echo "ERROR: main.qml missing editHelper.notifyTextChanged" >&2; exit 1; }
+grep -q 'editHelper.dispatchMacArrow' main.qml \
+    || { echo "ERROR: main.qml missing editHelper.dispatchMacArrow" >&2; exit 1; }
+grep -q 'id: cursorTimer' main.qml \
+    || { echo "ERROR: main.qml missing cursorTimer" >&2; exit 1; }
+grep -q 'id: autosaveTimer' main.qml \
+    || { echo "ERROR: main.qml missing autosaveTimer" >&2; exit 1; }
+grep -q 'id: sleepScreen' main.qml \
+    || { echo "ERROR: main.qml missing sleepScreen (run fork ./assemble-qml.sh before push)" >&2; exit 1; }
+grep -q 'id: lobbyNotesModel' main.qml \
+    || { echo "ERROR: main.qml missing lobbyNotesModel" >&2; exit 1; }
+test -f main.qml.in && test -f edit_mac_helpers.qml.inc && test -f assemble-qml.sh \
+    || { echo "ERROR: fork main.qml.in / edit_mac_helpers.qml.inc / assemble-qml.sh missing" >&2; exit 1; }
+test -d lobby && test -f concat-lobby.sh && test -f lobby/lobby_shell_top.inc \
+    || { echo "ERROR: fork lobby/ or concat-lobby.sh missing" >&2; exit 1; }
+# Sanity: handleKey must close before Component.onCompleted.
 python3 - << 'PYEOF'
-import re, sys
-
 with open('main.qml') as f:
     s = f.read()
-
-# 1. Boot in edit mode (unique string; safe global replace).
-assert 'property int mode: 0' in s, "mode property not found in main.qml"
-s = s.replace('property int mode: 0', 'property int mode: 1', 1)
-
-# 2. doLoad resets mode on every load -- keep it edit (mode=1).
-#    Match the first 'mode = 0' on the line immediately after 'isOmni = false';
-#    leaves toggleMode's own 'mode = 0' (preview+save) untouched.
-s, n = re.subn(
-    r'(isOmni\s*=\s*false[^\n]*\n[^\n]*)mode\s*=\s*0',
-    lambda m: m.group(0).replace('mode = 0', 'mode = 1', 1),
-    s, count=1
-)
-assert n == 1, "doLoad mode=0 pattern not found in main.qml"
-
-# 3. Add saveAndQuit() and saveAndLoad(name) before initFile.
-#    saveAndQuit(): syncs query.text->doc so a home-button exit does not
-#    lose the live edit buffer (saveFile() writes doc, not query.text).
-#    saveAndLoad(name): same sync+save, then loads a new note -- used by the
-#    open-note command (slice 8d) so the current note is always saved first.
-old3 = '    function initFile(name) {'
-new3 = (
-    '    function saveAndLoad(name) {\n'
-    '        isLobby = false\n'
-    '        if (mode == 1) doc = query.text\n'
-    '        saveFile()\n'
-    '        doLoad(name)\n'
-    '    }\n'
-    '\n'
-    '    function saveAndQuit() {\n'
-    '        if (mode == 1) doc = query.text\n'
-    '        saveFile()\n'
-    '        Qt.quit()\n'
-    '    }\n'
-    '\n'
-    '    function initFile(name) {'
-)
-assert old3 in s, "function initFile not found in main.qml"
-s = s.replace(old3, new3, 1)
-
-# 4. Ctrl-K note-switcher: also accept event.modifiers.
-#    Our injector sets the modifier FLAG on the K event but never sends a
-#    standalone Key_Control press, so ctrlPressed is always false for injected
-#    keys. Accepting event.modifiers fixes Ctrl-K without breaking real keyboards.
-old4k = 'event.key === Qt.Key_K && ctrlPressed'
-new4k = 'event.key === Qt.Key_K && (ctrlPressed || (event.modifiers & Qt.ControlModifier))'
-assert old4k in s, "Ctrl-K handler not found in main.qml"
-s = s.replace(old4k, new4k)
-
-# 5. Ctrl-Q quit: same fix.
-old4q = 'event.key === Qt.Key_Q && ctrlPressed'
-new4q = 'event.key === Qt.Key_Q && (ctrlPressed || (event.modifiers & Qt.ControlModifier))'
-assert old4q in s, "Ctrl-Q handler not found in main.qml"
-s = s.replace(old4q, new4q)
-
-# 5b. Ctrl-K note-switcher data-loss fix. The omni (note-switcher) Enter handler
-#     saves the current note before switching, but it calls a bare saveFile(),
-#     which writes `doc` -- and in edit mode (mode==1) the live text is in
-#     query.text, with `doc` synced only by toggleMode(). So switching notes via
-#     Ctrl-K wrote the STALE doc and lost everything typed since the last mode
-#     toggle (the same class of bug as the home-button saveAndQuit fix). Sync
-#     query.text -> doc before the save. Anchored on the unique
-#     "Key_Return) {  saveFile()" pair so only the omni path is hit; [ \t] (not
-#     \s) keeps the match on its own line. mode==0 (preview) already has a current
-#     doc, so the mode==1 guard makes the sync a no-op there.
-s, nk = re.subn(
-    r'(\|\| event\.key === Qt\.Key_Return\) \{[ \t]*\n)([ \t]*)saveFile\(\)',
-    r'\1\2if (mode == 1) doc = query.text\n\2saveFile()',
-    s, count=1
-)
-assert nk == 1, "omni Enter saveFile pattern not found in main.qml (Ctrl-K data-loss fix)"
-
-# 6. Add isLobby / lobbyIP / lobbyPIN properties after isOmni.
-#    isLobby starts true so the device shows the Lobby on boot; saveAndLoad()
-#    (edit 3) sets it false when a note is opened from the phone.
-old6 = '    property bool isOmni: false'
-new6 = (
-    '    property bool isOmni: false\n'
-    '    property bool isLobby: true\n'
-    '    property string lobbyIP: ""\n'
-    '    property string lobbyPIN: ""'
-)
-assert old6 in s, "isOmni property not found in main.qml"
-s = s.replace(old6, new6, 1)
-
-# 7. Add setLobbyInfo() and handleHome() before initFile.
-#    setLobbyInfo: called from C++ via invokeMethod when rmkbd connects, so the
-#    Lobby shows the current IP and PIN without hardcoding anything.
-#    handleHome: two-level Home (slice 8e):
-#      - editing -> save current note + return to Lobby (isLobby = true)
-#      - Lobby   -> Qt.quit() -> cmd.Wait fires -> s.end() -> xochitl restarts
-old7 = '    function initFile(name) {'
-new7 = (
-    '    function setLobbyInfo(ip, pin) {\n'
-    '        lobbyIP = ip\n'
-    '        lobbyPIN = pin\n'
-    '    }\n'
-    '\n'
-    '    function handleHome() {\n'
-    '        if (isLobby) {\n'
-    '            Qt.quit()\n'
-    '        } else {\n'
-    '            if (mode == 1) doc = query.text\n'
-    '            saveFile()\n'
-    '            isLobby = true\n'
-    '            currentFile = ""\n'
-    '        }\n'
-    '    }\n'
-    '\n'
-    '    function initFile(name) {'
-)
-assert old7 in s, "function initFile not found (edit 7)"
-s = s.replace(old7, new7, 1)
-
-# 7b. Editor margin: a little more breathing room. Upstream textMargin is 12 px;
-#     44 px ~= 5 mm at the panel's 226 dpi (kept after device-look; revert = 12).
-assert 'textMargin: 12' in s, "textMargin not found in main.qml"
-s = s.replace('textMargin: 12', 'textMargin: 44', 1)
-
-# 7c. Block cursor (half-width) instead of the thin underline. Upstream's
-#     cursorDelegate is an 18 px-wide Item holding a 2 px bottom-anchored bar.
-#     (i) narrow the Item 18->9 px (half-width block), anchoring on the trailing
-#     'visible: query.cursorVisible' so only the cursor delegate is hit; (ii)
-#     collapse the inner bar to a filled block (anchors.fill). Both regexes are
-#     whitespace-tolerant and assert so a miss fails CI loudly. A half-width
-#     block reads lighter than full-width on e-ink; blink is intentionally not
-#     added (it ghosts/churns on e-ink). Kept after device-look; revert = drop 7c.
-s, nwid = re.subn(
-    r'width:\s*18[ \t]*\n(\s*visible:\s*query\.cursorVisible)',
-    r'width: 9\n\1',
-    s, count=1
-)
-assert nwid == 1, "cursor delegate Item width not found in main.qml"
-s, ncur = re.subn(
-    r'anchors\.bottom:\s*parent\.bottom\s+'
-    r'anchors\.bottomMargin:\s*4\s+'
-    r'color:\s*"black"\s+'
-    r'height:\s*2\s+'
-    r'width:\s*parent\.width',
-    'anchors.fill: parent\n                            color: "black"',
-    s, count=1
-)
-assert ncur == 1, "cursor underline delegate not found in main.qml"
-
-# 7d. Scroll direction: the rM1 physical page buttons arrive as Key_Left (prev
-#     page) and Key_Right (next page). Upstream groups Left with Down->scrollDown
-#     and Right with Up->scrollUp, so pressing the right/next-page button scrolls
-#     UP -- backwards. Split the cases and reverse Left/Right.
-s, ndir = re.subn(
-    r'case Qt\.Key_Down:\s+case Qt\.Key_Left:\s+'
-    r'if \(mode == 0\)\s+flick\.scrollDown\(\)\s+break\s+'
-    r'case Qt\.Key_Up:\s+case Qt\.Key_Right:\s+'
-    r'if \(mode == 0\)\s+flick\.scrollUp\(\)\s+break',
-    ('case Qt.Key_Down:\n'
-     '                            if (mode == 0)\n'
-     '                                flick.scrollDown()\n'
-     '                            break\n'
-     '                        case Qt.Key_Left:\n'
-     '                            flick.scrollUp()\n'
-     '                            break\n'
-     '                        case Qt.Key_Up:\n'
-     '                            if (mode == 0)\n'
-     '                                flick.scrollUp()\n'
-     '                            break\n'
-     '                        case Qt.Key_Right:\n'
-     '                            flick.scrollDown()\n'
-     '                            break'),
-    s, count=1
-)
-assert ndir == 1, "scroll direction case block not found in main.qml"
-
-# 7e. Scroll amount: 4/5-screen step 400->1500 px (screen is 1872px tall).
-#     Key_Left/Key_Right (rM1 physical page buttons) now also scroll in edit
-#     mode -- the mode==0 guard was removed for those two cases in step 7d.
-assert 'contentY -= 400' in s, "scrollUp contentY not found in main.qml"
-assert 'contentY += 400' in s, "scrollDown contentY not found in main.qml"
-s = s.replace('contentY -= 400', 'contentY -= 1500', 1)
-s = s.replace('contentY += 400', 'contentY += 1500', 1)
-
-# 7f. Paragraph spacing in Read (RichText) view: inject margin-bottom via a
-#     root readHtml() helper so Edit (PlainText) is untouched. Risk: Qt RichText
-#     CSS subset is partial -- margin-bottom on <p> is expected to work but must
-#     be eyeballed on e-ink. Fallback if ignored: line-height or spacer paragraph.
-assert '    property string lobbyPIN: ""' in s, "lobbyPIN property not found (edit 7f)"
-s = s.replace('    property string lobbyPIN: ""',
-              '    property string lobbyPIN: ""\n    property int paraSpacing: 28', 1)
-old7f_fn = '    function initFile(name) {'
-new7f_fn = (
-    '    function readHtml(d) {\n' +
-    '        return utils.markdown(d)\n' +
-    '            .replace(/<p>/g, ' + chr(39) + '<p style="margin-bottom:' + chr(39) + ' + paraSpacing + ' + chr(39) + 'px">' + chr(39) + ')\n' +
-    '            .replace(/<li>/g, ' + chr(39) + '<li style="margin-bottom:8px">' + chr(39) + ')\n' +
-    '    }\n' +
-    '\n' +
-    '    function initFile(name) {'
-)
-assert old7f_fn in s, "function initFile not found (edit 7f)"
-s = s.replace(old7f_fn, new7f_fn, 1)
-assert 'text: mode == 0 ? utils.markdown(doc) : doc' in s, "text binding not found (edit 7f)"
-s = s.replace('text: mode == 0 ? utils.markdown(doc) : doc',
-              'text: mode == 0 ? root.readHtml(doc) : doc', 1)
-
-# 7g. Reading-view font: add readFont property (default Inter), a setReadFont()
-#     function so the C++ setfont cmd can call it via invokeMethod, and change
-#     the read-mode font.family binding to use it. Edit mode keeps Noto Mono.
-assert 'property int paraSpacing: 28' in s, "paraSpacing not found (edit 7g)"
-s = s.replace('property int paraSpacing: 28',
-              'property int paraSpacing: 28\n    property string readFont: "Inter"', 1)
-old7g_fn = '    function initFile(name) {'
-new7g_fn = (
-    '    function setReadFont(name) {\n'
-    '        readFont = name\n'
-    '    }\n'
-    '\n'
-    '    function initFile(name) {'
-)
-assert old7g_fn in s, "function initFile not found (edit 7g)"
-s = s.replace(old7g_fn, new7g_fn, 1)
-assert 'font.family: mode == 0 ? ' + chr(34) + 'Noto Sans' + chr(34) + ' : ' + chr(34) + 'Noto Mono' + chr(34) in s, \
-    "font.family Noto Sans binding not found (edit 7g)"
-s = s.replace('font.family: mode == 0 ? ' + chr(34) + 'Noto Sans' + chr(34) + ' : ' + chr(34) + 'Noto Mono' + chr(34),
-              'font.family: mode == 0 ? readFont : ' + chr(34) + 'Noto Mono' + chr(34), 1)
-
-# 7l. Add showLobby() QML function: idempotent, saves if editing, sets
-#     isLobby=true, never quits. Called by the C++ showlobby cmd (Feature L).
-#     Distinct from handleHome which quits from the Lobby -- showLobby is safe
-#     to call when already on the Lobby (it is a no-op in that case).
-#     Anchors on initFile (the upstream function) like 7f/7g/7h -- noteDeleted
-#     does not exist yet at this point (7h inserts it just below).
-old7l = '    function initFile(name) {'
-new7l = (
-    '    function showLobby() {\n'
-    '        if (!isLobby) {\n'
-    '            if (mode == 1) doc = query.text\n'
-    '            saveFile()\n'
-    '        }\n'
-    '        isLobby = true\n'
-    '    }\n'
-    '\n'
-    '    function initFile(name) {'
-)
-assert old7l in s, "function initFile not found (edit 7l)"
-s = s.replace(old7l, new7l, 1)
-
-# 7h. noteDeleted(): go to the Lobby and CLEAR currentFile so the next save
-#     can't resurrect the just-deleted file. Called by the C++ notedeleted cmd
-#     when rmkbd tells the editor its open file was deleted from the phone.
-#     Crucially this does NOT call saveFile() -- and because saveAndLoad() saves
-#     BEFORE it switches files, clearing currentFile + the saveFile guard (7i)
-#     makes that pre-switch save a no-op, so opening another note won't recreate X.
-old7h = '    function initFile(name) {'
-new7h = (
-    '    function noteDeleted() {\n'
-    '        currentFile = ""\n'
-    '        isLobby = true\n'
-    '    }\n'
-    '\n'
-    '    function initFile(name) {'
-)
-assert old7h in s, "function initFile not found (edit 7h)"
-s = s.replace(old7h, new7h, 1)
-
-# 7i. Guard saveFile() against an empty currentFile. After noteDeleted() clears
-#     currentFile, the next saveAndLoad() still calls saveFile() BEFORE doLoad()
-#     -- without this guard that write targets the deleted file's path and
-#     recreates it on disk (the resurrection trap). The guard also fires at boot
-#     (currentFile now defaults to "") and after any Lobby return (handleHome
-#     clears it, edit 7j), making every Lobby entry a clean no-file state.
-old7i = '    function saveFile() {\n        console.log("Save " + currentFile)'
-new7i = '    function saveFile() {\n        if (currentFile === "") return 0\n        console.log("Save " + currentFile)'
-assert old7i in s, "saveFile signature not found (edit 7i)"
-s = s.replace(old7i, new7i, 1)
-
-# 7j. Demote scratch to an ordinary note: clear the currentFile default so boot
-#     starts in a clean no-file state. Combined with the 7i saveFile guard and
-#     handleHome's clearance (edit 7), no path can resurrect a deleted note by
-#     saving the last doc into a cleared-currentFile path.
-assert 'property string currentFile: "scratch.md"' in s, "currentFile default not found (edit 7j)"
-s = s.replace('property string currentFile: "scratch.md"',
-              'property string currentFile: ""', 1)
-
-# 7k. Guard Component.onCompleted boot load: with currentFile now "" by default,
-#     the unconditional doLoad(currentFile) would attempt a GET to an empty URL.
-#     Wrap it so a fresh boot (no note selected) skips the load cleanly.
-s, nboot = re.subn(
-    r'Component\.onCompleted:\s*\{\s*doLoad\(currentFile\)\s*\}',
-    'Component.onCompleted: {\n        if (currentFile !== "") doLoad(currentFile)\n    }',
-    s, count=1
-)
-assert nboot == 1, "Component.onCompleted doLoad pattern not found (edit 7k)"
-
-# 7c2. Cursor: hidden while typing, strong block while idle / navigating.
-#      Device-verified superior on e-ink: the block vanishes as you type (no
-#      ghosting/smear trail) and reappears 500 ms after the last keystroke
-#      (Timer, step 8b) or immediately on Up/Down. Blink is intentionally absent.
-
-# 7c2a. Add cursor-state property after readFont.
-assert '    property string readFont: "Inter"' in s, "readFont not found (7c2a)"
-s = s.replace(
-    '    property string readFont: "Inter"',
-    '    property string readFont: "Inter"\n'
-    '    property bool cursorStrong: true',
-    1
-)
-
-# 7c2b. Cursor delegate: hide the block while typing (visible only when strong).
-s, ncwv = re.subn(
-    r'width:\s*9\n(\s*visible:\s*)query\.cursorVisible',
-    r'width: 9\n\1query.cursorVisible && cursorStrong',
-    s, count=1
-)
-assert ncwv == 1, "cursor delegate visible not found (7c2b)"
-
-# 7c2d. Arrow Down in edit mode -> strong cursor immediately.
-old_kd = (
-    'case Qt.Key_Down:\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollDown()\n'
-    '                            break'
-)
-new_kd = (
-    'case Qt.Key_Down:\n'
-    '                            if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollDown()\n'
-    '                            break'
-)
-assert old_kd in s, "Key_Down case not found (7c2d)"
-s = s.replace(old_kd, new_kd, 1)
-
-# 7c2e. Arrow Up in edit mode -> strong cursor immediately.
-old_ku = (
-    'case Qt.Key_Up:\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollUp()\n'
-    '                            break'
-)
-new_ku = (
-    'case Qt.Key_Up:\n'
-    '                            if (mode == 1) { cursorStrong = true; cursorTimer.stop() }\n'
-    '                            if (mode == 0)\n'
-    '                                flick.scrollUp()\n'
-    '                            break'
-)
-assert old_ku in s, "Key_Up case not found (7c2e)"
-s = s.replace(old_ku, new_ku, 1)
-
-# 8. Add the Lobby Rectangle at the end of the body Rectangle, after the
-#    quick (isOmni) overlay.  Anchor: the last "        }\n    }\n}" in the file
-#    = quick close (8 sp) + body close (4 sp) + Window close (0 sp).
-#    We insert the Lobby between quick's } and body's }.
-lobby_rect = (
-    '        Rectangle {\n'
-    '            id: lobby\n'
-    '            anchors.fill: parent\n'
-    '            color: "white"\n'
-    '            visible: isLobby\n'
-    '            Column {\n'
-    '                anchors.centerIn: parent\n'
-    '                spacing: 28\n'
-    '                Text {\n'
-    '                    text: "Wi-Fi keyboard writerdeck"\n'
-    '                    color: "black"\n'
-    '                    font.pointSize: 28\n'
-    '                    font.family: "Noto Mono"\n'
-    '                }\n'
-    '                Text {\n'
-    '                    text: "A text editor for reMarkable 1 with bridge for your physical keyboard.\\n\\nConnect a keyboard to e.g. your phone, then connect to reMarkable over Wi-Fi.\\n\\nOpen in your phone' + chr(39) + 's browser:"\n'
-    '                    color: "#555555"\n'
-    '                    font.pointSize: 13\n'
-    '                    font.family: "Noto Sans"\n'
-    '                    width: lobby.width * 0.8\n'
-    '                    wrapMode: Text.WordWrap\n'
-    '                    horizontalAlignment: Text.AlignLeft\n'
-    '                }\n'
-    '                Text {\n'
-    '                    text: "http://" + lobbyIP + ":8000"\n'
-    '                    color: "black"\n'
-    '                    font.pointSize: 20\n'
-    '                    font.family: "Noto Mono"\n'
-    '                }\n'
-    '                Text {\n'
-    '                    text: lobbyPIN !== "" ? ("PIN:  " + lobbyPIN) : "No PIN needed \u2014 just open the address above"\n'
-    '                    color: lobbyPIN !== "" ? "#1b5e20" : "#555555"\n'
-    '                    font.pointSize: lobbyPIN !== "" ? 24 : 16\n'
-    '                    font.family: "Noto Mono"\n'
-    '                    width: lobby.width * 0.8\n'
-    '                    wrapMode: Text.WordWrap\n'
-    '                }\n'
-    '                Text {\n'
-    '                    text: "Home = exit to reMarkable UI"\n'
-    '                    color: "#555555"\n'
-    '                    font.pointSize: 11\n'
-    '                    font.family: "Noto Sans"\n'
-    '                }\n'
-    '                Text {\n'
-    '                    text: "github.com/bjornte/Writerdeck-for-reMarkable"\n'
-    '                    color: "#444444"\n'
-    '                    font.pointSize: 9\n'
-    '                    font.family: "Noto Mono"\n'
-    '                }\n'
-    '            }\n'
-    '        }'
-)
-quick_close = '        }\n'
-end_anchor = quick_close + '    }\n}'
-assert end_anchor in s, "QML end structure (quick+body+Window close) not found"
-last_pos = s.rfind(end_anchor)
-s = s[:last_pos + len(quick_close)] + lobby_rect + '\n' + s[last_pos + len(quick_close):]
-
-# 8b. Cursor-state Timer and Connections: siblings of the Lobby Rectangle,
-#     inside the body Rectangle. Timer (500 ms, one-shot) sets cursorStrong=true
-#     when typing stops. Connections fires on every text change to hide the block
-#     and restart the timer.
-body_end = '    }\n}'
-assert body_end in s, "body+Window end not found (8b)"
-last_body_pos = s.rfind(body_end)
-cursor_state_block = (
-    '        Timer {\n'
-    '            id: cursorTimer\n'
-    '            interval: 500\n'
-    '            repeat: false\n'
-    '            onTriggered: cursorStrong = true\n'
-    '        }\n'
-    '        Connections {\n'
-    '            target: query\n'
-    '            onTextChanged: {\n'
-    '                cursorStrong = false\n'
-    '                cursorTimer.restart()\n'
-    '            }\n'
-    '        }\n'
-)
-s = s[:last_body_pos] + cursor_state_block + s[last_body_pos:]
-
-# rotateScreen(): rotate the display 90 degrees clockwise. Called by the C++
-# rotate cmd sent by rmkbd on POST /api/rotate. Increments root.rotation by 90
-# mod 360; the body Rectangle already swaps its width/height at 90/270 degrees
-# (upstream geometry is untouched, so portrait/landscape swap is automatic).
-old_rotate_fn = '    function initFile(name) {'
-new_rotate_fn = (
-    '    function rotateScreen() {\n'
-    '        root.rotation = (root.rotation + 90) % 360\n'
-    '    }\n'
-    '\n'
-    '    function initFile(name) {'
-)
-assert old_rotate_fn in s, "function initFile not found (rotateScreen)"
-s = s.replace(old_rotate_fn, new_rotate_fn, 1)
-
-with open('main.qml', 'w') as f:
-    f.write(s)
-print('  All QML edits applied (props + setLobbyInfo + handleHome + Lobby rect + saveAndLoad + saveAndQuit + boot-edit-mode + Ctrl-K/Q + margin + block-cursor + scroll-dir + scroll-4/5 + page-btn-edit-scroll + para-spacing-28 + list-spacing + readFont + setReadFont + noteDeleted + saveFile-guard + scratch-demote + showLobby + no-PIN-lobby + cursor-hidden-when-typing + rotateScreen).')
+hk = s.find('    function handleKey(event) {')
+co = s.find('    Component.onCompleted: {')
+assert hk >= 0 and co > hk, "handleKey / Component.onCompleted anchors missing"
+assert s[hk:co].count('{') == s[hk:co].count('}'), "handleKey brace mismatch -- QML will fail to load"
+print('  handleKey brace balance OK.')
 PYEOF
-echo "  main.qml after edit:"
-grep -n 'property int mode:\|saveAndQuit\|ControlModifier' main.qml || true
+echo "  fork assembled QML OK (helpers + lobby + sleep in committed main.qml)."
 echo
 
 # No -spec: Qt's configured default XSPEC is already devices/linux-arm-remarkable-g++.
@@ -570,8 +163,8 @@ echo
 # 3. Copy the keywriter binary to /out.
 # ---------------------------------------------------------------------------
 mkdir -p "${OUT_DIR}"
-cp edit "${OUT_DIR}/keywriter"
-echo "  keywriter -> ${OUT_DIR}/keywriter"
+cp edit "${OUT_DIR}/Writerdeck"
+echo "  Writerdeck -> ${OUT_DIR}/Writerdeck"
 echo
 
 # ---------------------------------------------------------------------------

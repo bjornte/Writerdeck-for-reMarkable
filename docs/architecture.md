@@ -1,102 +1,72 @@
-# Writerdeck for reMarkable 1 — architecture & reference
+# Architecture
 
-How the system works, the device facts, and the dev/deploy loop. The forward-looking plan is in [../TODO.md](../TODO.md); the *why* behind each choice is in [decisions.md](decisions.md); the progress log is in [../DONE.md](../DONE.md).
+How Writerdeck fits together. Why: [decisions.md](decisions.md). Shipped: [../DONE.md](../DONE.md). Open: [../TODO.md](../TODO.md). Gotchas: [lessons.md](lessons.md). Words: [terms.md](terms.md).
 
----
+## What this is
 
-## Overview
-
-reMarkable 1: e-paper, Linux, micro-USB, no Bluetooth, no native keyboard support. Goal: sit down, type, get distraction-free prose, save Markdown — but the keyboard lives on an iPhone and keystrokes are forwarded over Wi-Fi to the tablet, which runs the editor and shows text on e-ink.
+The reMarkable 1 has a fine e-ink screen and a quiet OS, but no word processor and no keyboard support. Writerdeck adds both. Use a USB keyboard on an OTG cable, or a Bluetooth keyboard paired to your phone — those keys reach the tablet over Wi-Fi. The tablet shows the page and keeps Markdown on disk.
 
 ```
- CLIENT (iPhone Safari page + BT/Lightning kbd; Mac during dev)
-     |   WebSocket key events  (Wi-Fi / LAN)
-     v
- reMarkable 1
-   - rmkbd daemon (Go): serves capture page + WebSocket, feeds keys to a local socket
-   - keywriter (patched): reads the socket, full-screen Markdown editor, saves .md
+Phone (Safari + keyboard)
+    |  WebSocket on the LAN
+    v
+reMarkable 1
+  Writerdeck-server — always on: files, sync, PIN, key relay
+  Writerdeck — full-screen editor; reads /run/Writerdeck.sock; saves .md
 ```
 
-Keystrokes reach the editor through a local socket rather than `/dev/uinput`: this tablet's kernel can't load uinput, so the daemon feeds a patched keywriter instead (the reasoning is in [decisions.md](decisions.md)).
+Keys reach the editor over that socket. This kernel cannot load a uinput (fake keyboard device) ([decisions.md](decisions.md) §3).
 
-## Components
+## Document integrity
 
-- Component A — `rmkbd` daemon (we build): a static Go binary on the tablet. Serves a tiny HTML capture page + a WebSocket, and forwards received key events into a local socket the editor reads — no `/dev/uinput`. It is always-on (its own systemd service) and also owns the file API, the per-boot PIN, and the xochitl↔keywriter lifecycle (below).
-- Component B — editor ([`dps/remarkable-keywriter`](https://github.com/dps/remarkable-keywriter), patched): a full-screen, distraction-free Markdown editor; saves `.md` to `/home/root/edit/`. Input arrives via Qt QPA (there is no `/dev/input` fd to swap), so we inject synthetic `QKeyEvent`s from a small socket-reader thread added to `main.cpp`.
-- Component C — client (we build, trivial): an HTML/JS page served by the daemon that captures `keydown`/`keyup` and pushes them over the WebSocket. The Mac plays this role during dev; the iPhone + a Bluetooth/Lightning keyboard at the end.
+Before anything that touches notes, ask: can this lose text, write the wrong bytes, or overwrite without the user knowing?
 
-## The Companion (the working appliance)
+Files are UTF-8 Markdown. An open note is protected from silent sync overwrite. Saves use defined paths, autosave, and save-before-stop. GitHub sync backs up; it must not empty-push or delete against a live edit. Policy: [decisions.md](decisions.md) § Document integrity. Leftovers: [integrity-audit.md](integrity-audit.md).
 
-The tablet is the web server — the phone/Mac just open Safari, no app to install.
+## Two programs on the tablet
 
-- Always-on daemon, on-demand editor (the lifecycle split). `rmkbd` keeps serving `:8000` even under the stock xochitl GUI, and summons keywriter on demand: stop xochitl → spawn keywriter → on Home, restart xochitl and keep serving. Boot auto-launches one editor session (power-on = typewriter). This is what lets the phone re-launch writing and manage files while the GUI is up.
-- Notes = `/home/root/edit/*.md`. `rmkbd` (Go) does all file ops natively — list/read/create/rename/delete over an HTTP API (`/api/notes…`; `notesSafe()` rejects `/` and `..`). These are keywriter's notes, separate from xochitl's document store, so the API is safe to hit while the GUI is up.
-- PIN-on-tablet auth (length owner-choosable). `rmkbd` mints a random PIN per boot and shows it in the Lobby; the phone POSTs it (`/api/pin`) for an HttpOnly `rmkbd_token` cookie that gates the notes API and the WebSocket upgrade. The length is owner-choosable on the settings screen — 6 / 4 / none (none = LAN-open, UI-warned), and the PIN is runtime-mutable: changing it re-mints on the spot and re-shows it on the e-ink. A per-IP brute-force lockout (5 wrong / 60 s → 429) backs the 4- and 6-digit modes.
-- Settings screen (phone). A ⚙ overlay in the page lets the owner pick the reading-view font (Inter / Literata / EB Garamond / DejaVu, pushed live to the editor) and the PIN length (above); both persist to `/home/root/.rmkbd/settings.json` and a font registry on the Go side is the allow-list (unknown values → 400).
-- Lobby-on-demand. A second device that arrives *after* the owner is already editing finds the tablet showing the note, not the PIN; a pre-auth "Show PIN on tablet" button (`POST /api/lobby`, rate-limited) saves the open note and drops the tablet to the Lobby so the PIN is readable — it reveals nothing over the wire (PIN only on the e-ink).
-- Lobby + two-level Home. Boot shows a full-screen Lobby (IP + PIN + how-to, fed by `{"t":"info",…}` on socket connect). Home from the editor → save + return to the Lobby; Home from the Lobby → quit (rmkbd restarts xochitl but stays serving `:8000`).
-- Two page modes. Browse (Lobby / note list / Read-preview — no key capture, no echo footer) vs Type (active editing — capture + echo footer). Tapping Edit on a note enters Type mode and opens that note on the e-ink via keywriter's existing `doLoad(name)`.
-- Tablet → phone sync. The WebSocket also pushes server→browser: pressing Home or deleting the open note broadcasts `exitedit`, so the phone drops out of the typing view back to Browse in step with the tablet.
-- GitHub note-sync (optional, off by default). The phone browser is the sync engine — the GitHub token lives in its `localStorage`, never on the tablet (which holds only non-secret `syncOn`/`syncRepo`). It reconciles by *unioning* the tablet + repo note lists and copying whatever's missing either way; it never deletes on its own (safer: it can't lose a note, and it dodges real-git-on-mobile instability by using GitHub's plain Contents API). Caveat: delete/rename must be done *in the phone browser* (which pairs the op to GitHub); a note deleted or renamed elsewhere — VS Code, `git`, the GitHub web UI — resurrects or duplicates on the next sync. See [decisions.md](decisions.md) #19.
-- IP is detected dynamically (Go interface enumeration), never hardcoded — survives a DHCP change.
+Writerdeck-server is a static Go binary — Wi-Fi, APIs, sync, PIN, launching the editor. Source in `daemon/`. Product version is one auto date stamp for the whole product (`YYYY-MM-DD`, or `.N` only when you force a second ship the same day with `scripts/product-version.sh --bump`). Server and editor each carry it; Lobby About shows one number (the older if they differ) and compares to repo-root `VERSION` on GitHub `main`. CI and `deploy-rmkbd.sh` keep `VERSION` current via `scripts/product-version.sh --write` — do not hand-edit that file for routine builds. Why: [decisions.md](decisions.md) §38.
 
-## Constraints (honor these)
+Writerdeck is the full-screen editor, built from our fork of [keywriter](https://github.com/dps/remarkable-keywriter). QML draws the screen and applies edits. C++ starts the app, talks to the display, feeds keys from the socket, and runs EditHelper (math, shortcuts, wrap, undo). Keep hand-tuned wrap gaps and custom undo; do not replace Qt’s text box ([decisions.md](decisions.md) §5–§6).
 
-- No jailbreak; preserve OTA firmware updates ⇒ avoid Toltec (it locks the OS to a fixed range; can soft-brick on unsupported versions).
-- No on-device runtime deps ⇒ static Go binary (`CGO_ENABLED=0`, `GOOS=linux GOARCH=arm GOARM=7`). The tablet ships no Python; installing it implies Entware/Toltec + a firmware lock.
-- Markdown is the save format.
-- Executable / device files = ASCII-only + LF (`.sh`, `.service`, `Dockerfile`, `.go`, `.yml`): a stray non-ASCII byte or CRLF breaks the device shell / systemd. (`.md` prose may use Unicode.) `.gitattributes` normalizes line endings.
-- Keep the tablet awake — it drops Wi-Fi on suspend, which breaks the dev SSH / WebSocket connection.
-- Latency is the e-ink refresh, not the LAN — don't over-engineer the transport.
+New editor behavior belongs in [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). CI (GitHub Actions) clones, checks, and compiles — it does not stitch QML.
 
-> Escape hatch: the rM1's micro-USB is OTG-capable, so a plain USB keyboard drives keywriter directly if the Wi-Fi path ever stalls.
+Under `/home/root/`: the two binaries, `Writerdeck-user-documents/` for notes, `.Writerdeck/settings.json`, `.Writerdeck/lobby-ui.json`, a Qt runtime, and the launcher script. They meet on `/run/Writerdeck.sock`. The phone page is embedded in the server.
 
----
+Lobby look, wording, and shortcut chords are owned by `lobby-ui.json` ([decisions.md](decisions.md) §36). Edit that file on the tablet; Writerdeck reloads it (watch plus a short mtime poll). Repo source of truth for first install is `config/lobby-ui.json`; `deploy-keywriter.sh` seeds the tablet path only when missing. Journal shows `lobby-ui: loaded … (rev N)` on each successful load.
 
-## Environment & facts
+## Phone and Lobby
 
-| Item | Value |
-|---|---|
-| Device | reMarkable 1 (first gen), codename *zero-gravitas* |
-| OS / kernel | `20260506100933` · kernel `5.4.70-v1.6.3-rm10x` |
-| `/dev/uinput` | Absent & un-addable (open → `ENODEV`; kernel exports trimmed via `CONFIG_TRIM_UNUSED_KSYMS`, so no out-of-tree `uinput.ko` can bind). Gate permanently 🔴 RED. Don't retry — the editor is fed over a socket instead; see [decisions.md](decisions.md). |
-| SSH path | `ssh root@192.168.1.8` over Wi-Fi (key login works) — the working path. USB (`10.11.99.1`) is dead on the Mac (no DHCP lease). Wi-Fi IP is DHCP; reserve the tablet's MAC on the router so its IP stays put for the iPhone. |
-| SSH password | gitignored in [../secrets/remarkable.local.env](../secrets/remarkable.local.env). Source: device `Settings → Help → Copyrights and licenses → General information`. Regenerates after every firmware update — re-record then. |
-| Notes dir | `/home/root/edit/` (keywriter boots to the Lobby; files are opened from the phone via the companion page). Deploy the binary to `/home/root/keywriter` — not `/home/root/edit` (that's the notes *directory*). |
-| Buttons | On `/dev/input/event1` (value 1 = press): middle/Home = `KEY_HOME` 102, left 105, right 106, power 116. Readable with xochitl up (Qt doesn't `EVIOCGRAB`). |
-| Disk | `/` rootfs (~228 MB) is 96% full — but nothing we ship goes there. The binary + Qt5 sysroot (~14 MB) + notes live on `/home/root/`, a separate multi-GB partition. Don't resize rootfs (A/B OTA scheme; brick risk). |
+No phone app — open Safari to the tablet. The phone is a keyboard bridge: paste, sync token, and accepting a Lobby Download offer. Files and settings live in the Lobby ([browser-vs-tablet.md](browser-vs-tablet.md)). Lobby Files paginates on e-ink — fixed pages, no flick; when notes spill a page, Prev / Page N/M / Next sits above the action buttons ([decisions.md](decisions.md) §35). Create and rename go through the trusted editor socket; a name that already exists is refused and shown inside the New / Rename dialog ([decisions.md](decisions.md) §19). Uniqueness ignores letter case and treats plain and encrypted titles as one name; the Files list is sorted the same way.
 
-## Reference projects / links
+The server stays up under the stock UI. Boot leaves xochitl on screen; open Writerdeck with page buttons, USB Esc, or `wd`. Home from Lobby brings xochitl back; the phone can still reach port 8000. The PIN is shown in the Lobby. Lobby → Keyboard lists Bluetooth (phone URL, PIN, QR) then USB layout, with live `(connected)` / `(not connected)` on each headline while that tab is open. Sync is optional and change-driven (not a timer); the token never hits disk ([server-sync-implementation.md](server-sync-implementation.md)).
 
-- Editor (primary): https://github.com/dps/remarkable-keywriter — QML/C++. Input arrives via Qt QPA, not a direct `open()` (the input-injection patch point).
-- Build toolchain: `ghcr.io/toltec-dev/qt:v3.3` — Qt 5.15.1 reMarkable qtbase, glibc 2.31, matches the device; bundles the closed-source `libqsgepaper`. `latest`=v4.0 is a trap (Qt6 + glibc 2.35).
-- Input subsystem docs (evdev `input_event`): https://remarkable.guide/devel/device/input.html
-- Prior art — uinput-free injection on rM1 (a documented fallback): https://github.com/machinelevel/sp425-crazy-cow — writes `input_event` to the *existing* Wacom pen node to draw glyphs → HWR ink, not clean Markdown.
-- Own e-ink editor (last-resort fallback): https://github.com/canselcik/libremarkable (Rust framebuffer).
-- Broad index: https://github.com/reHackable/awesome-reMarkable
+Touch Edit / New / Rename (and similar) without a USB keyboard or an open phone page shows a connect tip with the phone URL and a QR image (same QR as Keyboard). An open page counts once it sends WebSocket `hello`; leftover sockets without hello do not. Cursor’s embedded browser (User-Agent contains `Cursor/` or `Electron/`) does not send or count as hello, so agent tabs do not suppress the tip ([decisions.md](decisions.md) §34).
 
----
+## Constraints
 
-## Build & deploy
+No jailbreak; keep OTA (over-the-air updates) — so no Toltec. One static Go binary on the tablet. Markdown on disk; HTML there is a bug. Device scripts are ASCII and LF. The tablet drops Wi-Fi when it sleeps — keep it awake while developing.
 
-Cross-compile + deploy `rmkbd` from a host that can reach the tablet over Wi-Fi:
+## Device facts
+
+This product is for the reMarkable 1. reMarkable 2 needs a different display path; we are open to exploring that if the community wants it ([decisions.md](decisions.md) §33).
+
+SSH as `root` over Wi-Fi. Password and `RM_HOST_WIFI` live in `secrets/remarkable.local.env` (install prompts if empty). After an OTA (over-the-air update) the password changes. On iPhone hotspot the tablet is often `172.20.10.5`. Visitors fetch prebuilt editor (`keywriter` Release) and server (`server` Release); developers with Go build the server locally via `deploy-rmkbd.sh`.
+
+While Writerdeck is open, the server grabs the physical Home button so Qt does not see it twice ([decisions.md](decisions.md) §16). Rootfs is nearly full; everything we ship lives on `/home/root`. Do not resize rootfs.
+
+## Build and deploy
+
+Server from the Mac:
 
 ```bash
-bash scripts/deploy-rmkbd.sh    # GOOS=linux GOARCH=arm GOARM=7 CGO_ENABLED=0 go build + gzip-over-ssh to /home/root/
+bash scripts/deploy-rmkbd.sh
 ```
 
-Requires Go (`brew install go` on macOS). `deploy-rmkbd.sh` cross-builds and deploys; `build-rmkbd.ps1` cross-builds only (no device step). keywriter is cross-built in CI (the toltec Qt sysroot), not on a host toolchain.
+Editor from CI (GitHub Actions); QML is inside the binary:
 
-## Dev-loop shortcuts (aliases via `bash scripts/install-alias.sh`)
+```bash
+git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywriter.sh -b
+```
 
-- `rmkw` (= `deploy-keywriter.sh -b`) — binary-only keywriter redeploy (~1 s): pushes just the ~205 K binary, skips re-throwing the 14 MB Qt5 sysroot (static; only changes on a Qt rebuild — then pass `RM_FORCE_SYSROOT=1`). Use after any `socket-inject.patch` / `build-keywriter.sh` change once CI has rebuilt.
-- `bash scripts/test-e2e.sh -s` — full browser→e-ink pipeline test, skipping the rmkbd build+scp (~2 s; rmkbd already on device). Drop `-s` to rebuild+redeploy rmkbd first.
-- `rmpush "msg"` (= `push.sh`/`push.ps1`) — commit+push under the personal identity.
-- `rmkbd -v` — per-key inject logging for keymap debugging; default is terse (connects + a count every 25 keys).
-- SSH preflight pings first, so the scripts tell *tablet asleep* from *missing key*.
-
-> Deploy transport: scp deadlocks at a fixed offset on this Mac→Wi-Fi→tablet link, so `rm_send_file` ([scripts/_env.sh](../scripts/_env.sh)) streams files gzip-over-ssh with a post-copy size check. See [decisions.md](decisions.md).
-
-## Testing — the inner loop
-
-Iterate over Wi-Fi SSH (`192.168.1.8`) — the working path; the scripts default to it. Keep the tablet awake (it drops Wi-Fi on suspend). `systemctl stop xochitl` → run `keywriter` + `rmkbd` → test → `systemctl start xochitl` to restore the stock UI. Run the daemon in the foreground with `-v` logging of every received/injected event. Verify one capability on the device — confirm characters land *in keywriter*, not just that the daemon "sent" them; when one is wrong, log incoming vs emitted and fix the keymap entry.
+Then relaunch the editor and read `journalctl -u writerdeck` (Writerdeck only — stock UI and system noise live in the rest of `/var/log`). After QML changes: edit-session check. After caret work: automated typing tests. After Lobby/Home: Lobby keyboard test. Deploy uses gzip over SSH, not scp. The same deploy seeds `lobby-ui.json` only if that file is absent on the tablet.

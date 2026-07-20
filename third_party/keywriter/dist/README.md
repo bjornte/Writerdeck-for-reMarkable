@@ -1,27 +1,29 @@
 # third_party/keywriter/dist/
 
-CI-built artifacts, produced by `.github/workflows/build-keywriter.yml`.
-
-In this public mirror the binaries are NOT committed -- clone and run the
-workflow (or build locally) to produce them.
+Built artifacts — fork QML is baked into `Writerdeck` at CI build time (no runtime patching).
 
 | File | Description |
 |---|---|
-| `keywriter` | ARM binary cross-built from source (`dps/remarkable-keywriter`) |
+| `Writerdeck` | ARM editor binary (patched remarkable-keywriter) |
 | `qt5.tar.gz` | Qt5 runtime sysroot subset (libs + QML modules + plugins) |
 
-## Build
+Deployed to `/home/root/Writerdeck` on the tablet.
 
-Push a change to the keywriter sources (CI runs `build-keywriter.sh` in the
-toltec Qt container `ghcr.io/toltec-dev/qt:v3.3`), or run that script locally
-inside the same container.
-
-## Deployment
+**Fetch (no `gh` / no Go required for install):** rolling Releases `keywriter` (editor + Qt) and `server` (Writerdeck-server).
 
 ```bash
-bash scripts/deploy-keywriter.sh
+bash scripts/fetch-keywriter-dist.sh   # curl Release, else gh run download
+bash scripts/deploy-keywriter.sh -b
 ```
 
-Unpacks `qt5.tar.gz` transiently, copies everything to the device, and runs
-the alive-8s launch check. The unpacked `qt5/` directory is removed after the
-script exits.
+After a fork/CI change: wait for Build keywriter on main (updates the Release), then fetch + deploy.
+
+**Local rebuild** (when CI is slow or uncommitted):
+
+```bash
+docker build --platform linux/amd64 -t rm1-writerdeck-keywriter-builder third_party/keywriter/
+docker run --rm --platform linux/amd64 -v "$PWD/third_party/keywriter/dist:/out" rm1-writerdeck-keywriter-builder
+bash scripts/deploy-keywriter.sh -b
+```
+
+After deploy, relaunch the editor and confirm `journalctl -u writerdeck` shows framebuffer init — not `Expected token '}'`.

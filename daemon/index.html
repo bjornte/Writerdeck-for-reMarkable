@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
-<title>rmkbd</title>
+<title></title>
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -11,39 +11,47 @@
 <div id="bar">
   <div id="dot"></div>
   <span id="msg">connecting...</span>
-  <button id="settings-btn" style="display:none" title="Font settings">&#9881;</button>
+  <button id="sync-btn" style="display:none" title="Notes sync setup">Sync setup</button>
 </div>
 
-<div id="pin-screen">
+<div id="banner-stack">
+  <div id="sync-banner" style="display:none"></div>
+  <div id="clash-banner" style="display:none"></div>
+  <div id="drift-banner" style="display:none"></div>
+  <div id="remote-keys-banner" style="display:none"></div>
+  <div id="observe-banner" style="display:none"></div>
+</div>
+
+<div id="pin-screen" style="display:none">
   <div id="pin-box">
     <p id="pin-title">Enter PIN shown on the reMarkable</p>
     <input id="pin-input" type="text" inputmode="numeric" pattern="[0-9]*"
            maxlength="6" placeholder="000000" autocomplete="off" autocorrect="off">
     <button id="pin-btn">Connect</button>
     <p id="pin-err"></p>
-    <button id="lobby-btn" style="margin-top:8px;background:#444;color:#ccc;border:none;border-radius:8px;padding:10px 14px;font-size:14px;cursor:pointer;width:100%;-webkit-tap-highlight-color:transparent">Show PIN on tablet</button>
+    <button id="lobby-btn" class="lobby-pin-btn">Show PIN on tablet</button>
     <p id="lobby-msg" style="font-size:12px;color:#888;margin:6px 0 0;text-align:center"></p>
   </div>
 </div>
 
-<div id="settings-screen" style="display:none">
-  <div id="settings-box">
-    <p id="settings-title">Settings</p>
-    <div id="settings-list"></div>
-    <button id="settings-done">Done</button>
+<div id="sync-screen" style="display:none">
+  <div id="sync-box">
+    <button id="sync-close" type="button" class="overlay-close" aria-label="Close">&times;</button>
+    <p id="sync-title">Notes sync setup</p>
+    <div id="sync-list"></div>
+    <button id="sync-done">Done</button>
   </div>
 </div>
 
-<div id="notes">
-  <div id="notes-head">
-    <span id="notes-label">Notes</span>
-    <div style="display:flex;gap:8px">
-      <button id="new-btn">New</button>
-      <button id="upload-btn">Upload</button>
-      <input id="file-input" type="file" accept=".md,.markdown,.txt" style="display:none">
+<div id="download-modal">
+  <div id="download-box">
+    <p id="download-title">Download here?</p>
+    <p id="download-name"></p>
+    <div id="download-actions">
+      <button id="download-accept">Download</button>
+      <button id="download-cancel">Not now</button>
     </div>
   </div>
-  <div id="notes-items"></div>
 </div>
 
 <div id="paste-modal">
@@ -57,34 +65,18 @@
   </div>
 </div>
 
-<div id="preview">
-  <div id="preview-head">
-    <button id="preview-back">&larr; Notes</button>
-    <span id="preview-title"></span>
-    <div id="preview-acts">
-      <button id="preview-edit" class="note-btn">Edit</button>
-      <button id="preview-rename" class="note-btn">Rename</button>
-      <button id="preview-delete" class="note-btn danger">Delete</button>
-      <button id="preview-download" class="note-btn">Download</button>
-      <button id="preview-copy" class="note-btn">Copy</button>
-    </div>
-  </div>
-  <pre id="preview-body"></pre>
-</div>
-
 <div id="typing">
   <div id="typing-head">
-    <button id="typing-back">&larr; Notes</button>
     <span id="typing-note"></span>
     <div style="display:flex;gap:6px;flex-shrink:0">
-      <button id="typing-rotate" class="note-btn">Rotate</button>
-      <button id="typing-paste" class="note-btn">Paste from here</button>
+      <button id="typing-observe" class="note-btn" title="Record keys for a bug report" style="display:none">Observe</button>
+      <button id="typing-paste" class="note-btn" disabled aria-disabled="true">Paste from here</button>
     </div>
   </div>
   <div id="typing-body">
-    <p>Type from this screen.</p>
-    <p>Your words appear on the tablet.</p>
-    <p>Press Home on the tablet when done.</p>
+    <img id="typing-logo" src="/logo-gray.svg" alt="Writerdeck" width="120" height="104">
+    <button id="typing-launch" type="button" style="display:none">Launch Writerdeck</button>
+    <div id="typing-guide"></div>
   </div>
 </div>
 
@@ -93,11 +85,6 @@
   autocorrect="off"
   autocapitalize="none"
   spellcheck="false"></textarea>
-
-<div id="foot">
-  <div id="echo-label">Echo</div>
-  <div id="echo"></div>
-</div>
 
 <script type="module" src="/app.js"></script>
 </body>

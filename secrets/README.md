@@ -1,21 +1,19 @@
 # secrets/
 
-Local-only credentials for rM1-Writerdeck. Nothing real in here is committed to git.
+Local credentials — never committed. `bash scripts/install.sh` (via `ensure-secrets.sh`) creates `remarkable.local.env` from the example and asks only for missing fields. Saved values are reused on the next install.
 
-## How it works
-- `remarkable.local.env` holds the real secrets. It is gitignored (see the root [.gitignore](../.gitignore)), so it lives on your disk only and cannot be pushed.
-- `remarkable.local.env.example` is the committed template — placeholders only, safe to share. Copy it to create your real file:
-  ```powershell
-  Copy-Item secrets\remarkable.local.env.example secrets\remarkable.local.env
-  ```
-- The bash device scripts (`bootstrap.sh`, `recon.sh`, `deploy-rmkbd.sh`, `deploy-keywriter.sh`) read `remarkable.local.env` via `_env.sh`.
+RM_ROOT_PASSWORD — SSH password from the tablet settings screen; regenerates after OTA.
 
-## What's stored
-| Key | Meaning |
-|---|---|
-| `RM_ROOT_PASSWORD` | reMarkable root SSH password. On device: Settings → Help → Copyrights and licenses → General information (scroll down). Regenerates after every firmware update. |
-| `RM_HOST_USB` | Device IP over USB — always `10.11.99.1`. |
-| `RM_HOST_WIFI` | Device IP on Wi-Fi. |
+RM_HOST_WIFI — tablet address on your network. Prefer a DHCP reservation.
 
-## Why this is "good enough" here
-The threat model is low: this password is shown on the tablet's own settings screen to anyone holding it, and the device lives on your home LAN. The real danger is accidentally committing it to git and pushing it public — which the gitignore prevents. Plaintext in a gitignored file is a reasonable, pragmatic choice for this case. (Day-to-day access is by SSH key, installed once by `bootstrap.sh`; the password is kept only because firmware updates reset it.)
+RM_HOST_USB — unused on the Mac; Wi-Fi is the path.
+
+PIN_DIGITS — phone connection PIN length: `6`, `4`, or `none`. Applied to the tablet after install.
+
+SYNC_REPO — optional `owner/repo` for private GitHub notes sync.
+
+GH_TOKEN — optional fine-grained token (Contents read/write). Stored on the computer only; pushed into tablet RAM by `configure-sync.sh`. Never written to the tablet’s disk.
+
+SYNC_SKIP=1 — you declined sync; installer will not ask again until you clear this.
+
+The password is already visible on the device. The real risk is committing secrets. Day-to-day access uses the SSH key from `bootstrap.sh`.

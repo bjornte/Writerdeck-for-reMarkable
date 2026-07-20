@@ -1,34 +1,36 @@
 # scripts/
 
-Automation for the dev/deploy loop. Run from the repo root.
+Deploy and test helpers. Run from the repo root. Credentials come from [secrets](../secrets/remarkable.local.env) via `_env.sh` (created/filled by `ensure-secrets.sh` when you install).
 
-> Device work is bash-only, on a machine that can reach the tablet over Wi-Fi. The bash scripts read credentials/addresses from [../secrets/remarkable.local.env](../secrets/remarkable.local.env) (gitignored) via `_env.sh`.
->
-> The Windows `*.ps1` scripts cover the off-device parts: cross-build (`build-rmkbd.ps1`), commits (`push.ps1`), and the git-bridge watcher (`watch-pc.ps1`).
+## What lands on the tablet
 
-## Scripts
+Writerdeck-server from `deploy-rmkbd.sh` (local Go build, or Release tag `server`). Writerdeck from CI via `deploy-keywriter.sh` (Release tag `keywriter`). Launcher, `wd`, and the systemd unit from this folder.
 
-| Script | Does |
-|---|---|
-| `_env.sh` | Shared helper: dot-sourced by the bash device scripts. Loads secrets; defines ssh/scp + key-test helpers. |
-| `bootstrap.sh` | Generate an SSH keypair if absent; install the pubkey on the device (one password prompt); enable Wi-Fi SSH (`rm-ssh-over-wlan on`); verify key login. |
-| `recon.sh` | Snapshot device facts: OS version, `ip addr`, input devices, disk. Self-logs to `../docs/recon/`. Re-run after a firmware update to refresh the facts. |
-| `deploy-keywriter.sh` | (Mac) `scp` the from-source `keywriter` binary + `qt5/` sysroot to `/home/root/`, launch via `launch-keywriter.sh`, print a verdict, trap-restore xochitl. Self-logs to `../docs/recon/`. |
-| `build-rmkbd.ps1` / `deploy-rmkbd.sh` | Cross-build `rmkbd` (ARMv7 static, `CGO_ENABLED=0`). `deploy-rmkbd.sh` (Mac) also scps the binary to the device and kills any running instance. `build-rmkbd.ps1` (ThinkPad) builds only — device steps require the Mac. |
-| `launch-keywriter.sh` | The proven linuxfb launch env (panel geometry/DPI + epaper scene graph) in one place — sourced by `deploy-keywriter.sh` and by `rmkbd` to spawn keywriter as its child. |
-| `test-e2e.sh` | (Mac) Full browser→e-ink pipeline test: build+deploy `rmkbd` → stop xochitl → launch keywriter + `rmkbd` → print the browser URL → hold for a human to type → show daemon log + `scratch.md` → restore xochitl. `-s` skips the rmkbd build+scp. Self-logs to `../docs/recon/`. |
-| `push.ps1` / `push.sh` | One-line stage+commit+push. `push.ps1` bakes in the personal git identity to prevent the work-email-leak footgun. On the Mac, `rmpush` is the alias. |
-| `install-alias.sh` | One-time Mac setup: adds the `rmpush` alias to `~/.zshrc`. |
-| `watch-mac.sh` | Git-bridge auto-sync (Mac side). Pulls everything; auto commits+pushes only new outputs under `docs/recon/` (scoped for safety — edits elsewhere are reported, not committed). macOS GUI banners on arm / each sync / stop. |
-| `watch-pc.ps1` | Git-bridge auto-sync (PC side). Loops `git pull`; pops a Windows toast when a pull brings in new commits. Banners on arm / each pull / stop. No admin, no modules. |
-| `install-service.sh` | (Mac) Install `rm1-writerdeck.service` on the device: scp unit → `/etc/systemd/system/`, `daemon-reload`. Migrates off the old `rmnetwriter.service` name if present. Does not enable (boot-loop guard); prints the manual-start → enable → recovery steps. |
-| `rm1-writerdeck.service` | systemd unit — runs `rmkbd` under `systemd-inhibit` (keep-awake), stops/restores xochitl around it. Installed by `install-service.sh`. |
+## First-time install
 
-## Convention: device actions become committed scripts
+```bash
+bash scripts/install.sh --start
+```
 
-Don't hand-type long `ssh root@…` one-liners — script every device action so it runs as one short line, and `tee` device output to `docs/recon/` so verdicts are captured (`recon.sh`, `deploy-keywriter.sh`, `test-e2e.sh` already do). Never log a secret there — `bootstrap.sh` echoes the root password, so it isn't logged. Optional auto-sync watchers: `bash scripts/watch-mac.sh` + `./scripts/watch-pc.ps1`.
+Visitors: download the slim [installer ZIP](https://github.com/bjornte/Writerdeck-for-reMarkable/releases/download/installer/Writerdeck-installer.zip) (or rebuild with `bash scripts/pack-installer.sh`). Asks only for missing Wi-Fi / password / optional sync; reuses `secrets/remarkable.local.env`. Phone PIN defaults to `none` (no prompt). Fetches binaries from Releases, deploys, health-checks, enables autostart, then `configure-sync.sh` if sync is saved. Checks only: `bash scripts/preflight.sh`. Remove from tablet (keeps Mac secrets + GitHub): `bash scripts/uninstall.sh` (`--reboot` optional). Reinstall notes: [reinstall-cheatsheet](../docs/install-onboarding/reinstall-cheatsheet.md). Regression: `bash scripts/test-install-reuse.sh`.
 
-## Conventions
-- Iterate over Wi‑Fi (`192.168.1.8`) — the working path on the Mac (USB‑ethernet is dead there: no macOS RNDIS). Scripts default to it via `$RM_HOST`; override with `export RM_HOST=10.11.99.1` if USB ever revives.
-- Scripts never hardcode the password; they read it from the secrets file at runtime.
-- Keep scripts idempotent and re-runnable.
+## Everyday commands
+
+Ship a new editor binary after CI built it:
+
+```bash
+git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywriter.sh -b
+bash scripts/test-edit-session.sh
+```
+
+Ship a new server: `bash scripts/deploy-rmkbd.sh` (Go build if available, else Release), then restart the service.
+
+Keyboard caret work: `bash scripts/test-keyboard-harness.sh --fast` ([editor-testing](../docs/editor-testing/todo.md)). Lobby/Home: `bash scripts/test-lobby-keyboard.sh`. Vault: `test-vault.sh` / `test-vault-e2e.sh`.
+
+Show Lobby: `wd` or `bash scripts/lobby.sh`.
+
+## Other useful scripts
+
+ensure-secrets.sh — create/fill secrets (reuses saved values; optional sync + opens GitHub token URL). bootstrap.sh — SSH key and Wi-Fi SSH. preflight.sh — secrets / optional go / ping / dist. install.sh — first-time chain. uninstall.sh — remove Writerdeck from the tablet (`--reboot` optional). pack-installer.sh — slim end-user ZIP (`dist/Writerdeck-installer.zip`). configure-sync.sh — push SYNC_REPO + GH_TOKEN to a running tablet. fetch-keywriter-dist.sh / fetch-server-dist.sh — Release curl (gh fallback). install-service.sh — systemd unit (`--start` = start + health check + enable). install-alias.sh — Mac shortcuts. fix-hostkey.sh — after OTA host-key change. recover-orphaned-vault-notes.sh — after a vault key mistake.
+
+Never log secrets. Prefer idempotent scripts.

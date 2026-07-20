@@ -2,9 +2,9 @@
 # scripts/bootstrap.sh -- Phase 0: install SSH key on device + enable Wi-Fi SSH.
 # macOS / Linux. Idempotent (safe to re-run).
 #
-# You will be prompted for the device root password AT MOST TWICE during the
-# key-install step (once for scp, once for ssh). It is shown on screen below,
-# read from secrets/remarkable.local.env. After this succeeds, no more prompts.
+# Uses RM_ROOT_PASSWORD from secrets when key login is not yet active (via
+# SSH_ASKPASS -- no interactive password typing). After this succeeds, later
+# scripts use key login only.
 #
 # If you hit a "host key changed" error after a firmware update:
 #   bash scripts/fix-hostkey.sh
@@ -22,6 +22,28 @@ SKIP_WIFI=0
 
 KEY="$HOME/.ssh/id_ed25519"
 PUB="$KEY.pub"
+
+# Run ssh/scp with the tablet password from secrets (non-interactive).
+_ssh_with_password() {
+  local pwfile askpass ec
+  if [ -z "${RM_ROOT_PASSWORD:-}" ]; then
+    echo "  ERROR: RM_ROOT_PASSWORD empty; cannot install SSH key." >&2
+    return 1
+  fi
+  pwfile="$(mktemp)"
+  askpass="$(mktemp)"
+  printf '%s\n' "$RM_ROOT_PASSWORD" >"$pwfile"
+  chmod 600 "$pwfile"
+  printf '#!/bin/sh\ncat "%s"\n' "$pwfile" >"$askpass"
+  chmod 700 "$askpass"
+  set +e
+  SSH_ASKPASS="$askpass" SSH_ASKPASS_REQUIRE=force DISPLAY="${DISPLAY:-none}" \
+    "$@" </dev/null
+  ec=$?
+  set -e
+  rm -f "$askpass" "$pwfile"
+  return "$ec"
+}
 
 echo
 echo "[1/4] SSH keypair"
@@ -41,19 +63,22 @@ echo "[2/4] Install pubkey on device (host: $RM_HOST)"
 if rm_test_key; then
   echo "  Key-based login already active -- skipping."
 else
-  echo
-  echo "  *** PASSWORD PROMPT BELOW -- type it when ssh/scp asks ***"
-  if [ -n "${RM_ROOT_PASSWORD:-}" ]; then
-    echo "  Password: $RM_ROOT_PASSWORD"
-  else
-    echo "  Password: see secrets/remarkable.local.env (RM_ROOT_PASSWORD)"
-  fi
-  echo
+  echo "  Installing SSH public key (using saved tablet password)..."
   echo "  [1/2] scp public key to /tmp/laptop.pub ..."
-  scp -o StrictHostKeyChecking=accept-new "$PUB" "root@$RM_HOST:/tmp/laptop.pub"
+  if ! _ssh_with_password scp -o StrictHostKeyChecking=accept-new \
+      -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+      "$PUB" "root@$RM_HOST:/tmp/laptop.pub"; then
+    echo "  ERROR: scp of public key failed (wrong password? tablet awake?)." >&2
+    exit 1
+  fi
   echo "  [2/2] installing into authorized_keys ..."
-  ssh -o StrictHostKeyChecking=accept-new "root@$RM_HOST" \
-    'mkdir -p ~/.ssh; cat /tmp/laptop.pub >> ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys; chmod 700 ~/.ssh; rm -f /tmp/laptop.pub; echo __installed__'
+  if ! _ssh_with_password ssh -o StrictHostKeyChecking=accept-new \
+      -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+      "root@$RM_HOST" \
+      'mkdir -p ~/.ssh; cat /tmp/laptop.pub >> ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys; chmod 700 ~/.ssh; rm -f /tmp/laptop.pub; echo __installed__'; then
+    echo "  ERROR: ssh key install failed." >&2
+    exit 1
+  fi
   if rm_test_key; then
     echo "  Key login verified."
   else
@@ -79,6 +104,8 @@ else
   echo "        Continue with USB; validate Wi-Fi during recon."
 fi
 
-echo
-echo "===  Bootstrap complete. Run:  bash scripts/recon.sh  ==="
-echo
+if [ "${WRITERDECK_INSTALL:-0}" != "1" ]; then
+  echo
+  echo "===  Bootstrap complete. Run:  bash scripts/recon.sh  ==="
+  echo
+fi
