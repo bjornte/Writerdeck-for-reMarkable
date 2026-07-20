@@ -14,7 +14,7 @@ Start Writerdeck, then:
 - From stock UI, left + right page buttons together should launch to Lobby.
 - Power while editing: sleep, wake, keep writing.
 
-With a USB keyboard: Home from edit goes to Lobby; Home from Lobby quits.
+With a USB keyboard: Home moves the caret (and New/Rename fields) — it is not the tablet’s physical middle button. After [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md): only `hardware_home` owns note → Lobby and Lobby → stock UI (`global.toLobby` / `global.quit` in `lobby-ui.json`).
 
 When these pass, check them off or tell the agent. Detail: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md).
 

@@ -33,7 +33,7 @@ New editor behavior belongs in [Writerdeck-keywriter](https://github.com/bjornte
 
 Under `/home/root/`: the two binaries, `Writerdeck-user-documents/` for notes, `.Writerdeck/settings.json`, `.Writerdeck/lobby-ui.json`, a Qt runtime, and the launcher script. They meet on `/run/Writerdeck.sock`. The phone page is embedded in the server.
 
-Lobby look, wording, and Ctrl-letter shortcuts are owned by `lobby-ui.json` ([decisions.md](decisions.md) §36). Edit that file on the tablet; Writerdeck reloads it (watch plus a short mtime poll). Repo source of truth for first install is `config/lobby-ui.json`; `deploy-keywriter.sh` seeds the tablet path only when missing. Journal shows `lobby-ui: loaded … (rev N)` on each successful load.
+Lobby look, wording, and shortcut chords are owned by `lobby-ui.json` ([decisions.md](decisions.md) §36). Edit that file on the tablet; Writerdeck reloads it (watch plus a short mtime poll). Repo source of truth for first install is `config/lobby-ui.json`; `deploy-keywriter.sh` seeds the tablet path only when missing. Journal shows `lobby-ui: loaded … (rev N)` on each successful load.
 
 ## Phone and Lobby
 

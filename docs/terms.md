@@ -11,7 +11,7 @@ Short definitions for Writerdeck and its editor fork.
 * **Lobby**: In-app home on the tablet — files, settings, sleep — not the stock reMarkable UI. Made primarily in QML.
 * **About**: Lobby tab that shows one product version for server and editor together, and whether GitHub has a newer stamp. Why: [decisions.md](decisions.md) §38.
 * **VERSION**: Repo-root date stamp (`YYYY-MM-DD` or `.N`) kept by `scripts/product-version.sh` on build/publish — not hand-edited for routine work. Baked into both binaries; About compares the tablet to this file on GitHub `main`.
-* **lobby-ui.json**: On-tablet file (`/home/root/.Writerdeck/lobby-ui.json`) for Lobby borders, colors, sizes, dialog/help copy, and shortcut chords (Ctrl-letters, plus `enter` / `hardware_home`). Edit over SSH; no binary rebuild. Repo default: `config/lobby-ui.json`. Why: [decisions.md](decisions.md) §36.
+* **lobby-ui.json**: On-tablet file (`/home/root/.Writerdeck/lobby-ui.json`) for Lobby borders, colors, sizes, dialog/help copy, and shortcut chords (Ctrl-letters, plus `enter` / `hardware_home`). Edit over SSH; no binary rebuild. Repo default: `config/lobby-ui.json`. Source of truth for Lobby chords. Why: [decisions.md](decisions.md) §36.
 * **Phone page**: Browser UI on port 8000 — keyboard bridge with the gray Writerdeck mark, paste, sync token, and “Download here?” when Lobby offers a file. Not a notes browser.
 * **Document integrity**: Your prose must survive as plain Markdown on disk.
 
@@ -20,7 +20,7 @@ Short definitions for Writerdeck and its editor fork.
 * **QML (the screen file)**: Screen language — layout and applying edits on screen (the main file is `main.qml`).
 * **C++ / EditHelper**: Startup, display, socket keys, and the math behind shortcuts, wrap, and undo. Made primarily in C++.
 * **TextEdit (Qt’s on-screen text box)**: Fine for drawing; weak for “which wrapped row am I on?” Shipped with Qt (C++); not ours.
-* **Shortcut (chord)**: A key held with Ctrl, Alt, or Shift. Phone ⌘ is sent as Ctrl ([decisions.md](decisions.md) §3). Lobby action chords are Ctrl+letter ([decisions.md](decisions.md) §37).
+* **Shortcut (chord)**: A key held with Ctrl, Alt, or Shift. Phone ⌘ is sent as Ctrl ([decisions.md](decisions.md) §3). Lobby action chords are usually Ctrl+letter; `lobby-ui.json` also allows `enter` and `hardware_home` (physical middle button, not keyboard Home) ([decisions.md](decisions.md) §36–§37).
 * **Visual line**: Layout unit — one soft-wrapped row on screen. ⌘←/→ and Home/End go to its ends (Apple line ends; CodeMirror Home/End).
 * **Logical line**: Meaning unit — text between newline characters. Jumping to its end on a wrapped paragraph is not “line end.”
 * **Paragraph**: Meaning unit — Apple `\n`-delimited segment, including empty lines. Option+Up/Down.
