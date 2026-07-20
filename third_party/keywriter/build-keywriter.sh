@@ -74,11 +74,20 @@ test -f lobby_ui_config.h && test -f lobby_ui_config.cpp \
     || { echo "ERROR: lobby_ui_config.{h,cpp} missing from fork checkout" >&2; exit 1; }
 test -f edit_helper.h && test -f edit_helper.cpp \
     || { echo "ERROR: edit_helper.{h,cpp} missing from fork checkout" >&2; exit 1; }
-grep -q 'PRODUCT_VERSION' edit.pro \
-    || { echo "ERROR: edit.pro missing PRODUCT_VERSION stamp" >&2; exit 1; }
+# Stamp product_version.h before compile (YYYY-MM-DD breaks -D macros as arithmetic).
+printf '%s\n' \
+  '#pragma once' \
+  "/* Auto-generated for PRODUCT_VERSION=${PRODUCT_VERSION} */" \
+  "#define WRITERDECK_PRODUCT_VERSION \"${PRODUCT_VERSION}\"" \
+  > product_version.h
+grep -q "WRITERDECK_PRODUCT_VERSION \"${PRODUCT_VERSION}\"" product_version.h \
+    || { echo "ERROR: failed to write product_version.h" >&2; exit 1; }
+grep -q 'product_version.h' lobby_bridge.cpp \
+    || { echo "ERROR: lobby_bridge.cpp missing product_version.h include" >&2; exit 1; }
 grep -q 'productVersion' lobby_bridge.h \
     || { echo "ERROR: lobby_bridge.h missing productVersion" >&2; exit 1; }
-
+grep -q 'clearUndoStacks' edit_helper.cpp \
+    || { echo "ERROR: edit_helper.cpp missing clearUndoStacks (Phase A2 undo)" >&2; exit 1; }
 grep -q 'dispatchMacArrow' edit_helper.cpp \
     || { echo "ERROR: edit_helper.cpp missing dispatchMacArrow (Phase B key dispatch)" >&2; exit 1; }
 grep -q 'rmkbdSocketReader' main.cpp \
@@ -140,7 +149,7 @@ echo "  fork assembled QML OK (helpers + lobby + sleep in committed main.qml)."
 echo
 
 # No -spec: Qt's configured default XSPEC is already devices/linux-arm-remarkable-g++.
-qmake edit.pro "PRODUCT_VERSION=${PRODUCT_VERSION}"
+qmake edit.pro
 make -j"$(nproc)"
 echo
 
