@@ -12,7 +12,8 @@ import (
 	"time"
 )
 
-const ghAPIBase = "https://api.github.com"
+// ghAPIBase is the GitHub REST API root. Tests override it with an httptest URL.
+var ghAPIBase = "https://api.github.com"
 
 type ghContentEntry struct {
 	Name string `json:"name"`
