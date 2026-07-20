@@ -337,7 +337,15 @@ func (e *syncEngine) pullNote(name string) (bool, error) {
 	}
 	meta, _ := e.getMeta(name)
 	if meta.SHA == gh.SHA {
-		return false, nil
+		// Fast-path only when the tablet still actually has the file. If the
+		// note is missing locally yet meta.SHA matches (a "ghost note" left by a
+		// filesystem-level deletion that bypassed the app's delete path), the
+		// stale SHA would otherwise suppress the re-pull forever, since the
+		// GitHub blob never changes. Fall through and rewrite it so remote-only
+		// notes are restored to the tablet.
+		if _, ok := readNoteBytes(name); ok {
+			return false, nil
+		}
 	}
 	if isEncryptedNoteName(name) {
 		raw, err := ghDecodeBytes(gh.Content)
