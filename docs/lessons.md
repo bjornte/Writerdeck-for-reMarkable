@@ -50,7 +50,7 @@ A confirmation or other dialog must read as one piece — title, body, and actio
 
 Lobby look, wording, and Ctrl-letter chords live in `/home/root/.Writerdeck/lobby-ui.json`. Writerdeck reloads that file when it changes (file/directory watch plus a short mtime poll — rename replaces often miss inotify on the tablet). Start that poll only after QApplication exists; a timer started from a static constructed before the app never fires. Bad or unreadable JSON keeps the last good load (or the baked-in defaults if nothing has loaded yet) — fix the file rather than restarting for a blank Lobby.
 
-Name collisions on New / Rename / New encrypted stay in that dialog — keep it open with a short line under the typed name; clear the line when the user edits. Do not close the dialog and park the same message in the Files header. The header box is for other Files feedback (failed decrypt, Download without a phone page, and the like). The server still refuses the duplicate and can push `vaultopfailed` so a race reopens the dialog with the same sentence.
+Name collisions on New / Rename / New encrypted stay in that dialog — keep it open with a short line under the typed name; clear the line when the user edits. Do not close the dialog and park the same message in the Files header. The header box is for other Files feedback (failed decrypt, Download without a phone page, and the like). The server still refuses the duplicate and can push `vaultopfailed` so a race reopens the dialog with the same sentence. Uniqueness is case-insensitive and shared across plain and encrypted forms of the same title; the Files list sorts that way too.
 
 On the Files tab, use a fixed stack: header (feedback), list, footer (Prev / Page N/M / Next when notes spill a page, a hairline, then the action bars). The list only fills between header and footer. Do not lay feedback, list, and bars out in one Column while hand-computing the list height, and do not paint the list above the footer — either mistake pushes buttons off-screen or draws rows on top of them. Gray 9pt page text is invisible on e-ink; use black labels and a separator so the strip does not blend into New/Edit.
 
@@ -63,7 +63,7 @@ Stand down key capture when PIN, paste, or sync overlays are up. The GitHub toke
 
 ## Sync and vault
 
-Never mass-delete from a failed remote list. Never push empty over a previously synced note. Disabling the vault while encrypted notes exist orphans them — refuse that; recover from GitHub history if it already happened. A failed decrypt must show an error on Files, not a blank editor. A wrong vault PIN must keep the pad open with a short message (for example Wrong PIN. Try again.), not dismiss silently.
+Never mass-delete from a failed remote list. Never push empty over a previously synced note. Do not PUT a note or vault secret whose local fingerprint already matches `syncMeta` — that was filling GitHub with empty commits every few minutes when a timer still ran. Sync is event-driven now; a clean tablet logs skip, not a no-op commit. Disabling the vault while encrypted notes exist orphans them — refuse that; recover from GitHub history if it already happened. A failed decrypt must show an error on Files, not a blank editor. A wrong vault PIN must keep the pad open with a short message (for example Wrong PIN. Try again.), not dismiss silently.
 
 ## Build
 

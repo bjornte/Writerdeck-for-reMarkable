@@ -291,7 +291,7 @@ func openHandler(w http.ResponseWriter, r *http.Request) {
 	prevNote := currentNote
 	currentNoteMu.Unlock()
 	if syncEng.ready() && editorName != prevNote {
-		_ = syncEng.pullNote(editorName)
+		_, _ = syncEng.pullNote(editorName)
 	}
 	cmd, _ := json.Marshal(struct {
 		T    string `json:"t"`

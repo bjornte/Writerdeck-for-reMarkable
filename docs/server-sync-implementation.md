@@ -22,7 +22,7 @@ Token POST calls `pushLobbyInfo()` immediately so the Lobby clears TOKEN NEEDED 
 
 Top bar: **Sync setup** opens the GitHub panel. **Save** verifies repo + token; **Sync** runs reconcile (`POST /api/sync/run`). Primary button is Save when no token is saved locally, Sync when one is. Offline sync status appears on the Notes sync setup panel when `/api/sync/status` is unreachable.
 
-Reconcile runs on boot, a three-minute ticker, Home, power sleep, CRUD, manual run, and token verify. Power sleep runs reconcile on the server before suspend — the browser no longer waits. Phone `sync.js` keeps drift UX only; no GitHub fetch calls remain.
+Reconcile runs on boot, Home, power sleep, CRUD, manual Sync, and token verify — not on a timer. Before auto triggers contact GitHub, the engine checks local dirty state (note and vault secret fingerprints in `syncMeta`, plus pending CRUD). If nothing changed, it logs `sync skipped (…): no local changes` and returns. Phone Sync and Lobby Sync now always list GitHub so remote-only edits still pull. Unchanged files are never PUT (including vault secrets), so clean runs do not create empty commits. A finished pass logs `sync executed (…): N files changed` or `sync skipped (…): no changes` when the remote check found nothing to do. Power sleep runs reconcile on the server before suspend — the browser no longer waits. Phone `sync.js` keeps drift UX only; no GitHub fetch calls remain.
 
 Endpoints: `POST /api/sync/token` set or clear token and verify against repo; `GET /api/sync/token` read token from tablet RAM (browser pull); `GET /api/sync/status` for configured, lastSyncAt, syncOn, syncRepo, lastError, syncing; `POST /api/sync/run` trigger reconcile with optional wait; `POST /api/sync/ack` updates lastSyncAt and Lobby after reconcile. Settings also hold syncOn, syncRepo, lastSyncAt, syncMeta, and a legacy pendingSync queue the server drains directly.
 
@@ -32,21 +32,29 @@ There is no `needtoken` line in the journal — the message is WebSocket-only. A
 
 ```
 writerdeck-server: client connected 192.168.x.x:…
-writerdeck-server: sync reconcile (token)
-writerdeck-server: token verify reconcile: 11 notes
+writerdeck-server: sync skipped (token): no local changes
 ```
 
-`sync reconcile (token)` means `POST /api/sync/token` succeeded. Poll `GET /api/sync/status` — `configured` should flip to `true` within a second or two of the browser reconnecting.
+or, when files actually moved:
+
+```
+writerdeck-server: client connected 192.168.x.x:…
+writerdeck-server: sync reconcile (token)
+writerdeck-server: sync executed (token): 2 files changed
+writerdeck-server: token verify reconcile: 2 files changed
+```
+
+`sync reconcile (token)` means `POST /api/sync/token` succeeded and local dirty state (or an explicit Sync) warranted a GitHub pass. Poll `GET /api/sync/status` — `configured` should flip to `true` within a second or two of the browser reconnecting.
 
 ```bash
 source scripts/_env.sh
-rm_ssh 'journalctl -u writerdeck --since "1 hour ago" --no-pager' | rg 'client connected|sync reconcile \(token\)|token verify'
+rm_ssh 'journalctl -u writerdeck --since "1 hour ago" --no-pager' | rg 'client connected|sync (skipped|reconcile|executed)|token verify'
 ```
 
 ## Device verify matrix
 
 Run these on a real tablet with sync configured where noted.
 
-Token POST then service restart — token cleared from RAM, browser auto-repost via `needtoken` (journal: `sync reconcile (token)`). Token survives Wi-Fi IP change (re-enter once per browser origin if IP changes). Edit on tablet, exit Home — GitHub updated within one reconcile. Edit on GitHub, sync run — tablet updated if file not open in editor. Both edit same note — `(tablet copy).md` plus primary. Empty tablet, non-empty GitHub — pull restore, no junk copy. Tablet delete, rename, create — GitHub reflects without phone. Open note during reconcile — that file skipped, others sync. Power sleep — reconcile completes, no browser hang. Sync off — no GitHub traffic. Bad or expired token — error banner, local saves continue. Phone closed overnight — ticker reconcile backs up tablet edits.
+Token POST then service restart — token cleared from RAM, browser auto-repost via `needtoken` (journal: `sync skipped (token)` when clean, or `sync executed (token): N files changed`). Token survives Wi-Fi IP change (re-enter once per browser origin if IP changes). Edit on tablet, exit Home — GitHub updated within one reconcile when the note is dirty. Edit on GitHub, Sync now — tablet updated if file not open in editor. Both edit same note — `(tablet copy).md` plus primary. Empty tablet, non-empty GitHub — pull restore, no junk copy. Tablet delete, rename, create — GitHub reflects without phone. Open note during reconcile — that file skipped, others sync. Power sleep — reconcile completes (or skips clean), no browser hang. Sync off — no GitHub traffic. Bad or expired token — error banner, local saves continue. Clean tablet overnight — no timer, no empty commits; edits sync on Home, power sleep, CRUD, or Sync now.
 
 Rollback: redeploy the previous Writerdeck-server binary from git.

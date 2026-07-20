@@ -11,9 +11,8 @@ import (
 	"time"
 )
 
-const syncPollInterval = 3 * time.Minute
-
 // syncEngine runs GitHub reconcile on the tablet. Token lives in RAM only.
+// Sync is change-driven (Home, power sleep, CRUD, manual, token, boot) — not polled.
 type syncEngine struct {
 	tokenMu   sync.RWMutex
 	token     string
@@ -159,6 +158,56 @@ func noteContentHash(name string, data []byte) string {
 	return strHash(string(data))
 }
 
+// syncReasonForcesRemote is true for explicit Sync (phone or Lobby). Those
+// always list GitHub so remote-only edits can still be pulled when the tablet is clean.
+func syncReasonForcesRemote(reason string) bool {
+	return reason == "manual" || reason == "tablet"
+}
+
+// contentNeedsPush reports whether local bytes differ from the last synced fingerprint.
+// No SHA or no meta means never pushed — treat as dirty.
+func (e *syncEngine) contentNeedsPush(name string, data []byte) bool {
+	meta, hasMeta := e.getMeta(name)
+	if !hasMeta || meta.SHA == "" {
+		return true
+	}
+	return meta.LocalHash != strHash(string(data))
+}
+
+// localDirtyCount counts notes and vault secrets that need a push, plus pending CRUD.
+// When excludeOpen is true, the note open in the editor is omitted (reconcile skips it).
+func (e *syncEngine) localDirtyCount(excludeOpen bool) int {
+	open := ""
+	if excludeOpen {
+		open = e.openNote()
+	}
+	n := 0
+	for _, name := range listLocalNoteNames() {
+		if name == open {
+			continue
+		}
+		data, ok := readNoteBytes(name)
+		if !ok {
+			continue
+		}
+		if e.contentNeedsPush(name, data) {
+			n++
+		}
+	}
+	if vaultEnabled() {
+		if pin, ok := vaultSecretPinBytes(); ok && e.contentNeedsPush(secretPinPath, pin) {
+			n++
+		}
+		if vaultJSON, ok := vaultSecretVaultJSON(); ok && e.contentNeedsPush(secretVaultPath, vaultJSON) {
+			n++
+		}
+	}
+	settingsMu.Lock()
+	pending := len(curSettings.PendingSync)
+	settingsMu.Unlock()
+	return n + pending
+}
+
 func (e *syncEngine) handleClashBytes(name string, tabletData []byte) error {
 	gh, _, err := e.ghGetFile(name)
 	if err != nil || gh == nil {
@@ -200,28 +249,28 @@ func (e *syncEngine) handleClashBytes(name string, tabletData []byte) error {
 	return nil
 }
 
-func (e *syncEngine) pushNote(name string) error {
+func (e *syncEngine) pushNote(name string) (bool, error) {
 	if !e.ready() {
-		return nil
+		return false, nil
 	}
 	if name == e.openNote() {
-		return nil
+		return false, nil
 	}
 	if isEncryptedNoteName(name) {
 		data, ok := readNoteBytes(name)
 		if !ok {
-			return nil
+			return false, nil
 		}
 		// Encrypted notes are opaque bytes and must carry the WDENC1 header.
 		// If an older buggy run wrote raw bytes without the header, re-wrap them
 		// before pushing so GitHub always stores valid WDENC1 blobs.
 		if !bytes.HasPrefix(data, []byte(vaultMagic)) {
 			if vaultLocked() {
-				return fmt.Errorf("cannot rewrap %s without vault PIN", name)
+				return false, fmt.Errorf("cannot rewrap %s without vault PIN", name)
 			}
 			rewrapped, err := encryptNoteBytes(data)
 			if err != nil {
-				return err
+				return false, err
 			}
 			if p := notesSafe(name); p != "" {
 				_ = writeNoteFile(p, rewrapped)
@@ -232,99 +281,111 @@ func (e *syncEngine) pushNote(name string) error {
 		emptyHash := strHash("")
 		h := strHash(string(data))
 		if len(data) == 0 && hasMeta && meta.LocalHash != "" && meta.LocalHash != emptyHash {
-			return nil
+			return false, nil
+		}
+		if hasMeta && meta.SHA != "" && meta.LocalHash == h {
+			return false, nil
 		}
 		sha := meta.SHA
 		newSHA, status, err := e.ghPutBytes(name, data, sha)
 		if err != nil {
 			if status == 409 || status == 422 {
-				return e.handleClashBytes(name, data)
+				return true, e.handleClashBytes(name, data)
 			}
-			return err
+			return false, err
 		}
 		e.setMeta(name, newSHA, h)
 		e.setLastError("")
-		return nil
+		fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s\n", name)
+		return true, nil
 	}
 	content, ok := readNoteContent(name)
 	if !ok {
-		return nil
+		return false, nil
 	}
 	meta, hasMeta := e.getMeta(name)
 	emptyHash := strHash("")
 	if content == "" && hasMeta && meta.LocalHash != "" && meta.LocalHash != emptyHash {
-		return nil // empty-push guard
+		return false, nil // empty-push guard
+	}
+	h := strHash(content)
+	if hasMeta && meta.SHA != "" && meta.LocalHash == h {
+		return false, nil
 	}
 	sha := meta.SHA
 	newSHA, status, err := e.ghPutFile(name, content, sha)
 	if err != nil {
 		if status == 409 || status == 422 {
-			return e.handleClash(name, content)
+			return true, e.handleClash(name, content)
 		}
-		return err
+		return false, err
 	}
-	e.setMeta(name, newSHA, strHash(content))
+	e.setMeta(name, newSHA, h)
 	e.setLastError("")
-	return nil
+	fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s\n", name)
+	return true, nil
 }
 
-func (e *syncEngine) pullNote(name string) error {
+func (e *syncEngine) pullNote(name string) (bool, error) {
 	if !e.ready() || name == e.openNote() {
-		return nil
+		return false, nil
 	}
 	gh, status, err := e.ghGetFile(name)
 	if err != nil || gh == nil {
 		if status == 401 || status == 403 {
 			e.setLastError("GitHub token rejected")
 		}
-		return err
+		return false, err
 	}
 	meta, _ := e.getMeta(name)
 	if meta.SHA == gh.SHA {
-		return nil
+		return false, nil
 	}
 	if isEncryptedNoteName(name) {
 		raw, err := ghDecodeBytes(gh.Content)
 		if err != nil {
-			return err
+			return false, err
 		}
 		p := notesSafe(name)
 		if p == "" {
-			return fmt.Errorf("invalid name")
+			return false, fmt.Errorf("invalid name")
 		}
 		if err := writeNoteFile(p, raw); err != nil {
-			return err
+			return false, err
 		}
 		maybeBroadcastDiskChanged(name)
 		pushLobbyInfo()
 		pushNotesList()
 		e.setMeta(name, gh.SHA, strHash(string(raw)))
-		return nil
+		fmt.Fprintf(os.Stderr, "writerdeck-server: sync pull %s\n", name)
+		return true, nil
 	}
 	ghContent, err := ghDecodeContent(gh.Content)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if err := writeNoteContentSync(name, ghContent); err != nil {
-		return err
+		return false, err
 	}
 	e.setMeta(name, gh.SHA, strHash(ghContent))
-	return nil
+	fmt.Fprintf(os.Stderr, "writerdeck-server: sync pull %s\n", name)
+	return true, nil
 }
 
-func (e *syncEngine) ghDeleteNote(name string) error {
+func (e *syncEngine) ghDeleteNote(name string) (bool, error) {
 	if !e.ready() {
-		return nil
+		return false, nil
 	}
 	meta, ok := e.getMeta(name)
 	if !ok || meta.SHA == "" {
-		return nil
+		return false, nil
 	}
 	if err := e.ghDeleteFile(name, meta.SHA); err != nil {
-		return err
+		return false, err
 	}
 	e.removeMeta(name)
-	return nil
+	fmt.Fprintf(os.Stderr, "writerdeck-server: sync delete %s\n", name)
+	return true, nil
 }
 
 func (e *syncEngine) handleClash(name, tabletContent string) error {
@@ -367,60 +428,92 @@ func broadcastClash(noteName, copyName string) {
 	broadcast(msg)
 }
 
-func (e *syncEngine) applyRemoteDelete(name string) error {
+func (e *syncEngine) applyRemoteDelete(name string) (bool, error) {
 	if !e.ready() || name == e.openNote() {
-		return nil
+		return false, nil
 	}
 	_, status, err := e.ghGetFile(name)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if status != 404 {
-		return nil
+		return false, nil
 	}
 	if err := deleteNoteFile(name); err != nil && !os.IsNotExist(err) {
-		return err
+		return false, err
 	}
 	e.removeMeta(name)
-	return nil
+	fmt.Fprintf(os.Stderr, "writerdeck-server: sync remote-delete %s\n", name)
+	return true, nil
 }
 
-func (e *syncEngine) reconcileOne(name, remoteSHA string) error {
+func (e *syncEngine) reconcileOne(name, remoteSHA string) (int, error) {
 	hasRemote := remoteSHA != ""
 	content, hasLocal := readNoteContent(name)
 	if hasLocal && !hasRemote {
 		meta, hasMeta := e.getMeta(name)
 		if !hasMeta || meta.SHA == "" {
-			return e.pushNote(name)
+			ok, err := e.pushNote(name)
+			if ok {
+				return 1, err
+			}
+			return 0, err
 		}
 		if meta.LocalHash != strHash(content) {
-			return e.pushNote(name)
+			ok, err := e.pushNote(name)
+			if ok {
+				return 1, err
+			}
+			return 0, err
 		}
-		return e.applyRemoteDelete(name)
+		ok, err := e.applyRemoteDelete(name)
+		if ok {
+			return 1, err
+		}
+		return 0, err
 	}
 	if !hasLocal && hasRemote {
-		return e.pullNote(name)
+		ok, err := e.pullNote(name)
+		if ok {
+			return 1, err
+		}
+		return 0, err
 	}
 	if !hasLocal && !hasRemote {
-		return nil
+		return 0, nil
 	}
 	meta, _ := e.getMeta(name)
 	remoteChanged := meta.SHA != remoteSHA
 	localChanged := meta.LocalHash != strHash(content)
 	if remoteChanged && localChanged {
-		return e.handleClash(name, content)
+		if err := e.handleClash(name, content); err != nil {
+			return 0, err
+		}
+		return 1, nil
 	}
 	if localChanged {
 		emptyHash := strHash("")
 		if content == "" && meta.LocalHash != "" && meta.LocalHash != emptyHash && hasRemote {
-			return e.pullNote(name)
+			ok, err := e.pullNote(name)
+			if ok {
+				return 1, err
+			}
+			return 0, err
 		}
-		return e.pushNote(name)
+		ok, err := e.pushNote(name)
+		if ok {
+			return 1, err
+		}
+		return 0, err
 	}
 	if remoteChanged {
-		return e.pullNote(name)
+		ok, err := e.pullNote(name)
+		if ok {
+			return 1, err
+		}
+		return 0, err
 	}
-	return nil
+	return 0, nil
 }
 
 func (e *syncEngine) drainPendingSyncOps() {
@@ -441,14 +534,17 @@ func (e *syncEngine) drainPendingSyncOps() {
 func (e *syncEngine) applyTabletCrud(op, name, oldName string) error {
 	switch op {
 	case "createnote":
-		return e.pushNote(name)
+		_, err := e.pushNote(name)
+		return err
 	case "deletenote":
-		return e.ghDeleteNote(name)
+		_, err := e.ghDeleteNote(name)
+		return err
 	case "renamenote":
-		if err := e.ghDeleteNote(oldName); err != nil {
+		if _, err := e.ghDeleteNote(oldName); err != nil {
 			return err
 		}
-		return e.pushNote(name)
+		_, err := e.pushNote(name)
+		return err
 	}
 	return nil
 }
@@ -479,6 +575,17 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 		e.syncingMu.Unlock()
 		pushLobbyInfo()
 	}()
+
+	// Auto triggers skip GitHub when nothing local needs a push. Manual/Lobby Sync
+	// always lists remote so phone-side edits still land.
+	if !syncReasonForcesRemote(reason) {
+		dirty := e.localDirtyCount(true)
+		if dirty == 0 {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: sync skipped (%s): no local changes\n", reason)
+			signalSyncAck()
+			return 0, nil
+		}
+	}
 
 	pushLobbyInfo()
 
@@ -513,7 +620,7 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 		}
 	}
 
-	e.syncVaultSecrets(remoteMap)
+	changed := e.syncVaultSecrets(remoteMap)
 
 	names := map[string]bool{}
 	for n := range remoteMap {
@@ -523,20 +630,25 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 		names[n] = true
 	}
 
-	count := 0
 	for name := range names {
 		if name == open {
 			continue
 		}
-		if err := e.reconcileOne(name, remoteMap[name]); err != nil {
+		n, err := e.reconcileOne(name, remoteMap[name])
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: sync %s: %v\n", name, err)
 		}
-		count++
+		changed += n
 	}
 
 	e.setLastError("")
 	e.markSyncComplete()
-	return count, nil
+	if changed == 0 {
+		fmt.Fprintf(os.Stderr, "writerdeck-server: sync skipped (%s): no changes\n", reason)
+	} else {
+		fmt.Fprintf(os.Stderr, "writerdeck-server: sync executed (%s): %d files changed\n", reason, changed)
+	}
+	return changed, nil
 }
 
 func (e *syncEngine) reconcileAllBlocking(reason string, timeout time.Duration) {
@@ -571,26 +683,19 @@ func (e *syncEngine) tryPushNote(name string) {
 		return
 	}
 	go func() {
-		if err := e.pushNote(name); err != nil {
+		if _, err := e.pushNote(name); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s: %v\n", name, err)
 		}
 	}()
 }
 
 func startSyncBackground() {
+	// Boot reconcile only — no periodic poll. Event triggers: Home, power sleep,
+	// CRUD, token verify, and explicit Sync (phone / Lobby).
 	go func() {
 		time.Sleep(3 * time.Second)
 		if syncEng.ready() {
 			syncEng.reconcileAll("boot")
-		}
-	}()
-	go func() {
-		ticker := time.NewTicker(syncPollInterval)
-		defer ticker.Stop()
-		for range ticker.C {
-			if syncEng.ready() {
-				syncEng.reconcileAll("poll")
-			}
 		}
 	}()
 }
@@ -602,37 +707,51 @@ func (e *syncEngine) tryPushVaultSecrets() {
 	if !e.ready() || !vaultEnabled() {
 		return
 	}
-	go func() { _ = e.pushVaultSecrets() }()
+	go func() { e.pushVaultSecrets() }()
 }
 
-func (e *syncEngine) pushVaultSecrets() error {
+func (e *syncEngine) pushVaultSecrets() int {
 	if !e.ready() || !vaultEnabled() {
-		return nil
+		return 0
 	}
+	changed := 0
 	if pin, ok := vaultSecretPinBytes(); ok {
-		meta, _ := e.getMeta(secretPinPath)
-		sha, _, err := e.ghPutBytes(secretPinPath, pin, meta.SHA)
-		if err == nil {
-			e.setMeta(secretPinPath, sha, strHash(string(pin)))
+		if e.contentNeedsPush(secretPinPath, pin) {
+			meta, _ := e.getMeta(secretPinPath)
+			sha, _, err := e.ghPutBytes(secretPinPath, pin, meta.SHA)
+			if err == nil {
+				e.setMeta(secretPinPath, sha, strHash(string(pin)))
+				fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s\n", secretPinPath)
+				changed++
+			} else {
+				fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s: %v\n", secretPinPath, err)
+			}
 		}
 	}
 	if vaultJSON, ok := vaultSecretVaultJSON(); ok {
-		meta, _ := e.getMeta(secretVaultPath)
-		sha, _, err := e.ghPutBytes(secretVaultPath, vaultJSON, meta.SHA)
-		if err == nil {
-			e.setMeta(secretVaultPath, sha, strHash(string(vaultJSON)))
+		if e.contentNeedsPush(secretVaultPath, vaultJSON) {
+			meta, _ := e.getMeta(secretVaultPath)
+			sha, _, err := e.ghPutBytes(secretVaultPath, vaultJSON, meta.SHA)
+			if err == nil {
+				e.setMeta(secretVaultPath, sha, strHash(string(vaultJSON)))
+				fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s\n", secretVaultPath)
+				changed++
+			} else {
+				fmt.Fprintf(os.Stderr, "writerdeck-server: sync push %s: %v\n", secretVaultPath, err)
+			}
 		}
 	}
-	return nil
+	return changed
 }
 
-func (e *syncEngine) syncVaultSecrets(remoteMap map[string]string) {
+func (e *syncEngine) syncVaultSecrets(remoteMap map[string]string) int {
 	if !e.ready() {
-		return
+		return 0
 	}
 	_ = remoteMap
+	changed := 0
 	if vaultEnabled() {
-		_ = e.pushVaultSecrets()
+		changed += e.pushVaultSecrets()
 	}
 	if gh, _, err := e.ghGetFile(secretVaultPath); err == nil && gh != nil {
 		meta, _ := e.getMeta(secretVaultPath)
@@ -641,6 +760,8 @@ func (e *syncEngine) syncVaultSecrets(remoteMap map[string]string) {
 			if err == nil {
 				_ = vaultApplySecretVault(raw)
 				e.setMeta(secretVaultPath, gh.SHA, strHash(string(raw)))
+				fmt.Fprintf(os.Stderr, "writerdeck-server: sync pull %s\n", secretVaultPath)
+				changed++
 			}
 		}
 	}
@@ -651,7 +772,10 @@ func (e *syncEngine) syncVaultSecrets(remoteMap map[string]string) {
 			if err == nil {
 				vaultApplySecretPin(strings.TrimSpace(string(raw)))
 				e.setMeta(secretPinPath, gh.SHA, strHash(string(raw)))
+				fmt.Fprintf(os.Stderr, "writerdeck-server: sync pull %s\n", secretPinPath)
+				changed++
 			}
 		}
 	}
+	return changed
 }

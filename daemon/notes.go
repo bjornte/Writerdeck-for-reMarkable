@@ -172,33 +172,7 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case http.MethodGet:
-		entries, err := os.ReadDir(notesDirPath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				w.Header().Set("Content-Type", "application/json")
-				w.Write([]byte("[]\n")) //nolint:errcheck
-				return
-			}
-			http.Error(w, "cannot read notes dir", http.StatusInternalServerError)
-			return
-		}
-		var notes []noteInfo
-		for _, e := range entries {
-			if e.IsDir() || !isNoteListName(e.Name()) {
-				continue
-			}
-			info, err := e.Info()
-			if err != nil {
-				continue
-			}
-			enc := isEncryptedNoteName(e.Name())
-			notes = append(notes, noteInfo{
-				Name:      e.Name(),
-				Size:      info.Size(),
-				Modified:  info.ModTime().Format(time.RFC3339),
-				Encrypted: enc,
-			})
-		}
+		notes := readAllNotes()
 		if notes == nil {
 			notes = []noteInfo{}
 		}
@@ -226,7 +200,7 @@ func notesListHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid name", http.StatusBadRequest)
 			return
 		}
-		if _, err := os.Stat(p); err == nil {
+		if noteNameConflict(p, "") {
 			http.Error(w, "already exists", http.StatusConflict)
 			return
 		}
@@ -406,7 +380,8 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
 }
-// readAllNotes returns metadata for every note file in the notes directory.
+// readAllNotes returns metadata for every note file in the notes directory,
+// ordered by case-insensitive title.
 func readAllNotes() []noteInfo {
 	entries, err := os.ReadDir(notesDirPath)
 	if err != nil {
@@ -435,6 +410,7 @@ func readAllNotes() []noteInfo {
 	if notes == nil {
 		notes = []noteInfo{}
 	}
+	sortNotesByTitle(notes)
 	return notes
 }
 
@@ -457,7 +433,7 @@ func createNoteFile(name, content string) error {
 	if p == "" {
 		return fmt.Errorf("invalid name")
 	}
-	if _, err := os.Stat(p); err == nil {
+	if noteNameConflict(p, "") {
 		return fmt.Errorf("already exists")
 	}
 	if content == "" {
@@ -528,7 +504,7 @@ func renameNoteFile(oldName, newName string) error {
 	if oldP == newP {
 		return nil // same path — no-op (avoids false "already exists")
 	}
-	if _, err := os.Stat(newP); err == nil {
+	if noteNameConflict(newP, oldP) {
 		return fmt.Errorf("name already taken")
 	}
 	if err := os.Rename(oldP, newP); err != nil {

@@ -78,7 +78,7 @@ No phone app — the tablet is the server. Day-to-day files and settings live in
 
 ## 11. GitHub sync copies missing notes both ways
 
-Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Sync copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused. Details: [server-sync-implementation.md](server-sync-implementation.md).
+Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Sync is change-driven (Home, power sleep, CRUD, Sync now, token verify, boot) — not a timer. Unchanged notes and vault secrets are not pushed, so clean runs do not create empty GitHub commits. Sync copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused. Details: [server-sync-implementation.md](server-sync-implementation.md).
 
 ## 12. Optional at-rest encryption (private notes)
 
@@ -110,7 +110,7 @@ A second phone mid-edit sees the note, not the PIN. Ask the tablet to return to 
 
 ## 19. Tablet file create/rename/delete via trusted socket
 
-Lobby file ops use the same local socket as keystrokes. The server does the disk work and can nudge the phone. Launch Lobby with `wd` on the Mac or `~/wd` on the tablet. A create or rename that hits an existing name fails on the server and shows the message inside the New / Rename / New encrypted dialog (same pattern as a wrong vault PIN staying on the pad). Other Files feedback (vault open errors, “open the phone page” for Download) still uses the dismissable box above the list.
+Lobby file ops use the same local socket as keystrokes. The server does the disk work and can nudge the phone. Launch Lobby with `wd` on the Mac or `~/wd` on the tablet. A create or rename that hits an existing name fails on the server and shows the message inside the New / Rename / New encrypted dialog (same pattern as a wrong vault PIN staying on the pad). Names are unique by case-insensitive title: `Doc` and `doc` collide, and a plain note may not share that title with an encrypted twin (`doc.md` vs `doc.md.enc`). The Files list is sorted the same way. Other Files feedback (vault open errors, “open the phone page” for Download) still uses the dismissable box above the list.
 
 ## 20. Bluetooth remote key capture on the phone
 

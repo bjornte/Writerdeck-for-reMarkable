@@ -77,7 +77,7 @@ func syncTokenHandler(w http.ResponseWriter, r *http.Request) {
 	go func() {
 		n, err := syncEng.reconcileAll("token")
 		if err == nil {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: token verify reconcile: %d notes\n", n)
+			fmt.Fprintf(os.Stderr, "writerdeck-server: token verify reconcile: %d files changed\n", n)
 		}
 	}()
 	w.Header().Set("Content-Type", "application/json")

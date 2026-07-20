@@ -500,6 +500,9 @@ func vaultEncryptNote(name string) error {
 	}
 	encName := strings.TrimSuffix(base, ".md") + ".md.enc"
 	encPath := filepath.Join(notesDirPath, encName)
+	if noteNameConflict(encName, base) {
+		return fmt.Errorf("already exists")
+	}
 	if err := writeNoteFile(encPath, enc); err != nil {
 		return err
 	}
@@ -547,6 +550,9 @@ func vaultDecryptNote(name string) error {
 	}
 	plainName := strings.TrimSuffix(base, ".md.enc") + ".md"
 	plainPath := filepath.Join(notesDirPath, plainName)
+	if noteNameConflict(plainName, base) {
+		return fmt.Errorf("already exists")
+	}
 	if err := writeNoteFile(plainPath, plain); err != nil {
 		return err
 	}

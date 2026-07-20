@@ -28,11 +28,11 @@ After Lobby Download: with the phone page open, Download (or **g**) on Files sho
 
 After Files pagination chrome: with more notes than fit one screen, Prev / Page N/M / Next and a line should sit above New/Edit; with few notes, that strip stays hidden.
 
-After New / Rename dialogs: try a name that already exists — the dialog should stay open with a short message under the name, not only a box above the list.
+After New / Rename dialogs: try a name that already exists — the dialog should stay open with a short message under the name, not only a box above the list. Also try the same letters in different case (`Doc` vs `doc`), and a plain name that already exists as encrypted (or the reverse).
 
 After editing `/home/root/.Writerdeck/lobby-ui.json` over SSH: a color, help line, or Ctrl-letter (for example change Read from `v` to `w`) should update on Lobby within a couple of seconds without redeploying the binary. Bad JSON should leave the previous look in place. Defaults live in repo `config/lobby-ui.json`.
 
-After sync or vault work: Sync setup still runs; a wrong vault PIN shows an error, not a blank editor.
+After sync or vault work: Sync setup still runs; a wrong vault PIN shows an error, not a blank editor. With the change-driven sync build: idle tablet should not spam GitHub (journal stays quiet — no `sync reconcile (poll)`). Edit a note, Home — expect `sync executed (home): N files changed`. Tap Sync with nothing dirty — expect `sync skipped (…): no changes` after a remote check, or `sync skipped (…): no local changes` on Home/power when clean.
 
 You do not need to re-type the automated typing checks by hand while they stay passing. If real writing still feels wrong, note the keys and tell the agent.
 
