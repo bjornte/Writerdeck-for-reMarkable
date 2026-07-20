@@ -9,7 +9,9 @@ Short definitions for Writerdeck and its editor fork.
 * **Writerdeck (app)**: The full-screen editor you see. Built from our fork of Singleton’s keywriter: [Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). Made primarily in QML & C++.
 * **keywriter**: Singleton’s original Qt Markdown notepad — the project that fork started from. Made primarily in QML & C++. Uses Qt’s TextEdit.
 * **Lobby**: In-app home on the tablet — files, settings, sleep — not the stock reMarkable UI. Made primarily in QML.
-* **lobby-ui.json**: On-tablet file (`/home/root/.Writerdeck/lobby-ui.json`) for Lobby borders, colors, sizes, dialog/help copy, and Ctrl-letter chords. Edit over SSH; no binary rebuild. Repo default: `config/lobby-ui.json`. Why: [decisions.md](decisions.md) §36.
+* **About**: Lobby tab that shows one product version for server and editor together, and whether GitHub has a newer stamp. Why: [decisions.md](decisions.md) §38.
+* **VERSION**: Repo-root date stamp (`YYYY-MM-DD` or `.N`) kept by `scripts/product-version.sh` on build/publish — not hand-edited for routine work. Baked into both binaries; About compares the tablet to this file on GitHub `main`.
+* **lobby-ui.json**: On-tablet file (`/home/root/.Writerdeck/lobby-ui.json`) for Lobby borders, colors, sizes, dialog/help copy, and shortcut chords (Ctrl-letters, plus `enter` / `hardware_home`). Edit over SSH; no binary rebuild. Repo default: `config/lobby-ui.json`. Why: [decisions.md](decisions.md) §36.
 * **Phone page**: Browser UI on port 8000 — keyboard bridge with the gray Writerdeck mark, paste, sync token, and “Download here?” when Lobby offers a file. Not a notes browser.
 * **Document integrity**: Your prose must survive as plain Markdown on disk.
 

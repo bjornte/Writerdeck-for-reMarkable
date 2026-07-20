@@ -24,6 +24,8 @@ Three ways a change looks like it did nothing: GitHub has not built the new edit
 
 If SSH times out, check whether Mac and tablet are on an iPhone hotspot instead of home Wi-Fi.
 
+Product version is auto (`scripts/product-version.sh`). Do not hand-edit `VERSION` and expect About to stay honest — CI and `deploy-rmkbd.sh` own that file. After changing Lobby fragments in the fork, run `./assemble-qml.sh` so committed `main.qml` matches; editing only `main.qml` and then assembling from stale `.inc` files wiped About once. Do not stamp the editor with `-DPRODUCT_VERSION=YYYY-MM-DD` — the ARM toolchain treats the dashes as subtraction; write `product_version.h` instead ([decisions.md](decisions.md) §38).
+
 ## Saves and the screen
 
 Every save path must copy the on-screen text into the note before writing the file. Clearing the screen box without syncing it back on load can save a zero-length note. Preview must never feed fancy HTML back into the note body.

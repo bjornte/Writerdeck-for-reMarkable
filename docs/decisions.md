@@ -98,7 +98,7 @@ After Home from edit, Lobby keys must still work. Focus stays on Lobby after tou
 
 ## 16. Physical Home: exclusive gpio grab
 
-While Writerdeck is open, the server exclusively grabs the tablet’s Home/Power/page buttons so Qt never sees a second Home. Release on exit so the stock UI works again. USB Home is unchanged. Idle page-button launch (§23) needs no grab. Handoff: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md).
+While Writerdeck is open, the server exclusively grabs the tablet’s Home/Power/page buttons so Qt never sees a second Home. Release on exit so the stock UI works again. The USB / phone keyboard Home key does not quit or return to Lobby — only the tablet’s physical Home button does (unless `global.quit` in `lobby-ui.json` is set to a Ctrl-letter instead; see §36). Idle page-button launch (§23) needs no grab. Handoff: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md). Remaining chord move onto disk: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md).
 
 ## 17. PIN and per-IP lockout
 
@@ -122,7 +122,7 @@ Two opens: Edit to type, Read to preview. The phone learns which mode so a Bluet
 
 ## 22. Lobby tab order (Files first)
 
-Boot and Home land on the note list, not the welcome screen. Coming back from edit reselects the note you left. Switch Lobby pages with Tab, Shift-Tab, Left/Right, or digits 1–6.
+Boot and Home land on the note list, not the welcome screen. Coming back from edit reselects the note you left. Switch Lobby pages with Tab, Shift-Tab, and plain Left/Right. Optional per-tab Ctrl-letters live in `lobby-ui.json` (`tabs.files` … `tabs.about`); ship empty. Do not hardwire digits 1–6 for tab jump — bare digits stay free for a later Finder-style note jump (§37).
 
 ## 23. Idle launch from stock UI
 
@@ -184,15 +184,23 @@ The Files list shows a fixed page of rows that fit the screen. Up/Down move the 
 
 ## 36. Lobby look and chords on disk
 
-Lobby borders, colors, sizes, dialog/help copy, and Ctrl-letter chords live in `/home/root/.Writerdeck/lobby-ui.json` — not baked into every binary change. Edit over SSH; Writerdeck reloads without a rebuild. Repo default is `config/lobby-ui.json`; `deploy-keywriter.sh` copies it only when the tablet file is missing so local edits survive. Enter and reserved Ctrl-K / Ctrl-Q stay in code. Missing or corrupt JSON falls back to embedded defaults (or keeps the last good load after a successful start). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md).
+Lobby borders, colors, sizes, dialog/help copy, and shortcut chords live in `/home/root/.Writerdeck/lobby-ui.json` — not baked into every binary change. Edit over SSH; Writerdeck reloads without a rebuild. Repo default is `config/lobby-ui.json`; `deploy-keywriter.sh` copies it only when the tablet file is missing so local edits survive. Letter values mean Ctrl (or Cmd) plus that letter. Two special values need no Ctrl: `enter` (badge glyph always ↩) and `hardware_home` (tablet physical Home). Default quit is `"global.quit": "hardware_home"` — note → Lobby, Lobby → stock UI; a letter instead of that value takes over the same path and unbinds physical Home from quit. Keyboard Home does not quit. Tab lines (`tabs.files` … `tabs.about`) ship as `""`. No hardwired Ctrl-K note picker; K and Q are ordinary letters. Missing or corrupt JSON falls back to embedded defaults (or keeps the last good load after a successful start). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md). Remaining wiring: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md).
 
 ## 37. Phone-safe Lobby chords; Finder-style jump later
 
-Phone browsers (Safari/Chrome) keep Cmd/Ctrl+R, T, W, N, L and Cmd/Ctrl+1–9 for their own chrome. Those often never reach Writerdeck from a phone keyboard, so Lobby *action* Ctrl-letters avoid R/T/W/N/L. Current map (in `lobby-ui.json`): New Ctrl-M, Rename Ctrl-I, Delete Ctrl-B, Font Ctrl-A, PIN length Ctrl-M, Rotate letter Ctrl-O; Sync is Enter only. Copy/cut/paste and editor Mac chords stay Ctrl-C/X/V/A/Z.
+Phone browsers (Safari/Chrome) keep Cmd/Ctrl+R, T, W, N, L and Cmd/Ctrl+1–9 for their own chrome. Those often never reach Writerdeck from a phone keyboard, so Lobby *action* Ctrl-letters avoid R/T/W/N/L. Current map (in `lobby-ui.json`): New Ctrl-M, Rename Ctrl-I, Delete Ctrl-B, Font Ctrl-A, PIN length Ctrl-M, Rotate letter Ctrl-O; Sync is Enter only (`"sync.now": "enter"`). Copy/cut/paste and editor Mac chords stay Ctrl-C/X/V/A/Z. Rotate is Settings Ctrl-O only — not Ctrl-R or Ctrl+arrows.
 
-Digit 1–6 Lobby page jump and Ctrl-R rotate stay available in code (USB / when the browser delivers them). Plain letters without Ctrl are still free for a later MacOS Finder-style document jump — do not bind new Lobby chrome to bare letters without deciding that trade-off.
+Do not hardwire digits 1–6 for Lobby tab jump. Plain letters and digits without Ctrl stay free for a later MacOS Finder-style document jump — do not spend bare digits on Lobby tabs without deciding that trade-off.
 
 How: [browser-vs-tablet.md](browser-vs-tablet.md). Defaults: `config/lobby-ui.json`.
+
+## 38. One product version, auto date, no stale lies
+
+Writerdeck is one product on the tablet even though it is two binaries. About shows a single date stamp, not separate server/editor numbers.
+
+The stamp is an auto calendar date (`YYYY-MM-DD`). Same-day server and editor builds share that date. A second intentional ship the same day uses `scripts/product-version.sh --bump` (`.2`, `.3`, …). Do not hand-edit `VERSION` for ordinary work — CI and `deploy-rmkbd.sh` call `--write`.
+
+Both binaries must be stamped. About combines them: if they disagree, show the older stamp and never claim “(latest)” until they match each other and GitHub `VERSION` on `main`. Editor builds write the stamp into `product_version.h` (a `-D` date string is parsed as arithmetic). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md).
 
 ---
 
