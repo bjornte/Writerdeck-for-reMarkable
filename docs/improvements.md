@@ -15,8 +15,7 @@ Wishlist — not a backlog. Shipped: [../DONE.md](../DONE.md). Open verify: [../
   - Windows installer still open. Mac/Linux installer remembers Wi-Fi / password / GitHub repo + token and can open a prefilled token page — [TODO.md](../TODO.md) Open.
 - Lobby / phone
   - Bring Upload/import back on the Lobby or a thin phone control when needed (API route still exists — [decisions.md](decisions.md) §30).
-  - Lobby chrome / Latin i18n on disk (shipped; fork `f5dc0f4`) — [todo-lobby-ui-chrome.md](todo-lobby-ui-chrome.md). Change language via `"language"` in `lobby-ui.json` for now; add a Settings-tab language picker later. Do not leave old English keys in the tablet `strings` block — they override the language pack.
-  - Phone / browser UI follows the same Lobby language (`en` / `no` / `es` / `de` / `fr`) via embedded `daemon/phone-ui-i18n/` packs and `GET /api/phone-ui`.
+  - Lobby chrome / Latin i18n on disk (shipped) — [todo-lobby-ui-chrome.md](todo-lobby-ui-chrome.md). Change language via `"language"` in `lobby-ui.json` for now; add a Settings-tab language picker later. Do not leave old English keys in the tablet `strings` block — they override the language pack. Phone UI follows that language (`daemon/phone-ui-i18n/`).
   - Korean, Chinese, and Japanese Lobby strings need CJK fonts on the tablet (today only Latin Noto/DejaVu). Do not ship those packs until fonts land.
   - Images in an `/img` folder (`![text](img/…)` in edit, show in read). Hard today: sync and APIs are flat Markdown-only, no tablet upload path, and e-ink RichText `<img>` is unproven. A local preview spike is possible; shipping with GitHub sync is weeks of work.
 

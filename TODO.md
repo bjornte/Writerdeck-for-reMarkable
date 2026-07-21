@@ -12,12 +12,14 @@ Verify on the tablet before checking anything off. Keys use a socket, not uinput
 - [x] On app open, document open, back from sleep and back on Wi-Fi, check if there are changes on GitHub (if reMarkable is online)
 - [x] Prevent browser from sleeping during edit (sleep causes keyboard to drop)
 - [x] When no keyboard is connected, tapping an already-selected document opens it in reading view, rather than prompting for keyboard
-- [x] Across the UI, replace "note" with "document" in user-facing copy (Files tab name kept; code/API paths unchanged)
+- [x] Across the UI, replace "note" with "document" in user-facing copy (Documents tab title; code/API paths may still say note)
 - [x] Ghost-note pull regression — `TestPullNoteGhostRestore` in `daemon/syncengine_test.go` (missing local file + matching SHA restores; present file still skips; `.md` and `.md.enc`).
 - [ ] Windows installer (native or clearly supported path). Mac/Linux stays bash; Windows is missing today — [install-onboarding/todo-install-onboarding.md](docs/install-onboarding/todo-install-onboarding.md).
 - [x] Lobby shortcuts on disk (tabs, Home path, sync/edit Enter, rotate; remove old Ctrl-K picker) — [todo-lobby-ui-shortcuts.md](docs/todo-lobby-ui-shortcuts.md).
 - [x] Lobby chrome still hardwired (labels, copy, fills, radii, type sizes) — [todo-lobby-ui-chrome.md](docs/todo-lobby-ui-chrome.md).
-- [x] Settings landscape: right scroll gutter so fingers can flick without hitting buttons.
+- [x] Settings landscape: right scroll gutter so fingers can flick without hitting buttons (`visual.settingsLandscapeScrollGutter`, default 144).
+- [x] USB layouts Spanish / German / French (plus US / Norwegian) — [keymaps/README.md](keymaps/README.md).
+- [x] Phone / browser UI Latin i18n follows Lobby language — `daemon/phone-ui-i18n/`.
 
 ## Open for you (the user)
 
@@ -33,7 +35,7 @@ Verify on the tablet before checking anything off. Keys use a socket, not uinput
 
 ## Settled (kept for pointers)
 
-Editor fork, EditHelper, wrap/undo keep, QML assembly, and linking git history to Singleton’s original are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Automated typing tests: all 112 passed ([editor-testing/todo.md](docs/editor-testing/todo.md)). In-editor copy/cut/paste over Bluetooth: fork `df1d38b`. Mac/Linux installer credential memory and sync push: done (Windows still open). No-keyboard Lobby tip with phone QR: fork `80f568b`; phone path needs WebSocket `hello`, excluding Cursor/Electron ([decisions.md](docs/decisions.md) §34). Phone keyboard-first (no document list); Lobby Download offers to open phones: fork `3cfff08`. Lobby Keyboard tab boxes + live `(connected)` status: fork `55da42b`. Lobby on-disk UI config (`lobby-ui.json`): fork `21ed25a` ([decisions.md](docs/decisions.md) §36). Sync checks GitHub on boot, app open, document open, wake, and Wi-Fi up. Phone keeps the screen awake while a document is open (Wake Lock). Tap-selected file opens read when no keyboard is connected (fork `200bf32`). User-facing copy says document rather than note (fork `dbed7c4`; Files tab name kept).
+Editor fork, EditHelper, wrap/undo keep, QML assembly, and linking git history to Singleton’s original are done. Policy: [decisions.md](docs/decisions.md) §4–§6. Automated typing tests: all 112 passed ([editor-testing/todo.md](docs/editor-testing/todo.md)). In-editor copy/cut/paste over Bluetooth: fork `df1d38b`. Mac/Linux installer credential memory and sync push: done (Windows still open). No-keyboard Lobby tip with phone QR: fork `80f568b`; phone path needs WebSocket `hello`, excluding Cursor/Electron ([decisions.md](docs/decisions.md) §34). Phone keyboard-first (no document list); Lobby Download offers to open phones: fork `3cfff08`. Lobby Keyboard tab boxes + live `(connected)` status: fork `55da42b`. Lobby on-disk UI config (`lobby-ui.json`): fork `21ed25a` ([decisions.md](docs/decisions.md) §36). Latin Lobby + phone i18n (`en` / `no` / `es` / `de` / `fr`); USB layouts US / Norwegian / Spanish / German / French. Sync checks GitHub on boot, app open, document open, wake, and Wi-Fi up. Phone keeps the screen awake while a document is open (Wake Lock). Tap-selected file opens read when no keyboard is connected (fork `200bf32`). User-facing copy says document rather than note; Documents tab title.
 
 ## Open question
 

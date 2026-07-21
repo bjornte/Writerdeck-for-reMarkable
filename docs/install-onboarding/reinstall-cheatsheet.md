@@ -36,7 +36,7 @@ Also confirm the GitHub repo still has your notes, any `.md.enc` files, and `sec
 
 ## What does **not** live in the notes repo
 
-Re-set in Lobby Settings if you care: reading font, USB keyboard layout, rotation. Those stay in tablet `settings.json` and are not mirrored as note files. Lobby look, help wording, and Ctrl-letter chords are in `lobby-ui.json` beside settings — deploy does not overwrite that file if it already exists.
+Re-set in Lobby Settings if you care: reading font, USB keyboard layout (US / Norwegian / Spanish / German / French), rotation. Those stay in tablet `settings.json` and are not mirrored as note files. Lobby look, language, help wording, and Ctrl-letter chords are in `lobby-ui.json` beside settings — deploy does not overwrite that file if it already exists. The phone page follows the Lobby language after a hard refresh.
 
 ## If the GitHub token is gone
 
