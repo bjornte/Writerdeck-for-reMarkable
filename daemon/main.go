@@ -72,6 +72,9 @@ var stateJS []byte
 //go:embed sync.js
 var syncJS []byte
 
+//go:embed i18n.js
+var i18nJS []byte
+
 //go:embed logo-gray.svg
 var logoGraySVG []byte
 
@@ -156,6 +159,8 @@ func main() {
 	http.HandleFunc("/panels.js", func(w http.ResponseWriter, r *http.Request) { serveJS(w, panelsJS) })
 	http.HandleFunc("/state.js", func(w http.ResponseWriter, r *http.Request) { serveJS(w, stateJS) })
 	http.HandleFunc("/sync.js", func(w http.ResponseWriter, r *http.Request) { serveJS(w, syncJS) })
+	http.HandleFunc("/i18n.js", func(w http.ResponseWriter, r *http.Request) { serveJS(w, i18nJS) })
+	http.HandleFunc("/api/phone-ui", phoneUIHandler)
 	http.HandleFunc("/ws", wsHandler(ec, *verbose))
 	http.HandleFunc("/api/vault/status", vaultStatusHandler)
 	http.HandleFunc("/api/pin", pinHandler)

@@ -3,6 +3,7 @@ import { state } from './state.js';
 import { updateSyncBannerFromState, refreshSyncStatus } from './sync.js';
 import { deps } from './deps.js';
 import { grab, sendPaste, applyMode } from './connection.js';
+import { t, tf } from './i18n.js';
 
 var currentTypingFile = '';
 var pendingDownloadName = '';
@@ -17,9 +18,10 @@ var TYPING_BODY_HTML = '';
 var editorActive = null; // null until first /api/status (avoid Launch flash)
 
 // Only modes that still need a phone banner. Name/PIN prompts stay silent.
-var LOBBY_INPUT_LABELS = {
-  'confirm-delete': 'Delete on tablet: tap Delete or Cancel (Enter / Esc also work).',
-  'no-keyboard': 'Scan the QR on the tablet (or open the URL) to connect this phone as a keyboard.'
+// Keys resolved at use time so language is ready (not at module load).
+var LOBBY_INPUT_KEYS = {
+  'confirm-delete': 'lobby.confirmDelete',
+  'no-keyboard': 'lobby.noKeyboard'
 };
 
 // Auth + sync only — the phone no longer lists notes.
@@ -70,7 +72,7 @@ function setLaunchVisible(on) {
   btn.style.display = on ? 'inline-block' : 'none';
   if (!on) {
     btn.disabled = false;
-    btn.textContent = 'Launch Writerdeck';
+    btn.textContent = t('launch.btn');
   }
 }
 
@@ -103,7 +105,7 @@ export function launchWriterdeck(e) {
   var btn = document.getElementById('typing-launch');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Launching\u2026';
+    btn.textContent = t('launch.launching');
   }
   fetch('/api/launch', { method: 'POST', credentials: 'same-origin' })
     .then(function(r) {
@@ -116,17 +118,17 @@ export function launchWriterdeck(e) {
         applyEditorActive(true);
         return null;
       }
-      return r.text().then(function(t) {
-        throw new Error(t || ('HTTP ' + r.status));
+      return r.text().then(function(body) {
+        throw new Error(body || ('HTTP ' + r.status));
       });
     })
     .catch(function(err) {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = 'Launch Writerdeck';
+        btn.textContent = t('launch.btn');
       }
-      alert('Could not launch Writerdeck: ' +
-        (err && err.message ? err.message : 'error'));
+      alert(tf('launch.failed',
+        (err && err.message) ? err.message : t('generic.error')));
     });
 }
 
@@ -202,9 +204,9 @@ export function showLobbyKeyView(mode) {
   setLaunchVisible(false);
   document.getElementById('typing').style.display = 'flex';
   var banner = document.getElementById('remote-keys-banner');
-  var label = LOBBY_INPUT_LABELS[mode];
-  if (label) {
-    banner.textContent = label;
+  var key = LOBBY_INPUT_KEYS[mode];
+  if (key) {
+    banner.textContent = t(key);
     banner.style.display = 'block';
   } else {
     banner.textContent = '';
@@ -260,13 +262,13 @@ export function downloadNote(filename) {
     .then(function(r) {
       if (r.status === 401) { deps.showPinScreen(); return null; }
       if (r.status === 423) {
-        alert('Enter private PIN on tablet');
+        alert(t('download.needVaultPin'));
         return waitForVaultPIN().then(function(ok) {
-          if (!ok) { alert('Timed out waiting for tablet PIN.'); return null; }
+          if (!ok) { alert(t('download.pinTimeout')); return null; }
           return fetch(url, { credentials: 'same-origin' });
         });
       }
-      if (!r.ok) { alert('Download failed.'); return null; }
+      if (!r.ok) { alert(t('download.failed')); return null; }
       return r.blob();
     })
     .then(function(blob) {
@@ -280,7 +282,7 @@ export function downloadNote(filename) {
       document.body.removeChild(a);
       URL.revokeObjectURL(a.href);
     })
-    .catch(function() { alert('Could not reach server.'); });
+    .catch(function() { alert(t('download.reachServer')); });
 }
 
 function waitForVaultPIN() {
@@ -330,7 +332,7 @@ export function submitPaste() {
     return;
   }
   var content = document.getElementById('paste-content').value;
-  if (!content) { alert('Nothing to insert \u2014 paste some text first.'); return; }
+  if (!content) { alert(t('paste.empty')); return; }
   hidePasteModal();
   // Dedicated paste message — server ignores it when no note is open (Lobby Files).
   sendPaste(content);
@@ -362,8 +364,7 @@ function setObserveBanner(active, steps) {
     banner.style.display = 'none';
     banner.textContent = '';
   } else if (active) {
-    banner.textContent = 'Observing' + (steps ? ' \u00b7 ' + steps + ' keys' : '') +
-      ' \u2014 Stop when the bug shows.';
+    banner.textContent = tf('observe.banner', steps ? tf('observe.bannerKeys', steps) : '');
     banner.style.display = 'block';
   } else {
     banner.style.display = 'none';
@@ -377,11 +378,11 @@ function setObserveButton(active) {
   if (!btn) return;
   observing = !!active;
   if (active) {
-    btn.textContent = 'Stop observe';
+    btn.textContent = t('observe.stop');
     btn.classList.add('observe-on');
     btn.classList.remove('danger');
   } else {
-    btn.textContent = 'Observe';
+    btn.textContent = t('observe.btn');
     btn.classList.remove('observe-on', 'danger');
   }
 }
@@ -417,7 +418,7 @@ export function toggleObserve(e) {
     fetch('/api/observe/stop', { method: 'POST', credentials: 'same-origin' })
       .then(function(r) {
         if (!r.ok) {
-          return r.text().then(function(t) { throw new Error(t || 'stop failed'); });
+          return r.text().then(function(body) { throw new Error(body || 'stop failed'); });
         }
         return r.text();
       })
@@ -425,7 +426,8 @@ export function toggleObserve(e) {
         applyObserveStatus({ active: false, ready: true, hasExport: true, steps: 0, enabled: true });
       })
       .catch(function(err) {
-        alert('Could not stop observation: ' + (err && err.message ? err.message : 'error'));
+        alert(tf('observe.stopFailed',
+          (err && err.message) ? err.message : t('generic.error')));
         refreshObserveStatus();
       });
     return;
@@ -433,7 +435,7 @@ export function toggleObserve(e) {
   fetch('/api/observe/start', { method: 'POST', credentials: 'same-origin' })
     .then(function(r) {
       if (!r.ok) {
-        return r.text().then(function(t) { throw new Error(t || 'start failed'); });
+        return r.text().then(function(body) { throw new Error(body || 'start failed'); });
       }
       return r.json();
     })
@@ -441,6 +443,7 @@ export function toggleObserve(e) {
       applyObserveStatus(st);
     })
     .catch(function(err) {
-      alert('Could not start observation: ' + (err && err.message ? err.message : 'open a document on the tablet first'));
+      alert(tf('observe.startFailed',
+        (err && err.message) ? err.message : t('generic.openDocFirst')));
     });
 }

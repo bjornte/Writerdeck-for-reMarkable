@@ -10,8 +10,8 @@
 
 <div id="bar">
   <div id="dot"></div>
-  <span id="msg">connecting...</span>
-  <button id="sync-btn" style="display:none" title="Documents sync setup">Sync setup</button>
+  <span id="msg" data-i18n="conn.connecting">connecting...</span>
+  <button id="sync-btn" style="display:none" data-i18n="sync.setupBtn" data-i18n-title="sync.setupTitle" title="Documents sync setup">Sync setup</button>
 </div>
 
 <div id="banner-stack">
@@ -24,43 +24,43 @@
 
 <div id="pin-screen" style="display:none">
   <div id="pin-box">
-    <p id="pin-title">Enter PIN shown on the reMarkable</p>
+    <p id="pin-title" data-i18n="pin.title">Enter PIN shown on the reMarkable</p>
     <input id="pin-input" type="text" inputmode="numeric" pattern="[0-9]*"
            maxlength="6" placeholder="000000" autocomplete="off" autocorrect="off">
-    <button id="pin-btn">Connect</button>
+    <button id="pin-btn" data-i18n="pin.connect">Connect</button>
     <p id="pin-err"></p>
-    <button id="lobby-btn" class="lobby-pin-btn">Show PIN on tablet</button>
+    <button id="lobby-btn" class="lobby-pin-btn" data-i18n="pin.showOnTablet">Show PIN on tablet</button>
     <p id="lobby-msg" style="font-size:12px;color:#888;margin:6px 0 0;text-align:center"></p>
   </div>
 </div>
 
 <div id="sync-screen" style="display:none">
   <div id="sync-box">
-    <button id="sync-close" type="button" class="overlay-close" aria-label="Close">&times;</button>
-    <p id="sync-title">Documents sync setup</p>
+    <button id="sync-close" type="button" class="overlay-close" data-i18n-title="sync.close" aria-label="Close" title="Close">&times;</button>
+    <p id="sync-title" data-i18n="sync.setupTitle">Documents sync setup</p>
     <div id="sync-list"></div>
-    <button id="sync-done">Done</button>
+    <button id="sync-done" data-i18n="sync.done">Done</button>
   </div>
 </div>
 
 <div id="download-modal">
   <div id="download-box">
-    <p id="download-title">Download here?</p>
+    <p id="download-title" data-i18n="download.title">Download here?</p>
     <p id="download-name"></p>
     <div id="download-actions">
-      <button id="download-accept">Download</button>
-      <button id="download-cancel">Not now</button>
+      <button id="download-accept" data-i18n="download.accept">Download</button>
+      <button id="download-cancel" data-i18n="download.cancel">Not now</button>
     </div>
   </div>
 </div>
 
 <div id="paste-modal">
   <div id="paste-box">
-    <p id="paste-title">Paste text at the cursor</p>
-    <textarea id="paste-content" placeholder="Paste your text here&#10;(long-press &#8594; Paste on iOS)" autocorrect="off" autocapitalize="none" spellcheck="false"></textarea>
+    <p id="paste-title" data-i18n="paste.title">Paste text at the cursor</p>
+    <textarea id="paste-content" data-i18n-placeholder="paste.placeholder" placeholder="Paste your text here&#10;(long-press &#8594; Paste on iOS)" autocorrect="off" autocapitalize="none" spellcheck="false"></textarea>
     <div id="paste-actions">
-      <button id="paste-submit">Insert</button>
-      <button id="paste-cancel">Cancel</button>
+      <button id="paste-submit" data-i18n="paste.insert">Insert</button>
+      <button id="paste-cancel" data-i18n="paste.cancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -69,13 +69,13 @@
   <div id="typing-head">
     <span id="typing-note"></span>
     <div style="display:flex;gap:6px;flex-shrink:0">
-      <button id="typing-observe" class="note-btn" title="Record keys for a bug report" style="display:none">Observe</button>
-      <button id="typing-paste" class="note-btn" disabled aria-disabled="true">Paste from here</button>
+      <button id="typing-observe" class="note-btn" data-i18n="observe.btn" data-i18n-title="observe.title" title="Record keys for a bug report" style="display:none">Observe</button>
+      <button id="typing-paste" class="note-btn" data-i18n="paste.fromHere" disabled aria-disabled="true">Paste from here</button>
     </div>
   </div>
   <div id="typing-body">
     <img id="typing-logo" src="/logo-gray.svg" alt="Writerdeck" width="120" height="104">
-    <button id="typing-launch" type="button" style="display:none">Launch Writerdeck</button>
+    <button id="typing-launch" type="button" data-i18n="launch.btn" style="display:none">Launch Writerdeck</button>
     <div id="typing-guide"></div>
   </div>
 </div>

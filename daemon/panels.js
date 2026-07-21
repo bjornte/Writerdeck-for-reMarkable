@@ -7,6 +7,7 @@ import {
 import { deps } from './deps.js';
 import { connect, grab, setStatus, startStatusPoll, stopStatusPoll } from './connection.js';
 import { loadNotes, showIdleKeyboardView } from './notes-ui.js';
+import { t, tf, formatSyncAgo } from './i18n.js';
 
 // state.syncOn and state.syncRepo (in state.js) mirror /api/settings
 
@@ -112,7 +113,7 @@ function renderSyncPanel() {
 function renderSyncControls(list) {
   var syncToggle = document.createElement('div');
   syncToggle.className = 'font-row' + (state.syncOn ? ' active' : '');
-  syncToggle.innerHTML = '<span>Sync documents to GitHub</span>' +
+  syncToggle.innerHTML = '<span>' + t('sync.toggle') + '</span>' +
     (state.syncOn ? '<span class="font-check">&#10003;</span>' : '');
   syncToggle.addEventListener('click', function(e) {
     e.stopPropagation();
@@ -133,13 +134,13 @@ function renderSyncControls(list) {
   if (state.syncOn) {
     var repoLabel = document.createElement('div');
     repoLabel.style.cssText = 'color:#888;font-size:12px;margin-top:6px;padding:0 2px;';
-    repoLabel.textContent = 'Private repo (owner/repo)';
+    repoLabel.textContent = t('sync.repoLabel');
     list.appendChild(repoLabel);
 
     var repoInput = document.createElement('input');
     repoInput.type = 'text'; repoInput.className = 'token-input';
     repoInput.style.width = '100%';
-    repoInput.placeholder = 'e.g. alice/my-notes'; repoInput.value = state.syncRepo;
+    repoInput.placeholder = t('sync.repoPlaceholder'); repoInput.value = state.syncRepo;
     list.appendChild(repoInput);
 
     if (state.syncRepo) {
@@ -152,13 +153,13 @@ function renderSyncControls(list) {
 
     var tokLabel = document.createElement('div');
     tokLabel.style.cssText = 'color:#888;font-size:12px;margin-top:8px;padding:0 2px;';
-    tokLabel.textContent = 'GitHub token (saved in this browser; copied to tablet RAM when verified)';
+    tokLabel.textContent = t('sync.tokenLabel');
     list.appendChild(tokLabel);
 
     var tokInput = document.createElement('input');
     tokInput.type = 'password'; tokInput.className = 'token-input';
     tokInput.style.width = '100%';
-    tokInput.placeholder = 'github_pat_\u2026 or ghp_\u2026'; tokInput.autocomplete = 'off';
+    tokInput.placeholder = t('sync.tokenPlaceholder'); tokInput.autocomplete = 'off';
     if (ghToken() || syncConfigured) tokInput.value = '\u2022'.repeat(16);
     var tokTouched = false;
     tokInput.addEventListener('focus', function() {
@@ -174,10 +175,10 @@ function renderSyncControls(list) {
     actionRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:8px;';
 
     var saveBtn = document.createElement('button');
-    saveBtn.textContent = 'Save';
+    saveBtn.textContent = t('sync.save');
 
     var syncBtn = document.createElement('button');
-    syncBtn.textContent = 'Sync';
+    syncBtn.textContent = t('sync.sync');
     updateSyncButtonStyles(saveBtn, syncBtn);
 
     saveBtn.addEventListener('click', function(e) {
@@ -189,7 +190,7 @@ function renderSyncControls(list) {
       }).then(function(r) {
         if (!r.ok) {
           verifyLine.style.color = '#e57373';
-          verifyLine.textContent = '\u2717 Invalid repo \u2014 use owner/repo format.';
+          verifyLine.textContent = t('sync.invalidRepo');
           return null;
         }
         state.syncRepo = repoVal;
@@ -212,16 +213,16 @@ function renderSyncControls(list) {
         if (!token) {
           if (!repoVal) {
             verifyLine.style.color = '#888';
-            verifyLine.textContent = 'Saved repo.';
+            verifyLine.textContent = t('sync.savedRepo');
             return refreshSyncStatus();
           }
           verifyLine.style.color = '#888';
-          verifyLine.textContent = 'Saved. Enter token to verify.';
+          verifyLine.textContent = t('sync.savedEnterToken');
           return refreshSyncStatus();
         }
         if (!repoVal) {
           verifyLine.style.color = '#888';
-          verifyLine.textContent = 'Saved token. Enter repo to verify.';
+          verifyLine.textContent = t('sync.savedEnterRepo');
           return refreshSyncStatus();
         }
         return fetch('/api/sync/token', {
@@ -237,45 +238,45 @@ function renderSyncControls(list) {
             tokInput.value = ''; tokTouched = true;
             updateSyncButtonStyles(saveBtn, syncBtn);
             verifyLine.style.color = '#e57373';
-            verifyLine.textContent = '\u2717 Token rejected.';
+            verifyLine.textContent = t('sync.tokenRejected');
             return refreshSyncStatus();
           }
           if (tr.status === 404) {
             verifyLine.style.color = '#e57373';
-            verifyLine.textContent = '\u2717 Repo not found.';
+            verifyLine.textContent = t('sync.repoNotFound');
             return refreshSyncStatus();
           }
           if (!tr.ok) {
             verifyLine.style.color = '#e57373';
-            verifyLine.textContent = '\u2717 Could not verify.';
+            verifyLine.textContent = t('sync.verifyFailed');
             return refreshSyncStatus();
           }
           verifyLine.style.color = '#4caf50';
-          verifyLine.textContent = '\u2713 Token saved \u2014 tap Sync to sync documents.';
+          verifyLine.textContent = t('sync.tokenSaved');
           return refreshSyncStatus();
         });
       }).catch(function() {
         verifyLine.style.color = '#e57373';
-        verifyLine.textContent = '\u2717 Could not reach the tablet.';
+        verifyLine.textContent = t('sync.reachTablet');
       });
     });
 
     syncBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       verifyLine.style.color = '#888';
-      verifyLine.textContent = 'Syncing\u2026';
+      verifyLine.textContent = t('sync.syncing');
       var runSync = function() {
         return fetch('/api/sync/run', {
           method: 'POST', credentials: 'same-origin'
         }).then(function(r) {
           if (r.status === 400) {
             verifyLine.style.color = '#e57373';
-            verifyLine.textContent = '\u2717 Sync not configured \u2014 save repo and token first.';
+            verifyLine.textContent = t('sync.notConfigured');
             return null;
           }
           if (!r.ok) {
             verifyLine.style.color = '#e57373';
-            verifyLine.textContent = '\u2717 Sync failed.';
+            verifyLine.textContent = t('sync.failed');
             return null;
           }
           return refreshSyncStatus().then(function(before) {
@@ -297,7 +298,7 @@ function renderSyncControls(list) {
             }
             if (!ghToken()) {
               verifyLine.style.color = '#e57373';
-              verifyLine.textContent = '\u2717 No token \u2014 enter token and tap Save first.';
+              verifyLine.textContent = t('sync.noToken');
               return null;
             }
           });
@@ -306,9 +307,9 @@ function renderSyncControls(list) {
         return runSync();
       }).then(function(s) {
         if (!s) {
-          if (verifyLine.textContent === 'Syncing\u2026') {
+          if (verifyLine.textContent === t('sync.syncing')) {
             verifyLine.style.color = '#e57373';
-            verifyLine.textContent = '\u2717 Could not reach the tablet.';
+            verifyLine.textContent = t('sync.reachTablet');
           }
           return;
         }
@@ -319,28 +320,28 @@ function renderSyncControls(list) {
           return;
         }
         verifyLine.style.color = '#4caf50';
-        var when = s.lastSyncAgo || 'just now';
+        var when = formatSyncAgo(s.lastSyncAt) || t('sync.agoJustNow');
         return fetch('/api/status', { credentials: 'same-origin' })
           .then(function(r) { return r.ok ? r.json() : null; })
           .then(function(st) {
             if (st && st.openNote) {
-              verifyLine.textContent = '\u2713 Synced other documents; \u201c' +
-                st.openNote.replace(/\.md$/, '') + '\u201d skipped while open.';
+              verifyLine.textContent = tf('sync.syncedSkippedOpen',
+                st.openNote.replace(/\.md$/, ''));
               return;
             }
-            verifyLine.textContent = '\u2713 Synced \u2014 last synced ' + when + '.';
+            verifyLine.textContent = tf('sync.synced', when);
           });
       }).catch(function() {
         verifyLine.style.color = '#e57373';
-        verifyLine.textContent = '\u2717 Could not reach the tablet.';
+        verifyLine.textContent = t('sync.reachTablet');
       });
     });
 
     var clearBtn = document.createElement('button');
-    clearBtn.className = 'sync-btn-secondary'; clearBtn.textContent = 'Clear token';
+    clearBtn.className = 'sync-btn-secondary'; clearBtn.textContent = t('sync.clearToken');
     clearBtn.addEventListener('click', function(e) {
       e.stopPropagation();
-      if (!confirm('Remove GitHub token from this browser and the tablet?')) return;
+      if (!confirm(t('sync.clearTokenConfirm'))) return;
       clearSyncToken();
       updateSyncButtonStyles(saveBtn, syncBtn);
       fetch('/api/sync/token', {
@@ -350,7 +351,7 @@ function renderSyncControls(list) {
       }).then(function() {
         tokInput.value = ''; tokTouched = true;
         verifyLine.style.color = '#888';
-        verifyLine.textContent = 'Token cleared.';
+        verifyLine.textContent = t('sync.tokenCleared');
         return refreshSyncStatus();
       }).then(function(s) { updateSyncBannerFromState(s); });
     });
@@ -361,20 +362,20 @@ function renderSyncControls(list) {
 
     var hintLine = document.createElement('div');
     hintLine.style.cssText = 'font-size:11px;color:#888;padding:4px 2px;';
-    hintLine.textContent = 'Sync from here or tablet Lobby \u2192 Sync tab.';
+    hintLine.textContent = t('sync.hint');
     list.appendChild(hintLine);
 
     var statusLine = document.createElement('div');
     statusLine.className = 'sync-status-line';
     statusLine.style.cssText = 'font-size:12px;color:#888;padding:4px 2px;';
-    statusLine.textContent = 'Loading sync status\u2026';
+    statusLine.textContent = t('sync.loadingStatus');
     list.appendChild(statusLine);
     var hadLocalToken = !!ghToken();
     refreshSyncStatus().then(function() {
       updateSyncButtonStyles(saveBtn, syncBtn);
       if (!hadLocalToken && ghToken()) {
         verifyLine.style.color = '#4caf50';
-        verifyLine.textContent = 'Token restored from tablet.';
+        verifyLine.textContent = t('sync.tokenRestored');
         tokInput.value = '\u2022'.repeat(16);
         tokTouched = false;
       } else if (ghToken() || syncConfigured) {
@@ -444,7 +445,7 @@ export function checkAuthAndInit() {
       loadSyncConfig();
     })
     .catch(function() {
-      setStatus('off', 'Cannot reach tablet \u2014 retrying\u2026');
+      setStatus('off', t('conn.retrying'));
       setTimeout(checkAuthAndInit, 2000);
     });
 }
@@ -460,21 +461,21 @@ export function submitPIN(e) {
     body: JSON.stringify({ pin: pin })
   }).then(function(r) {
     if (r.status === 429) {
-      errEl.textContent = 'Too many attempts. Wait a minute, then try again.';
+      errEl.textContent = t('pin.tooMany');
       document.getElementById('pin-input').value = '';
       return;
     }
     if (r.status === 401) {
-      errEl.textContent = 'Wrong PIN, try again.';
+      errEl.textContent = t('pin.wrong');
       document.getElementById('pin-input').value = '';
       document.getElementById('pin-input').focus();
       return;
     }
-    if (!r.ok) { errEl.textContent = 'Server error.'; return; }
+    if (!r.ok) { errEl.textContent = t('pin.serverError'); return; }
     hidePinScreen();
     connect();
     showIdleKeyboardView();
     loadNotes();
     loadSyncConfig();
-  }).catch(function() { errEl.textContent = 'Could not reach server.'; });
+  }).catch(function() { errEl.textContent = t('generic.reachServer'); });
 }

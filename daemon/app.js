@@ -16,6 +16,7 @@ import {
   showSync, hideSync, showPinScreen,
   checkAuthAndInit, submitPIN, updateBannerOffset, wireOverlayDismiss
 } from './panels.js';
+import { loadI18n, t, applyPasteButtonLabel } from './i18n.js';
 
 deps.loadNotes = loadNotes;
 deps.hideTypingView = hideTypingView;
@@ -36,70 +37,69 @@ deps.updateBannerOffset = updateBannerOffset;
 initConnection();
 
 window.addEventListener('load', function () {
-  initSync({ onNotesChanged: loadNotes, onBannerChange: updateBannerOffset });
-  updateBannerOffset();
-  document.getElementById('typing-paste').addEventListener('click', function(e) {
-    e.stopPropagation(); showPasteModal();
+  loadI18n().then(function () {
+    initSync({ onNotesChanged: loadNotes, onBannerChange: updateBannerOffset });
+    updateBannerOffset();
+    document.getElementById('typing-paste').addEventListener('click', function(e) {
+      e.stopPropagation(); showPasteModal();
+    });
+    document.getElementById('typing-observe').addEventListener('click', toggleObserve);
+    document.getElementById('typing-launch').addEventListener('click', launchWriterdeck);
+    applyPasteButtonLabel();
+    document.getElementById('paste-submit').addEventListener('click', function(e) {
+      e.stopPropagation(); submitPaste();
+    });
+    document.getElementById('paste-cancel').addEventListener('click', function(e) {
+      e.stopPropagation(); hidePasteModal();
+    });
+    document.getElementById('download-accept').addEventListener('click', function(e) {
+      e.stopPropagation(); acceptDownloadOffer();
+    });
+    document.getElementById('download-cancel').addEventListener('click', function(e) {
+      e.stopPropagation(); hideDownloadOffer();
+    });
+    document.getElementById('pin-btn').addEventListener('click', submitPIN);
+    document.getElementById('pin-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.stopPropagation(); submitPIN(); }
+    });
+    document.getElementById('lobby-btn').addEventListener('click', function(e) {
+      e.stopPropagation();
+      var msgEl = document.getElementById('lobby-msg');
+      msgEl.textContent = t('pin.asking');
+      fetch('/api/lobby', { method: 'POST' })
+        .then(function(r) {
+          if (r.status === 429) {
+            msgEl.textContent = t('pin.rateLimit');
+            return;
+          }
+          if (!r.ok) {
+            msgEl.textContent = t('pin.reachTablet');
+            return;
+          }
+          msgEl.textContent = t('pin.appeared');
+        })
+        .catch(function() {
+          msgEl.textContent = t('pin.reachServer');
+        });
+    });
+    document.getElementById('sync-btn').addEventListener('click', function(e) {
+      e.stopPropagation(); showSync();
+    });
+    document.getElementById('sync-done').addEventListener('click', function(e) {
+      e.stopPropagation(); hideSync();
+    });
+    document.getElementById('sync-close').addEventListener('click', function(e) {
+      e.stopPropagation(); hideSync();
+    });
+    wireOverlayDismiss('sync-screen', 'sync-box', hideSync);
+    wireOverlayDismiss('download-modal', 'download-box', hideDownloadOffer);
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Escape') return;
+      if (document.getElementById('sync-screen').style.display === 'flex') hideSync();
+      if (document.getElementById('download-modal').style.display === 'flex') hideDownloadOffer();
+    });
+    applyMode();
+    checkAuthAndInit();
+    refreshObserveStatus();
   });
-  document.getElementById('typing-observe').addEventListener('click', toggleObserve);
-  document.getElementById('typing-launch').addEventListener('click', launchWriterdeck);
-  if (/iPhone|iPod/.test(navigator.userAgent) ||
-      (/Android/.test(navigator.userAgent) && /Mobile/.test(navigator.userAgent))) {
-    document.getElementById('typing-paste').textContent = 'Paste from phone';
-  }
-  document.getElementById('paste-submit').addEventListener('click', function(e) {
-    e.stopPropagation(); submitPaste();
-  });
-  document.getElementById('paste-cancel').addEventListener('click', function(e) {
-    e.stopPropagation(); hidePasteModal();
-  });
-  document.getElementById('download-accept').addEventListener('click', function(e) {
-    e.stopPropagation(); acceptDownloadOffer();
-  });
-  document.getElementById('download-cancel').addEventListener('click', function(e) {
-    e.stopPropagation(); hideDownloadOffer();
-  });
-  document.getElementById('pin-btn').addEventListener('click', submitPIN);
-  document.getElementById('pin-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.stopPropagation(); submitPIN(); }
-  });
-  document.getElementById('lobby-btn').addEventListener('click', function(e) {
-    e.stopPropagation();
-    var msgEl = document.getElementById('lobby-msg');
-    msgEl.textContent = 'Asking the tablet to show the PIN\u2026';
-    fetch('/api/lobby', { method: 'POST' })
-      .then(function(r) {
-        if (r.status === 429) {
-          msgEl.textContent = 'Just a moment, try again shortly.';
-          return;
-        }
-        if (!r.ok) {
-          msgEl.textContent = 'Could not reach the tablet.';
-          return;
-        }
-        msgEl.textContent = 'PIN should now appear on the tablet.';
-      })
-      .catch(function() {
-        msgEl.textContent = 'Could not reach the server.';
-      });
-  });
-  document.getElementById('sync-btn').addEventListener('click', function(e) {
-    e.stopPropagation(); showSync();
-  });
-  document.getElementById('sync-done').addEventListener('click', function(e) {
-    e.stopPropagation(); hideSync();
-  });
-  document.getElementById('sync-close').addEventListener('click', function(e) {
-    e.stopPropagation(); hideSync();
-  });
-  wireOverlayDismiss('sync-screen', 'sync-box', hideSync);
-  wireOverlayDismiss('download-modal', 'download-box', hideDownloadOffer);
-  document.addEventListener('keydown', function(e) {
-    if (e.key !== 'Escape') return;
-    if (document.getElementById('sync-screen').style.display === 'flex') hideSync();
-    if (document.getElementById('download-modal').style.display === 'flex') hideDownloadOffer();
-  });
-  applyMode();
-  checkAuthAndInit();
-  refreshObserveStatus();
 });

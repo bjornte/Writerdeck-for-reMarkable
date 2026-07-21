@@ -5,6 +5,7 @@ import {
   recordEditorDiskBaseline, notifyDiskChanged, respondToNeedToken
 } from './sync.js';
 import { deps } from './deps.js';
+import { t } from './i18n.js';
 
 var RETRY_MS = 2000;
 
@@ -100,7 +101,7 @@ function tabletExtras(data) {
   if (data.battery >= 0) {
     parts.push(data.battery + '%' + (data.charging ? ' +' : ''));
   }
-  if (!data.wifi) { parts.push('no Wi-Fi'); }
+  if (!data.wifi) { parts.push(t('conn.noWifi')); }
   return parts.length ? ' \u00b7 ' + parts.join(' \u00b7 ') : '';
 }
 
@@ -113,14 +114,14 @@ function updateConnectionBar() {
     return;
   }
   if (!tabletReachable) {
-    setStatus('off', 'Tablet offline');
+    setStatus('off', t('conn.offline'));
     return;
   }
   if (wsReady) {
-    setStatus('on', 'Connected' + tabletExtras(tabletInfo || {}));
+    setStatus('on', t('conn.connected') + tabletExtras(tabletInfo || {}));
     return;
   }
-  setStatus('', 'Connecting\u2026');
+  setStatus('', t('conn.connecting'));
 }
 
 function markTabletOffline() {
