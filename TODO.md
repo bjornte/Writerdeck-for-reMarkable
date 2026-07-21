@@ -17,7 +17,7 @@ Verify on the tablet before checking anything off. Keys use a socket, not uinput
 - [ ] Windows installer (native or clearly supported path). Mac/Linux stays bash; Windows is missing today — [install-onboarding/todo-install-onboarding.md](docs/install-onboarding/todo-install-onboarding.md).
 - [x] Lobby shortcuts on disk (tabs, Home path, sync/edit Enter, rotate; remove old Ctrl-K picker) — [todo-lobby-ui-shortcuts.md](docs/todo-lobby-ui-shortcuts.md).
 - [x] Lobby chrome still hardwired (labels, copy, fills, radii, type sizes) — [todo-lobby-ui-chrome.md](docs/todo-lobby-ui-chrome.md).
-
+- on the settings screen, when in landscape mode, it is necessary to scroll. but there's no place to put the finger. so a margin is needed on the right and side to do the scrolling without accidentally pushing any buttons. this is a problem _only_ on the settings page, and in landscape mode
 
 ## Open for you (the user)
 
