@@ -23,7 +23,7 @@ type settingsData struct {
 	ReadFont        string `json:"readFont"`
 	PinDigits       string `json:"pinDigits"`       // "6", "4", or "none"; default "6"
 	Rotation        int    `json:"rotation"`        // display rotation in degrees (0, 90, 180, 270)
-	KeyboardLayout  string `json:"keyboardLayout"`  // USB evdev qmap id: "us", "no"; default "us"
+	KeyboardLayout  string `json:"keyboardLayout"`  // USB evdev qmap id: us/no/es/de/fr; default "us"
 	Observe         bool   `json:"observe"`         // show phone Observe button; off by default
 	SyncOn     bool                       `json:"syncOn"`               // GitHub two-way sync enabled
 	SyncRepo   string                     `json:"syncRepo"`          // "owner/repo" of the notes repo; token never stored here
@@ -80,6 +80,9 @@ type keyboardLayoutOption struct {
 var keyboardLayoutRegistry = []keyboardLayoutOption{
 	{ID: "us", Label: "US QWERTY"},
 	{ID: "no", Label: "Norwegian"},
+	{ID: "es", Label: "Spanish"},
+	{ID: "de", Label: "German"},
+	{ID: "fr", Label: "French"},
 }
 
 func normalizeKeyboardLayout(id string) string {

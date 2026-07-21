@@ -7,7 +7,7 @@
 #
 # USB keyboard layout: reads keyboardLayout from settings.json (default us),
 # applies the matching .qmap from /home/root/keymaps/ on a USB keyboard device
-# only (never gpio-keys /dev/input/event1 — grab=1 without a device path makes
+# only (never gpio-keys /dev/input/event1 - grab=1 without a device path makes
 # Qt evdev grab event1 and breaks Home/Power). If no USB keyboard is present at
 # launch, keymap is skipped; Writerdeck-server restarts the editor when one is
 # plugged in so the layout applies.
@@ -39,8 +39,8 @@ read_keyboard_layout() {
       | sed 's/.*"keyboardLayout"[[:space:]]*:[[:space:]]*"//;s/"$//' | sed -n '1p')
   fi
   case "${layout:-$DEFAULT_LAYOUT}" in
-    us|no) echo "${layout:-$DEFAULT_LAYOUT}" ;;
-    *)     echo "$DEFAULT_LAYOUT" ;;
+    us|no|es|de|fr) echo "${layout:-$DEFAULT_LAYOUT}" ;;
+    *)              echo "$DEFAULT_LAYOUT" ;;
   esac
 }
 
@@ -65,7 +65,7 @@ if [ -f "$qmap" ]; then
     export QT_QPA_EVDEV_KEYBOARD_PARAMETERS="${kb_dev}:grab=1:keymap=${qmap}"
     echo "Writerdeck-launcher: USB layout=${layout} dev=${kb_dev} keymap=${qmap}" >&2
   else
-    echo "Writerdeck-launcher: USB layout=${layout} (no keyboard yet — keymap skipped)" >&2
+    echo "Writerdeck-launcher: USB layout=${layout} (no keyboard yet - keymap skipped)" >&2
   fi
 fi
 

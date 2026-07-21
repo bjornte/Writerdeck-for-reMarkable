@@ -50,7 +50,9 @@ chmod +x "$STAGING"/scripts/*.sh "$STAGING/scripts/wd" 2>/dev/null || true
 
 cp "$REPO/secrets/remarkable.local.env.example" \
   "$STAGING/secrets/remarkable.local.env.example"
-cp "$REPO/keymaps/us.qmap" "$REPO/keymaps/no.qmap" "$STAGING/keymaps/"
+cp "$REPO/keymaps/us.qmap" "$REPO/keymaps/no.qmap" \
+  "$REPO/keymaps/es.qmap" "$REPO/keymaps/de.qmap" "$REPO/keymaps/fr.qmap" \
+  "$STAGING/keymaps/"
 
 cat > "$STAGING/third_party/keywriter/dist/README.md" <<'EOF'
 Editor binaries land here at install time (`bash scripts/fetch-keywriter-dist.sh`).

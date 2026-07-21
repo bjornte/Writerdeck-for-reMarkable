@@ -111,7 +111,7 @@
   "vault.wrongPin": "Mauvais PIN. Réessayez.",
   "vault.bksp": "Eff.",
   "shortcuts.title": "Raccourcis",
-  "shortcuts.body": "Pages\nTab ou Gauche / Droite - page suivante ou précédente\nSauts Ctrl-lettre optionnels dans lobby-ui.json (tabs.*) ; aucun par défaut\n\nDocuments\nHaut / Bas - déplacer la sélection (change de page au bord)\nPage Up / Page Down - page précédente ou suivante de documents\n↵ - éditer le document sélectionné\nCtrl-V - lire · Ctrl-M - nouveau · Ctrl-I - renommer · Ctrl-B - supprimer\nCtrl-G - télécharger sur le téléphone\nAvec documents privés : Ctrl-E - nouveau chiffré · Ctrl-X - chiffrer · Ctrl-Y - déchiffrer\n\nClavier\nCtrl-U - disposition US · Ctrl-O - norvégien\n\nSync\n↵ - sync maintenant\n\nRéglages\nCtrl-A - police de lecture · Ctrl-M - longueur du PIN téléphone\nCtrl-O - rotation · Ctrl-E - activer documents privés · Ctrl-C - changer PIN privé\nCtrl-X - quitter Writerdeck (puis Entrée pour confirmer)\n\nPartout\nCtrl-C / Ctrl-X / Ctrl-V - copier, couper, coller (en éditant un document)\nHome physique - depuis un document, retour Documents ; depuis le Lobby, quitter vers l'UI d'origine\n(Home du clavier = curseur seulement -- pas ce bouton.)\n\nPIN privé\nTapez les six chiffres sur un clavier USB, ou sur le téléphone pendant l'affiche PIN.\n\nOuvrir le Lobby depuis l'UI d'origine\nÉchap sur clavier USB, ou les deux boutons de page ensemble.",
+  "shortcuts.body": "Pages\nTab ou Gauche / Droite - page suivante ou précédente\nSauts Ctrl-lettre optionnels dans lobby-ui.json (tabs.*) ; aucun par défaut\n\nDocuments\nHaut / Bas - déplacer la sélection (change de page au bord)\nPage Up / Page Down - page précédente ou suivante de documents\n↵ - éditer le document sélectionné\nCtrl-V - lire · Ctrl-M - nouveau · Ctrl-I - renommer · Ctrl-B - supprimer\nCtrl-G - télécharger sur le téléphone\nAvec documents privés : Ctrl-E - nouveau chiffré · Ctrl-X - chiffrer · Ctrl-Y - déchiffrer\n\nClavier\nCtrl-U - disposition US · Ctrl-O - norvégien · Ctrl-E - espagnol · Ctrl-D - allemand · Ctrl-F - français\n\nSync\n↵ - sync maintenant\n\nRéglages\nCtrl-A - police de lecture · Ctrl-M - longueur du PIN téléphone\nCtrl-O - rotation · Ctrl-E - activer documents privés · Ctrl-C - changer PIN privé\nCtrl-X - quitter Writerdeck (puis Entrée pour confirmer)\n\nPartout\nCtrl-C / Ctrl-X / Ctrl-V - copier, couper, coller (en éditant un document)\nHome physique - depuis un document, retour Documents ; depuis le Lobby, quitter vers l'UI d'origine\n(Home du clavier = curseur seulement -- pas ce bouton.)\n\nPIN privé\nTapez les six chiffres sur un clavier USB, ou sur le téléphone pendant l'affiche PIN.\n\nOuvrir le Lobby depuis l'UI d'origine\nÉchap sur clavier USB, ou les deux boutons de page ensemble.",
   "sync.agoJustNow": "à l'instant",
   "sync.agoMinute": "il y a 1 minute",
   "sync.agoMinutes": "il y a %1 minutes",
@@ -128,5 +128,8 @@
   "home.versionAhead": "Version Writerdeck %1 (plus récente que GitHub %2)",
   "home.versionMismatch": "Version Writerdeck %1 (serveur et éditeur différents — mettez les deux à jour)",
   "home.versionMismatchLatest": "Version Writerdeck %1 (serveur et éditeur différents — mettez les deux à jour). La dernière sur GitHub est %2.",
-  "home.versionOffline": "Version Writerdeck %1 (impossible de joindre GitHub pour les mises à jour)"
+  "home.versionOffline": "Version Writerdeck %1 (impossible de joindre GitHub pour les mises à jour)",
+  "keyboard.es": "Espagnol",
+  "keyboard.de": "Allemand",
+  "keyboard.fr": "Français"
 }
