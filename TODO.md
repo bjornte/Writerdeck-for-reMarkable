@@ -13,11 +13,10 @@ Verify on the tablet before checking anything off. Keys use a socket, not uinput
 - [x] Prevent browser from sleeping during edit (sleep causes keyboard to drop)
 - [x] When no keyboard is connected, tapping an already-selected document opens it in reading view, rather than prompting for keyboard
 - [x] Across the UI, replace "note" with "document" in user-facing copy (Files tab name kept; code/API paths unchanged)
-- [ ] Support for images (store in an /img folder). Normal `![text](img/image.png)` Markdown markup in edit mode, render image in view mode.
 - [x] Ghost-note pull regression — `TestPullNoteGhostRestore` in `daemon/syncengine_test.go` (missing local file + matching SHA restores; present file still skips; `.md` and `.md.enc`).
 - [ ] Windows installer (native or clearly supported path). Mac/Linux stays bash; Windows is missing today — [install-onboarding/todo-install-onboarding.md](docs/install-onboarding/todo-install-onboarding.md).
 - [x] Lobby shortcuts on disk (tabs, Home path, sync/edit Enter, rotate; remove old Ctrl-K picker) — [todo-lobby-ui-shortcuts.md](docs/todo-lobby-ui-shortcuts.md).
-- [ ] Lobby chrome still hardwired (labels, copy, fills, radii, type sizes) — [todo-lobby-ui-chrome.md](docs/todo-lobby-ui-chrome.md).
+- [x] Lobby chrome still hardwired (labels, copy, fills, radii, type sizes) — [todo-lobby-ui-chrome.md](docs/todo-lobby-ui-chrome.md).
 
 
 ## Open for you (the user)
@@ -45,7 +44,7 @@ Install now auto-enables `writerdeck` on boot after a health check — inspect b
 ## Resume prompt
 
 > Project: reMarkable 1 Markdown typewriter (USB and Bluetooth keyboards). Server in `daemon/`; editor from Writerdeck-keywriter fork; documents in `Writerdeck-user-documents/`. Mac deploys; phone types.
-> Next: owner Physical Home check ([docs/user-should-test.md](docs/user-should-test.md)). Sync on open/wake/Wi-Fi; phone Wake Lock while editing; tap-selected opens read without keyboard (fork `200bf32`); UI says document (fork `dbed7c4`). Lobby UI config on disk (`lobby-ui.json`) ([docs/decisions.md](docs/decisions.md) §36). Typing tests all 112 passed at fork `df1d38b`. Cursor agent tabs do not count as a phone keyboard ([decisions.md](docs/decisions.md) §34). Stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
+> Next: owner Physical Home check ([docs/user-should-test.md](docs/user-should-test.md)). Lobby chrome + Latin i18n on disk (`lobby-ui.json` + `lobby-ui-i18n/`, fork `f5dc0f4`). Sync on open/wake/Wi-Fi; phone Wake Lock while editing; tap-selected opens read without keyboard (fork `200bf32`); UI says document (fork `dbed7c4`). Typing tests all 112 passed at fork `df1d38b`. Cursor agent tabs do not count as a phone keyboard ([decisions.md](docs/decisions.md) §34). Stop short of replacing Qt’s text box ([decisions.md](docs/decisions.md) §5–§6).
 > Read: architecture, decisions, DONE, lessons, terms, integrity-audit, browser-vs-tablet. Device: `secrets/remarkable.local.env`.
 > Constraints: no jailbreak / Toltec; keep OTA (over-the-air updates); one static Go ARM binary.
 
