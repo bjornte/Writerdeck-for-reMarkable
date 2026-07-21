@@ -2,10 +2,6 @@
 
 Why the project is built this way — document integrity and core editing first, device quirks later. How: [architecture.md](architecture.md). Open work: [../TODO.md](../TODO.md). Finished: [../DONE.md](../DONE.md). Gotchas: [lessons.md](lessons.md). Words: [terms.md](terms.md).
 
-Numbers were renumbered 17 Jul 2026; prefer titles over old § IDs.
-
----
-
 ## Document integrity
 
 Writerdeck is a typewriter. Your prose must survive as plain Markdown on disk. That rule comes before every feature. Full audit: [integrity-audit.md](integrity-audit.md).
@@ -23,11 +19,6 @@ Do not remove this section (or the matching banners in [editor-testing/todo.md](
 ## Device verification
 
 A successful deploy script is not enough. Rebuild when the QML changed, deploy, relaunch, read the tablet journal. Fail on QML parse errors or an editor that exits at once. After QML changes run the edit-session check. After caret or selection work run the automated typing tests (§13), remembering the strategy above is still failing. After Lobby or Home run the Lobby keyboard test (§15).
-
-## 19. GitHub note-sync is a non-authoritative reconciler — delete/rename only from the browser
-Status: built (Phase 9), device-verified. The optional two-way GitHub sync (off by default; the PAT lives only in the phone browser's `localStorage`, never on the tablet, which holds just non-secret `syncOn`/`syncRepo`) deliberately reconciles by *unioning* the tablet's and the repo's note lists and copying any note missing from one side to the other — it never deletes on its own. That is the intended safety property: a reconciler that cannot delete cannot lose a note, which sidesteps the documented real-git-on-mobile instability (isomorphic-git crashes / packfile corruption on low-RAM devices — the reason we sync via GitHub's plain Contents API, not real git). Accepted cost: destructive ops must go through the *phone browser*, which pairs them — the UI's Delete also calls `ghDelete` (Contents API DELETE + stored `sha`) and Rename deletes the old path then pushes the new. A delete or rename made *outside* the browser — VS Code, `git`, the GitHub web UI — reads only as "a note is missing from one side" and gets resurrected (or, for rename, duplicated) on the next sync. Not a bug; the price of never-delete-on-its-own. Cheap partial fix, now built (Opus-reviewed; browser/device-verify pending) in [../daemon/sync.js](../daemon/sync.js): the reconciler treats "on the tablet + carries a stored `sha` marker + pristine (unchanged since last sync) + now gone from GitHub" as a real delete rather than a new-file pull — reusing the per-note `sha`/hash already stored. It covers the common GitHub-side / committed-VS-Code delete, and (as a side effect) external *rename*, which reconciles as delete-old + pull-new instead of duplicating. Two safety invariants keep it from ever losing words: an unpushed local edit resurrects (push) rather than deletes, and the delete only fires after a fresh per-note `GET` returns 404 — the guard against `reconcileAll` mapping a transient remote-list failure to `[]` and mass-deleting the tablet (a false positive self-heals via the next pull). Still (correctly) leaves a purely-local unpushed delete alone: the tablet is a low-trust cache, so GitHub stays authoritative for deletes.
-
----
 
 ## 1. Plain-text edit mode
 
@@ -47,9 +38,9 @@ This kernel cannot load a uinput (fake keyboard device). Do not retry that path.
 
 The editor is Singleton’s keywriter, rebuilt as Writerdeck from our fork. The old binary does not load on current firmware. We build it in CI (GitHub Actions) with a Qt sysroot and draw to the real framebuffer (`/dev/fb0`).
 
-Fork: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). CI clones it; the build script only checks and compiles. New editor behavior goes in the fork, assembled with `./assemble-qml.sh` into committed `main.qml`. Math, undo, shortcuts, and wrapped-line motion live in C++ `EditHelper`; QML draws and applies. Migrations: [editor-migration-1-to-QML](editor-migration-1-to-QML/todo-handoff-keywriter-fork.md), [editor-migration-2-to-cpp](editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md). Keep §5–§6.
+Fork: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). CI clones it; the build script only checks and compiles. New editor behavior goes in the fork, assembled with `./assemble-qml.sh` into committed `main.qml`. Math, undo, shortcuts, and wrapped-line motion live in C++ `EditHelper`; QML draws and applies. Keep §5–§6.
 
-Pull from Singleton’s original on purpose, not every session. Histories are linked (`5946cae`); ordinary merges work. After a merge: rebuild, deploy, edit-session, then the 38 basic typing checks.
+Pull from Singleton’s original on purpose, not every session. Histories are linked (`5946cae`); ordinary merges work. After a merge: rebuild, deploy, edit-session, then the basic typing checks.
 
 ## 5. Keep wrap gaps and custom EditHelper undo
 
@@ -81,7 +72,9 @@ No phone app — the tablet is the server. Day-to-day files and settings live in
 
 ## 11. GitHub sync copies missing notes both ways
 
-Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Sync is change-driven (boot, app open, document open, wake, Wi-Fi up, Home, power sleep, CRUD, Sync now, token verify) — not a timer. Boot, app open, wake, Wi-Fi up, and Sync now always list GitHub so remote-only edits pull without tapping Sync; Home, power sleep, and token verify skip the network when nothing local is dirty. Opening a note from the Lobby pulls that file first. Unchanged notes and vault secrets are not pushed, so clean runs do not create empty GitHub commits. The journal tells a short story (`sync: pushed …`, coalesced `nothing to do` streaks) rather than one line per quiet skip. Sync copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused. Details: [server-sync-implementation.md](server-sync-implementation.md).
+Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Sync is change-driven (boot, app open, document open, wake, Wi-Fi up, Home, power sleep, CRUD, Sync now, token verify) — not a timer. Boot, app open, wake, Wi-Fi up, and Sync now always list GitHub so remote-only edits pull without tapping Sync; Home, power sleep, and token verify skip the network when nothing local is dirty. Opening a note from the Lobby pulls that file first. Unchanged notes and vault secrets are not pushed, so clean runs do not create empty GitHub commits. The journal tells a short story (`sync: pushed …`, coalesced `nothing to do` streaks) rather than one line per quiet skip. Sync copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused.
+
+A pristine local note with a stored GitHub SHA that is gone remotely is treated as a real remote delete (after a fresh 404), not pulled back. Unpushed local edits push instead of delete. A transient empty remote list must never mass-delete the tablet. Purely local unpushed deletes stay local — GitHub stays authoritative for deletes. Details: [server-sync-implementation.md](server-sync-implementation.md).
 
 ## 12. Optional at-rest encryption (private notes)
 
@@ -101,7 +94,7 @@ After Home from edit, Lobby keys must still work. Focus stays on Lobby after tou
 
 ## 16. Physical Home: exclusive gpio grab
 
-While Writerdeck is open, the server exclusively grabs the tablet’s Home/Power/page buttons so Qt never sees a second Home. Release on exit so the stock UI works again. Note → Lobby and Lobby → stock UI are two bindings in `lobby-ui.json` (`global.toLobby`, `global.quit`); both default to `hardware_home` (the physical middle button). The USB / phone keyboard Home key is not that button — it keeps caret Home/End and must not drive those two paths. Idle page-button launch (§23) needs no grab. Handoff: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md). Chord defaults: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md), `config/lobby-ui.json`.
+While Writerdeck is open, the server exclusively grabs the tablet’s Home/Power/page buttons so Qt never sees a second Home. Release on exit so the stock UI works again. Note → Lobby and Lobby → stock UI are two bindings in `lobby-ui.json` (`global.toLobby`, `global.quit`); both default to `hardware_home` (the physical middle button). The USB / phone keyboard Home key is not that button — it keeps caret Home/End and must not drive those two paths. Idle page-button launch (§23) needs no grab. Chord defaults: `config/lobby-ui.json`.
 
 ## 17. PIN and per-IP lockout
 
@@ -187,7 +180,7 @@ The Files list shows a fixed page of rows that fit the screen. Up/Down move the 
 
 ## 36. Lobby look and chords on disk
 
-Lobby look, wording, language, and shortcut chords live on disk — not baked into every binary change. Edit over SSH; Writerdeck reloads without a rebuild. Main file: `/home/root/.Writerdeck/lobby-ui.json` (`language`, `visual`, optional `strings` overrides, `shortcuts`). Label packs: `lobby-ui-i18n/<lang>.json` for `en` / `no` / `es` / `de` / `fr`. Repo defaults under `config/`. `deploy-keywriter.sh` seeds missing files only so local edits survive. That JSON is the source of truth for which key each Lobby action uses — do not mirror chord tables here. Letter values mean Ctrl (or Cmd) plus that letter. Two special values need no Ctrl: `enter` (badge glyph always ↩) and `hardware_home` (tablet physical Home, not keyboard Home). Note → Lobby and Lobby → stock UI are separate lines (`global.toLobby`, `global.quit`), both defaulting to `hardware_home`. Tab shortcut lines (`tabs.files` … `tabs.about`) ship as `""`; tab *titles* are strings in the language pack (`tabs.files` is Documents). Shortcut keycap borders use `visual.badgeBorderColor`. Settings landscape scroll strip: `visual.settingsLandscapeScrollGutter` (default 144). No hardwired Ctrl-K note picker; K and Q are ordinary letters. Missing or corrupt JSON falls back to embedded defaults (or keeps the last good load after a successful start). Optional `strings` in `lobby-ui.json` override the language pack — leave that object empty unless you mean to pin a few lines; leftover English keys there will beat Norwegian (and other) packs. The phone browser follows the same `language` field via `GET /api/phone-ui` and packs embedded in Writerdeck-server (`daemon/phone-ui-i18n/`). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md). Chords: [todo-lobby-ui-shortcuts.md](todo-lobby-ui-shortcuts.md). Chrome / i18n: [todo-lobby-ui-chrome.md](todo-lobby-ui-chrome.md).
+Lobby look, wording, language, and shortcut chords live on disk — not baked into every binary change. Edit over SSH; Writerdeck reloads without a rebuild. Main file: `/home/root/.Writerdeck/lobby-ui.json` (`language`, `visual`, optional `strings` overrides, `shortcuts`). Label packs: `lobby-ui-i18n/<lang>.json` for `en` / `no` / `es` / `de` / `fr`. Repo defaults under `config/`. `deploy-keywriter.sh` seeds missing files only so local edits survive. That JSON is the source of truth for which key each Lobby action uses — do not mirror chord tables here. Letter values mean Ctrl (or Cmd) plus that letter. Two special values need no Ctrl: `enter` (badge glyph always ↩) and `hardware_home` (tablet physical Home, not keyboard Home). Note → Lobby and Lobby → stock UI are separate lines (`global.toLobby`, `global.quit`), both defaulting to `hardware_home`. Tab shortcut lines (`tabs.files` … `tabs.about`) ship as `""`; tab *titles* are strings in the language pack (`tabs.files` is Documents). Shortcut keycap borders use `visual.badgeBorderColor`. Settings landscape scroll strip: `visual.settingsLandscapeScrollGutter` (default 144). No hardwired Ctrl-K note picker; K and Q are ordinary letters. Missing or corrupt JSON falls back to embedded defaults (or keeps the last good load after a successful start). Optional `strings` in `lobby-ui.json` override the language pack — leave that object empty unless you mean to pin a few lines; leftover English keys there will beat Norwegian (and other) packs. The phone browser follows the same `language` field via `GET /api/phone-ui` and packs embedded in Writerdeck-server (`daemon/phone-ui-i18n/`). How: [architecture.md](architecture.md). Gotchas: [lessons.md](lessons.md).
 
 ## 37. Phone-safe Lobby chords; Finder-style jump later
 

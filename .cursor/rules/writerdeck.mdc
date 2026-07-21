@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Writerdeck for reMarkable 1
 
-Migration 2 Phase A (pure math/undo → `EditHelper`) shipped @ fork `a92ad2b`. Phase B/C handoff: [docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md](docs/editor-migration-2-to-cpp/todo-handoff-edit-helper-cpp.md).
+Editor typing math, chords, wrap, and undo live in C++ `EditHelper` (QML draws and applies). Policy: [docs/decisions.md](docs/decisions.md) §4–§6.
 
 ## Audience and replies
 

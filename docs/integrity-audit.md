@@ -1,6 +1,6 @@
 # Document integrity
 
-Last updated 17 Jul 2026. Contract: [architecture.md](architecture.md), [decisions.md](decisions.md).
+Contract: [architecture.md](architecture.md), [decisions.md](decisions.md).
 
 Writerdeck is a typewriter. Integrity means your words land as real Markdown, stay readable, and are not silently emptied or replaced.
 

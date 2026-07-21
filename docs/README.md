@@ -22,10 +22,12 @@ user-should-test.md — checks only human fingers can do.
 
 editor-testing/ — automated typing-test scores and check names.
 
-editor-migration-1-to-QML/ and editor-migration-2-to-cpp/ — finished migrations; policy lives in decisions §4–§6.
+editor-migration-1-to-QML/ and editor-migration-2-to-cpp/ — finished migrations; policy in decisions §4–§6.
 
-install-onboarding/ — visitor install (ZIP, prompts, Releases); boot-enable follow-up still open.
+install-onboarding/ — visitor install; boot-enable follow-up still open.
 
 server-sync-implementation.md — how GitHub sync and token restore work.
+
+bluetooth-otg-hid-proxy.md — DIY tablet Bluetooth via USB HID proxy (unsupported; phone path is the product).
 
 External: [keywriter](https://github.com/dps/remarkable-keywriter) · [awesome-reMarkable](https://github.com/reHackable/awesome-reMarkable) · [input docs](https://remarkable.guide/devel/device/input.html)

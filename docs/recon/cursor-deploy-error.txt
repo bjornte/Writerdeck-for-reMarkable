@@ -1,7 +1,0 @@
-bash scripts/deploy-keywriter.sh -b 
-=== deploy-keywriter  2026-06-29T01-04-59  target=192.168.1.8 ===
-
---- Pre-flight checks ---
-ERROR: /Users/bjornte/dev/Writerdeck-for-reMarkable/third_party/keywriter/dist/keywriter not found.
-  Run the CI build first (workflow: build-keywriter.yml)
-  then: git pull

@@ -4,4 +4,4 @@ First-time install for visitors: download the [installer ZIP](https://github.com
 
 Wipe + restore notes: [reinstall-cheatsheet.md](reinstall-cheatsheet.md). Remove Writerdeck only: `bash scripts/uninstall.sh`. Regression: `bash scripts/test-install-reuse.sh`. Rebuild slim ZIP: `bash scripts/pack-installer.sh`.
 
-Checklist and remaining follow-up (boot bricking): [todo-install-onboarding.md](todo-install-onboarding.md). Wishlist: [../improvements.md](../improvements.md).
+Open follow-up (boot bricking, Windows): [todo-install-onboarding.md](todo-install-onboarding.md). Wishlist: [../improvements.md](../improvements.md).

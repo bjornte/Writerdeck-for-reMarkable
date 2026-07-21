@@ -32,4 +32,4 @@ Keep real script names (`test-keyboard-harness.sh`, `build-keywriter.sh`). Gloss
 
 ## Audience reminder
 
-Standing docs and READMEs: John Gruber — whole sentences, little markup, readable by a layperson. Agent rules and historical handoffs may keep denser shop talk; mark archives as historical.
+Standing docs and READMEs: John Gruber — whole sentences, little markup, readable by a layperson. Agent rules may keep denser shop talk.

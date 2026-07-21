@@ -16,7 +16,7 @@ Start Writerdeck, then:
 
 With a USB keyboard: Home moves the caret (and New/Rename fields) — it is not the tablet’s physical middle button. Only `hardware_home` owns note → Lobby and Lobby → stock UI (`global.toLobby` / `global.quit` in `lobby-ui.json`).
 
-When these pass, check them off or tell the agent. Detail: [todo-handoff-physical-home-input.md](todo-handoff-physical-home-input.md).
+When these pass, check them off or tell the agent.
 
 ## Spot-checks after certain changes
 
