@@ -20,7 +20,7 @@ The project is heavily LLM-assisted and partly human-reviewed. Primary sources: 
 
 ## Status
 
-A usable appliance. Still improvement potential, but lots is working. Latest: five languages supported, both in UI and as USB keyboard layouts.
+A usable appliance. As with any software there's improvement potential, but a whole lot is working as intended. Latest: five languages supported, both in UI and as USB keyboard layouts.
 
 ## Install
 
