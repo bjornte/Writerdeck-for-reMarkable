@@ -111,5 +111,22 @@
   "vault.wrongPin": "Falsche PIN. Erneut versuchen.",
   "vault.bksp": "Lösch",
   "shortcuts.title": "Kürzel",
-  "shortcuts.body": "Seiten\nTab oder Links / Rechts - nächste oder vorherige Seite\nOptionale Ctrl-Buchstaben-Sprünge in lobby-ui.json (tabs.*); standardmäßig keine\n\nDokumente\nHoch / Runter - Auswahl bewegen (Seitenwechsel am Rand)\nPage Up / Page Down - vorherige oder nächste Dokumentseite\n↵ - ausgewähltes Dokument bearbeiten\nCtrl-V - lesen · Ctrl-M - neu · Ctrl-I - umbenennen · Ctrl-B - löschen\nCtrl-G - aufs Telefon laden\nMit privaten Dokumenten: Ctrl-E - neu verschlüsselt · Ctrl-X - verschlüsseln · Ctrl-Y - entschlüsseln\n\nTastatur\nCtrl-U - US-Layout · Ctrl-O - Norwegisch\n\nSync\n↵ - jetzt syncen\n\nEinstellungen\nCtrl-A - Leseschrift wechseln · Ctrl-M - Telefon-PIN-Länge\nCtrl-O - Drehung · Ctrl-E - private Dokumente aktivieren · Ctrl-C - private PIN ändern\nCtrl-X - Writerdeck beenden (dann Enter zum Bestätigen)\n\nÜberall\nCtrl-C / Ctrl-X / Ctrl-V - kopieren, ausschneiden, einfügen (beim Bearbeiten)\nPhysische Home - vom Dokument zurück zu Dokumente; vom Lobby zur normalen UI\n(Tastatur-Home ist nur Cursorbewegung -- nicht dieser Knopf.)\n\nPrivate PIN\nSechs Ziffern auf USB-Tastatur tippen, oder am Telefon solange der PIN-Hinweis sichtbar ist.\n\nLobby von der normalen UI öffnen\nEsc auf USB-Tastatur, oder beide Seitentasten gleichzeitig."
+  "shortcuts.body": "Seiten\nTab oder Links / Rechts - nächste oder vorherige Seite\nOptionale Ctrl-Buchstaben-Sprünge in lobby-ui.json (tabs.*); standardmäßig keine\n\nDokumente\nHoch / Runter - Auswahl bewegen (Seitenwechsel am Rand)\nPage Up / Page Down - vorherige oder nächste Dokumentseite\n↵ - ausgewähltes Dokument bearbeiten\nCtrl-V - lesen · Ctrl-M - neu · Ctrl-I - umbenennen · Ctrl-B - löschen\nCtrl-G - aufs Telefon laden\nMit privaten Dokumenten: Ctrl-E - neu verschlüsselt · Ctrl-X - verschlüsseln · Ctrl-Y - entschlüsseln\n\nTastatur\nCtrl-U - US-Layout · Ctrl-O - Norwegisch\n\nSync\n↵ - jetzt syncen\n\nEinstellungen\nCtrl-A - Leseschrift wechseln · Ctrl-M - Telefon-PIN-Länge\nCtrl-O - Drehung · Ctrl-E - private Dokumente aktivieren · Ctrl-C - private PIN ändern\nCtrl-X - Writerdeck beenden (dann Enter zum Bestätigen)\n\nÜberall\nCtrl-C / Ctrl-X / Ctrl-V - kopieren, ausschneiden, einfügen (beim Bearbeiten)\nPhysische Home - vom Dokument zurück zu Dokumente; vom Lobby zur normalen UI\n(Tastatur-Home ist nur Cursorbewegung -- nicht dieser Knopf.)\n\nPrivate PIN\nSechs Ziffern auf USB-Tastatur tippen, oder am Telefon solange der PIN-Hinweis sichtbar ist.\n\nLobby von der normalen UI öffnen\nEsc auf USB-Tastatur, oder beide Seitentasten gleichzeitig.",
+  "sync.agoJustNow": "gerade eben",
+  "sync.agoMinute": "vor 1 Minute",
+  "sync.agoMinutes": "vor %1 Minuten",
+  "sync.agoHour": "vor 1 Stunde",
+  "sync.agoHours": "vor %1 Stunden",
+  "sync.agoDay": "vor 1 Tag",
+  "sync.agoDays": "vor %1 Tagen",
+  "sync.pendingOne": "Sync ausstehend",
+  "sync.pendingMany": "%1 Sync-Vorgänge ausstehend",
+  "sync.agoWithPending": "%1 (%2)",
+  "sync.errNoWifi": "Kein WLAN - GitHub nicht erreichbar",
+  "home.versionLatest": "Writerdeck-Version %1 (aktuell)",
+  "home.versionOutdated": "Writerdeck-Version %1. Aktuell auf GitHub ist %2.",
+  "home.versionAhead": "Writerdeck-Version %1 (neuer als GitHub %2)",
+  "home.versionMismatch": "Writerdeck-Version %1 (Server und Editor unterschiedlich — beide aktualisieren)",
+  "home.versionMismatchLatest": "Writerdeck-Version %1 (Server und Editor unterschiedlich — beide aktualisieren). Aktuell auf GitHub ist %2.",
+  "home.versionOffline": "Writerdeck-Version %1 (GitHub für Update-Check nicht erreichbar)"
 }

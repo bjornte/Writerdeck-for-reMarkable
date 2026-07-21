@@ -122,6 +122,28 @@ func formatVersionMessage(product, latest string, fetchErr error, mismatched boo
 	return fmt.Sprintf("Writerdeck version %s (newer than GitHub %s)", product, latest)
 }
 
+// versionCheckStatus is a stable code for Lobby i18n (message stays English for phone/logs).
+func versionCheckStatus(product, latest string, fetchErr error, mismatched bool) string {
+	if mismatched {
+		if fetchErr == nil && strings.TrimSpace(latest) != "" &&
+			compareProductVersions(product, strings.TrimSpace(latest)) < 0 {
+			return "mismatchLatest"
+		}
+		return "mismatch"
+	}
+	if fetchErr != nil || strings.TrimSpace(latest) == "" {
+		return "offline"
+	}
+	cmp := compareProductVersions(product, strings.TrimSpace(latest))
+	if cmp == 0 {
+		return "latest"
+	}
+	if cmp < 0 {
+		return "outdated"
+	}
+	return "ahead"
+}
+
 func fetchGitHubVersion() (string, error) {
 	client := &http.Client{Timeout: 8 * time.Second}
 	req, err := http.NewRequest(http.MethodGet, githubVersionURL, nil)
@@ -193,11 +215,13 @@ func versionCheckHandler(w http.ResponseWriter, r *http.Request) {
 	product, mismatched := combineProductVersion(server, editor)
 	latest, err := fetchGitHubVersion()
 	msg := formatVersionMessage(product, latest, err, mismatched)
+	status := versionCheckStatus(product, latest, err, mismatched)
 	out := map[string]interface{}{
 		"version":     product,
 		"server":      server,
 		"editor":      editor,
 		"mismatched":  mismatched,
+		"status":      status,
 		"message":     msg,
 	}
 	if err == nil {

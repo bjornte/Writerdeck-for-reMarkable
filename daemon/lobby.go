@@ -75,11 +75,13 @@ func pushLobbyInfo() {
 	if keyboardLayout == "" {
 		keyboardLayout = "us"
 	}
-	lastSync := formatLastSyncAgo(curSettings.LastSyncAt)
-	if n := len(curSettings.PendingSync); n > 0 {
+	lastSyncAt := curSettings.LastSyncAt
+	pendingCount := len(curSettings.PendingSync)
+	lastSync := formatLastSyncAgo(lastSyncAt)
+	if pendingCount > 0 {
 		pending := "sync pending"
-		if n > 1 {
-			pending = fmt.Sprintf("%d sync ops pending", n)
+		if pendingCount > 1 {
+			pending = fmt.Sprintf("%d sync ops pending", pendingCount)
 		}
 		if lastSync == "" {
 			lastSync = pending
@@ -91,12 +93,14 @@ func pushLobbyInfo() {
 	syncReady := syncEng.ready()
 	syncing := syncEng.isSyncing()
 	syncErr := syncEng.getLastError()
+	syncErrKey := ""
 	wifi := wifiUp()
 	if syncOn && syncRepo != "" && !syncReady {
 		lastSync = "Token needed — add in phone Sync setup"
 	}
 	if syncOn && syncRepo != "" && syncReady && !wifi {
 		syncErr = "No Wi-Fi - cannot reach GitHub"
+		syncErrKey = "noWifi"
 	}
 	phoneURL := ""
 	qrPath := ""
@@ -112,9 +116,12 @@ func pushLobbyInfo() {
 		SyncRepo          string `json:"syncRepo"`
 		NoteCount         int    `json:"noteCount"`
 		LastSync          string `json:"lastSync"`
+		LastSyncAt        int64  `json:"lastSyncAt"`
+		SyncPending       int    `json:"syncPending"`
 		SyncReady         bool   `json:"syncReady"`
 		Syncing           bool   `json:"syncing"`
 		SyncError         string `json:"syncError"`
+		SyncErrorKey      string `json:"syncErrorKey,omitempty"`
 		Wifi              bool   `json:"wifi"`
 		KeyboardLayout    string `json:"keyboardLayout"`
 		PinDigits         string `json:"pinDigits"`
@@ -124,7 +131,7 @@ func pushLobbyInfo() {
 		Port              int    `json:"port"`
 		PhoneURL          string `json:"phoneUrl"`
 		QrPath            string `json:"qrPath"`
-	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, syncReady, syncing, syncErr, wifi, keyboardLayout, pinDigits, vaultEnabled(),
+	}{"info", ip, pin, syncOn, syncRepo, countNotes(), lastSync, lastSyncAt, pendingCount, syncReady, syncing, syncErr, syncErrKey, wifi, keyboardLayout, pinDigits, vaultEnabled(),
 		phoneConnected(), usbKeyboardPresent(), listenPort, phoneURL, qrPath})
 	if globalEC != nil {
 		globalEC.write(infoMsg)

@@ -111,5 +111,22 @@
   "vault.wrongPin": "Feil PIN. Prøv igjen.",
   "vault.bksp": "Slett",
   "shortcuts.title": "Snarveier",
-  "shortcuts.body": "Sider\nTab eller Venstre / Høyre - neste eller forrige side\nValgfrie Ctrl-bokstav-hopp ligger i lobby-ui.json (tabs.*); ingen som standard\n\nDokumenter\nOpp / Ned - flytt markering (bytter side ved kanten)\nPage Up / Page Down - forrige eller neste side med dokumenter\n↵ - rediger valgt dokument\nCtrl-V - les · Ctrl-M - ny · Ctrl-I - gi nytt navn · Ctrl-B - slett\nCtrl-G - last ned til telefon\nMed private dokumenter på: Ctrl-E - ny kryptert · Ctrl-X - krypter · Ctrl-Y - dekrypter\n\nTastatur\nCtrl-U - US-layout · Ctrl-O - norsk\n\nSync\n↵ - sync nå\n\nInnstillinger\nCtrl-A - bytt lesefont · Ctrl-M - bytt telefon-PIN-lengde\nCtrl-O - bytt rotasjon · Ctrl-E - slå på private dokumenter · Ctrl-C - endre privat PIN\nCtrl-X - avslutt Writerdeck (deretter Enter for å bekrefte)\n\nOveralt\nCtrl-C / Ctrl-X / Ctrl-V - kopier, klipp, lim inn (mens du redigerer et dokument)\nFysisk Home - fra et dokument, tilbake til Dokumenter; fra Lobby, avslutt til vanlig UI\n(Tastatur-Home er bare markørbevegelse -- ikke den knappen.)\n\nPrivat PIN\nSkriv de seks sifrene på USB-tastatur, eller på telefonen mens den viser PIN-banneret.\n\nÅpne Lobby fra vanlig UI\nEsc på USB-tastatur, eller begge sideknappene samtidig."
+  "shortcuts.body": "Sider\nTab eller Venstre / Høyre - neste eller forrige side\nValgfrie Ctrl-bokstav-hopp ligger i lobby-ui.json (tabs.*); ingen som standard\n\nDokumenter\nOpp / Ned - flytt markering (bytter side ved kanten)\nPage Up / Page Down - forrige eller neste side med dokumenter\n↵ - rediger valgt dokument\nCtrl-V - les · Ctrl-M - ny · Ctrl-I - gi nytt navn · Ctrl-B - slett\nCtrl-G - last ned til telefon\nMed private dokumenter på: Ctrl-E - ny kryptert · Ctrl-X - krypter · Ctrl-Y - dekrypter\n\nTastatur\nCtrl-U - US-layout · Ctrl-O - norsk\n\nSync\n↵ - sync nå\n\nInnstillinger\nCtrl-A - bytt lesefont · Ctrl-M - bytt telefon-PIN-lengde\nCtrl-O - bytt rotasjon · Ctrl-E - slå på private dokumenter · Ctrl-C - endre privat PIN\nCtrl-X - avslutt Writerdeck (deretter Enter for å bekrefte)\n\nOveralt\nCtrl-C / Ctrl-X / Ctrl-V - kopier, klipp, lim inn (mens du redigerer et dokument)\nFysisk Home - fra et dokument, tilbake til Dokumenter; fra Lobby, avslutt til vanlig UI\n(Tastatur-Home er bare markørbevegelse -- ikke den knappen.)\n\nPrivat PIN\nSkriv de seks sifrene på USB-tastatur, eller på telefonen mens den viser PIN-banneret.\n\nÅpne Lobby fra vanlig UI\nEsc på USB-tastatur, eller begge sideknappene samtidig.",
+  "sync.agoJustNow": "nettopp",
+  "sync.agoMinute": "for 1 minutt siden",
+  "sync.agoMinutes": "for %1 minutter siden",
+  "sync.agoHour": "for 1 time siden",
+  "sync.agoHours": "for %1 timer siden",
+  "sync.agoDay": "for 1 dag siden",
+  "sync.agoDays": "for %1 dager siden",
+  "sync.pendingOne": "sync venter",
+  "sync.pendingMany": "%1 sync-operasjoner venter",
+  "sync.agoWithPending": "%1 (%2)",
+  "sync.errNoWifi": "Ingen Wi-Fi - kan ikke nå GitHub",
+  "home.versionLatest": "Writerdeck-versjon %1 (nyeste)",
+  "home.versionOutdated": "Writerdeck-versjon %1. Nyeste på GitHub er %2.",
+  "home.versionAhead": "Writerdeck-versjon %1 (nyere enn GitHub %2)",
+  "home.versionMismatch": "Writerdeck-versjon %1 (server og editor er ulike — oppdater begge)",
+  "home.versionMismatchLatest": "Writerdeck-versjon %1 (server og editor er ulike — oppdater begge). Nyeste på GitHub er %2.",
+  "home.versionOffline": "Writerdeck-versjon %1 (fikk ikke kontakt med GitHub for oppdateringer)"
 }
