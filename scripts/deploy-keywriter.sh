@@ -201,6 +201,25 @@ if [ -f "$LOBBY_UI_SRC" ]; then
     echo
 fi
 
+# Seed language packs once each (missing files only).
+LOBBY_I18N_SRC="$REPO/config/lobby-ui-i18n"
+if [ -d "$LOBBY_I18N_SRC" ]; then
+    echo "--- Lobby UI i18n (${DEVICE_LOBBY_UI_I18N_DIR}) ---"
+    rm_ssh "mkdir -p '${DEVICE_LOBBY_UI_I18N_DIR}'" "$TARGET"
+    for pack in "$LOBBY_I18N_SRC"/*.json; do
+        [ -f "$pack" ] || continue
+        base="$(basename "$pack")"
+        dest="${DEVICE_LOBBY_UI_I18N_DIR}/${base}"
+        if rm_ssh "[ -f '${dest}' ] && echo EXISTS || echo MISSING" "$TARGET" | grep -q EXISTS; then
+            echo "  ${base} already on tablet (left unchanged)"
+        else
+            rm_send_file "$pack" "$dest" "$TARGET"
+            echo "  seeded ${base}"
+        fi
+    done
+    echo
+fi
+
 # Push the Qt5 sysroot tarball UNLESS RM_BINARY_ONLY=1 and the sysroot already
 # exists on the device.  RM_FORCE_SYSROOT=1 always re-pushes (use after a Qt
 # or Dockerfile rebuild).  Binary-only cuts the iteration loop from ~90s -> ~1s.
