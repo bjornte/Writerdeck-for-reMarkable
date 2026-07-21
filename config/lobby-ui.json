@@ -39,7 +39,11 @@
     "tabRowExtraHeight": 8,
     "dialogWidthFraction": 0.85,
     "dialogPadding": 48,
-    "settingsLandscapeScrollGutter": 144
+    "settingsLandscapeScrollGutter": 144,
+    "fontPickerNamePointSize": 16,
+    "fontPickerSamplePointSize": 14,
+    "fontPickerRowExtra": 96,
+    "dialogCancelWidthFraction": 0.55
   },
   "strings": {},
   "shortcuts": {

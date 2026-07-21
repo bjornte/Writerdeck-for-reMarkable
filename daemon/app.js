@@ -33,6 +33,7 @@ deps.applyObserveStatus = applyObserveStatus;
 deps.applyObserveEnabled = applyObserveEnabled;
 deps.refreshObserveStatus = refreshObserveStatus;
 deps.updateBannerOffset = updateBannerOffset;
+deps.reloadPhoneI18n = loadI18n;
 
 initConnection();
 

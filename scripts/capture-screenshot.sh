@@ -172,6 +172,13 @@ OUT_DIR="$DIR/../docs/screenshots"
 mkdir -p "$OUT_DIR"
 DATE="$(date +%Y-%m-%d)"
 OUT="$OUT_DIR/writerdeck-${DATE}-${LABEL}.png"
+if [ -e "$OUT" ]; then
+  n=1
+  while [ -e "$OUT_DIR/writerdeck-${DATE}-${LABEL}-${n}.png" ]; do
+    n=$((n + 1))
+  done
+  OUT="$OUT_DIR/writerdeck-${DATE}-${LABEL}-${n}.png"
+fi
 
 # rM1 linuxfb: 16 bpp, virtual 1408x3840 (double buffer). Visible frame is the
 # first 1408x1872. Qt uses size=1404x1872; keep full 1408 stride so the dump

@@ -519,6 +519,10 @@ func handleEditorReq(op, name, oldName string) {
 		if !applyPinDigits(name) {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: editor setpindigits: invalid %q\n", name)
 		}
+	case "languagechanged":
+		// Lobby wrote lobby-ui.json; tell open phone pages to reload strings.
+		broadcast([]byte(`{"type":"language"}`))
+		fmt.Fprintln(os.Stderr, "writerdeck-server: lobby language changed — phone UI notified")
 	case "setvaultpin":
 		if err := vaultSetupPIN(name); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: setvaultpin: %v\n", err)

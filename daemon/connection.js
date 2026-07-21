@@ -315,6 +315,8 @@ function connect() {
         notifyDiskChanged(data.name || '');
       } else if (data.type === 'needtoken') {
         respondToNeedToken();
+      } else if (data.type === 'language') {
+        deps.reloadPhoneI18n && deps.reloadPhoneI18n();
       } else if (data.type === 'vaultpingranted') {
         deps.loadNotes();
       } else if (data.type === 'downloadoffer') {
