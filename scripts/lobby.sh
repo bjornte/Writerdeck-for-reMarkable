@@ -7,7 +7,7 @@
 #
 # On the tablet (SSH session):  ~/wd
 #
-# Mac alias (after install-alias.sh):  wd
+# Mac alias (after install-alias.sh):  rmlobby
 
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"

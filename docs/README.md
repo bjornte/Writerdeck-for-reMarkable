@@ -1,6 +1,6 @@
 # docs/
 
-Project reference. Throwaway test logs live in `recon/` (gitignored). Lasting lessons go in DONE, TODO, and lessons.
+Project reference. Throwaway test logs live in `recon/` (gitignored). Lasting lessons go in DONE, TODO, and lessons. Tablet screen grabs: `rmshot` → `screenshots/writerdeck-YYYY-MM-DD-<label>.png` (label from Lobby / edit / read / stock; optional override). Rotation follows Lobby Settings.
 
 terms.md — layman definitions for the product and the editor fork.
 

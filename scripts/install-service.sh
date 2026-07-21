@@ -107,7 +107,7 @@ if [ "$DO_START" -eq 1 ]; then
   echo ""
   echo "  You're done when: stock UI on e-ink; phone list populated;"
   echo "  connection bar not stuck on connecting..."
-  echo "  Open Lobby: both page buttons, USB Esc, or wd"
+  echo "  Open Lobby: both page buttons, USB Esc, or rmlobby"
   echo ""
   echo "  Recovery (if something goes wrong after reboot):"
   echo "    systemctl disable --now writerdeck && systemctl start xochitl"

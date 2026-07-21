@@ -64,7 +64,7 @@ The server is one static ARM binary. No Python or extra runtimes on the tablet. 
 
 ## 9. Always-on server, on-demand editor
 
-The server keeps the phone reachable under the stock UI. Boot stays on xochitl; Writerdeck opens on demand (page buttons, USB Esc, `/api/lobby` / `wd`). Only the editor session flips xochitl. Keep-awake covers the editor child, not the whole device. Units that start from `/home/root` must wait for that mount or cold boot fails with `203/EXEC`.
+The server keeps the phone reachable under the stock UI. Boot stays on xochitl; Writerdeck opens on demand (page buttons, USB Esc, `/api/lobby` / `rmlobby`). Only the editor session flips xochitl. Keep-awake covers the editor child, not the whole device. Units that start from `/home/root` must wait for that mount or cold boot fails with `203/EXEC`.
 
 ## 10. Companion model
 
@@ -106,7 +106,7 @@ A second phone mid-edit sees the note, not the PIN. Ask the tablet to return to 
 
 ## 19. Tablet file create/rename/delete via trusted socket
 
-Lobby file ops use the same local socket as keystrokes. The server does the disk work and can nudge the phone. Launch Lobby with `wd` on the Mac or `~/wd` on the tablet. A create or rename that hits an existing name fails on the server and shows the message inside the New / Rename / New encrypted dialog (same pattern as a wrong vault PIN staying on the pad). Names are unique by case-insensitive title: `Doc` and `doc` collide, and a plain note may not share that title with an encrypted twin (`doc.md` vs `doc.md.enc`). The Files list is sorted the same way. Other Files feedback (vault open errors, “open the phone page” for Download) still uses the dismissable box above the list.
+Lobby file ops use the same local socket as keystrokes. The server does the disk work and can nudge the phone. Launch Lobby with `rmlobby` on the Mac or `~/wd` on the tablet. A create or rename that hits an existing name fails on the server and shows the message inside the New / Rename / New encrypted dialog (same pattern as a wrong vault PIN staying on the pad). Names are unique by case-insensitive title: `Doc` and `doc` collide, and a plain note may not share that title with an encrypted twin (`doc.md` vs `doc.md.enc`). The Files list is sorted the same way. Other Files feedback (vault open errors, “open the phone page” for Download) still uses the dismissable box above the list.
 
 ## 20. Bluetooth remote key capture on the phone
 
@@ -166,7 +166,7 @@ Writerdeck targets the reMarkable 1. Install and docs say so on purpose.
 
 The editor draws through linuxfb on `/dev/fb0` with the epaper scene graph — that path is rM1. On rM2 the panel is driven differently, so the same binary does not light the screen. Community shims such as rm2fb usually mean Toltec; that conflicts with keeping over-the-air updates (§ Constraints in [architecture.md](architecture.md)). A Toltec-free path means a real rM2 display backend while keeping the Qt editor — roughly the same weight of work as making the typewriter trustworthy (EditHelper, wrap, undo, harness). Not insurmountable; not a weekend config change either. Replacing Qt wholesale would be larger, because typing behavior would have to be rebuilt.
 
-Launch without page buttons and Home is already partly covered: phone Show PIN / `/api/lobby`, `wd`, USB Esc. Power-button patterns or touch could fill a tablet-only gap later.
+Launch without page buttons and Home is already partly covered: phone Show PIN / `/api/lobby`, `rmlobby`, USB Esc. Power-button patterns or touch could fill a tablet-only gap later.
 
 Do not start rM2 work unless there is clear community demand. Wishlist: [improvements.md](improvements.md).
 

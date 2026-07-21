@@ -40,7 +40,7 @@ If you already cloned this repo, run the same command from the clone instead.
 
 - Stock reMarkable UI is on the e-ink screen (Writerdeck opens only when you ask)
 - On your phone, `http://<that-Wi-Fi-IP>:8000/` shows the keyboard shell and **Connected** (not stuck on `connecting...`)
-- Optional check: both page buttons together (or `wd`) open the Lobby
+- Optional check: both page buttons together (or `rmlobby`) open the Lobby
 
 If Writerdeck is stuck or something looks wrong after a bad install:
 
@@ -58,9 +58,9 @@ Use a private personal repo. Conflicts keep both copies rather than overwrite. S
 
 ## Everyday use
 
-Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Esc, phone **Show PIN on tablet**, or `wd`. Lobby Files shows the connect address and PIN. About shows the product version and whether GitHub has a newer build. Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. The phone lands on the keyboard shell — keys go to the tablet. Open a document on the tablet to type on e-ink. Download starts from Lobby Files and asks the phone to save the file. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
+Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Esc, phone **Show PIN on tablet**, or `rmlobby`. Lobby Files shows the connect address and PIN. About shows the product version and whether GitHub has a newer build. Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. The phone lands on the keyboard shell — keys go to the tablet. Open a document on the tablet to type on e-ink. Download starts from Lobby Files and asks the phone to save the file. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
 
-Show the Lobby from a Mac on the same Wi-Fi with `wd` (after `bash scripts/install-alias.sh`) or `bash scripts/lobby.sh`. On the tablet: `~/wd`.
+Show the Lobby from a Mac on the same Wi-Fi with `rmlobby` (after `bash scripts/install-alias.sh`) or `bash scripts/lobby.sh`. Screen grab: `rmshot`. On the tablet: `~/wd`.
 
 Useful keys: Esc toggles edit and preview inside Writerdeck, or launches to Lobby from the stock UI with a USB keyboard. Left and right page buttons together do the same launch without USB. Ctrl-C / Ctrl-X / Ctrl-V copy, cut, and paste. Lobby chords (including Sync ↩ and optional tab letters) live in `lobby-ui.json` on the tablet. Physical Home from edit returns to Files; from Lobby it quits to the stock UI (keyboard Home is caret only).
 

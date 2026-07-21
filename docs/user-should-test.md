@@ -38,4 +38,4 @@ You do not need to re-type the automated typing checks by hand while they stay p
 
 ## How to launch
 
-From stock UI: USB Esc, both page buttons, phone **Show PIN on tablet**, tablet `~/wd`, or Mac `wd`. Cold boot stays on the stock UI.
+From stock UI: USB Esc, both page buttons, phone **Show PIN on tablet**, tablet `~/wd`, or Mac `rmlobby`. Cold boot stays on the stock UI.

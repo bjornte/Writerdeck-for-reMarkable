@@ -12,7 +12,7 @@ Documents are plain Markdown on disk. Most importantly, your documents must be p
 
 Power on lands in the normal reMarkable interface. The Writerdeck server starts in the background so the phone page stays reachable.
 
-From that stock UI: press both left and right page buttons together, or Esc on a USB keyboard, to open the Lobby. From a Mac on the same Wi-Fi: `wd` (or `bash scripts/lobby.sh`). On the tablet over SSH: `~/wd`. On the phone page, **Show PIN on tablet** also opens the Lobby when it was closed.
+From that stock UI: press both left and right page buttons together, or Esc on a USB keyboard, to open the Lobby. From a Mac on the same Wi-Fi: `rmlobby` (or `bash scripts/lobby.sh`). Screen grab: `rmshot <label>`. On the tablet over SSH: `~/wd`. On the phone page, **Show PIN on tablet** also opens the Lobby when it was closed.
 
 ## How you write
 

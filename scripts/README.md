@@ -27,7 +27,7 @@ Ship a new server: `bash scripts/deploy-rmkbd.sh` (Go build if available, else R
 
 Keyboard caret work: `bash scripts/test-keyboard-harness.sh --fast` ([editor-testing](../docs/editor-testing/todo.md)). Lobby/Home: `bash scripts/test-lobby-keyboard.sh`. Vault: `test-vault.sh` / `test-vault-e2e.sh`.
 
-Show Lobby: `wd` or `bash scripts/lobby.sh`.
+Show Lobby: `rmlobby` or `bash scripts/lobby.sh`. Screen grab: `rmshot` (label from screen) or `bash scripts/capture-screenshot.sh`.
 
 ## Other useful scripts
 
