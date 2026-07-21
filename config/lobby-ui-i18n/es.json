@@ -1,5 +1,5 @@
 {
-  "tabs.files": "Archivos",
+  "tabs.files": "Documentos",
   "tabs.keyboard": "Teclado",
   "tabs.sync": "Sync",
   "tabs.settings": "Ajustes",
@@ -34,7 +34,7 @@
   "home.versionChecking": "Versión de Writerdeck … (buscando actualizaciones en GitHub…)",
   "home.versionUnknown": "Versión de Writerdeck desconocida",
   "home.opensource": "Código abierto en github.com/bjornte/Writerdeck-for-reMarkable",
-  "home.tip": "Abre la pestaña Archivos.\nUsa Tab o Izquierda / Derecha para cambiar de página.",
+  "home.tip": "Abre la pestaña Documentos.\nUsa Tab o Izquierda / Derecha para cambiar de página.",
   "home.sleeping": "Writerdeck está en reposo.\nWi-Fi apagado. Pulsa el botón de encendido para despertar.",
   "keyboard.btTitle": "Teclado Bluetooth",
   "keyboard.usbTitle": "Teclado USB",
@@ -111,5 +111,5 @@
   "vault.wrongPin": "PIN incorrecto. Inténtalo de nuevo.",
   "vault.bksp": "Borrar",
   "shortcuts.title": "Atajos",
-  "shortcuts.body": "Páginas\nTab o Izquierda / Derecha - página siguiente o anterior\nSaltos opcionales con Ctrl-letra en lobby-ui.json (tabs.*); ninguno por defecto\n\nArchivos\nArriba / Abajo - mover la selección (cambia de página al borde)\nPage Up / Page Down - página anterior o siguiente de documentos\n↵ - editar el documento seleccionado\nCtrl-V - leer · Ctrl-M - nuevo · Ctrl-I - renombrar · Ctrl-B - borrar\nCtrl-G - descargar al teléfono\nCon documentos privados: Ctrl-E - nuevo cifrado · Ctrl-X - cifrar · Ctrl-Y - descifrar\n\nTeclado\nCtrl-U - diseño US · Ctrl-O - noruego\n\nSync\n↵ - sync ahora\n\nAjustes\nCtrl-A - fuente de lectura · Ctrl-M - longitud del PIN del teléfono\nCtrl-O - rotación · Ctrl-E - activar documentos privados · Ctrl-C - cambiar PIN privado\nCtrl-X - salir de Writerdeck (luego Enter para confirmar)\n\nEn cualquier sitio\nCtrl-C / Ctrl-X / Ctrl-V - copiar, cortar, pegar (al editar un documento)\nHome físico - desde un documento, vuelve a Archivos; desde el Lobby, sale a la UI original\n(Home del teclado solo mueve el cursor -- no es ese botón.)\n\nPIN privado\nEscribe los seis dígitos en un teclado USB, o en el teléfono mientras muestra el aviso de PIN.\n\nAbrir el Lobby desde la UI original\nEsc en un teclado USB, o ambos botones de página a la vez."
+  "shortcuts.body": "Páginas\nTab o Izquierda / Derecha - página siguiente o anterior\nSaltos opcionales con Ctrl-letra en lobby-ui.json (tabs.*); ninguno por defecto\n\nDocumentos\nArriba / Abajo - mover la selección (cambia de página al borde)\nPage Up / Page Down - página anterior o siguiente de documentos\n↵ - editar el documento seleccionado\nCtrl-V - leer · Ctrl-M - nuevo · Ctrl-I - renombrar · Ctrl-B - borrar\nCtrl-G - descargar al teléfono\nCon documentos privados: Ctrl-E - nuevo cifrado · Ctrl-X - cifrar · Ctrl-Y - descifrar\n\nTeclado\nCtrl-U - diseño US · Ctrl-O - noruego\n\nSync\n↵ - sync ahora\n\nAjustes\nCtrl-A - fuente de lectura · Ctrl-M - longitud del PIN del teléfono\nCtrl-O - rotación · Ctrl-E - activar documentos privados · Ctrl-C - cambiar PIN privado\nCtrl-X - salir de Writerdeck (luego Enter para confirmar)\n\nEn cualquier sitio\nCtrl-C / Ctrl-X / Ctrl-V - copiar, cortar, pegar (al editar un documento)\nHome físico - desde un documento, vuelve a Documentos; desde el Lobby, sale a la UI original\n(Home del teclado solo mueve el cursor -- no es ese botón.)\n\nPIN privado\nEscribe los seis dígitos en un teclado USB, o en el teléfono mientras muestra el aviso de PIN.\n\nAbrir el Lobby desde la UI original\nEsc en un teclado USB, o ambos botones de página a la vez."
 }

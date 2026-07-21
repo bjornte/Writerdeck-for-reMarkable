@@ -1,5 +1,5 @@
 {
-  "tabs.files": "Files",
+  "tabs.files": "Documents",
   "tabs.keyboard": "Keyboard",
   "tabs.sync": "Sync",
   "tabs.settings": "Settings",
@@ -34,7 +34,7 @@
   "home.versionChecking": "Writerdeck version … (checking GitHub for updates…)",
   "home.versionUnknown": "Writerdeck version unknown",
   "home.opensource": "Open sourced at github.com/bjornte/Writerdeck-for-reMarkable",
-  "home.tip": "Open the Files tab.\nUse Tab or Left / Right to switch pages.",
+  "home.tip": "Open the Documents tab.\nUse Tab or Left / Right to switch pages.",
   "home.sleeping": "Writerdeck is sleeping.\nWi-Fi is off. Press power to wake.",
   "keyboard.btTitle": "Bluetooth keyboard",
   "keyboard.usbTitle": "USB keyboard",
@@ -111,5 +111,5 @@
   "vault.wrongPin": "Wrong PIN. Try again.",
   "vault.bksp": "Bksp",
   "shortcuts.title": "Shortcuts",
-  "shortcuts.body": "Pages\nTab or Left / Right - next or previous page\nOptional Ctrl-letter jumps live in lobby-ui.json (tabs.*); none ship by default\n\nFiles\nUp / Down - move the selection (turns the page at the edge)\nPage Up / Page Down - previous or next page of documents\n↵ - edit the selected document\nCtrl-V - read · Ctrl-M - new · Ctrl-I - rename · Ctrl-B - delete\nCtrl-G - download to phone\nWith private documents on: Ctrl-E - new encrypted · Ctrl-X - encrypt · Ctrl-Y - decrypt\n\nKeyboard\nCtrl-U - US layout · Ctrl-O - Norwegian\n\nSync\n↵ - sync now\n\nSettings\nCtrl-A - cycle reading font · Ctrl-M - cycle phone PIN length\nCtrl-O - cycle rotation · Ctrl-E - enable private documents · Ctrl-C - change private PIN\nCtrl-X - exit Writerdeck (then Enter to confirm)\n\nAnywhere\nCtrl-C / Ctrl-X / Ctrl-V - copy, cut, paste (while editing a document)\nPhysical Home - from a document, back to Files; from Lobby, quit to the stock UI\n(Keyboard Home is caret motion only -- not that button.)\n\nPrivate PIN\nType the six digits on a USB keyboard, or on the phone while it shows the PIN banner.\n\nOpen Lobby from the stock UI\nEsc on a USB keyboard, or both page buttons together."
+  "shortcuts.body": "Pages\nTab or Left / Right - next or previous page\nOptional Ctrl-letter jumps live in lobby-ui.json (tabs.*); none ship by default\n\nDocuments\nUp / Down - move the selection (turns the page at the edge)\nPage Up / Page Down - previous or next page of documents\n↵ - edit the selected document\nCtrl-V - read · Ctrl-M - new · Ctrl-I - rename · Ctrl-B - delete\nCtrl-G - download to phone\nWith private documents on: Ctrl-E - new encrypted · Ctrl-X - encrypt · Ctrl-Y - decrypt\n\nKeyboard\nCtrl-U - US layout · Ctrl-O - Norwegian\n\nSync\n↵ - sync now\n\nSettings\nCtrl-A - cycle reading font · Ctrl-M - cycle phone PIN length\nCtrl-O - cycle rotation · Ctrl-E - enable private documents · Ctrl-C - change private PIN\nCtrl-X - exit Writerdeck (then Enter to confirm)\n\nAnywhere\nCtrl-C / Ctrl-X / Ctrl-V - copy, cut, paste (while editing a document)\nPhysical Home - from a document, back to Documents; from Lobby, quit to the stock UI\n(Keyboard Home is caret motion only -- not that button.)\n\nPrivate PIN\nType the six digits on a USB keyboard, or on the phone while it shows the PIN banner.\n\nOpen Lobby from the stock UI\nEsc on a USB keyboard, or both page buttons together."
 }

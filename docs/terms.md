@@ -13,7 +13,7 @@ Short definitions for Writerdeck and its editor fork.
 * **VERSION**: Repo-root date stamp (`YYYY-MM-DD` or `.N`) kept by `scripts/product-version.sh` on build/publish — not hand-edited for routine work. Baked into both binaries; About compares the tablet to this file on GitHub `main`.
 * **lobby-ui.json**: On-tablet file (`/home/root/.Writerdeck/lobby-ui.json`) for Lobby language, borders, colors, sizes, optional string overrides, and shortcut chords (Ctrl-letters, plus `enter` / `hardware_home`). Edit over SSH; no binary rebuild. Repo default: `config/lobby-ui.json`. Source of truth for Lobby chords. Label packs live beside it in `lobby-ui-i18n/<lang>.json` (`en` / `no` / `es` / `de` / `fr`). Keycap borders use `badgeBorderColor`. Why: [decisions.md](decisions.md) §36.
 * **Phone page**: Browser UI on port 8000 — keyboard bridge with the gray Writerdeck mark, paste, sync token, and “Download here?” when Lobby offers a file. Not a notes browser.
-* **Document**: A Markdown file you write for concentrated work — not a throwaway scrap. On disk under `Writerdeck-user-documents/`. The Files tab lists them. Code and APIs may still say “note”.
+* **Document**: A Markdown file you write for concentrated work — not a throwaway scrap. On disk under `Writerdeck-user-documents/`. The Documents tab lists them. Code and APIs may still say “note”.
 * **Document integrity**: Your prose must survive as plain Markdown on disk.
 
 ## Editor

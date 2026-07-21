@@ -1,5 +1,5 @@
 {
-  "tabs.files": "Filer",
+  "tabs.files": "Dokumenter",
   "tabs.keyboard": "Tastatur",
   "tabs.sync": "Sync",
   "tabs.settings": "Innstillinger",
@@ -34,7 +34,7 @@
   "home.versionChecking": "Writerdeck-versjon … (sjekker GitHub for oppdateringer…)",
   "home.versionUnknown": "Writerdeck-versjon ukjent",
   "home.opensource": "Åpen kildekode på github.com/bjornte/Writerdeck-for-reMarkable",
-  "home.tip": "Åpne Filer-fanen.\nBruk Tab eller Venstre / Høyre for å bytte side.",
+  "home.tip": "Åpne Dokumenter-fanen.\nBruk Tab eller Venstre / Høyre for å bytte side.",
   "home.sleeping": "Writerdeck sover.\nWi-Fi er av. Trykk på strøm for å vekke.",
   "keyboard.btTitle": "Bluetooth-tastatur",
   "keyboard.usbTitle": "USB-tastatur",
@@ -111,5 +111,5 @@
   "vault.wrongPin": "Feil PIN. Prøv igjen.",
   "vault.bksp": "Slett",
   "shortcuts.title": "Snarveier",
-  "shortcuts.body": "Sider\nTab eller Venstre / Høyre - neste eller forrige side\nValgfrie Ctrl-bokstav-hopp ligger i lobby-ui.json (tabs.*); ingen som standard\n\nFiler\nOpp / Ned - flytt markering (bytter side ved kanten)\nPage Up / Page Down - forrige eller neste side med dokumenter\n↵ - rediger valgt dokument\nCtrl-V - les · Ctrl-M - ny · Ctrl-I - gi nytt navn · Ctrl-B - slett\nCtrl-G - last ned til telefon\nMed private dokumenter på: Ctrl-E - ny kryptert · Ctrl-X - krypter · Ctrl-Y - dekrypter\n\nTastatur\nCtrl-U - US-layout · Ctrl-O - norsk\n\nSync\n↵ - sync nå\n\nInnstillinger\nCtrl-A - bytt lesefont · Ctrl-M - bytt telefon-PIN-lengde\nCtrl-O - bytt rotasjon · Ctrl-E - slå på private dokumenter · Ctrl-C - endre privat PIN\nCtrl-X - avslutt Writerdeck (deretter Enter for å bekrefte)\n\nOveralt\nCtrl-C / Ctrl-X / Ctrl-V - kopier, klipp, lim inn (mens du redigerer et dokument)\nFysisk Home - fra et dokument, tilbake til Filer; fra Lobby, avslutt til vanlig UI\n(Tastatur-Home er bare markørbevegelse -- ikke den knappen.)\n\nPrivat PIN\nSkriv de seks sifrene på USB-tastatur, eller på telefonen mens den viser PIN-banneret.\n\nÅpne Lobby fra vanlig UI\nEsc på USB-tastatur, eller begge sideknappene samtidig."
+  "shortcuts.body": "Sider\nTab eller Venstre / Høyre - neste eller forrige side\nValgfrie Ctrl-bokstav-hopp ligger i lobby-ui.json (tabs.*); ingen som standard\n\nDokumenter\nOpp / Ned - flytt markering (bytter side ved kanten)\nPage Up / Page Down - forrige eller neste side med dokumenter\n↵ - rediger valgt dokument\nCtrl-V - les · Ctrl-M - ny · Ctrl-I - gi nytt navn · Ctrl-B - slett\nCtrl-G - last ned til telefon\nMed private dokumenter på: Ctrl-E - ny kryptert · Ctrl-X - krypter · Ctrl-Y - dekrypter\n\nTastatur\nCtrl-U - US-layout · Ctrl-O - norsk\n\nSync\n↵ - sync nå\n\nInnstillinger\nCtrl-A - bytt lesefont · Ctrl-M - bytt telefon-PIN-lengde\nCtrl-O - bytt rotasjon · Ctrl-E - slå på private dokumenter · Ctrl-C - endre privat PIN\nCtrl-X - avslutt Writerdeck (deretter Enter for å bekrefte)\n\nOveralt\nCtrl-C / Ctrl-X / Ctrl-V - kopier, klipp, lim inn (mens du redigerer et dokument)\nFysisk Home - fra et dokument, tilbake til Dokumenter; fra Lobby, avslutt til vanlig UI\n(Tastatur-Home er bare markørbevegelse -- ikke den knappen.)\n\nPrivat PIN\nSkriv de seks sifrene på USB-tastatur, eller på telefonen mens den viser PIN-banneret.\n\nÅpne Lobby fra vanlig UI\nEsc på USB-tastatur, eller begge sideknappene samtidig."
 }
