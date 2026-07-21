@@ -201,7 +201,8 @@ if [ -f "$LOBBY_UI_SRC" ]; then
     echo
 fi
 
-# Seed language packs once each (missing files only).
+# Language packs are product copy (not user config). Always refresh so new
+# Settings strings land; lobby-ui.json above stays untouched.
 LOBBY_I18N_SRC="$REPO/config/lobby-ui-i18n"
 if [ -d "$LOBBY_I18N_SRC" ]; then
     echo "--- Lobby UI i18n (${DEVICE_LOBBY_UI_I18N_DIR}) ---"
@@ -210,12 +211,8 @@ if [ -d "$LOBBY_I18N_SRC" ]; then
         [ -f "$pack" ] || continue
         base="$(basename "$pack")"
         dest="${DEVICE_LOBBY_UI_I18N_DIR}/${base}"
-        if rm_ssh "[ -f '${dest}' ] && echo EXISTS || echo MISSING" "$TARGET" | grep -q EXISTS; then
-            echo "  ${base} already on tablet (left unchanged)"
-        else
-            rm_send_file "$pack" "$dest" "$TARGET"
-            echo "  seeded ${base}"
-        fi
+        rm_send_file "$pack" "$dest" "$TARGET"
+        echo "  ${base} OK"
     done
     echo
 fi

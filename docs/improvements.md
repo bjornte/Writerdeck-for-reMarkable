@@ -15,7 +15,6 @@ Wishlist — not a backlog. Shipped: [../DONE.md](../DONE.md). Open verify: [../
   - Windows installer still open. Mac/Linux installer remembers Wi-Fi / password / GitHub repo + token and can open a prefilled token page — [TODO.md](../TODO.md).
 - Lobby / phone
   - Bring Upload/import back on the Lobby or a thin phone control when needed (API route still exists — [decisions.md](decisions.md) §30).
-  - Language picker in Settings (today: set `"language"` in `lobby-ui.json`). Do not leave old English keys in the tablet `strings` block — they override the language pack. Phone UI follows that language (`daemon/phone-ui-i18n/`).
   - Korean, Chinese, and Japanese Lobby strings need CJK fonts on the tablet (today only Latin Noto/DejaVu). Do not ship those packs until fonts land.
   - Images in an `/img` folder (`![text](img/…)` in edit, show in read). Hard today: sync and APIs are flat Markdown-only, no tablet upload path, and e-ink RichText `<img>` is unproven. A local preview spike is possible; shipping with GitHub sync is weeks of work.
 

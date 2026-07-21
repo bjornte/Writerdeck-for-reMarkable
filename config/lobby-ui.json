@@ -71,6 +71,7 @@
     "settings.rotation": "o",
     "settings.enableVault": "e",
     "settings.changePin": "c",
-    "settings.exit": "x"
+    "settings.exit": "x",
+    "settings.language": "l"
   }
 }
