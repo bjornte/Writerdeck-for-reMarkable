@@ -38,7 +38,8 @@
     "listRowInset": 8,
     "tabRowExtraHeight": 8,
     "dialogWidthFraction": 0.85,
-    "dialogPadding": 48
+    "dialogPadding": 48,
+    "settingsLandscapeScrollGutter": 144
   },
   "strings": {},
   "shortcuts": {
