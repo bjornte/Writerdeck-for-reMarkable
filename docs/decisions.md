@@ -81,7 +81,7 @@ No phone app — the tablet is the server. Day-to-day files and settings live in
 
 ## 11. GitHub sync copies missing notes both ways
 
-Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Sync is change-driven (Home, power sleep, CRUD, Sync now, token verify, boot) — not a timer. Unchanged notes and vault secrets are not pushed, so clean runs do not create empty GitHub commits. The journal tells a short story (`sync: pushed …`, coalesced `nothing to do` streaks) rather than one line per quiet skip. Sync copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused. Details: [server-sync-implementation.md](server-sync-implementation.md).
+Sync runs on the tablet. The token sits in the browser and in tablet RAM — never on disk. After restart the phone can repost it. Sync is change-driven (boot, app open, document open, wake, Wi-Fi up, Home, power sleep, CRUD, Sync now, token verify) — not a timer. Boot, app open, wake, Wi-Fi up, and Sync now always list GitHub so remote-only edits pull without tapping Sync; Home, power sleep, and token verify skip the network when nothing local is dirty. Opening a note from the Lobby pulls that file first. Unchanged notes and vault secrets are not pushed, so clean runs do not create empty GitHub commits. The journal tells a short story (`sync: pushed …`, coalesced `nothing to do` streaks) rather than one line per quiet skip. Sync copies missing notes both ways; it does not delete on its own. Empty push over a known-good note is refused. Details: [server-sync-implementation.md](server-sync-implementation.md).
 
 ## 12. Optional at-rest encryption (private notes)
 

@@ -266,7 +266,7 @@ function showDriftBanner(filename) {
       fetch('/api/reload', { method: 'POST', credentials: 'same-origin' })
         .then(function(r) {
           if (!r.ok) {
-            alert('Could not reload \u2014 is the note still open on the tablet?');
+            alert('Could not reload \u2014 is the document still open on the tablet?');
             return;
           }
           hideDriftBanner();

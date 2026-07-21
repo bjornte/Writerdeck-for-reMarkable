@@ -1,6 +1,6 @@
 # Writerdeck for reMarkable 1
 
-A distraction-free word processor for the first generation reMarkable. Supports Bluetooth and USB keyboards. Optionally syncs your notes to a private GitHub repository of your choice. Optionally encrypts files. Saves files as Markdown.
+A distraction-free word processor for the first generation reMarkable. Supports Bluetooth and USB keyboards. Optionally syncs your documents to a private GitHub repository of your choice. Optionally encrypts files. Saves files as Markdown.
 
 Natively, the reMarkable 1 supports the "draw", "write by hand" and "read" use cases. With this app, "use as typewriter" is also supported.
 
@@ -32,7 +32,7 @@ Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**,
    bash scripts/install.sh --start
    ```
 
-   It asks only for missing details (Wi-Fi IP, tablet password, optional GitHub notes sync). Saved values in `secrets/remarkable.local.env` are reused. For sync it walks you through GitHub’s token page, then pushes repo / token to the tablet after start. Phone PIN defaults to off (`none`).
+   It asks only for missing details (Wi-Fi IP, tablet password, optional GitHub document sync). Saved values in `secrets/remarkable.local.env` are reused. For sync it walks you through GitHub’s token page, then pushes repo / token to the tablet after start. Phone PIN defaults to off (`none`).
 
 If you already cloned this repo, run the same command from the clone instead.
 
@@ -58,7 +58,7 @@ Use a private personal repo. Conflicts keep both copies rather than overwrite. S
 
 ## Everyday use
 
-Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Esc, phone **Show PIN on tablet**, or `wd`. Lobby Files shows the connect address and PIN. About shows the product version and whether GitHub has a newer build. Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. The phone lands on the keyboard shell — keys go to the tablet. Open a note on the tablet to type on e-ink. Download starts from Lobby Files and asks the phone to save the file. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
+Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Esc, phone **Show PIN on tablet**, or `wd`. Lobby Files shows the connect address and PIN. About shows the product version and whether GitHub has a newer build. Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. The phone lands on the keyboard shell — keys go to the tablet. Open a document on the tablet to type on e-ink. Download starts from Lobby Files and asks the phone to save the file. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
 
 Show the Lobby from a Mac on the same Wi-Fi with `wd` (after `bash scripts/install-alias.sh`) or `bash scripts/lobby.sh`. On the tablet: `~/wd`.
 

@@ -12,10 +12,12 @@ import (
 )
 
 func TestSyncReasonForcesRemote(t *testing.T) {
-	if !syncReasonForcesRemote("manual") || !syncReasonForcesRemote("tablet") {
-		t.Fatal("manual and tablet must force remote list")
+	for _, r := range []string{"manual", "tablet", "boot", "app", "wake", "wifi"} {
+		if !syncReasonForcesRemote(r) {
+			t.Fatalf("%s must force remote list", r)
+		}
 	}
-	for _, r := range []string{"boot", "home", "power", "token", "poll"} {
+	for _, r := range []string{"home", "power", "token", "poll"} {
 		if syncReasonForcesRemote(r) {
 			t.Fatalf("%s must not force remote", r)
 		}

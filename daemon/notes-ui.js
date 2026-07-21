@@ -441,6 +441,6 @@ export function toggleObserve(e) {
       applyObserveStatus(st);
     })
     .catch(function(err) {
-      alert('Could not start observation: ' + (err && err.message ? err.message : 'open a note on the tablet first'));
+      alert('Could not start observation: ' + (err && err.message ? err.message : 'open a document on the tablet first'));
     });
 }

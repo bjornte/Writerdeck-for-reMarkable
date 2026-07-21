@@ -82,6 +82,9 @@ func (s *session) start() error {
 		fmt.Fprintln(os.Stderr, "writerdeck-server: session: editor process exited")
 		s.end()
 	}()
+	if syncEng.ready() {
+		go func() { _, _ = syncEng.reconcileAll("app") }()
+	}
 	return nil
 }
 
@@ -205,24 +208,26 @@ func (s *session) wakeFromSleep(noteName string) error {
 	if err := s.start(); err != nil {
 		return err
 	}
-	if noteName == "" {
-		return nil
-	}
-	for i := 0; i < 10; i++ {
-		if s.ec.ready() {
-			break
+	if noteName != "" {
+		for i := 0; i < 10; i++ {
+			if s.ec.ready() {
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
 		}
-		time.Sleep(500 * time.Millisecond)
+		if !s.ec.ready() {
+			return fmt.Errorf("editor socket not ready after wake")
+		}
+		editorName := filepath.Base(noteName)
+		cmd, _ := json.Marshal(struct {
+			T    string `json:"t"`
+			C    string `json:"c"`
+			Name string `json:"name"`
+		}{"cmd", "open", editorName})
+		s.ec.write(cmd)
 	}
-	if !s.ec.ready() {
-		return fmt.Errorf("editor socket not ready after wake")
+	if syncEng.ready() {
+		go func() { _, _ = syncEng.reconcileAll("wake") }()
 	}
-	editorName := filepath.Base(noteName)
-	cmd, _ := json.Marshal(struct {
-		T    string `json:"t"`
-		C    string `json:"c"`
-		Name string `json:"name"`
-	}{"cmd", "open", editorName})
-	s.ec.write(cmd)
 	return nil
 }

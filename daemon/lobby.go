@@ -170,6 +170,7 @@ func watchLobbyIP() {
 			wsClientsMu.Unlock()
 			fmt.Fprintf(os.Stderr, "writerdeck-server: lobby presence phone=%v usb=%v ws=%d hello=%d\n", phone, usb, n, ready)
 		}
+		wifiCameUp := haveWifi && !lastWifi && w
 		lastWifi = w
 		haveWifi = true
 		lastPhone = phone
@@ -178,6 +179,9 @@ func watchLobbyIP() {
 		pushLobbyInfo()
 		if ipChanged {
 			pushNotesList()
+		}
+		if wifiCameUp && syncEng.ready() {
+			go func() { _, _ = syncEng.reconcileAll("wifi") }()
 		}
 	}
 }

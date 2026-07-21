@@ -733,9 +733,9 @@ func vaultOpErrMsg(op string, err error) string {
 		if op == "decrypt" {
 			return "Cannot decrypt: wrong vault key or corrupted file. If vault was reset, recover from GitHub secret/vault history."
 		}
-		return "Encrypt failed: invalid note data."
+		return "Encrypt failed: invalid document data."
 	case strings.Contains(msg, "already exists"):
-		return "A note with that name already exists."
+		return "A document with that name already exists."
 	case strings.Contains(msg, "vault PIN required"):
 		return "Enter PIN first."
 	default:

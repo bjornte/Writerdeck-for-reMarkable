@@ -33,6 +33,53 @@ function keysActive() {
 export function applyMode() {
   document.body.classList.toggle('typing-dark', state.typingMode);
   if (keysActive()) { grab(); }
+  syncWakeLock();
+}
+
+// Keep the phone screen on while keys are forwarded for an open note, read
+// preview, or Lobby prompt. Idle shell alone does not hold the lock. Same idea
+// as cooking sites: Screen Wake Lock API (Safari 16.4+ / modern Chrome).
+var screenWakeLock = null;
+
+function wantWakeLock() {
+  if (state.remoteKeys === 'read' || state.remoteKeys === 'lobby') return true;
+  return !!(state.typingMode && state.tabletOpenNote);
+}
+
+function syncWakeLock() {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    releaseWakeLock();
+    return;
+  }
+  if (!wantWakeLock()) {
+    releaseWakeLock();
+    return;
+  }
+  requestWakeLock();
+}
+
+function requestWakeLock() {
+  if (typeof navigator === 'undefined' || !navigator.wakeLock) return;
+  if (screenWakeLock) return;
+  navigator.wakeLock.request('screen').then(function (lock) {
+    if (!wantWakeLock() || document.visibilityState === 'hidden') {
+      try { lock.release(); } catch (e) {}
+      return;
+    }
+    screenWakeLock = lock;
+    lock.addEventListener('release', function () {
+      if (screenWakeLock === lock) screenWakeLock = null;
+    });
+  }).catch(function () {
+    // Denied (battery saver, unsupported policy) -- typing still works.
+  });
+}
+
+function releaseWakeLock() {
+  if (!screenWakeLock) return;
+  var lock = screenWakeLock;
+  screenWakeLock = null;
+  try { lock.release(); } catch (e) {}
 }
 
 function setStatus(cls, text) {
@@ -300,6 +347,10 @@ export function initConnection() {
     if (overlayUp()) return;
     grab();
   });
+  // Browsers release Wake Lock when the tab is hidden; re-take on return.
+  document.addEventListener('visibilitychange', function () {
+    syncWakeLock();
+  });
 }
 export function closeWebSocket() {
   allowReconnect = false;
@@ -309,6 +360,7 @@ export function closeWebSocket() {
 
 window.addEventListener('pagehide', function () {
   allowReconnect = false;
+  releaseWakeLock();
   if (ws) {
     try { ws.close(); } catch (e) {}
     ws = null;
@@ -317,6 +369,7 @@ window.addEventListener('pagehide', function () {
 
 window.addEventListener('pageshow', function () {
   allowReconnect = true;
+  syncWakeLock();
 });
 
 export { connect, send, grab, startStatusPoll, stopStatusPoll, setStatus, overlayUp };

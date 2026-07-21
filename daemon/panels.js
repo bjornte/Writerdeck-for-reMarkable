@@ -112,7 +112,7 @@ function renderSyncPanel() {
 function renderSyncControls(list) {
   var syncToggle = document.createElement('div');
   syncToggle.className = 'font-row' + (state.syncOn ? ' active' : '');
-  syncToggle.innerHTML = '<span>Sync notes to GitHub</span>' +
+  syncToggle.innerHTML = '<span>Sync documents to GitHub</span>' +
     (state.syncOn ? '<span class="font-check">&#10003;</span>' : '');
   syncToggle.addEventListener('click', function(e) {
     e.stopPropagation();
@@ -251,7 +251,7 @@ function renderSyncControls(list) {
             return refreshSyncStatus();
           }
           verifyLine.style.color = '#4caf50';
-          verifyLine.textContent = '\u2713 Token saved \u2014 tap Sync to sync notes.';
+          verifyLine.textContent = '\u2713 Token saved \u2014 tap Sync to sync documents.';
           return refreshSyncStatus();
         });
       }).catch(function() {
@@ -324,7 +324,7 @@ function renderSyncControls(list) {
           .then(function(r) { return r.ok ? r.json() : null; })
           .then(function(st) {
             if (st && st.openNote) {
-              verifyLine.textContent = '\u2713 Synced other notes; \u201c' +
+              verifyLine.textContent = '\u2713 Synced other documents; \u201c' +
                 st.openNote.replace(/\.md$/, '') + '\u201d skipped while open.';
               return;
             }

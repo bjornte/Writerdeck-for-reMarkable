@@ -256,6 +256,14 @@ func notesItemHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case http.MethodGet:
+		baseName := filepath.Base(p)
+		// Lobby doLoad reads via loopback GET. Pull that note from GitHub first
+		// so remote edits land before the editor buffer is filled.
+		if isLoopback(r) && syncEng.ready() && wifiUp() {
+			if _, err := syncEng.pullNote(baseName); err != nil {
+				fmt.Fprintf(os.Stderr, "writerdeck-server: sync: pull on open %s: %v\n", baseName, err)
+			}
+		}
 		data, err := os.ReadFile(p)
 		if err != nil {
 			http.NotFound(w, r)
@@ -486,12 +494,12 @@ func noteOpErrMsg(op string, err error) string {
 	}
 	msg := err.Error()
 	if strings.Contains(msg, "already exists") || strings.Contains(msg, "name already taken") {
-		return "A note with that name already exists."
+		return "A document with that name already exists."
 	}
 	if op == "rename" {
-		return "Could not rename note."
+		return "Could not rename document."
 	}
-	return "Could not create note."
+	return "Could not create document."
 }
 
 // renameNoteFile renames a note on disk and notifies the editor if it was open.

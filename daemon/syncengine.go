@@ -12,7 +12,8 @@ import (
 )
 
 // syncEngine runs GitHub reconcile on the tablet. Token lives in RAM only.
-// Sync is change-driven (Home, power sleep, CRUD, manual, token, boot) — not polled.
+// Sync is change-driven (boot, app open, wake, Wi-Fi up, Home, power sleep,
+// CRUD, manual, token) -- not polled.
 type syncEngine struct {
 	tokenMu   sync.RWMutex
 	token     string
@@ -158,10 +159,16 @@ func noteContentHash(name string, data []byte) string {
 	return strHash(string(data))
 }
 
-// syncReasonForcesRemote is true for explicit Sync (phone or Lobby). Those
-// always list GitHub so remote-only edits can still be pulled when the tablet is clean.
+// syncReasonForcesRemote is true when we must list GitHub even if the tablet
+// looks clean -- Sync now (phone/Lobby), plus boot, app open, wake, and Wi-Fi up
+// so remote-only edits still pull without tapping Sync.
 func syncReasonForcesRemote(reason string) bool {
-	return reason == "manual" || reason == "tablet"
+	switch reason {
+	case "manual", "tablet", "boot", "app", "wake", "wifi":
+		return true
+	default:
+		return false
+	}
 }
 
 // contentNeedsPush reports whether local bytes differ from the last synced fingerprint.
@@ -578,8 +585,8 @@ func (e *syncEngine) reconcileAll(reason string) (int, error) {
 		pushLobbyInfo()
 	}()
 
-	// Auto triggers skip GitHub when nothing local needs a push. Manual/Lobby Sync
-	// always lists remote so phone-side edits still land.
+	// Home/power/token skip GitHub when nothing local needs a push. Boot, app,
+	// wake, wifi, and Sync now always list remote so laptop edits still land.
 	if !syncReasonForcesRemote(reason) {
 		dirty := e.localDirtyCount(true)
 		if dirty == 0 {
@@ -690,8 +697,8 @@ func (e *syncEngine) tryPushNote(name string) {
 }
 
 func startSyncBackground() {
-	// Boot reconcile only — no periodic poll. Event triggers: Home, power sleep,
-	// CRUD, token verify, and explicit Sync (phone / Lobby).
+	// Boot reconcile only -- no periodic poll. Event triggers: app open, wake,
+	// Wi-Fi up, Home, power sleep, CRUD, token verify, Sync now, document open.
 	go func() {
 		time.Sleep(3 * time.Second)
 		if syncEng.ready() {
