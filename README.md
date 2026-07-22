@@ -87,3 +87,7 @@ Keys use the socket because this kernel cannot load uinput. More: [docs/architec
 ## License
 
 [MIT](LICENSE) © 2026 Bjørn Tennøe. Keywriter is third-party with its own license.
+
+## Elsewhere
+
+[Post on Discord](https://discord.com/channels/385916768696139794/1529598069346406511/1529598069346406511), [Closed post on r/writerdeck](https://www.reddit.com/r/writerDeck/comments/1uhtsnu/)
