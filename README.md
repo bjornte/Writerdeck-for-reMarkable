@@ -58,7 +58,7 @@ Primary source: [keywriter](https://github.com/dps/remarkable-keywriter) by Sing
 
 Also ideas from [crazy-cow](https://github.com/machinelevel/sp425-crazy-cow).
 
-The project is heavily LLM-assisted and partly human-reviewed. 
+The project is heavily LLM-assisted and only partly human-reviewed. 
 
 
 ## Pieces
