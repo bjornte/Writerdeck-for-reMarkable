@@ -20,7 +20,7 @@ The project is heavily LLM-assisted and partly human-reviewed. Primary sources: 
 
 ## Status
 
-A usable appliance. As with any software there's improvement potential, but a whole lot is working as intended. Latest: five languages supported, both in UI and as USB keyboard layouts.
+A usable appliance. As with any software there's improvement potential, but a whole lot is working as intended. Latest: five languages supported, both in UI and as USB keyboard layouts. Various keyboard shortcuts, e.g. `Esc` toggles Markdown preview when editing.
 
 ## Install
 
@@ -46,7 +46,7 @@ As suggested during install: Create a private, personal GitHub repo for your not
 
 ## Starting and quitting
 
-Launch by mashing both page buttons simultaneously. Quit by pressing the home/ middle button (from editor to documents, and from documents to main reMarkable UI). Esc toggles edit and preview inside Writerdeck, or launches to Lobby from the stock UI with a USB keyboard.
+Launch by mashing both page buttons simultaneously. Quit by pressing the home/ middle button (from editor to documents, and from documents to main reMarkable UI).
 
 ## For developers
 
