@@ -34,23 +34,11 @@ Need: a reMarkable **1** (not 2), a Mac or Linux computer on the **same Wi-Fi**,
    bash scripts/install.sh --start
    ```
 
-   It asks only for missing details (Wi-Fi IP, tablet password, optional GitHub document sync). Saved values in `secrets/remarkable.local.env` are reused. For sync it walks you through GitHub’s token page, then pushes repo / token to the tablet after start. Phone PIN defaults to off (`none`).
-
-If you already cloned this repo, run the same command from the clone instead.
-
-### You're done when
-
-- Stock reMarkable UI is on the e-ink screen (Writerdeck opens only when you ask)
-- On your phone, `http://<that-Wi-Fi-IP>:8000/` shows the keyboard shell and **Connected** (not stuck on `connecting...`)
-- Optional check: both page buttons together (or `rmlobby`) open the Lobby
-
 If Writerdeck is stuck or something looks wrong after a bad install:
 
 ```bash
 systemctl disable --now writerdeck && systemctl start xochitl
 ```
-
-(run that over SSH on the tablet). After a firmware update, the password changes and you may need to re-run the install steps above.
 
 ### Optional GitHub sync
 
@@ -58,31 +46,19 @@ Use a private personal repo. Conflicts keep both copies rather than overwrite. S
 
 ![Create token](img/create-token.png)
 
-## Everyday use
+## Starting and quitting
 
-Power on — stock reMarkable UI. Open Writerdeck with both page buttons, USB Esc, phone **Show PIN on tablet**, or `rmlobby`. Lobby Files shows the connect address and PIN. About shows the product version and whether GitHub has a newer build. Open that address on the phone, enter the PIN, pair a keyboard to the phone if you like. The phone lands on the keyboard shell — keys go to the tablet. Open a document on the tablet to type on e-ink. Download starts from Lobby Files and asks the phone to save the file. Paste from phone inserts at the cursor. Font, PIN length, and rotation live in Lobby Settings.
-
-Show the Lobby from a Mac on the same Wi-Fi with `rmlobby` (after `bash scripts/install-alias.sh`) or `bash scripts/lobby.sh`. Screen grab: `rmshot`. On the tablet: `~/wd`.
-
-Useful keys: Esc toggles edit and preview inside Writerdeck, or launches to Lobby from the stock UI with a USB keyboard. Left and right page buttons together do the same launch without USB. Ctrl-C / Ctrl-X / Ctrl-V copy, cut, and paste. Lobby chords (including Sync ↩ and optional tab letters) live in `lobby-ui.json` on the tablet. Physical Home from edit returns to Files; from Lobby it quits to the stock UI (keyboard Home is caret only).
+Launch by mashing both page buttons simultaneously. Quit by pressing the home/ middle button (from editor to documents, and from documents to main reMarkable UI). Esc toggles edit and preview inside Writerdeck, or launches to Lobby from the stock UI with a USB keyboard.
 
 ## For developers
 
-Start with [TODO.md](TODO.md) and [DONE.md](DONE.md). Credentials: [secrets/README.md](secrets/README.md). Keep the tablet awake and iterate over Wi-Fi. After editor source changes: push, fetch the CI binary, deploy, run `test-edit-session.sh`. Rebuild the visitor installer ZIP with `bash scripts/pack-installer.sh`. Install notes: [docs/install-onboarding/](docs/install-onboarding/).
-
-## Constraints
-
-No jailbreak; keep OTA (over-the-air updates) — so no Toltec. One static Go binary on the tablet.
+Feel free to contribute in every way! As mentioned above, my fork of keywriter has [its own repo](https://github.com/bjornte/Writerdeck-keywriter). Maybe the improved modifier key / chord handling part can be a usable element for other keywriter-derived projects, too.
 
 ## Pieces
 
-Writerdeck-server — always-on Go daemon: phone page, WebSocket, files, sync, PIN, key relay into `/run/Writerdeck.sock`.
-
-Phone page — captures keys and talks to the server.
-
-Writerdeck — full-screen editor from our keywriter fork. Saves Markdown under `Writerdeck-user-documents/`.
-
-Keys use the socket because this kernel cannot load uinput. More: [docs/architecture.md](docs/architecture.md), [docs/decisions.md](docs/decisions.md).
+* Writerdeck — full-screen editor from our keywriter fork
+* Writerdeck-server — e.g. serves the phone page
+* Phone page — captures Bluetooth keyboard keystrokes. If syncing is on, it also submits the GitHub token for the personal repo, which for security reasons is never stored on the reMarkable.
 
 ## License
 
