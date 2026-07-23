@@ -42,9 +42,7 @@ systemctl disable --now writerdeck && systemctl start xochitl
 
 ### Optional GitHub sync
 
-Use a private personal repo. Conflicts keep both copies rather than overwrite. Set a fine-grained token with Contents read/write on that repo only. On the phone: Sync setup — turn sync on, enter `owner/repo`, paste the token. The token stays in the browser; a new Wi-Fi address is a new browser origin, so you may need to enter it again there.
-
-![Create token](img/create-token.png)
+As suggested during install: Create a private, personal repo for your notes. Set a fine-grained GitHub access token with Contents read/write on that repo only. See `img/create-token.png` for details. When the install is finished, use the phone interface to submit the token. For security reasons, is never stored on the reMarkable.
 
 ## Starting and quitting
 
@@ -58,7 +56,7 @@ Feel free to contribute in every way! As mentioned above, my fork of keywriter h
 
 * Writerdeck — full-screen editor from our keywriter fork
 * Writerdeck-server — e.g. serves the phone page
-* Phone page — captures Bluetooth keyboard keystrokes. If syncing is on, it also submits the GitHub token for the personal repo, which for security reasons is never stored on the reMarkable.
+* Phone page — captures Bluetooth keyboard keystrokes
 
 ## License
 
