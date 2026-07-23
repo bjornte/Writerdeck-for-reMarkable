@@ -42,7 +42,7 @@ systemctl disable --now writerdeck && systemctl start xochitl
 
 ### Optional GitHub sync
 
-As suggested during install: Create a private, personal GitHub repo for your notes. Set a fine-grained access token with Contents read/write on that repo only. See `img/create-token.png` for details. When the install is finished, use the phone interface to submit the token. For security reasons, is never stored on the reMarkable.
+As suggested during install: Create a private, personal GitHub repo for your notes. Set a fine-grained access token with `Contents read/write` on that repo only. See `img/create-token.png` for details. When the install is finished, use the phone interface to submit the token. For security reasons, is never stored on the reMarkable.
 
 ## Starting and quitting
 
