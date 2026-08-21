@@ -32,12 +32,18 @@ RM_HOST_USB="$(_get_env RM_HOST_USB)";   : "${RM_HOST_USB:=10.11.99.1}"
 RM_HOST_WIFI="$(_get_env RM_HOST_WIFI)"
 RM_ROOT_PASSWORD="$(_get_env RM_ROOT_PASSWORD)"
 
+# Optional reMarkable 2 (spike/rm2-official-sdk). Leave empty on rM1-only setups.
+RM2_HOST_USB="$(_get_env RM2_HOST_USB)"; : "${RM2_HOST_USB:=10.11.99.1}"
+RM2_HOST_WIFI="$(_get_env RM2_HOST_WIFI)"
+RM2_ROOT_PASSWORD="$(_get_env RM2_ROOT_PASSWORD)"
+
 # Default device target. USB-ethernet is currently inactive (no DHCP lease) on
 # the Mac, so prefer Wi-Fi when an IP is recorded. On iPhone Personal Hotspot,
 # export RM_HOST=172.20.10.5 (see RM_HOST_HOTSPOT in secrets). Override per
 # call with the optional target arg, or globally:  export RM_HOST=10.11.99.1
 RM_HOST="${RM_HOST:-${RM_HOST_WIFI:-$RM_HOST_USB}}"
 export RM_HOST_USB RM_HOST_WIFI RM_ROOT_PASSWORD RM_HOST
+export RM2_HOST_USB RM2_HOST_WIFI RM2_ROOT_PASSWORD
 
 # Hardened SSH/SCP transport options shared by every helper below.
 # (Word-split on purpose -- keep $RM_SSH_OPTS unquoted at the call sites.)

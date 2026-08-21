@@ -1,0 +1,29 @@
+# Official Codex SDK hello spike for reMarkable 2 (branch spike/rm2-official-sdk).
+name: spike-rm2-hello
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [spike/rm2-official-sdk]
+    paths:
+      - "spike/rm2-official-sdk/**"
+      - ".github/workflows/spike-rm2-hello.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build hello_remarkable with Codex SDK 4.0.367-rm2
+        run: bash spike/rm2-official-sdk/scripts/build-hello.sh --inside-container
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: spike-rm2-hello
+          path: |
+            spike/rm2-official-sdk/.cache/out/hello_remarkable
+            spike/rm2-official-sdk/.cache/out/libqsgepaper.so
+          if-no-files-found: error
