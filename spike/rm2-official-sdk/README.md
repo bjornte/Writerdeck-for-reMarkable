@@ -39,6 +39,16 @@ Official SDK host is **Linux x86_64**. On this Mac, build via Docker/Colima (`sc
 3. `systemctl start xochitl` restores stock UI
 4. No Toltec installed
 
+## Results so far
+
+- SSH key install + recon: OK (software 3.11.2.5, Qt 6.5.2, `libepaper.so` present).
+- CI build (`spike-rm2-hello`): OK — ARM `hello_remarkable` artifact.
+- Deploy via USB: OK (`/home/root/spike-rm2-hello/`).
+- Run with `QT_QUICK_BACKEND=epaper`: **fails** — no `libqsgepaper.so` on device or in SDK 4.0.367 (`Could not create scene graph context for backend 'epaper'`).
+- Run with default / `software` Quick backend + `-platform epaper`: **process stays alive**; confirm on-device pixels by eye (look at tablet during `SPIKE_HELLO_SECS=30 bash scripts/run-hello.sh`).
+
+Next: obtain a matching `libqsgepaper.so` (newer SDK that ships it, per official 3.17 notes) or confirm software-backend pixels are good enough for the spike.
+
 ## Docs
 
 Official: [Qt ePaper](https://developer.remarkable.com/documentation/qt_epaper), [SDK](https://developer.remarkable.com/documentation/sdk), [links / downloads](https://developer.remarkable.com/links).
