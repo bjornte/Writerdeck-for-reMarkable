@@ -45,6 +45,23 @@ RM_HOST="${RM_HOST:-${RM_HOST_WIFI:-$RM_HOST_USB}}"
 export RM_HOST_USB RM_HOST_WIFI RM_ROOT_PASSWORD RM_HOST
 export RM2_HOST_USB RM2_HOST_WIFI RM2_ROOT_PASSWORD
 
+# First reachable rM2 over SSH (USB, then Wi-Fi). Prints host or exits 1.
+rm2_pick_host() {
+  local h
+  if [ -n "${RM2_HOST:-}" ] && rm_test_key "$RM2_HOST"; then
+    echo "$RM2_HOST"
+    return 0
+  fi
+  for h in "$RM2_HOST_USB" "$RM2_HOST_WIFI"; do
+    [ -n "$h" ] || continue
+    if rm_test_key "$h"; then
+      echo "$h"
+      return 0
+    fi
+  done
+  return 1
+}
+
 # Hardened SSH/SCP transport options shared by every helper below.
 # (Word-split on purpose -- keep $RM_SSH_OPTS unquoted at the call sites.)
 #

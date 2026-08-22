@@ -17,7 +17,35 @@ On **software 3.27.3.0** (Codex 5.7.126), after OTA:
 
 **3.11.2.5 was too old** for this path (no `libqsgepaper` on device; epaper Quick backend aborts).
 
-**Framebuffer PNG capture:** `/dev/fb0` is not a readable mirror on rM2 software epaper. Hello writes `/home/root/spike-rm2-hello/screen.png` via `QQuickWindow::grabWindow()` after 3s; pull with `scripts/capture-screenshot.sh` or `run-and-capture.sh`.
+**Framebuffer PNG capture:** `/dev/fb0` is not a readable mirror on rM2 software epaper. Apps write `/home/root/spike-rm2-*/screen.png` via `QQuickWindow::grabWindow()`; pull with `capture-screenshot.sh` or `run-and-capture*.sh`.
+
+**Autonomous verify (no eyeballing):**
+
+```bash
+bash spike/rm2-official-sdk/scripts/verify-spike.sh hello
+bash spike/rm2-official-sdk/scripts/verify-spike.sh textedit
+bash spike/rm2-official-sdk/scripts/verify-spike.sh socket
+```
+
+Picks USB then Wi-Fi (`rm2-pick-host.sh`), runs the app, pulls PNG, checks 1404x1872 and enough dark pixels (`verify-png.sh`).
+
+## Port phases (spike tree only)
+
+| Phase | Proves | Status |
+|-------|--------|--------|
+| 1 hello | Official epaper QPA draws | PASS |
+| 2 textedit | Wrapped prose on epaper | PASS |
+| 3 socket | NDJSON keys into on-screen text | PASS |
+| 4 Writerdeck fork probe | Full fork binary on epaper | PASS (Lobby UI) |
+
+Full port is Qt6 + `-platform epaper` in the fork (CMake CI, not Toltec). Probe: `bash spike/rm2-official-sdk/scripts/build-fork-probe.sh` then `verify-spike.sh fork-probe`.
+
+```bash
+bash spike/rm2-official-sdk/scripts/verify-all-spike.sh
+bash spike/rm2-official-sdk/scripts/verify-spike.sh fork-probe
+```
+
+Production launcher for rM2 when the fork ships: `scripts/Writerdeck-launcher-rm2.sh`.
 
 ## Device under test
 
@@ -61,5 +89,7 @@ Local SDK + build output: `spike/rm2-official-sdk/.cache/` (gitignored).
 Writerdeck itself. Next step would be a Qt6 port of the editor (EditHelper, typing harness, launch path) on the same display stack -- large, separate project.
 
 ## Docs
+
+Continue in a fresh session: [HANDOFF.md](HANDOFF.md).
 
 [Qt ePaper](https://developer.remarkable.com/documentation/qt_epaper), [SDK](https://developer.remarkable.com/documentation/sdk), [links](https://developer.remarkable.com/links).

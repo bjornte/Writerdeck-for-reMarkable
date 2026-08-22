@@ -5,11 +5,7 @@ ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 SPIKE="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=/dev/null
 . "$ROOT/scripts/_env.sh"
-HOST="${RM2_HOST:-${RM2_HOST_WIFI:-}}"
-if [ -z "$HOST" ]; then
-  err "RM2_HOST_WIFI not set in secrets/remarkable.local.env"
-  exit 1
-fi
+HOST="$(rm2_pick_host)" || { err "RM2 unreachable (set RM2_HOST_WIFI in secrets?)"; exit 1; }
 BIN="$SPIKE/.cache/out/hello_remarkable"
 if [ ! -f "$BIN" ]; then
   err "missing $BIN - run scripts/build-hello.sh first"

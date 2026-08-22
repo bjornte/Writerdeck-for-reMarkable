@@ -4,7 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 # shellcheck source=/dev/null
 . "$ROOT/scripts/_env.sh"
-HOST="${RM2_HOST:-${RM2_HOST_WIFI:-10.11.99.1}}"
+HOST="$(rm2_pick_host 2>/dev/null || true)"
+HOST="${HOST:-${RM2_HOST:-${RM2_HOST_WIFI:-10.11.99.1}}}"
 REMOTE="${SPIKE_SCREEN_REMOTE:-/home/root/spike-rm2-hello/screen.png}"
 OUT_DIR="$ROOT/spike/rm2-official-sdk/screenshots"
 mkdir -p "$OUT_DIR"

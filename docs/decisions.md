@@ -160,15 +160,19 @@ Rotation is saved on the tablet and pushed when the editor connects. Change it f
 
 Automated tests use filenames starting with `z-test-` so they sort last and stay obvious in the Files list.
 
-## 33. reMarkable 1 first; rM2 only if the community wants it
+## 33. reMarkable 1 first; rM2 via official SDK spike
 
-Writerdeck targets the reMarkable 1. Install and docs say so on purpose.
+Writerdeck targets the reMarkable 1 today. Install and docs still say rM1 on purpose until a port ships.
 
-The editor draws through linuxfb on `/dev/fb0` with the epaper scene graph — that path is rM1. On rM2 the panel is driven differently, so the same binary does not light the screen. Community shims such as rm2fb usually mean Toltec; that conflicts with keeping over-the-air updates (§ Constraints in [architecture.md](architecture.md)). A Toltec-free path means a real rM2 display backend while keeping the Qt editor — roughly the same weight of work as making the typewriter trustworthy (EditHelper, wrap, undo, harness). Not insurmountable; not a weekend config change either. Replacing Qt wholesale would be larger, because typing behavior would have to be rebuilt.
+The editor draws through linuxfb on `/dev/fb0` with the epaper scene graph — that path is rM1. On rM2 the panel is driven differently, so the same binary does not light the screen. Community shims such as rm2fb usually mean Toltec; that conflicts with keeping over-the-air updates (§ Constraints in [architecture.md](architecture.md)).
+
+**Aug 2026 spike (`spike/rm2-official-sdk`, branch `spike/rm2-official-sdk`):** On rM2 software **3.27.3.0**, the official Codex rm2 SDK hello app draws with `QT_QUICK_BACKEND=epaper` and `-platform epaper` — no Toltec. `/dev/fb0` capture does not work; in-app `grabWindow()` PNG pull does. Autonomous check: `bash spike/rm2-official-sdk/scripts/verify-spike.sh hello`.
+
+A Toltec-free product port means rebuilding the editor on **Qt6 Quick + official epaper QPA** (same docs cover rm1 and rm2), keeping EditHelper and the typing harness — not backporting display patches onto the Qt5/linuxfb stack. Effort is in the same ballpark as making typing trustworthy. Spike phases: hello (pass) → TextArea on epaper (pass) → socket keys (pass) → fork Qt6 binary on device (pass, Aug 2026). Remaining: move CMake build into the fork, rm1+rm2 CI, typing harness on Qt6.
 
 Launch without page buttons and Home is already partly covered: phone Show PIN / `/api/lobby`, `rmlobby`, USB Esc. Power-button patterns or touch could fill a tablet-only gap later.
 
-Do not start rM2 work unless there is clear community demand. Wishlist: [improvements.md](improvements.md).
+Wishlist: [improvements.md](improvements.md).
 
 ## 34. Lobby tip: real browsers only, not Cursor
 

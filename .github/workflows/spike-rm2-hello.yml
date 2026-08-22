@@ -16,8 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build hello_remarkable with Codex SDK 4.0.367-rm2
-        run: bash spike/rm2-official-sdk/scripts/build-hello.sh --inside-container
+      - name: Build spike apps with Codex SDK 3.27 rm2
+        run: |
+          bash spike/rm2-official-sdk/scripts/build-hello.sh --inside-container
+          bash spike/rm2-official-sdk/scripts/build-textedit.sh --inside-container
+          bash spike/rm2-official-sdk/scripts/build-socket.sh --inside-container
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
@@ -25,5 +28,8 @@ jobs:
           name: spike-rm2-hello
           path: |
             spike/rm2-official-sdk/.cache/out/hello_remarkable
+            spike/rm2-official-sdk/.cache/out/textedit_spike
+            spike/rm2-official-sdk/.cache/out/socket_spike
+            spike/rm2-official-sdk/.cache/out/socket_inject
             spike/rm2-official-sdk/.cache/out/libqsgepaper.so
           if-no-files-found: error

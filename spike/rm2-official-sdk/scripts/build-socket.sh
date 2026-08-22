@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# Build official hello_remarkable for rM2 using the Codex SDK.
-# On macOS / non-x86_64: requires Docker (Colima) and runs the Linux x86_64 SDK
-# inside ubuntu:22.04 --platform linux/amd64.
+# Build socket_spike + socket_inject for rM2 using the Codex SDK.
 set -euo pipefail
 SPIKE="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck source=/dev/null
@@ -12,8 +10,9 @@ SPIKE="$(cd "$(dirname "$0")/.." && pwd)"
 CACHE="$SPIKE/.cache"
 SDK_DIR="${SPIKE_SDK_DIR:-$CACHE/sdk-$SDK_LABEL}"
 INSTALLER="$CACHE/$(basename "$SDK_URL")"
-SRC="$SPIKE/hello_remarkable"
+SRC="$SPIKE/socket_spike"
 OUT="$CACHE/out"
+BUILD="$OUT/build-socket"
 mkdir -p "$CACHE" "$OUT"
 
 need_docker() {
@@ -48,16 +47,12 @@ install_sdk_linux() {
 }
 
 build_linux() {
-  _spike_cmake_build "$SDK_DIR" "$SRC" "$OUT/build" "$OUT/hello_remarkable" \
+  _spike_cmake_build "$SDK_DIR" "$SRC" "$BUILD" "$OUT/socket_spike" \
     || { echo "ERROR: SDK build failed" >&2; exit 1; }
-  local sg
-  sg="$(find "$SDK_DIR" -path '*/plugins/scenegraph/libqsgepaper.so' 2>/dev/null | head -n1 || true)"
-  if [ -n "$sg" ]; then
-    cp -f "$sg" "$OUT/libqsgepaper.so"
-    echo "Copied libqsgepaper.so from SDK"
-  fi
-  file "$OUT/hello_remarkable"
-  echo "OK: $OUT/hello_remarkable"
+  cp -f "$BUILD/socket_inject" "$OUT/socket_inject"
+  file "$OUT/socket_spike"
+  file "$OUT/socket_inject"
+  echo "OK: $OUT/socket_spike $OUT/socket_inject"
 }
 
 build_via_docker() {
