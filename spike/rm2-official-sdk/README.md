@@ -17,7 +17,7 @@ On **software 3.27.3.0** (Codex 5.7.126), after OTA:
 
 **3.11.2.5 was too old** for this path (no `libqsgepaper` on device; epaper Quick backend aborts).
 
-**Framebuffer PNG capture** (`scripts/capture-screenshot.sh`) does not show epaper/QML content on 3.27 — `/dev/fb0` dump is not a readable mirror of the software display. Visual check on tablet remains the acceptance test for this spike.
+**Framebuffer PNG capture:** `/dev/fb0` is not a readable mirror on rM2 software epaper. Hello writes `/home/root/spike-rm2-hello/screen.png` via `QQuickWindow::grabWindow()` after 3s; pull with `scripts/capture-screenshot.sh` or `run-and-capture.sh`.
 
 ## Device under test
 

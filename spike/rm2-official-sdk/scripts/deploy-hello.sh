@@ -16,7 +16,8 @@ if [ ! -f "$BIN" ]; then
   exit 1
 fi
 REMOTE_DIR="/home/root/spike-rm2-hello"
-rm_ssh "mkdir -p '$REMOTE_DIR/plugins/scenegraph'" "$HOST"
+rm_ssh "killall hello_remarkable 2>/dev/null || true; mkdir -p '$REMOTE_DIR/plugins/scenegraph'" "$HOST"
+sleep 1
 rm_send_file "$BIN" "$REMOTE_DIR/hello_remarkable" "$HOST"
 rm_ssh "chmod +x '$REMOTE_DIR/hello_remarkable'" "$HOST"
 if [ -f "$SPIKE/.cache/out-ci327/libqsgepaper.so" ]; then

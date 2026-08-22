@@ -20,25 +20,4 @@ Window {
             hello_text.visible = !hello_text.visible
         }
     }
-
-    // Spike: write PNG for autonomous verify (scripts/capture-screenshot.sh).
-    Timer {
-        interval: 2500
-        running: true
-        repeat: false
-        onTriggered: {
-            contentItem.grabToImage(function(result) {
-                if (!result) {
-                    console.log("grabToImage failed")
-                    return
-                }
-                var path = "/home/root/spike-rm2-hello/screen.png"
-                if (result.saveToFile(path)) {
-                    console.log("saved", path)
-                } else {
-                    console.log("saveToFile failed", path)
-                }
-            })
-        }
-    }
 }

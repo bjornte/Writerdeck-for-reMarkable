@@ -14,18 +14,19 @@ ssh $RM_SSH_OPTS -o BatchMode=yes -o ConnectTimeout=8 "root@$HOST" \
 
 ssh $RM_SSH_OPTS -o BatchMode=yes -o ConnectTimeout=8 "root@$HOST" 'bash -s' <<'REMOTE'
 set -euo pipefail
+killall hello_remarkable 2>/dev/null || true
+systemctl stop xochitl
+sleep 2
 cd /home/root/spike-rm2-hello
 rm -f screen.png
 export HOME=/home/root
 export QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS="rotate=180:invertx"
 export QT_QUICK_BACKEND=epaper
-systemctl stop xochitl
-sleep 1
 ./hello_remarkable -platform epaper > /tmp/hello.log 2>&1 &
 echo $! > /tmp/hello.pid
 REMOTE
 
-SPIKE_SCREEN_WAIT=12 RM2_HOST="$HOST" bash "$SPIKE/scripts/capture-screenshot.sh" "$LABEL"
+SPIKE_SCREEN_WAIT=15 RM2_HOST="$HOST" bash "$SPIKE/scripts/capture-screenshot.sh" "$LABEL"
 
 ssh $RM_SSH_OPTS -o BatchMode=yes -o ConnectTimeout=8 "root@$HOST" 'bash -s' <<'REMOTE'
 set -euo pipefail
