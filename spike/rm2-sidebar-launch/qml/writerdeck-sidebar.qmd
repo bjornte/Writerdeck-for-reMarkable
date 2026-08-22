@@ -1,0 +1,48 @@
+VERSION 3.27.3.0
+
+; Writerdeck native sidebar entry for rM2 xochitl (XOVI + qt-resource-rebuilder).
+; Learned from AppLoad's Sidebar.qml hook; no AppLoad runtime.
+; Gate: only enable when IMG_VERSION is in tested-os.json (see scripts/enable.sh).
+
+AFFECT /qml/device/view/navigator/Sidebar.qml
+    IMPORT net.asivery.CommandExecutor 1.0
+
+    TRAVERSE DeviceKeyboardNavigationHandler > ColumnLayout#filterColumn
+        LOCATE AFTER DeviceKeyboardNavigationHandler#integrationsHandler
+        INSERT {
+            SidebarFilterItem {
+                id: openWriterdeck
+                objectName: "openWriterdeck"
+                title: qsTr("Writerdeck")
+                active: false
+                enabled: true
+                Layout.preferredHeight: Values.navigatorSidebarItemHeight
+                Layout.preferredWidth: parent.width
+                navigationHandler: root
+
+                CommandExecutor {
+                    id: writerdeckCmd
+                }
+
+                onClicked: {
+                    activate();
+                    root.resetFocusIndex();
+                    writerdeckCmd.executeCommand("/bin/sh", [
+                        "-c",
+                        "wget -qO- --post-data= --header=Content-Type:application/json http://127.0.0.1:8000/api/lobby >/dev/null 2>&1 || wget -qO- --post-data= http://127.0.0.1:8000/api/launch >/dev/null 2>&1 || true"
+                    ]);
+                }
+
+                function activate() {
+                    toggle();
+                }
+            }
+        }
+    END TRAVERSE
+
+    TRAVERSE DeviceKeyboardNavigationHandler#root
+        REBUILD navigationModel
+            LOCATE AFTER STREAM / integrations / INSERT STREAM / , openWriterdeck /
+        END REBUILD
+    END TRAVERSE
+END AFFECT
