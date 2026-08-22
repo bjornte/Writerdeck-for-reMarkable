@@ -2,53 +2,64 @@
 
 Branch: `spike/rm2-official-sdk`.
 
-Goal: prove we can draw on an rM2 with reMarkable’s public Qt ePaper path (no Toltec, no `rm2fb`), then decide whether a Writerdeck port is worth it.
+Goal: prove we can draw on an rM2 with reMarkable's public Qt ePaper path (no Toltec, no `rm2fb`), then decide whether a Writerdeck port is worth it.
 
-## Device under test (Aug 2026)
+## Result: PASS (Aug 2026)
+
+On **software 3.27.3.0** (Codex 5.7.126), after OTA:
+
+- Stock ships `libqsgepaper.so` under `/usr/lib/plugins/scenegraph/`.
+- Build hello with public SDK **3.27.0.97** rm2 (`scripts/sdk-url.sh`).
+- Run: `QT_QUICK_BACKEND=epaper`, `-platform epaper`, touch params `rotate=180:invertx`.
+- **"Hello reMarkable!" visible on device** (owner confirmed).
+- `systemctl start xochitl` restores stock UI.
+- No Toltec.
+
+**3.11.2.5 was too old** for this path (no `libqsgepaper` on device; epaper Quick backend aborts).
+
+**Framebuffer PNG capture** (`scripts/capture-screenshot.sh`) does not show epaper/QML content on 3.27 — `/dev/fb0` dump is not a readable mirror of the software display. Visual check on tablet remains the acceptance test for this spike.
+
+## Device under test
 
 | Fact | Value |
 |------|--------|
-| Host | `RM2_HOST_WIFI` in `secrets/remarkable.local.env` |
-| Software | `IMG_VERSION` 3.11.2.5 |
-| Codex / os-release | 4.0.447 (kirkstone) |
-| Kernel | 5.4.70-v1.3.4-rm11x |
-| Qt on device | 6.5.2 |
-| Platform plugin | `/usr/lib/plugins/platforms/libepaper.so` present |
-| Framebuffer | `/dev/fb0` (`mxs-lcdif`) — not the rM1 EPDC path |
+| Host | `RM2_HOST_WIFI` / USB `10.11.99.1` in `secrets/remarkable.local.env` |
+| Software | 3.27.3.0 |
+| Codex | 5.7.126 (scarthgap) |
+| Qt | 6.x + `libepaper.so` + `libqsgepaper.so` |
+| SDK used | 3.27.0.97 rm2 x86_64 (CI + `scripts/sdk-url.sh`) |
 
-Closest public SDK installer found: OS image **4.0.367** rm2 x86_64 (no 4.0.447 upload). URL in `scripts/sdk-url.sh`.
+## Commands
+
+```bash
+# Build (Mac: Docker/Colima, or CI artifact)
+bash spike/rm2-official-sdk/scripts/build-hello.sh
+
+# Deploy + run (~45s on screen)
+RM2_HOST=10.11.99.1 bash spike/rm2-official-sdk/scripts/deploy-hello.sh
+RM2_HOST=10.11.99.1 bash spike/rm2-official-sdk/scripts/run-hello.sh
+
+# Facts
+bash spike/rm2-official-sdk/scripts/recon-rm2.sh
+```
+
+After firmware OTA: SSH host key changes — `ssh-keygen -R 10.11.99.1` (and Wi-Fi IP). Password may change; update `RM2_ROOT_PASSWORD`.
 
 ## Layout
 
-- `hello_remarkable/` — upstream [reMarkable developer example](https://github.com/reMarkable/remarkable-developer-examples) (Qt 6 Quick)
-- `scripts/build-hello.sh` — download SDK (if needed), cmake, build (Linux x86_64 or Docker)
-- `scripts/deploy-hello.sh` — copy binary to tablet
-- `scripts/run-hello.sh` — stop `xochitl`, run with `-platform epaper`, restore `xochitl` on exit
-- `scripts/recon-rm2.sh` — firmware / Qt / fb facts
+- `hello_remarkable/` -- upstream [reMarkable developer example](https://github.com/reMarkable/remarkable-developer-examples)
+- `scripts/build-hello.sh` -- Codex SDK cmake build (Linux x86_64 or Docker)
+- `scripts/deploy-hello.sh` -- copy binary (+ optional bundled `libqsgepaper.so` from CI)
+- `scripts/run-hello.sh` -- stop `xochitl`, epaper hello, restore `xochitl`
+- `scripts/recon-rm2.sh` -- firmware / Qt facts
+- `scripts/capture-screenshot.sh` -- experimental fb0 PNG (not reliable for epaper apps)
 
-Local SDK + build output live under `spike/rm2-official-sdk/.cache/` (gitignored).
+Local SDK + build output: `spike/rm2-official-sdk/.cache/` (gitignored).
 
-## Mac note
+## What this does not prove
 
-Official SDK host is **Linux x86_64**. On this Mac, build via Docker/Colima (`scripts/build-hello.sh`) or GitHub Actions (`.github/workflows/spike-rm2-hello.yml`).
-
-## Pass criteria
-
-1. Hello text visible on the rM2 e-ink after `run-hello.sh`
-2. Touch toggles text (official sample behaviour)
-3. `systemctl start xochitl` restores stock UI
-4. No Toltec installed
-
-## Results so far
-
-- SSH key install + recon: OK (software 3.11.2.5, Qt 6.5.2, `libepaper.so` present).
-- CI build (`spike-rm2-hello`): OK — ARM `hello_remarkable` artifact.
-- Deploy via USB: OK (`/home/root/spike-rm2-hello/`).
-- Run with `QT_QUICK_BACKEND=epaper`: **fails** — no `libqsgepaper.so` on device or in SDK 4.0.367 (`Could not create scene graph context for backend 'epaper'`).
-- Run with default / `software` Quick backend + `-platform epaper`: **process stays alive**; confirm on-device pixels by eye (look at tablet during `SPIKE_HELLO_SECS=30 bash scripts/run-hello.sh`).
-
-Next: obtain a matching `libqsgepaper.so` (newer SDK that ships it, per official 3.17 notes) or confirm software-backend pixels are good enough for the spike.
+Writerdeck itself. Next step would be a Qt6 port of the editor (EditHelper, typing harness, launch path) on the same display stack -- large, separate project.
 
 ## Docs
 
-Official: [Qt ePaper](https://developer.remarkable.com/documentation/qt_epaper), [SDK](https://developer.remarkable.com/documentation/sdk), [links / downloads](https://developer.remarkable.com/links).
+[Qt ePaper](https://developer.remarkable.com/documentation/qt_epaper), [SDK](https://developer.remarkable.com/documentation/sdk), [links](https://developer.remarkable.com/links).

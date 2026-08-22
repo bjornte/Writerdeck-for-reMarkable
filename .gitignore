@@ -67,6 +67,7 @@ keymaps/.tmp/
 
 # Spike: Codex SDK installer + build products (large; local only)
 /spike/rm2-official-sdk/.cache/
+/spike/rm2-official-sdk/screenshots/
 
 # Public release: ship source-only. The keywriter binary + qt5.tar.gz are
 # CI-built (build-keywriter.yml); they are NOT committed in this public mirror.

@@ -16,10 +16,12 @@ if [ ! -f "$BIN" ]; then
   exit 1
 fi
 REMOTE_DIR="/home/root/spike-rm2-hello"
-rm_ssh "mkdir -p '$REMOTE_DIR'" "$HOST"
+rm_ssh "mkdir -p '$REMOTE_DIR/plugins/scenegraph'" "$HOST"
 rm_send_file "$BIN" "$REMOTE_DIR/hello_remarkable" "$HOST"
 rm_ssh "chmod +x '$REMOTE_DIR/hello_remarkable'" "$HOST"
-if [ -f "$SPIKE/.cache/out/libqsgepaper.so" ]; then
-  rm_send_file "$SPIKE/.cache/out/libqsgepaper.so" "$REMOTE_DIR/libqsgepaper.so" "$HOST"
+if [ -f "$SPIKE/.cache/out-ci327/libqsgepaper.so" ]; then
+  rm_send_file "$SPIKE/.cache/out-ci327/libqsgepaper.so" "$REMOTE_DIR/plugins/scenegraph/libqsgepaper.so" "$HOST"
+elif [ -f "$SPIKE/.cache/out/libqsgepaper.so" ]; then
+  rm_send_file "$SPIKE/.cache/out/libqsgepaper.so" "$REMOTE_DIR/plugins/scenegraph/libqsgepaper.so" "$HOST"
 fi
 echo "Deployed to root@$HOST:$REMOTE_DIR/"

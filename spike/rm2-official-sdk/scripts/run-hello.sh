@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 # Run hello on the rM2 using the official epaper QPA. Restores xochitl on exit.
-#
-# Note (3.11.2.5 / Codex 4.0.447): stock has libepaper.so but no
-# plugins/scenegraph/libqsgepaper.so, and SDK 4.0.367 likewise. Setting
-# QT_QUICK_BACKEND=epaper aborts. Default/software Quick backends stay up.
+# Requires 3.27+ (stock libqsgepaper.so). See README.md.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 # shellcheck source=/dev/null
@@ -33,14 +30,9 @@ fi
 export QT_PLUGIN_PATH="$PWD/plugins${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
 export QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS="rotate=180:invertx"
 export HOME=/home/root
-export LC_ALL=C.UTF-8
-export LANG=C.UTF-8
-if [ -n "${SPIKE_QUICK_BACKEND:-}" ]; then
-  export QT_QUICK_BACKEND="$SPIKE_QUICK_BACKEND"
-  echo "QT_QUICK_BACKEND=$QT_QUICK_BACKEND"
-else
-  echo "QT_QUICK_BACKEND unset (default scene graph)"
-fi
+# 3.27+ ships libqsgepaper.so; official docs use epaper Quick backend.
+export QT_QUICK_BACKEND="${SPIKE_QUICK_BACKEND:-epaper}"
+echo "QT_QUICK_BACKEND=$QT_QUICK_BACKEND"
 
 cleanup() {
   echo "restarting xochitl..."
