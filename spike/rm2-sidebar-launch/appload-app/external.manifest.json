@@ -1,0 +1,9 @@
+{
+  "name": "Writerdeck",
+  "application": "./launch-writerdeck.sh",
+  "workingDirectory": "/home/root/xovi/exthome/appload/writerdeck",
+  "args": [],
+  "qtfb": false,
+  "disablesWindowedMode": true,
+  "environment": {}
+}

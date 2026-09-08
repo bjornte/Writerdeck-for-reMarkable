@@ -14,6 +14,20 @@ After about twenty minutes without a clear finish, stop and report what you trie
 
 Standing decision: [decisions.md](decisions.md) **Typing-test strategy is failing**. Theory: [editor-testing/methodology-shortcomings.md](editor-testing/methodology-shortcomings.md). Claims inventory: [editor-testing/basic-claims.md](editor-testing/basic-claims.md). Do not treat critical-or-full green as “basic editing works,” and do not delete this lesson (or that decisions section, or the banner in [editor-testing/todo.md](editor-testing/todo.md)) until there is solid proof those misses have stopped recurring.
 
+## rM2 USB-C
+
+Host mode for a dongle does not survive reboot, and must not: the port then cannot charge or talk to a laptop. The controller also does not supply accessory 5V (`vbus not found`). Restore gadget before sleep. A bus-powered hub/keyboard still needs its own power (Y-cable).
+
+## rM2 touch
+
+On reMarkable 2, Lobby top tabs that fire the wrong neighbour usually mean X is mirrored. Launcher must keep `QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS=rotate=180:invertx`. Never let `main.cpp` unconditionally `qputenv` `rotate=180` — that wipes `invertx`. Set the env only when empty (rM1 default); the rM2 launcher supplies the full string.
+
+## rM2 sidebar (XOVI)
+
+XOVI’s xochitl drop-in is a tmpfs mount — reboot or `xovi/stock` clears it, and a plain `systemctl start xochitl` then comes back stock with no Writerdeck row. Do not treat that as an icon bug. Re-arm with `/home/root/writerdeck-ensure-sidebar.sh` (wired from `writerdeck.service` and before every return to xochitl). Install once via `spike/rm2-sidebar-launch/scripts/install-native.sh`. Software 3.28 moved the hamburger tree (`FocusScope` / `ArkControls.SidebarItem`); the 3.27 `SidebarFilterItem` path fails locate and never draws a row. Keep 3.28 out of `tested-os.json` until the row appears and xochitl does not crash-loop.
+
+Do not POST `/api/lobby` (which `systemctl stop`s xochitl) from inside the sidebar click. On 3.28 that segfaults xochitl; systemd `OnFailure=` runs `remarkable-fail.sh` and the tablet reboots (`goodroot has been set by xochitl. Rebooting`). Launch via `writerdeck-sidebar-launch.sh` (setsid + one-second delay) so the click finishes first.
+
 ## Deploy traps
 
 Three ways a change looks like it did nothing: GitHub has not built the new editor yet; the phone cached the page; the old editor process is still running.

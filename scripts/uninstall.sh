@@ -43,6 +43,7 @@ fi
 
 echo "--- stop service + processes ---"
 rm_ssh 'systemctl disable --now writerdeck 2>/dev/null || true
+systemctl disable --now writerdeck-usb-gadget 2>/dev/null || true
 for p in $(pidof Writerdeck-server 2>/dev/null); do kill -TERM "$p" 2>/dev/null || true; done
 for p in $(pidof Writerdeck 2>/dev/null); do kill -TERM "$p" 2>/dev/null || true; done
 sleep 1
@@ -52,11 +53,13 @@ true' "$TARGET"
 echo "  stopped."
 
 echo "--- remove unit + files ---"
-rm_ssh 'rm -f /etc/systemd/system/writerdeck.service /etc/systemd/system/rm1-writerdeck.service
+rm_ssh 'rm -f /etc/systemd/system/writerdeck.service /etc/systemd/system/rm1-writerdeck.service \
+  /etc/systemd/system/writerdeck-usb-gadget.service
 systemctl daemon-reload 2>/dev/null || true
 rm -f /home/root/Writerdeck /home/root/Writerdeck.new \
   /home/root/Writerdeck-server /home/root/Writerdeck-server.new \
   /home/root/Writerdeck-launcher.sh /home/root/wd \
+  /home/root/writerdeck-restore-usb-gadget.sh \
   /home/root/rmkbd /home/root/keywriter /home/root/launch-keywriter.sh \
   /run/Writerdeck.sock /run/rmkbd.sock \
   /tmp/kw.log /tmp/wd-server.log /home/root/qt5.tar.gz
@@ -69,7 +72,7 @@ echo "--- start stock UI (xochitl) ---"
 rm_ssh 'systemctl start xochitl 2>/dev/null || true; sleep 1; systemctl is-active xochitl 2>&1 || true' "$TARGET"
 
 echo "--- verify ---"
-left="$(rm_ssh 'for p in /home/root/Writerdeck /home/root/Writerdeck-server /home/root/Writerdeck-launcher.sh /home/root/wd /home/root/Writerdeck-user-documents /home/root/.Writerdeck /home/root/keymaps /home/root/qt5 /etc/systemd/system/writerdeck.service; do [ -e "$p" ] && echo "$p"; done' "$TARGET" || true)"
+left="$(rm_ssh 'for p in /home/root/Writerdeck /home/root/Writerdeck-server /home/root/Writerdeck-launcher.sh /home/root/wd /home/root/Writerdeck-user-documents /home/root/.Writerdeck /home/root/keymaps /home/root/qt5 /etc/systemd/system/writerdeck.service /etc/systemd/system/writerdeck-usb-gadget.service /home/root/writerdeck-restore-usb-gadget.sh; do [ -e "$p" ] && echo "$p"; done' "$TARGET" || true)"
 if [ -n "${left:-}" ]; then
   echo "WARNING: still present:" >&2
   echo "$left" >&2

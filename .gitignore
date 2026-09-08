@@ -30,6 +30,7 @@ docs/dev-behind-firewall-howto.md
 # ──────────────────────────────────────────────────────────────
 /Writerdeck-server
 /Writerdeck-server.exe
+/daemon/Writerdeck-server
 *.o
 *.exe
 dist/
@@ -64,6 +65,11 @@ Thumbs.db
 /docs/recon/*
 !/docs/recon/.gitkeep
 keymaps/.tmp/
+
+# Spike: Codex SDK installer + build products (large; local only)
+/spike/rm2-official-sdk/.cache/
+/spike/rm2-official-sdk/screenshots/
+/spike/rm2-official-sdk/core
 
 # Public release: ship source-only. The keywriter binary + qt5.tar.gz are
 # CI-built (build-keywriter.yml); they are NOT committed in this public mirror.

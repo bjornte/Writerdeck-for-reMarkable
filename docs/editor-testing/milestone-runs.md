@@ -20,3 +20,6 @@ Keep every run where the **number of tests changed**, plus later full-green chec
 | 18 Jul 2026, 21:43 | 125/125/0 | 57/57/0 | Full green (fork `19792fc`) |
 
 Wrap group **21/21**; undo group **5/5**.
+
+| 22 Aug 2026, 12:05 | 57/42/15 (critical) | 42/42/0 (non-wrap critical) | **rM2 Qt6** first harness run (`10.11.99.1`); PIN unblocked via `configure-sync.sh`; all 15 fails are wrap width (cursor 3× expected — harness `Width=320` not matching device reflow) |
+| 22 Aug 2026, 13:45 | 57/56/1 (critical) | 56/56/0 | **rM2 Qt6** lobby `lobbyFontScale=2.35` (fonts only); edit `editFontScale=3.0`; only fail `wrap-down-goal-column` |

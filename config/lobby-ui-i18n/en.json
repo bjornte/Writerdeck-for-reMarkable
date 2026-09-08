@@ -17,7 +17,7 @@
   "files.encrypt": "Encrypt",
   "files.newEncrypted": "New encrypted",
   "files.decrypt": "Decrypt",
-  "files.marker": "▶  ",
+  "files.marker": "►  ",
   "files.markerPad": "   ",
   "files.privateSuffix": " [private]",
   "files.tapDismiss": "Tap to dismiss",
@@ -138,5 +138,9 @@
   "dialog.languageTitle": "Language",
   "dialog.fontTitle": "Reading font",
   "dialog.pinTitle": "PIN for phone pairing",
-  "dialog.exitTitle": "Stop Writerdeck?"
+  "dialog.exitTitle": "Stop Writerdeck?",
+  "power.title": "Power",
+  "power.sleep": "Sleep",
+  "power.lobby": "Lobby",
+  "power.exit": "Exit"
 }

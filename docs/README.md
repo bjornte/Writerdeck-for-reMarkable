@@ -14,6 +14,8 @@ lessons.md — gotchas that still bite.
 
 browser-vs-tablet.md — what the phone does vs the Lobby.
 
+stock-ui-chrome.md — stock General settings button and headline sizes (template for Lobby).
+
 integrity-audit.md — document integrity status and open risks.
 
 improvements.md — wishlist, not committed work.

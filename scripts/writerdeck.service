@@ -9,11 +9,15 @@ RequiresMountsFor=/home/root
 [Service]
 Type=simple
 
-ExecStopPost=/bin/sh -c 'sleep 1; systemctl start xochitl'
+# USB-C back to gadget (rM2; no-op on rM1), re-arm sidebar, then stock UI.
+ExecStopPost=/bin/sh -c '/home/root/writerdeck-restore-usb-gadget.sh 2>/dev/null; sleep 1; /home/root/writerdeck-ensure-sidebar.sh 2>/dev/null; systemctl start xochitl'
 
 # Writerdeck-server is always-on: serves :8000 even while xochitl is up.
 # --editor: supervisor mode -- owns the xochitl<->Writerdeck toggle.
 ExecStart=/home/root/Writerdeck-server --editor /home/root/Writerdeck-launcher.sh
+
+# After server is up, ensure sidebar hook is armed for idle stock UI (rM2).
+ExecStartPost=/bin/sh -c '/home/root/writerdeck-ensure-sidebar.sh 2>/dev/null || true'
 
 Restart=no
 

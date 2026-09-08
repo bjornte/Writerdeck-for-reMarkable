@@ -1,4 +1,4 @@
-// Writerdeck-server — see main.go for overview.
+// Writerdeck-server -- see main.go for overview.
 
 package main
 
@@ -12,99 +12,211 @@ import (
 	"time"
 )
 
-// buttonDevFd is the shared gpio-keys handle. Opened once for the server
-// lifetime; exclusive EVIOCGRAB is taken only while a Writerdeck session runs
-// so idle xochitl still sees Home/Power/page buttons.
+// Physical buttons may span one or two evdev nodes:
+//   rM1: gpio-keys on event1 (Home, Left, Right, Power, Wakeup)
+//   rM2: snvs-powerkey on event0 (Power only); no Home/page gpio-keys
+// Paths are resolved at open time by device name, not hardcoded eventN.
 var (
 	buttonDevMu      sync.Mutex
-	buttonDevFile    *os.File
+	buttonDevPaths   []string // gpio-keys and/or powerkey paths we opened
+	buttonDevFiles   []*os.File
 	buttonDevGrabbed bool
+	// powerMenuDevice is true on rM2 (powerkey only, no gpio-keys Home).
+	powerMenuDevice bool
+
+	powerMenuMu      sync.Mutex
+	powerMenuWaiting bool
 )
 
-// openButtonDev opens /dev/input/event1 once. Safe to call from main before
-// the watcher goroutine and before the first session.start().
+// findInputByName returns /dev/input/event* whose sysfs name matches any of the
+// substrings (case-insensitive). First match wins for each name; duplicates skipped.
+func findInputByName(substrings ...string) string {
+	entries, err := os.ReadDir("/sys/class/input")
+	if err != nil {
+		return ""
+	}
+	for _, e := range entries {
+		if !strings.HasPrefix(e.Name(), "event") {
+			continue
+		}
+		b, err := os.ReadFile(filepath.Join("/sys/class/input", e.Name(), "device", "name"))
+		if err != nil {
+			continue
+		}
+		name := strings.ToLower(strings.TrimSpace(string(b)))
+		for _, sub := range substrings {
+			if strings.Contains(name, strings.ToLower(sub)) {
+				return "/dev/input/" + e.Name()
+			}
+		}
+	}
+	return ""
+}
+
+// resolveButtonDevices picks gpio-keys (rM1 buttons) and/or snvs-powerkey (rM2 power).
+// Falls back to /dev/input/event1 for older images if nothing matches by name.
+func resolveButtonDevices() []string {
+	seen := map[string]bool{}
+	var out []string
+	add := func(path string) {
+		if path == "" || seen[path] {
+			return
+		}
+		seen[path] = true
+		out = append(out, path)
+	}
+	add(findInputByName("gpio-keys", "gpio_keys"))
+	add(findInputByName("snvs-powerkey", "snvs_powerkey", "powerkey"))
+	if len(out) == 0 {
+		add("/dev/input/event1")
+	}
+	return out
+}
+
+// openButtonDev opens gpio-keys and/or powerkey once. Safe before the watcher
+// and before the first session.start().
 func openButtonDev() error {
 	buttonDevMu.Lock()
 	defer buttonDevMu.Unlock()
-	if buttonDevFile != nil {
+	if len(buttonDevFiles) > 0 {
 		return nil
 	}
-	f, err := os.Open(buttonDev)
-	if err != nil {
-		return err
+	paths := resolveButtonDevices()
+	var files []*os.File
+	var opened []string
+	for _, p := range paths {
+		f, err := os.Open(p)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: open %s: %v\n", p, err)
+			continue
+		}
+		files = append(files, f)
+		opened = append(opened, p)
 	}
-	buttonDevFile = f
+	if len(files) == 0 {
+		return fmt.Errorf("no button input devices (tried %v)", paths)
+	}
+	buttonDevFiles = files
+	buttonDevPaths = opened
+	// rM2: snvs-powerkey only. rM1: gpio-keys (may also list powerkey).
+	hasGpio := findInputByName("gpio-keys", "gpio_keys") != ""
+	hasPowerKey := findInputByName("snvs-powerkey", "snvs_powerkey", "powerkey") != ""
+	powerMenuDevice = !hasGpio && hasPowerKey
+	fmt.Fprintf(os.Stderr, "writerdeck-server: button devices: %s (powerMenu=%v)\n",
+		strings.Join(opened, ", "), powerMenuDevice)
 	return nil
 }
 
-// grabButtonDev takes exclusive EVIOCGRAB so Qt evdev cannot see physical
-// Home/Power/page buttons. Call before spawning Writerdeck.
+// usePowerMenu reports whether short-press power should open Sleep/Lobby/Exit
+// instead of sleeping immediately (rM2 power-only hardware).
+func usePowerMenu() bool {
+	buttonDevMu.Lock()
+	defer buttonDevMu.Unlock()
+	return powerMenuDevice
+}
+
+// grabButtonDev takes exclusive EVIOCGRAB on every open button device so Qt
+// evdev cannot see Home/Power/page. Call before spawning Writerdeck.
 func grabButtonDev() {
 	buttonDevMu.Lock()
 	defer buttonDevMu.Unlock()
-	if buttonDevFile == nil {
+	if len(buttonDevFiles) == 0 {
 		fmt.Fprintln(os.Stderr, "writerdeck-server: button grab skipped (device not open)")
 		return
 	}
 	if buttonDevGrabbed {
 		return
 	}
-	if err := evdevGrab(buttonDevFile.Fd()); err != nil {
-		fmt.Fprintf(os.Stderr, "writerdeck-server: EVIOCGRAB %s failed: %v\n", buttonDev, err)
-		return
+	for i, f := range buttonDevFiles {
+		if err := evdevGrab(f.Fd()); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: EVIOCGRAB %s failed: %v\n", buttonDevPaths[i], err)
+			continue
+		}
+		fmt.Fprintln(os.Stderr, "writerdeck-server: exclusive grab on "+buttonDevPaths[i])
 	}
 	buttonDevGrabbed = true
-	fmt.Fprintln(os.Stderr, "writerdeck-server: exclusive grab on "+buttonDev+" (Qt will not see gpio-keys)")
 }
 
-// ungrabButtonDev releases EVIOCGRAB so stock xochitl can read gpio-keys again.
+// ungrabButtonDev releases EVIOCGRAB so stock xochitl can read buttons again.
 func ungrabButtonDev() {
 	buttonDevMu.Lock()
 	defer buttonDevMu.Unlock()
-	if buttonDevFile == nil || !buttonDevGrabbed {
+	if len(buttonDevFiles) == 0 || !buttonDevGrabbed {
 		return
 	}
-	if err := evdevUngrab(buttonDevFile.Fd()); err != nil {
-		fmt.Fprintf(os.Stderr, "writerdeck-server: EVIOCGRAB release %s failed: %v\n", buttonDev, err)
-		return
+	for i, f := range buttonDevFiles {
+		if err := evdevUngrab(f.Fd()); err != nil {
+			fmt.Fprintf(os.Stderr, "writerdeck-server: EVIOCGRAB release %s failed: %v\n", buttonDevPaths[i], err)
+			continue
+		}
+		fmt.Fprintln(os.Stderr, "writerdeck-server: released grab on "+buttonDevPaths[i])
 	}
 	buttonDevGrabbed = false
-	fmt.Fprintln(os.Stderr, "writerdeck-server: released grab on "+buttonDev)
 }
 
-// watchPhysicalButtons reads gpio-keys events (Home, Power, page buttons).
-// Supervisor mode (s != nil): Home relay + Power sleep/wake (see session.sleepForPower).
-// Standalone mode (s == nil): Home sends quit to ec then returns.
-// Exclusive grab is session-scoped (see grabButtonDev); this loop only reads.
-func watchPhysicalButtons(s *session, ec *editorConn) {
-	if err := openButtonDev(); err != nil {
-		fmt.Fprintf(os.Stderr, "writerdeck-server: button watcher: %v (OK on non-device machines)\n", err)
+func isButtonDevPath(path string) bool {
+	buttonDevMu.Lock()
+	defer buttonDevMu.Unlock()
+	for _, p := range buttonDevPaths {
+		if p == path {
+			return true
+		}
+	}
+	return false
+}
+
+// handlePowerKey wakes after suspend, opens the rM2 power menu, or sleeps (rM1).
+// On rM2, wake usually happens when systemctl suspend returns; KEY_POWER may not arrive.
+func handlePowerKey(s *session) {
+	if s == nil {
 		return
 	}
-	buttonDevMu.Lock()
-	f := buttonDevFile
-	buttonDevMu.Unlock()
-	if s == nil {
-		// Standalone: editor is already running; keep gpio away from Qt.
-		grabButtonDev()
-		defer ungrabButtonDev()
+	if s.isSleeping() {
+		s.mu.Lock()
+		note := s.sleepNote
+		s.mu.Unlock()
+		fmt.Fprintln(os.Stderr, "writerdeck-server: power button -- waking from sleep")
+		go func() { _ = s.wakeFromSleep(note) }()
+		return
 	}
-	fmt.Fprintln(os.Stderr, "writerdeck-server: watching physical buttons on "+buttonDev)
+	if !s.isActive() {
+		return
+	}
+	if usePowerMenu() {
+		powerMenuMu.Lock()
+		waiting := powerMenuWaiting
+		powerMenuMu.Unlock()
+		if waiting {
+			// Second press while menu is open: tell QML to choose Sleep.
+			fmt.Fprintln(os.Stderr, "writerdeck-server: power button -- menu re-press (sleep)")
+			s.ec.write([]byte(`{"t":"cmd","c":"powermenu"}`))
+			return
+		}
+		fmt.Fprintln(os.Stderr, "writerdeck-server: power button -- power menu")
+		go s.powerMenu()
+		return
+	}
+	fmt.Fprintln(os.Stderr, "writerdeck-server: power button -- sleep")
+	go s.sleepForPower()
+}
+
+// readButtonDevice reads one evdev node and dispatches Home / page / Power.
+func readButtonDevice(f *os.File, path string, s *session, ec *editorConn) {
+	fmt.Fprintln(os.Stderr, "writerdeck-server: watching physical buttons on "+path)
 	var debounce time.Time
 	var leftDown, rightDown bool
 	var chordDebounce time.Time
 	for {
 		var ev inputEvent
 		if err := binary.Read(f, binary.LittleEndian, &ev); err != nil {
-			fmt.Fprintf(os.Stderr, "writerdeck-server: button read error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "writerdeck-server: button read %s: %v\n", path, err)
 			return
 		}
 		if ev.Type != evKey {
 			continue
 		}
 
-		// Page-button chord: hold left+right together to launch Writerdeck from stock UI.
-		// While a session is active, a single page button paginates (rotation-aware).
+		// Page-button chord: hold left+right to launch Writerdeck from stock UI.
 		if ev.Code == keyLeft || ev.Code == keyRight {
 			if ev.Code == keyLeft {
 				leftDown = ev.Value == 1
@@ -160,30 +272,49 @@ func watchPhysicalButtons(s *session, ec *editorConn) {
 			continue
 		}
 
-		// Power or Wakeup: sleep while editing, wake after suspend.
-		if s == nil {
-			continue
-		}
-		if s.isSleeping() {
-			currentNoteMu.Lock()
-			note := currentNote
-			currentNoteMu.Unlock()
-			fmt.Fprintln(os.Stderr, "writerdeck-server: power button -- waking from sleep")
-			go func() { _ = s.wakeFromSleep(note) }()
-			continue
-		}
-		if s.isActive() {
-			fmt.Fprintln(os.Stderr, "writerdeck-server: power button -- sleep")
-			go s.sleepForPower()
+		// Only real power/wake codes -- never treat other leftover keys as power.
+		if ev.Code == keyPower || ev.Code == keyWake {
+			handlePowerKey(s)
 		}
 	}
+}
+
+// watchPhysicalButtons reads gpio-keys and/or snvs-powerkey.
+// Supervisor (s != nil): Home relay + Power sleep/wake (session.sleepForPower).
+// Standalone (s == nil): Home sends quit then returns.
+func watchPhysicalButtons(s *session, ec *editorConn) {
+	if err := openButtonDev(); err != nil {
+		fmt.Fprintf(os.Stderr, "writerdeck-server: button watcher: %v (OK on non-device machines)\n", err)
+		return
+	}
+	buttonDevMu.Lock()
+	files := append([]*os.File(nil), buttonDevFiles...)
+	paths := append([]string(nil), buttonDevPaths...)
+	buttonDevMu.Unlock()
+	if s == nil {
+		grabButtonDev()
+		defer ungrabButtonDev()
+	}
+	if len(files) == 1 {
+		readButtonDevice(files[0], paths[0], s, ec)
+		return
+	}
+	var wg sync.WaitGroup
+	for i := range files {
+		wg.Add(1)
+		go func(f *os.File, p string) {
+			defer wg.Done()
+			readButtonDevice(f, p, s, ec)
+		}(files[i], paths[i])
+	}
+	wg.Wait()
 }
 
 // watchHomeButton is kept as an alias for callers that haven't been renamed yet.
 func watchHomeButton(s *session, ec *editorConn) { watchPhysicalButtons(s, ec) }
 
 // findKeyboardInputDevices returns /dev/input/event* nodes that look like USB
-// keyboards (name contains "keyboard"), excluding gpio-keys on event1.
+// keyboards (name contains "keyboard"), excluding gpio-keys / powerkey.
 func findKeyboardInputDevices() []string {
 	entries, err := os.ReadDir("/sys/class/input")
 	if err != nil {
@@ -195,7 +326,7 @@ func findKeyboardInputDevices() []string {
 			continue
 		}
 		dev := "/dev/input/" + e.Name()
-		if dev == buttonDev {
+		if isButtonDevPath(dev) {
 			continue
 		}
 		namePath := filepath.Join("/sys/class/input", e.Name(), "device", "name")
