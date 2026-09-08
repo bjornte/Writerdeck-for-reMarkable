@@ -17,7 +17,7 @@
   "files.encrypt": "Verschlüsseln",
   "files.newEncrypted": "Neu verschlüsselt",
   "files.decrypt": "Entschlüsseln",
-  "files.marker": "▶  ",
+  "files.marker": "►  ",
   "files.markerPad": "   ",
   "files.privateSuffix": " [privat]",
   "files.tapDismiss": "Tippen zum Schließen",
@@ -138,5 +138,9 @@
   "dialog.languageTitle": "Sprache",
   "dialog.fontTitle": "Leseschrift",
   "dialog.pinTitle": "PIN für Telefonkopplung",
-  "dialog.exitTitle": "Writerdeck beenden?"
+  "dialog.exitTitle": "Writerdeck beenden?",
+  "power.title": "Power",
+  "power.sleep": "Schlaf",
+  "power.lobby": "Lobby",
+  "power.exit": "Beenden"
 }

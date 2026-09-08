@@ -1,0 +1,12 @@
+[Unit]
+Description=Restore reMarkable USB-C gadget (charge and laptop)
+Documentation=https://github.com/bjornte/Writerdeck-for-reMarkable
+DefaultDependencies=no
+Before=sleep.target poweroff.target reboot.target halt.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/root/writerdeck-restore-usb-gadget.sh
+
+[Install]
+WantedBy=sleep.target poweroff.target reboot.target halt.target

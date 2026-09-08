@@ -21,6 +21,7 @@ jobs:
           bash spike/rm2-official-sdk/scripts/build-hello.sh --inside-container
           bash spike/rm2-official-sdk/scripts/build-textedit.sh --inside-container
           bash spike/rm2-official-sdk/scripts/build-socket.sh --inside-container
+          bash spike/rm2-official-sdk/scripts/build-fork-probe.sh --inside-container
 
       - name: Upload binary
         uses: actions/upload-artifact@v4
@@ -32,4 +33,5 @@ jobs:
             spike/rm2-official-sdk/.cache/out/socket_spike
             spike/rm2-official-sdk/.cache/out/socket_inject
             spike/rm2-official-sdk/.cache/out/libqsgepaper.so
+            spike/rm2-official-sdk/.cache/out/Writerdeck_fork_probe
           if-no-files-found: error

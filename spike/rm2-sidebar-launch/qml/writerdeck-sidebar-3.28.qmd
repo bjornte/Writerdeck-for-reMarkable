@@ -1,0 +1,35 @@
+VERSION 3.28.0.172
+
+; Writerdeck native sidebar entry for rM2 software 3.28 (XOVI + qt-resource-rebuilder).
+; Stock sidebar moved to FocusScope + ArkControls.SidebarItem (AppLoad PR 59/62).
+; Do not mark 3.28 tested until the row appears and xochitl does not crash-loop.
+
+AFFECT /qml/device/view/navigator/Sidebar.qml
+    IMPORT net.asivery.CommandExecutor 1.0
+
+    TRAVERSE FocusScope > ColumnLayout#filterColumn
+        LOCATE AFTER ArkControls.SidebarFoldout#integrationsFoldout
+        INSERT {
+            ArkControls.SidebarItem {
+                id: openWriterdeck
+                objectName: "openWriterdeck"
+                text: qsTr("Writerdeck")
+                iconSource: "qrc:/writerdeck/icon.png"
+                enabled: true
+                Layout.preferredHeight: Common.Values.navigatorSidebarItemHeight
+                Layout.preferredWidth: parent.width
+
+                CommandExecutor {
+                    id: writerdeckCmd
+                }
+
+                onClicked: {
+                    root.toggle();
+                    writerdeckCmd.executeCommand("/bin/sh", [
+                        "/home/root/writerdeck-sidebar-launch.sh"
+                    ]);
+                }
+            }
+        }
+    END TRAVERSE
+END AFFECT

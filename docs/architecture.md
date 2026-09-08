@@ -25,7 +25,7 @@ Files are UTF-8 Markdown. An open note is protected from silent sync overwrite. 
 
 ## Two programs on the tablet
 
-Writerdeck-server is a static Go binary — Wi-Fi, APIs, sync, PIN, launching the editor. Source in `daemon/`. Product version is one auto date stamp for the whole product (`YYYY-MM-DD`, or `.N` only when you force a second ship the same day with `scripts/product-version.sh --bump`). Server and editor each carry it; Lobby About shows one number (the older if they differ) and compares to repo-root `VERSION` on GitHub `main`. CI and `deploy-rmkbd.sh` keep `VERSION` current via `scripts/product-version.sh --write` — do not hand-edit that file for routine builds. Why: [decisions.md](decisions.md) §38.
+Writerdeck-server is a static Go binary — Wi-Fi, APIs, sync, PIN, launching the editor. Source in `daemon/`. On rM2 it also puts USB-C back to gadget (charge and laptop) on start, before sleep, and when the service stops; a small systemd unit does the same on sleep, power-off, and reboot. Host mode is never set at boot. Product version is one auto date stamp for the whole product (`YYYY-MM-DD`, or `.N` only when you force a second ship the same day with `scripts/product-version.sh --bump`). Server and editor each carry it; Lobby About shows one number (the older if they differ) and compares to repo-root `VERSION` on GitHub `main`. CI and `deploy-rmkbd.sh` keep `VERSION` current via `scripts/product-version.sh --write` — do not hand-edit that file for routine builds. Why: [decisions.md](decisions.md) §38.
 
 Writerdeck is the full-screen editor, built from our fork of [keywriter](https://github.com/dps/remarkable-keywriter). QML draws the screen and applies edits. C++ starts the app, talks to the display, feeds keys from the socket, and runs EditHelper (math, shortcuts, wrap, undo). Keep hand-tuned wrap gaps and custom undo; do not replace Qt’s text box ([decisions.md](decisions.md) §5–§6).
 
@@ -33,7 +33,7 @@ New editor behavior belongs in [Writerdeck-keywriter](https://github.com/bjornte
 
 Under `/home/root/`: the two binaries, `Writerdeck-user-documents/` for notes, `.Writerdeck/settings.json`, `.Writerdeck/lobby-ui.json`, a Qt runtime, and the launcher script. They meet on `/run/Writerdeck.sock`. The phone page is embedded in the server.
 
-Lobby look, wording, language, and shortcut chords are owned by `lobby-ui.json` and `lobby-ui-i18n/<lang>.json` ([decisions.md](decisions.md) §36). Edit those files on the tablet; Writerdeck reloads them (watch plus a short mtime poll). Repo source of truth for first install is `config/lobby-ui.json` and `config/lobby-ui-i18n/`; `deploy-keywriter.sh` seeds missing tablet files only. Journal shows `lobby-ui: loaded … lang=… (rev N)` on each successful load. The phone page follows the same `language` via `GET /api/phone-ui` and packs in `daemon/phone-ui-i18n/` (embedded in Writerdeck-server). USB keyboard layouts live under `keymaps/` as Qt `.qmap` files ([keymaps/README.md](../keymaps/README.md)); the launcher applies the chosen id on the next editor start.
+Lobby look, wording, language, and shortcut chords are owned by `lobby-ui.json` and `lobby-ui-i18n/<lang>.json` ([decisions.md](decisions.md) §36). Edit those files on the tablet; Writerdeck reloads them (watch plus a short mtime poll). Stock General settings button and headline sizes — the template for Lobby chrome — are in [stock-ui-chrome.md](stock-ui-chrome.md). Repo source of truth for first install is `config/lobby-ui.json` and `config/lobby-ui-i18n/`; `deploy-keywriter.sh` seeds missing tablet files only. Journal shows `lobby-ui: loaded … lang=… (rev N)` on each successful load. The phone page follows the same `language` via `GET /api/phone-ui` and packs in `daemon/phone-ui-i18n/` (embedded in Writerdeck-server). USB keyboard layouts live under `keymaps/` as Qt `.qmap` files ([keymaps/README.md](../keymaps/README.md)); the launcher applies the chosen id on the next editor start.
 
 ## Phone and Lobby
 
@@ -49,7 +49,7 @@ No jailbreak; keep OTA (over-the-air updates) — so no Toltec. One static Go bi
 
 ## Device facts
 
-This product is for the reMarkable 1. reMarkable 2 needs a different display path; we are open to exploring that if the community wants it ([decisions.md](decisions.md) §33).
+Writerdeck runs on reMarkable 1 and reMarkable 2. Each device needs its own editor binary from the official Codex SDK; the server, notes, and phone page are the same. Software 3.27+ (stock epaper Qt). Display: `QT_QUICK_BACKEND=epaper`, `-platform epaper`. No Toltec. Details: [decisions.md](decisions.md) §33.
 
 SSH as `root` over Wi-Fi. Password and `RM_HOST_WIFI` live in `secrets/remarkable.local.env` (install prompts if empty). After an OTA (over-the-air update) the password changes. On iPhone hotspot the tablet is often `172.20.10.5`. Visitors fetch prebuilt editor (`keywriter` Release) and server (`server` Release); developers with Go build the server locally via `deploy-rmkbd.sh`.
 
@@ -63,10 +63,13 @@ Server from the Mac:
 bash scripts/deploy-rmkbd.sh
 ```
 
-Editor from CI (GitHub Actions); QML is inside the binary:
+Editor from CI (GitHub Actions); QML is inside the binary. rM1 today:
 
 ```bash
-git push && bash scripts/fetch-keywriter-dist.sh && bash scripts/deploy-keywriter.sh -b
+SDK_DEVICE=rm1 WRITERDECK_PRODUCTION=1 bash spike/rm2-official-sdk/scripts/build-fork-probe.sh
+bash scripts/deploy-keywriter-rm1.sh
 ```
+
+rM2: `bash scripts/deploy-keywriter-rm2.sh` (USB `10.11.99.1` while that tablet is plugged in). Do not deploy rM1 over USB if the other tablet is on the cable.
 
 Then relaunch the editor and read `journalctl -u writerdeck` (Writerdeck only — stock UI and system noise live in the rest of `/var/log`). After QML changes: edit-session check. After caret work: automated typing tests. After Lobby/Home: Lobby keyboard test. Deploy uses gzip over SSH, not scp. The same deploy seeds `lobby-ui.json` only if that file is absent on the tablet.

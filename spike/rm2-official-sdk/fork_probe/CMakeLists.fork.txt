@@ -1,0 +1,49 @@
+cmake_minimum_required(VERSION 3.16)
+project(Writerdeck VERSION 0.1 LANGUAGES C CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+find_package(Qt6 REQUIRED COMPONENTS Quick Qml)
+qt_standard_project_setup(REQUIRES 6.5)
+
+set(SUNDOWN "${CMAKE_CURRENT_SOURCE_DIR}/sundown")
+set(SUNDOWN_SRCS
+  "${SUNDOWN}/src/autolink.c"
+  "${SUNDOWN}/src/buffer.c"
+  "${SUNDOWN}/src/markdown.c"
+  "${SUNDOWN}/src/stack.c"
+  "${SUNDOWN}/html/houdini_href_e.c"
+  "${SUNDOWN}/html/houdini_html_e.c"
+  "${SUNDOWN}/html/html.c"
+  "${SUNDOWN}/html/html_smartypants.c")
+
+qt_add_executable(Writerdeck
+  main.cpp
+  edit_utils.cpp
+  rotation_watcher.cpp
+  lobby_bridge.cpp
+  lobby_ui_config.cpp
+  edit_helper.cpp
+  ${SUNDOWN_SRCS})
+
+set(FORK_MAIN_QML "${CMAKE_CURRENT_SOURCE_DIR}/main.qml")
+set_source_files_properties("${FORK_MAIN_QML}" PROPERTIES QT_RESOURCE_ALIAS "main.qml")
+
+qt_add_resources(Writerdeck "fork_qml"
+  PREFIX "/"
+  FILES "${FORK_MAIN_QML}")
+
+if(WRITERDECK_RM2_QT6_PROBE)
+  target_compile_definitions(Writerdeck PRIVATE WRITERDECK_RM2_QT6_PROBE=1)
+  set_target_properties(Writerdeck PROPERTIES OUTPUT_NAME "Writerdeck_fork_probe")
+endif()
+
+target_include_directories(Writerdeck PRIVATE
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  "${SUNDOWN}/src"
+  "${SUNDOWN}/html"
+  "${CMAKE_CURRENT_BINARY_DIR}")
+
+target_link_libraries(Writerdeck PRIVATE Qt6::Quick Qt6::Qml)
+target_link_options(Writerdeck PRIVATE -pthread)
+target_link_libraries(Writerdeck PRIVATE pthread)

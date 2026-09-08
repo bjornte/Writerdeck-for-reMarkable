@@ -128,7 +128,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "writerdeck-server: no PIN required (pinDigits=none)")
 	}
 
-	ec := &editorConn{}
+	ec := &editorConn{powerMenuCh: make(chan string, 1)}
 	globalEC = ec
 	go dialLoop(ec)
 	go watchLobbyIP()
@@ -202,6 +202,7 @@ func main() {
 		if err := openButtonDev(); err != nil {
 			fmt.Fprintf(os.Stderr, "writerdeck-server: button device: %v (OK on non-device machines)\n", err)
 		}
+		restoreUSBGadget()
 
 		// Always-on Home watcher: loops for rmkbd's lifetime.
 		go watchHomeButton(activeSess, ec)
@@ -235,6 +236,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "writerdeck-server: ending active session before exit")
 			activeSess.quit()
 		}
+		restoreUSBGadget()
 		fmt.Fprintln(os.Stderr, "writerdeck-server: exiting (ExecStopPost safety net restarts xochitl if needed)")
 		os.Exit(0)
 	}

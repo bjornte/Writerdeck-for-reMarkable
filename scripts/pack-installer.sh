@@ -40,6 +40,8 @@ SCRIPTS=(
   migrate-device-layout.sh
   Writerdeck-launcher.sh
   writerdeck.service
+  writerdeck-usb-gadget.service
+  writerdeck-restore-usb-gadget.sh
   wd
 )
 

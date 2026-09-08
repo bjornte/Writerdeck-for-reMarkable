@@ -24,8 +24,21 @@ fi
 
 ICON_SRC="$SPIKE/appload-app/icon.png"
 QMD_SRC="$SPIKE/qml/writerdeck-sidebar.qmd"
+OS_VER="$(rm_ssh 'sed -n "s/^IMG_VERSION=//p" /etc/os-release | tr -d "\""' "$HOST" | tr -d '\r' || true)"
+case "$OS_VER" in
+  3.28.*) QMD_SRC="$SPIKE/qml/writerdeck-sidebar-3.28.qmd" ;;
+esac
+echo "qmd: $(basename "$QMD_SRC") (os=${OS_VER:-unknown})"
+RCC_SRC="$SPIKE/resources/writerdeck-icons.rcc"
+ENSURE_SRC="$SPIKE/scripts/writerdeck-ensure-sidebar.sh"
+LAUNCH_SRC="$SPIKE/scripts/writerdeck-sidebar-launch.sh"
+TESTED_SRC="$SPIKE/tested-os.json"
 test -f "$ICON_SRC"
 test -f "$QMD_SRC"
+test -f "$RCC_SRC"
+test -f "$ENSURE_SRC"
+test -f "$LAUNCH_SRC"
+test -f "$TESTED_SRC"
 
 echo "Pushing XOVI archive (if needed)..."
 rm_send_file "$XOVI_TGZ" /tmp/xovi-arm32.tar.gz "$HOST"
@@ -57,11 +70,22 @@ rm -rf /home/root/xovi/exthome/appload
 ls -la /home/root/xovi/extensions.d/
 ' "$HOST"
 
-echo "Deploying Writerdeck sidebar .qmd + icon..."
+echo "Deploying Writerdeck sidebar .qmd + icon .rcc + ensure script..."
 rm_send_file "$QMD_SRC" \
   /home/root/xovi/exthome/qt-resource-rebuilder/writerdeck-sidebar.qmd "$HOST"
+rm_send_file "$RCC_SRC" \
+  /home/root/xovi/exthome/qt-resource-rebuilder/writerdeck-icons.rcc "$HOST"
 rm_send_file "$ICON_SRC" \
   /home/root/xovi/exthome/qt-resource-rebuilder/writerdeck-icon.png "$HOST"
+rm_send_file "$TESTED_SRC" \
+  /home/root/xovi/exthome/qt-resource-rebuilder/tested-os.json "$HOST"
+rm_send_file "$ENSURE_SRC" /home/root/writerdeck-ensure-sidebar.sh "$HOST"
+rm_send_file "$LAUNCH_SRC" /home/root/writerdeck-sidebar-launch.sh "$HOST"
+rm_ssh 'chmod a+x /home/root/writerdeck-ensure-sidebar.sh /home/root/writerdeck-sidebar-launch.sh' "$HOST"
+if [ "${ACCEPT_UNTESTED:-}" = "1" ]; then
+  rm_ssh 'touch /home/root/xovi/exthome/qt-resource-rebuilder/accept-untested' "$HOST"
+  echo "wrote accept-untested flag (candidates allowed)"
+fi
 
 # Hashtab: rebuild if missing
 HAS="$(rm_ssh 'if test -s /home/root/xovi/exthome/qt-resource-rebuilder/hashtab; then echo yes; else echo no; fi' "$HOST" | tr -d '\r')"
@@ -107,5 +131,7 @@ fi
 
 echo
 echo "Native install done on $HOST."
-echo "Next: ACCEPT_UNTESTED=1 bash spike/rm2-sidebar-launch/scripts/enable.sh"
-echo "Sidebar should show Writerdeck (not AppLoad). Tap launches Lobby."
+echo "Arming sidebar (also runs on writerdeck service start / before xochitl)..."
+rm_ssh '/home/root/writerdeck-ensure-sidebar.sh' "$HOST" || true
+echo "Sidebar hooks Writerdeck start. Manual: bash spike/rm2-sidebar-launch/scripts/enable.sh"
+echo "Tap Writerdeck in the stock sidebar to open Lobby."

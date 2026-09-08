@@ -14,6 +14,7 @@ AFFECT /qml/device/view/navigator/Sidebar.qml
                 id: openWriterdeck
                 objectName: "openWriterdeck"
                 title: qsTr("Writerdeck")
+                iconSource: "qrc:/writerdeck/icon.png"
                 active: false
                 enabled: true
                 Layout.preferredHeight: Values.navigatorSidebarItemHeight
@@ -28,8 +29,7 @@ AFFECT /qml/device/view/navigator/Sidebar.qml
                     activate();
                     root.resetFocusIndex();
                     writerdeckCmd.executeCommand("/bin/sh", [
-                        "-c",
-                        "wget -qO- --post-data= --header=Content-Type:application/json http://127.0.0.1:8000/api/lobby >/dev/null 2>&1 || wget -qO- --post-data= http://127.0.0.1:8000/api/launch >/dev/null 2>&1 || true"
+                        "/home/root/writerdeck-sidebar-launch.sh"
                     ]);
                 }
 

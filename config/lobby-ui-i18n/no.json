@@ -17,7 +17,7 @@
   "files.encrypt": "Krypter",
   "files.newEncrypted": "Ny kryptert",
   "files.decrypt": "Dekrypter",
-  "files.marker": "▶  ",
+  "files.marker": "►  ",
   "files.markerPad": "   ",
   "files.privateSuffix": " [privat]",
   "files.tapDismiss": "Trykk for å lukke",
@@ -138,5 +138,9 @@
   "dialog.languageTitle": "Språk",
   "dialog.fontTitle": "Lesefont",
   "dialog.pinTitle": "PIN for telefonkobling",
-  "dialog.exitTitle": "Stoppe Writerdeck?"
+  "dialog.exitTitle": "Stoppe Writerdeck?",
+  "power.title": "Strøm",
+  "power.sleep": "Hvile",
+  "power.lobby": "Lobby",
+  "power.exit": "Avslutt"
 }

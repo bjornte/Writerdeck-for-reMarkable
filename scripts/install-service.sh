@@ -64,8 +64,34 @@ echo "--- Copying unit to $TARGET:$UNIT_DST ---"
 rm_scp_to "$UNIT_SRC" "$UNIT_DST" "$TARGET"
 echo "  copied."
 
+ENSURE_SRC="$REPO/spike/rm2-sidebar-launch/scripts/writerdeck-ensure-sidebar.sh"
+if [ -f "$ENSURE_SRC" ]; then
+  echo "--- Copying writerdeck-ensure-sidebar.sh (rM2 sidebar re-arm) ---"
+  rm_send_file "$ENSURE_SRC" /home/root/writerdeck-ensure-sidebar.sh "$TARGET"
+  rm_ssh "chmod a+x /home/root/writerdeck-ensure-sidebar.sh" "$TARGET"
+  echo "  copied."
+fi
+
+USB_RESTORE_SRC="$DIR/writerdeck-restore-usb-gadget.sh"
+if [ -f "$USB_RESTORE_SRC" ]; then
+  echo "--- Copying writerdeck-restore-usb-gadget.sh (rM2 USB-C charge/laptop) ---"
+  rm_send_file "$USB_RESTORE_SRC" /home/root/writerdeck-restore-usb-gadget.sh "$TARGET"
+  rm_ssh "chmod a+x /home/root/writerdeck-restore-usb-gadget.sh" "$TARGET"
+  echo "  copied."
+fi
+USB_UNIT_SRC="$DIR/writerdeck-usb-gadget.service"
+if [ -f "$USB_UNIT_SRC" ]; then
+  echo "--- Installing writerdeck-usb-gadget.service (sleep/poweroff/reboot) ---"
+  rm_scp_to "$USB_UNIT_SRC" /etc/systemd/system/writerdeck-usb-gadget.service "$TARGET"
+  echo "  copied."
+fi
+
 echo "--- systemctl daemon-reload ---"
 rm_ssh "systemctl daemon-reload" "$TARGET"
+if [ -f "$USB_UNIT_SRC" ]; then
+  rm_ssh "systemctl enable writerdeck-usb-gadget.service" "$TARGET"
+  echo "  writerdeck-usb-gadget enabled for sleep/poweroff/reboot."
+fi
 echo "  done."
 echo
 

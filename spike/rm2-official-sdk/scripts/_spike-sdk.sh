@@ -53,9 +53,14 @@ _spike_docker_build() {
     echo "    colima start --arch x86_64 --cpu 4 --memory 8 --disk 60" >&2
     exit 1
   fi
-  local inst_base
+  local inst_base device
   inst_base="$(basename "$installer")"
+  device="${SDK_DEVICE:-rm2}"
   docker run --rm --platform linux/amd64 \
+    -e SDK_DEVICE="$device" \
+    -e SDK_URL="${SDK_URL:-}" \
+    -e SDK_LABEL="${SDK_LABEL:-}" \
+    -e WRITERDECK_PRODUCTION="${WRITERDECK_PRODUCTION:-0}" \
     -v "$spike:/spike" \
     -w /spike \
     ubuntu:22.04 \
@@ -63,7 +68,7 @@ _spike_docker_build() {
       export DEBIAN_FRONTEND=noninteractive
       apt-get update -qq
       apt-get install -y -qq file python3 xz-utils
-      export SPIKE_SDK_DIR=/tmp/codex-sdk-rm2
+      export SPIKE_SDK_DIR=/tmp/codex-sdk-\${SDK_DEVICE:-rm2}
       rm -rf \"\$SPIKE_SDK_DIR\"
       bash .cache/${inst_base} -d \"\$SPIKE_SDK_DIR\" -y
       bash scripts/${script} --inside-container"

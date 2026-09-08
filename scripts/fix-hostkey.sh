@@ -11,8 +11,9 @@
 # almost never an attack -- but if you did NOT just update firmware, eyeball the
 # new fingerprint before trusting it.
 #
-# Hosts are read from secrets (RM_HOST_WIFI / RM_HOST_USB) via _env.sh, so the
-# IPs are never hardcoded here and a DHCP change is handled automatically.
+# Hosts are read from secrets (RM_HOST_WIFI / RM2_HOST_WIFI / USB) via
+# _env.sh, so the IPs are never hardcoded here and a DHCP change is handled
+# automatically.
 #
 # Usage:  bash scripts/fix-hostkey.sh        (run from repo root, on the Mac)
 set -euo pipefail
@@ -22,7 +23,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo
 echo "[1/2] Forgetting stale host keys in ~/.ssh/known_hosts"
-for host in "${RM_HOST_WIFI:-}" "${RM_HOST_USB:-}"; do
+for host in "${RM_HOST_WIFI:-}" "${RM_HOST_USB:-}" "${RM2_HOST_WIFI:-}" "${RM2_HOST_USB:-}"; do
   [ -n "$host" ] || continue
   if ssh-keygen -F "$host" >/dev/null 2>&1; then
     ssh-keygen -R "$host" >/dev/null 2>&1 && echo "  removed: $host"

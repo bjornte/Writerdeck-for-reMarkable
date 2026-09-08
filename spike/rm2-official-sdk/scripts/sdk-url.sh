@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Closest public rm2 SDK to device Codex 4.0.447 / software 3.11.2.5.
-# No 4.0.447 installer found on developer.remarkable.com (Aug 2026).
-SDK_URL="${SDK_URL:-https://storage.googleapis.com/remarkable-codex-toolchain/3.27.0.97/rm2/remarkable-production-image-5.7.119-rm2-public-x86_64-toolchain.sh}"
-SDK_LABEL="${SDK_LABEL:-3.27.0.97-rm2}"
+# Official Codex SDK 3.27.0.97 (device software 3.27.x).
+# SDK_DEVICE=rm1 or rm2 (default rm2 so existing spike scripts stay put).
+SDK_DEVICE="${SDK_DEVICE:-rm2}"
+SDK_VERSION="${SDK_VERSION:-3.27.0.97}"
+SDK_CODEX="${SDK_CODEX:-5.7.119}"
+SDK_URL="${SDK_URL:-https://storage.googleapis.com/remarkable-codex-toolchain/${SDK_VERSION}/${SDK_DEVICE}/remarkable-production-image-${SDK_CODEX}-${SDK_DEVICE}-public-x86_64-toolchain.sh}"
+SDK_LABEL="${SDK_LABEL:-${SDK_VERSION}-${SDK_DEVICE}}"
+export SDK_DEVICE SDK_VERSION SDK_CODEX SDK_URL SDK_LABEL

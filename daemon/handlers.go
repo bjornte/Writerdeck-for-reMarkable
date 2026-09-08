@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -63,7 +62,7 @@ func requestShutdown(source string) {
 		if activeSess != nil && activeSess.isActive() {
 			activeSess.quit()
 		} else {
-			exec.Command("systemctl", "start", "xochitl").Run() //nolint:errcheck
+			startXochitl()
 		}
 		fmt.Fprintf(os.Stderr, "writerdeck-server: shutdown requested from %s -- exiting\n", source)
 		os.Exit(0)

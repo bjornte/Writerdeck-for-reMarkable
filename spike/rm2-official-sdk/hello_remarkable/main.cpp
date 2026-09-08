@@ -1,3 +1,4 @@
+#include <QDir>
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQuickWindow>
@@ -13,7 +14,7 @@ int main(int argc, char *argv[]) {
     engine.loadFromModule("remarkable_example", "Main");
 
     // Spike: PNG for scripts/capture-screenshot.sh (grabToImage fails on epaper).
-    const char *shotPath = "/home/root/spike-rm2-hello/screen.png";
+    const QString shotPath = QDir::currentPath() + QStringLiteral("/screen.png");
     QTimer::singleShot(3000, &app, [&engine, shotPath]() {
         const QObjectList roots = engine.rootObjects();
         if (roots.isEmpty())
@@ -21,7 +22,7 @@ int main(int argc, char *argv[]) {
         auto *win = qobject_cast<QQuickWindow *>(roots.first());
         if (!win)
             return;
-        win->grabWindow().save(QString::fromUtf8(shotPath), "PNG");
+        win->grabWindow().save(shotPath, "PNG");
     });
 
     return app.exec();

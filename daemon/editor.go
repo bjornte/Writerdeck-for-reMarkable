@@ -36,9 +36,8 @@ const (
 	keyHome   = 102 // KEY_HOME -- middle (home) button, confirmed on /dev/input/event1
 	keyLeft   = 105 // KEY_LEFT -- physical page-left button
 	keyRight  = 106 // KEY_RIGHT -- physical page-right button
-	keyPower  = 116 // KEY_POWER -- top power button
-	keyWake   = 143 // KEY_WAKEUP -- fires on some wake paths
-	buttonDev = "/dev/input/event1"
+	keyPower = 116 // KEY_POWER -- top power button
+	keyWake  = 143 // KEY_WAKEUP -- fires on some wake paths
 
 	saveAckTimeout     = 10 * time.Second // wait for keywriter {"t":"saved",...}
 	paintAckTimeout    = 3 * time.Second  // e-ink sleep screen {"t":"ready",...}
@@ -125,6 +124,9 @@ type editorConn struct {
 
 	stateMu   sync.Mutex
 	stateWait chan EditorState
+
+	// powerMenuCh receives Sleep/Lobby/Exit/cancel choices from QML.
+	powerMenuCh chan string
 }
 
 type ackWait struct {
@@ -197,6 +199,49 @@ func (e *editorConn) writeCmdWaitAck(cmd []byte, typ, cmdName string, timeout ti
 	}
 }
 
+func (e *editorConn) ensurePowerMenuCh() {
+	e.ackMu.Lock()
+	defer e.ackMu.Unlock()
+	if e.powerMenuCh == nil {
+		e.powerMenuCh = make(chan string, 1)
+	}
+}
+
+func (e *editorConn) drainPowerMenuChoice() {
+	e.ensurePowerMenuCh()
+	select {
+	case <-e.powerMenuCh:
+	default:
+	}
+}
+
+func (e *editorConn) deliverPowerMenuChoice(choice string) {
+	e.ensurePowerMenuCh()
+	select {
+	case e.powerMenuCh <- choice:
+	default:
+		// Drop stale if a waiter is not ready yet.
+		select {
+		case <-e.powerMenuCh:
+		default:
+		}
+		select {
+		case e.powerMenuCh <- choice:
+		default:
+		}
+	}
+}
+
+func (e *editorConn) waitPowerMenuChoice(timeout time.Duration) string {
+	e.ensurePowerMenuCh()
+	select {
+	case c := <-e.powerMenuCh:
+		return c
+	case <-time.After(timeout):
+		return ""
+	}
+}
+
 func (e *editorConn) handleEditorLine(line []byte) {
 	if st, ok := parseEditorState(line); ok {
 		e.deliverState(st)
@@ -247,6 +292,10 @@ func (e *editorConn) handleEditorLine(line []byte) {
 			vaultClearSessionOnLobby()
 		}
 		e.signalAck(msg.T, msg.C)
+	case "sleep", "sleeplobby", "lobby", "exit", "cancel":
+		if msg.C == "powermenu" {
+			e.deliverPowerMenuChoice(msg.T)
+		}
 	case "rotation":
 		settingsMu.Lock()
 		curSettings.Rotation = normalizeRotation(msg.Degrees)

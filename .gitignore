@@ -30,6 +30,7 @@ docs/dev-behind-firewall-howto.md
 # ──────────────────────────────────────────────────────────────
 /Writerdeck-server
 /Writerdeck-server.exe
+/daemon/Writerdeck-server
 *.o
 *.exe
 dist/

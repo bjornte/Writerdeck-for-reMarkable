@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
-# scripts/Writerdeck-launcher.sh -- Launch Writerdeck with the proven linuxfb env.
-#
-# Authoritative launch environment for the e-ink editor binary (Writerdeck).
+# Launch Writerdeck on official Qt6 epaper QPA (no linuxfb, no bundled Qt5).
 # Deployed to /home/root/Writerdeck-launcher.sh and called by Writerdeck-server:
 #   /home/root/Writerdeck-server --editor /home/root/Writerdeck-launcher.sh
 #
@@ -12,20 +10,23 @@
 # launch, keymap is skipped; Writerdeck-server restarts the editor when one is
 # plugged in so the layout applies.
 #
-# Deploy: bash scripts/deploy-keywriter.sh (copies this alongside the binary).
+# Touch: rM1 rotate=180; rM2 rotate=180:invertx. Do not overwrite a full string
+# already in the environment.
+#
+# Deploy: bash scripts/deploy-keywriter-rm1.sh (rM1) or deploy-keywriter-rm2.sh.
 
 set -euo pipefail
 
 export HOME=/home/root
+export QT_QUICK_BACKEND=epaper
 
-export LD_LIBRARY_PATH=/home/root/qt5/lib
-export QML2_IMPORT_PATH=/home/root/qt5/qml
-export QT_PLUGIN_PATH=/home/root/qt5/plugins
-export QMLSCENE_DEVICE=epaper
-export QT_QPA_PLATFORM=linuxfb:fb=/dev/fb0:size=1404x1872:mmsize=158x210
-export QT_FONT_DPI=226
-export QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS=rotate=180
-export QT_QPA_GENERIC_PLUGINS=evdevtablet
+if [ -z "${QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS:-}" ]; then
+  model="$(cat /sys/devices/soc0/machine 2>/dev/null || true)"
+  case "$model" in
+    *"reMarkable 2"*) export QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS="rotate=180:invertx" ;;
+    *) export QT_QPA_EVDEV_TOUCHSCREEN_PARAMETERS="rotate=180" ;;
+  esac
+fi
 
 SETTINGS="/home/root/.Writerdeck/settings.json"
 KEYMAPS="/home/root/keymaps"
@@ -74,4 +75,4 @@ exec systemd-inhibit \
     --what=sleep \
     --why=Writerdeck \
     --mode=block \
-    /home/root/Writerdeck
+    /home/root/Writerdeck -platform epaper

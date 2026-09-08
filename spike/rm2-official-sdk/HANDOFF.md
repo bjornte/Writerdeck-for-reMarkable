@@ -18,10 +18,19 @@ Work autonomously: build, deploy, verify with scripts. Deploy success is not tes
 |------|--------|
 | Firmware | 3.27.3.0 (Codex 5.7.126) — required for official epaper path |
 | USB host | `10.11.99.1` |
-| Wi-Fi host | `192.168.1.115` (was `.114`; check env) |
+| Wi-Fi host | `192.168.1.117` — refresh: `bash scripts/discover-rm2-wifi.sh --write-secrets` |
 | Secrets file | `secrets/remarkable.local.env` — `RM2_HOST_USB`, `RM2_HOST_WIFI`, `RM2_ROOT_PASSWORD` |
 
-Host pick tries USB then Wi-Fi (`scripts/_env.sh` → `rm2_pick_host()`, `spike/rm2-official-sdk/scripts/rm2-pick-host.sh`).
+**Find Wi-Fi IP:** USB query first (best), LAN scan fallback:
+
+```bash
+bash scripts/discover-rm2-wifi.sh              # print IP
+bash scripts/discover-rm2-wifi.sh --write-secrets # also update secrets
+```
+
+Deploy SSH still uses USB (`10.11.99.1`) — rM2 often refuses SSH on Wi-Fi. Phone UI uses Wi-Fi IP (`http://192.168.1.117:8000/`).
+
+Host pick for deploy: `rm2-pick-host.sh` (USB then Wi-Fi SSH).
 
 Run spike scripts with `bash`, not bare zsh — word-split breaks `$RM_SSH_OPTS`.
 
@@ -40,12 +49,21 @@ All four spike phases verified on device with autonomous PNG checks (`verify-png
 | 3 socket | NDJSON keys → on-screen text | `bash spike/rm2-official-sdk/scripts/verify-spike.sh socket` |
 | 4 fork-probe | Full Writerdeck-keywriter binary | `bash spike/rm2-official-sdk/scripts/verify-spike.sh fork-probe` |
 
-Phase 4 screenshot (`screenshots/rm2-spike-2026-08-22-fork-probe-verify.png`) shows the real Lobby UI — Documents tab, New/Edit/Read/Rename/Delete/Download.
+**Production stack on rM2 (Aug 22):** `deploy-keywriter-rm2.sh` + `deploy-rmkbd.sh` + `install-service.sh --start` on USB `10.11.99.1`. `test-edit-session.sh` PASS (Writerdeck stays up 8s, xochitl down, editorActive=true). Phone UI at `:8000/` loads JS (PIN screen). Wi-Fi IP was `.115` (timeout); device reported `.117` on LAN — update `RM2_HOST_WIFI` in secrets when Wi-Fi is the primary path.
 
 Quick re-check of phases 1–3:
 
 ```bash
 bash spike/rm2-official-sdk/scripts/verify-all-spike.sh
+```
+
+Production deploy (editor + server):
+
+```bash
+RM_HOST=10.11.99.1 bash scripts/deploy-keywriter-rm2.sh
+RM_HOST=10.11.99.1 bash scripts/deploy-rmkbd.sh --deploy-only
+RM_HOST=10.11.99.1 bash scripts/install-service.sh --start
+RM_HOST=10.11.99.1 bash scripts/test-edit-session.sh
 ```
 
 ## Proven launch stack
@@ -68,7 +86,9 @@ Screenshot capture: `/dev/fb0` is not a readable mirror on rM2 software epaper. 
 | `spike/rm2-official-sdk/scripts/build-*.sh` | hello, textedit, socket, fork-probe builds |
 | `spike/rm2-official-sdk/scripts/verify-spike.sh` | Deploy + run + PNG verify per phase |
 | `spike/rm2-official-sdk/scripts/verify-png.sh` | Size and dark-pixel thresholds |
-| `spike/rm2-official-sdk/fork_probe/` | CMakeLists reference for fork Qt6 build |
+| `spike/rm2-official-sdk/fork_probe/` | Spike wrapper CMake + `CMakeLists.fork.txt` template |
+| `scripts/discover-rm2-wifi.sh` | USB Wi-Fi IP query + LAN scan fallback |
+| `scripts/deploy-keywriter-rm2.sh` | Production Qt6 editor deploy to rM2 |
 | `spike/rm2-official-sdk/.cache/writerdeck-keywriter` | Fork checkout (gitignored) |
 | `spike/rm2-official-sdk/.cache/out/` | Build artifacts (gitignored) |
 
@@ -88,38 +108,45 @@ The fork already sets `QMLSCENE_DEVICE=epaper` and `QT_QPA_PLATFORM=epaper:enabl
 
 ## What remains
 
-### 1. Formalize Qt6 build in Writerdeck-keywriter (highest priority)
+### 1. Formalize Qt6 build in Writerdeck-keywriter (in progress)
 
-Move probe patches into the fork permanently:
+Fork-side CMakeLists.txt + `edit_utils.cpp` drafted in spike cache; `build-fork-probe.sh` applies patches idempotently until pushed to `Writerdeck-keywriter` master. Push fork commit with:
 
-- CMake/Qt6 Quick build replacing qmake/Toltec path.
-- Permanent `edit_utils.cpp`.
-- Drop Qt5 epaper plugin import.
-- Official SDK CI for rm2 (and eventually rm1).
+- `CMakeLists.txt` (Qt6 Quick)
+- `edit_utils.cpp` + trimmed `edit_utils.h`
+- `#ifdef WRITERDECK_RM2_QT6_PROBE` screenshot hook in `main.cpp`
+- Drop Qt5 epaper plugin import if still present on old branches
 
-Use `fork_probe/CMakeLists.txt` and `build-fork-probe.sh` as reference.
+Reference: `spike/rm2-official-sdk/fork_probe/CMakeLists.fork.txt`, `build-fork-probe.sh`.
 
-### 2. Production deploy path (this repo)
+### 2. Production deploy path (this repo) — done for spike binary
 
-- `deploy-keywriter-rm2.sh` or extend existing deploy.
-- Wire `Writerdeck-launcher-rm2.sh`.
-- Go Writerdeck-server via `deploy-rmkbd.sh` with `RM2_HOST` — likely already works on rM2.
+- `scripts/deploy-keywriter-rm2.sh` — deploy Qt6 binary + `Writerdeck-launcher-rm2.sh` as `/home/root/Writerdeck-launcher.sh`
+- `scripts/Writerdeck-launcher-rm2.sh` — epaper QPA launcher
+- Go Writerdeck-server via `deploy-rmkbd.sh` with `RM_HOST=10.11.99.1` (USB) or reachable Wi-Fi IP
 
-### 3. End-to-end on rM2
+### 3. End-to-end on rM2 — PASS (edit-session)
 
-- Phone WebSocket → daemon → `/run/Writerdeck.sock` → real editor (not spike `socket_spike`).
-- SSH `journalctl -u writerdeck` — fail on QML parse errors or instant editor exit.
-- `bash scripts/test-edit-session.sh` on rM2.
+- Phone WebSocket → daemon → `/run/Writerdeck.sock` → real editor: verified via `test-edit-session.sh`
+- Remaining: `test-keyboard-harness.sh` on rM2, phone keyboard typing loop
 
 ### 4. Editor validation on Qt6
 
-- Typing harness / EditHelper on rM2.
-- Update `docs/architecture.md` device facts (still rM1-centric in places).
+- Typing harness on rM2 — critical **55/57** (`editFontScale=3.0`). Lobby fonts: `lobbyFontScale=2.35` (point sizes only; layout from lobby-ui.json). Compare: `bash spike/rm2-official-sdk/scripts/compare-lobby-text.sh`; capture: `capture-lobby-screenshot.sh`. PNG: `docs/screenshots/writerdeck-rm2-lobby-keyboard-2026-08-22.png`.
+- Update `docs/architecture.md` device facts (still rM1-centric in places)
 
 ### 5. CI and verify-all
 
-- Add fork-probe to `.github/workflows/spike-rm2-hello.yml` if feasible (slow build).
-- Optionally add fork-probe to `verify-all-spike.sh`.
+- fork-probe added to `.github/workflows/spike-rm2-hello.yml`
+- Optionally add fork-probe to `verify-all-spike.sh`
+
+## Suggested start for a fresh session
+
+1. Read this file and [README.md](README.md).
+2. Wi-Fi IP: `bash scripts/discover-rm2-wifi.sh --write-secrets`
+3. If harness 401: `bash scripts/configure-sync.sh 10.11.99.1` (needs `PIN_DIGITS=none` in secrets).
+4. Wrap calibration: run `-s wrap-down-one-visual-line -v` on rM2; compare cursor after one Down from Ctrl+Home vs `wrap_fixtures.go` (expect ~10 at W=320, device reports ~30).
+5. Fix fork `harnessSetWidth` / recalibrate `wrap_fixtures.go` for rM2; redeploy via `deploy-keywriter-rm2.sh`; re-run critical then full harness.
 
 ## Constraints
 
@@ -130,11 +157,8 @@ Use `fork_probe/CMakeLists.txt` and `build-fork-probe.sh` as reference.
 - Cross-compile Writerdeck on Mac via Docker/GitHub Actions — not local docker for production binary.
 - Do not `pkill -f /home/root/Writerdeck` (matches Writerdeck-server).
 
-## Suggested start for a fresh session
+### Power button / sleep (rM2)
 
-1. Read this file and [README.md](README.md).
-2. Confirm device: `bash spike/rm2-official-sdk/scripts/recon-rm2.sh`.
-3. Baseline: `bash spike/rm2-official-sdk/scripts/verify-spike.sh fork-probe`.
-4. Begin fork Qt6 CMake port, then deploy pipeline, then edit-session + server integration.
+rM2 power is `snvs-powerkey` (often `/dev/input/event0`), not rM1 `gpio-keys` on `event1`. Writerdeck resolves button devices by sysfs name. Short-press power opens an on-screen menu: **Sleep / Lobby / Exit** while editing, **Sleep / Exit** in the Lobby (no Home button on rM2). A second short-press while the menu is open chooses Sleep. Sleep still uses `systemctl suspend`; this firmware can return at Sleep target before the device has actually slept, so the server waits for `systemd-suspend.service` to finish, then relaunches the editor and reopens the note. rM2 often resumes without delivering `KEY_POWER` to userspace (same class of bug KOReader fixed).
 
-Verify before calling work done. Report tersely to the owner unless they ask for depth.
+Verify: short-press power while editing → menu → Sleep → sleep screen → short-press → note back; Lobby and Exit from the menu; second power on an open menu = Sleep.

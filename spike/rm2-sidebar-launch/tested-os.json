@@ -1,8 +1,12 @@
 {
   "device": "rm2",
   "note": "Only OS strings listed under tested may enable the sidebar UI mod. Add a version after a successful enable + sidebar smoke check.",
-  "tested": [],
+  "tested": [
+    "3.27.3.0",
+    "3.28.0.172"
+  ],
   "candidates": [
-    "3.27.3.0"
+    "3.27.3.0",
+    "3.28.0.172"
   ]
 }

@@ -13,7 +13,11 @@ CACHE="$SPIKE/.cache"
 SDK_DIR="${SPIKE_SDK_DIR:-$CACHE/sdk-$SDK_LABEL}"
 INSTALLER="$CACHE/$(basename "$SDK_URL")"
 SRC="$SPIKE/hello_remarkable"
-OUT="$CACHE/out"
+if [ "${SDK_DEVICE:-rm2}" = "rm1" ]; then
+  OUT="$CACHE/out-rm1"
+else
+  OUT="$CACHE/out"
+fi
 mkdir -p "$CACHE" "$OUT"
 
 need_docker() {

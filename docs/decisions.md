@@ -36,7 +36,7 @@ This kernel cannot load a uinput (fake keyboard device). Do not retry that path.
 
 ## 4. Owned keywriter fork
 
-The editor is Singleton’s keywriter, rebuilt as Writerdeck from our fork. The old binary does not load on current firmware. We build it in CI (GitHub Actions) with a Qt sysroot and draw to the real framebuffer (`/dev/fb0`).
+The editor is Singleton’s keywriter, rebuilt as Writerdeck from our fork. The old binary does not load on current firmware. Device builds use the official Codex SDK (Qt6) and draw with `QT_QUICK_BACKEND=epaper` and `-platform epaper`. One product, two device builds (rm1 and rm2 SDKs). The old Qt5/linuxfb `/dev/fb0` path is closed. GitHub Actions still publishes the Qt5 `qt5.tar.gz` editor until CI is switched (§33).
 
 Fork: [bjornte/Writerdeck-keywriter](https://github.com/bjornte/Writerdeck-keywriter). CI clones it; the build script only checks and compiles. New editor behavior goes in the fork, assembled with `./assemble-qml.sh` into committed `main.qml`. Math, undo, shortcuts, and wrapped-line motion live in C++ `EditHelper`; QML draws and applies. Keep §5–§6.
 
@@ -160,17 +160,23 @@ Rotation is saved on the tablet and pushed when the editor connects. Change it f
 
 Automated tests use filenames starting with `z-test-` so they sort last and stay obvious in the Files list.
 
-## 33. reMarkable 1 first; rM2 via official SDK spike
+## 33. One product, two devices, official epaper QPA
 
-Writerdeck targets the reMarkable 1 today. Install and docs still say rM1 on purpose until a port ships.
+Writerdeck is one product on reMarkable 1 and reMarkable 2. Install still needs a per-device editor binary (official Codex SDK per model). Shared: QML, EditHelper, Writerdeck-server, phone page.
 
-The editor draws through linuxfb on `/dev/fb0` with the epaper scene graph — that path is rM1. On rM2 the panel is driven differently, so the same binary does not light the screen. Community shims such as rm2fb usually mean Toltec; that conflicts with keeping over-the-air updates (§ Constraints in [architecture.md](architecture.md)).
+The old rM1 path drew through linuxfb on `/dev/fb0` with a bundled Qt5 tree. That is closed. Both devices use **Qt6 Quick + official epaper QPA**: `QT_QUICK_BACKEND=epaper` and `-platform epaper`. No Toltec, no rm2fb. Software **3.27+** is required (stock `libepaper.so` + `libqsgepaper.so`).
 
-**Aug 2026 spike (`spike/rm2-official-sdk`, branch `spike/rm2-official-sdk`):** On rM2 software **3.27.3.0**, the official Codex rm2 SDK hello app draws with `QT_QUICK_BACKEND=epaper` and `-platform epaper` — no Toltec. `/dev/fb0` capture does not work; in-app `grabWindow()` PNG pull does. Autonomous check: `bash spike/rm2-official-sdk/scripts/verify-spike.sh hello`.
+**rM2 (Aug 2026):** spike `spike/rm2-official-sdk` then production `deploy-keywriter-rm2.sh` + server + `test-edit-session.sh`. Touch: `rotate=180:invertx`.
 
-A Toltec-free product port means rebuilding the editor on **Qt6 Quick + official epaper QPA** (same docs cover rm1 and rm2), keeping EditHelper and the typing harness — not backporting display patches onto the Qt5/linuxfb stack. Effort is in the same ballpark as making typing trustworthy. Spike phases: hello (pass) → TextArea on epaper (pass) → socket keys (pass) → fork Qt6 binary on device (pass, Aug 2026). Remaining: move CMake build into the fork, rm1+rm2 CI, typing harness on Qt6.
+**rM1 (Sep 2026):** same stack with the rm1 SDK. Hello PNG and `test-edit-session.sh` pass on software 3.27.3.0. Deploy: `deploy-keywriter-rm1.sh` over Wi-Fi (do not use USB `10.11.99.1` while the other tablet is plugged in). Touch: `rotate=180` (no invertx). Launcher: `Writerdeck-launcher.sh`.
 
-Launch without page buttons and Home is already partly covered: phone Show PIN / `/api/lobby`, `rmlobby`, USB Esc. Power-button patterns or touch could fill a tablet-only gap later.
+`/dev/fb0` capture is not a readable mirror on this epaper path; in-app `grabWindow()` PNG pull is. Autonomous hello: `bash spike/rm2-official-sdk/scripts/verify-rm1-hello.sh` (rM1) or `verify-spike.sh hello` (rM2).
+
+Remaining: CI that publishes both device binaries (drop the Qt5 `qt5.tar.gz` release), typing harness on Qt6 as the score it is ([Typing-test strategy is failing](#typing-test-strategy-is-failing)).
+
+rM2 USB-C is gadget by default (charge and laptop at `10.11.99.1`). Host mode for a USB keyboard is RAM-only: restore gadget before sleep and on server stop. Do not set host at boot.
+
+Launch without page buttons and Home is covered by phone Show PIN / `/api/lobby`, `rmlobby`, USB Esc, and on rM2 a short-press **power menu** (Sleep / Lobby / Exit while editing; Sleep / Exit in the Lobby). rM1 still uses power for sleep and Home for Lobby/quit. On rM2 the stock sidebar can also open Lobby via a version-gated XOVI hook (`spike/rm2-sidebar-launch`); `writerdeck-ensure-sidebar.sh` re-arms that hook when Writerdeck starts and before each return to xochitl (reboot still clears the tmpfs drop-in until Writerdeck runs again).
 
 Wishlist: [improvements.md](improvements.md).
 
